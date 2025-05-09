@@ -161,4 +161,17 @@ go test ./...
 
 ## Contributing
 
-(Details on how to contribute, coding standards, etc. - TBD) 
+(Details on how to contribute, coding standards, etc. - TBD)
+
+## Troubleshooting / Known Issues
+
+### `golang-migrate` "unknown driver" in Tests
+
+During the development of integration tests (specifically in `internal/api/*_test.go`), we encountered persistent "unknown driver 'sqlite3'" (and later "unknown driver 'sqlite'") errors when trying to use `golang-migrate/migrate/v4` programmatically via `migrate.New()` to set up an in-memory SQLite database, despite having the correct blank imports for the database and source drivers (e.g., `_ "github.com/golang-migrate/migrate/v4/database/sqlite"`).
+
+This issue occurred even after trying CGo flags, different relative paths for migration files, and ensuring `go mod tidy` was run. The root cause seems to be related to how the `golang-migrate` library registers its drivers or how those registrations are picked up within the specific `go test` binary compilation and execution context for these test packages.
+
+**Workaround for Integration Tests:**
+To ensure reliable database schema setup for integration tests, the `newTestApp` helper function in `internal/api/auth_handlers_integration_test.go` (and potentially other future integration test files) manually reads and executes the `.up.sql` migration files directly on the `*sql.DB` connection. This bypasses the programmatic use of `golang-migrate` for test database setup, resolving the driver registration issue in that context.
+
+The main application (`cmd/server/main.go`) uses `golang-migrate` programmatically without issue, as does the `migrate` CLI tool. 
