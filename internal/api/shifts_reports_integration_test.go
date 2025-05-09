@@ -7,18 +7,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url" // For URL query parameters
 	"testing"
 	"time"
 
-	"night-owls-go/internal/api"
+	"night-owls-go/internal/api" // For claims if needed for other tests
 	db "night-owls-go/internal/db/sqlc_generated"
+	"night-owls-go/internal/service"
 
 	// For AvailableShiftSlot struct
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
+func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclaration issue
 	app := newTestApp(t)
 	defer app.DB.Close()
 
@@ -33,16 +35,19 @@ func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
 	outboxItems, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
 	var otpValue string
+	foundOTP := false
 	for _, item := range outboxItems {
 		if item.Recipient == userPhone && item.MessageType == "OTP_VERIFICATION" {
 			var otpPayload struct{ OTP string `json:"otp"` }
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otpValue = otpPayload.OTP
+			foundOTP = true
 			break
 		}
 	}
-	require.NotEmpty(t, otpValue, "OTP not found for report user")
+	require.True(t, foundOTP, "OTP not found for report user %s in outbox", userPhone)
+	require.NotEmpty(t, otpValue)
 
 	verifyPayload := api.VerifyRequest{Phone: userPhone, Code: otpValue}
 	verPayloadBytes, _ := json.Marshal(verifyPayload)
@@ -104,12 +109,14 @@ func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
     outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
 	var otherOtpValue string
+	foundOtherOTP := false
 	for _, item := range outboxItemsOther {
 		if item.Recipient == otherUserPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpP struct{ OTP string `json:"otp"` }; _ = json.Unmarshal([]byte(item.Payload.String), &otpP); otherOtpValue = otpP.OTP; break
+			var otpP struct{ OTP string `json:"otp"` }; _ = json.Unmarshal([]byte(item.Payload.String), &otpP); otherOtpValue = otpP.OTP; foundOtherOTP = true; break
 		}
 	}
-    require.NotEmpty(t, otherOtpValue, "OTP not found for other reporter")
+    require.True(t, foundOtherOTP, "OTP not found for other reporter %s", otherUserPhone)
+    require.NotEmpty(t, otherOtpValue)
     
 	verifyOtherPayload := api.VerifyRequest{Phone: otherUserPhone, Code: otherOtpValue}
 	verOtherPayloadBytes, _ := json.Marshal(verifyOtherPayload)
@@ -122,5 +129,71 @@ func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
 	assert.Equal(t, http.StatusForbidden, rrForbiddenReport.Code, "Expected 403 when reporting on non-owned booking: %s", rrForbiddenReport.Body.String())
 }
 
-// TODO: Test GET /schedules (currently placeholder in handler)
-// TODO: Write separate, focused tests for /shifts/available (filtering, limits, no active schedules, time window effects) 
+func TestShiftsAvailable_FilteringAndLimits(t *testing.T) {
+	app := newTestApp(t)
+	defer app.DB.Close()
+
+	// Seeded schedules: 
+	// ID 1: Summer Patrol (Nov 1, 2024 - Apr 30, 2025), Cron: '0 0,2 * 11-12,1-4 6,0,1' (Sat/Sun/Mon 00:00, 02:00)
+	// ID 2: Winter Patrol (May 1, 2025 - Oct 31, 2025), Cron: '0 1,3 * 5-10 6,0,1'   (Sat/Sun/Mon 01:00, 03:00)
+
+	// Test Case 1: Query specific range in Summer, expect Summer slots
+	fromNov2024 := "2024-11-04T00:00:00Z"
+	toNov2024 := "2024-11-10T23:59:59Z" // Mon Nov 4, Sat Nov 9, Sun Nov 10
+	qParams := url.Values{}
+	qParams.Add("from", fromNov2024)
+	qParams.Add("to", toNov2024)
+
+	rr := app.makeRequest(t, "GET", "/shifts/available?"+qParams.Encode(), nil, "")
+	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
+	var slotsNov []service.AvailableShiftSlot
+	err := json.Unmarshal(rr.Body.Bytes(), &slotsNov)
+	require.NoError(t, err)
+	// Expect 6 slots: Nov 4 (00,02), Nov 9 (00,02), Nov 10 (00,02)
+	assert.Len(t, slotsNov, 6, "Expected 6 slots for Nov 4-10 range (Mon Nov 4 @ 00,02; Sat Nov 9 @ 00,02; Sun Nov 10 @ 00,02)")
+	if len(slotsNov) >= 2 { // Check first two if at least two exist
+		assert.Equal(t, int64(1), slotsNov[0].ScheduleID) // Summer Schedule ID
+		assert.Equal(t, "2024-11-04T00:00:00Z", slotsNov[0].StartTime.Format(time.RFC3339))
+		assert.Equal(t, int64(1), slotsNov[1].ScheduleID)
+		assert.Equal(t, "2024-11-04T02:00:00Z", slotsNov[1].StartTime.Format(time.RFC3339))
+	}
+
+	// Test Case 2: Query with limit
+	qParamsLimit := url.Values{}
+	qParamsLimit.Add("from", "2024-11-01T00:00:00Z") // Full November 2024
+	qParamsLimit.Add("to", "2024-11-30T23:59:59Z")
+	qParamsLimit.Add("limit", "3")
+	rr = app.makeRequest(t, "GET", "/shifts/available?"+qParamsLimit.Encode(), nil, "")
+	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
+	var slotsLimit []service.AvailableShiftSlot
+	err = json.Unmarshal(rr.Body.Bytes(), &slotsLimit)
+	require.NoError(t, err)
+	assert.Len(t, slotsLimit, 3, "Expected 3 slots due to limit for Nov 2024")
+
+	// Test Case 3: Query range where schedules are not active due to their own start/end dates
+	qParamsFarFuture := url.Values{}
+	qParamsFarFuture.Add("from", "2030-01-01T00:00:00Z")
+	qParamsFarFuture.Add("to", "2030-01-07T23:59:59Z")
+	rr = app.makeRequest(t, "GET", "/shifts/available?"+qParamsFarFuture.Encode(), nil, "")
+	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
+	var slotsFarFuture []service.AvailableShiftSlot
+	err = json.Unmarshal(rr.Body.Bytes(), &slotsFarFuture)
+	require.NoError(t, err)
+	assert.Empty(t, slotsFarFuture, "Expected no slots for a far future date range where seeded schedules are not active")
+}
+
+func TestSchedulesEndpoint(t *testing.T) {
+	app := newTestApp(t)
+	defer app.DB.Close()
+
+	rr := app.makeRequest(t, "GET", "/schedules", nil, "")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var resp map[string]string
+	err := json.Unmarshal(rr.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Contains(t, resp["message"], "Listing schedules - TBD")
+}
+
+// TODO for this file was:
+// TODO: Test GET /schedules (currently placeholder in handler) - Partially done by TestSchedulesEndpoint
+// TODO: More detailed tests for /shifts/available (filtering, limits, no active schedules, time window effects) 

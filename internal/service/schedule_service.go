@@ -39,18 +39,16 @@ type AvailableShiftSlot struct {
 }
 
 // GetUpcomingAvailableSlots finds all available (not booked) shift slots
-// across active schedules within the given time window (or a default window).
+// across schedules that are active within the given time window.
 func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFrom *time.Time, queryTo *time.Time, limit *int) ([]AvailableShiftSlot, error) {
 	now := time.Now()
-	// Default query window: from now to 2 weeks from now if not specified
 	defaultFrom := now
-	defaultTo := now.AddDate(0, 0, 14) // 2 weeks
+	defaultTo := now.AddDate(0, 0, 14) 
 
 	actualFrom := defaultFrom
 	if queryFrom != nil {
 		actualFrom = *queryFrom
 	}
-
 	actualTo := defaultTo
 	if queryTo != nil {
 		actualTo = *queryTo
@@ -58,73 +56,85 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 
 	if actualFrom.After(actualTo) {
 		s.logger.WarnContext(ctx, "Query 'from' date is after 'to' date", "from", actualFrom, "to", actualTo)
-		return []AvailableShiftSlot{}, nil // Or return an error: errors.New("'from' date cannot be after 'to' date")
+		return []AvailableShiftSlot{}, nil 
 	}
 
-	// 1. Fetch active schedules based on today's date (or queryFrom if it makes more sense for overall schedule validity)
-	// We use current date for schedule active status for simplicity, assuming schedules are generally long-running.
-	// The cron expression itself will be evaluated against actualFrom and actualTo.
-	activeSchedules, err := s.querier.ListActiveSchedules(ctx, db.ListActiveSchedulesParams{
-		Date:   sql.NullTime{Time: now, Valid: true},         // For checking schedule.start_date
-		Date_2: sql.NullTime{Time: now, Valid: true},       // For checking schedule.end_date
-	})
+	// 1. Fetch all schedules
+	allSchedules, err := s.querier.ListAllSchedules(ctx)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list active schedules", "error", err)
+		s.logger.ErrorContext(ctx, "Failed to list all schedules", "error", err)
 		return nil, ErrInternalServer
 	}
 
-	if len(activeSchedules) == 0 {
-		s.logger.InfoContext(ctx, "No active schedules found for the current period")
+	if len(allSchedules) == 0 {
+		s.logger.InfoContext(ctx, "No schedules defined in the system")
 		return []AvailableShiftSlot{}, nil
 	}
 
 	var allPotentialSlots []AvailableShiftSlot
 
-	for _, schedule := range activeSchedules {
+	for _, schedule := range allSchedules {
+		// Check if schedule itself is active/relevant within the query window [actualFrom, actualTo]
+		scheduleStartsBeforeOrAtQueryEnd := !schedule.StartDate.Valid || !schedule.StartDate.Time.After(actualTo)
+		scheduleEndsAfterOrAtQueryStart := !schedule.EndDate.Valid || !schedule.EndDate.Time.Before(actualFrom)
+
+		if !(scheduleStartsBeforeOrAtQueryEnd && scheduleEndsAfterOrAtQueryStart) {
+			// This schedule does not overlap with the query window at all
+			continue
+		}
+
 		cronExpression, err := cronexpr.Parse(schedule.CronExpr)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to parse cron expression for schedule", "schedule_id", schedule.ScheduleID, "cron_expr", schedule.CronExpr, "error", err)
-			continue // Skip this schedule
+			s.logger.ErrorContext(ctx, "Failed to parse cron expression", "schedule_id", schedule.ScheduleID, "error", err)
+			continue 
 		}
 
-		// Determine the effective start and end for this schedule's occurrences
-		scheduleActualStart := actualFrom
-		if schedule.StartDate.Valid && schedule.StartDate.Time.After(scheduleActualStart) {
-			scheduleActualStart = schedule.StartDate.Time
+		// Determine the effective start and end for iterating occurrences for this schedule
+		// It must be within the query window AND within the schedule's own active dates.
+		iterationStart := actualFrom
+		if schedule.StartDate.Valid && schedule.StartDate.Time.After(iterationStart) {
+			iterationStart = schedule.StartDate.Time
 		}
 
-		scheduleActualEnd := actualTo
-		if schedule.EndDate.Valid && schedule.EndDate.Time.Before(scheduleActualEnd) {
-			scheduleActualEnd = schedule.EndDate.Time
+		iterationEnd := actualTo
+		if schedule.EndDate.Valid && schedule.EndDate.Time.Before(iterationEnd) {
+			iterationEnd = schedule.EndDate.Time
 		}
 
-		// Iterate through occurrences within the schedule's effective window
-		nextTime := scheduleActualStart
+		// If iteration window is invalid (e.g. start is after end), skip
+        if iterationStart.After(iterationEnd) {
+            continue
+        }
+
+		nextTime := iterationStart // Start generating from the beginning of the intersection window
+        // cronexpr.Next gives time strictly *after* nextTime. To include iterationStart if it's a valid cron time:
+        if cronexpr.MustParse(schedule.CronExpr).Next(iterationStart.Add(-time.Second)).Equal(iterationStart) {
+            // iterationStart is a valid cron time, process it first
+            if !iterationStart.After(iterationEnd) { // Check if it's within iterationEnd
+                shiftEndTime := iterationStart.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
+                potentialSlot := AvailableShiftSlot{
+                    ScheduleID:   schedule.ScheduleID, ScheduleName: schedule.Name, 
+                    StartTime: iterationStart, EndTime: shiftEndTime, 
+                    Timezone: schedule.Timezone.String, IsBooked: false,
+                }
+                allPotentialSlots = append(allPotentialSlots, potentialSlot)
+            }
+        }
+
 		for {
 			nextOccurrence := cronExpression.Next(nextTime)
-			if nextOccurrence.IsZero() || nextOccurrence.After(scheduleActualEnd) {
-				break // No more occurrences in the window for this schedule
+			if nextOccurrence.IsZero() || nextOccurrence.After(iterationEnd) {
+				break 
 			}
 			
-			// Ensure the occurrence is also within the overall query window [actualFrom, actualTo]
-			// This is important if scheduleActualStart/End were narrowed by schedule.StartDate/EndDate
-			if nextOccurrence.Before(actualFrom) || nextOccurrence.After(actualTo) {
-				nextTime = nextOccurrence // Continue searching from this occurrence
-				continue
-			}
-
 			shiftEndTime := nextOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
-			
 			potentialSlot := AvailableShiftSlot{
-				ScheduleID:   schedule.ScheduleID,
-				ScheduleName: schedule.Name,
-				StartTime:    nextOccurrence,
-				EndTime:      shiftEndTime,
-				Timezone:     schedule.Timezone.String,
-				IsBooked:     false, // Assume not booked until checked
+				ScheduleID:   schedule.ScheduleID, ScheduleName: schedule.Name, 
+				StartTime: nextOccurrence, EndTime:      shiftEndTime, 
+				Timezone: schedule.Timezone.String, IsBooked:     false,
 			}
 			allPotentialSlots = append(allPotentialSlots, potentialSlot)
-			nextTime = nextOccurrence // Next search starts after the found occurrence
+			nextTime = nextOccurrence 
 		}
 	}
 
@@ -138,24 +148,15 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				// Not booked, add to available list
 				availableSlots = append(availableSlots, slot)
 			} else {
-				s.logger.ErrorContext(ctx, "Error checking if slot is booked", "schedule_id", slot.ScheduleID, "start_time", slot.StartTime, "error", err)
-				// Potentially skip this slot or handle error more gracefully
+				s.logger.ErrorContext(ctx, "Error checking if slot is booked", "schedule_id", slot.ScheduleID, "error", err)
 			}
-		} else {
-			// Slot is booked (no error means a row was found)
-			// Do nothing, don't add to availableSlots
-		}
+		} 
 	}
-
-	// 3. Sort by start time
 	sort.Slice(availableSlots, func(i, j int) bool {
 		return availableSlots[i].StartTime.Before(availableSlots[j].StartTime)
 	})
-
-	// 4. Apply limit if specified
 	if limit != nil && len(availableSlots) > *limit {
 		availableSlots = availableSlots[:*limit]
 	}

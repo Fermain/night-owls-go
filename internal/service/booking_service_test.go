@@ -77,6 +77,7 @@ func (m *MockBookingQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.
 func (m *MockBookingQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) { panic("not implemented") }
 func (m *MockBookingQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockBookingQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) { panic("not implemented") }
 
 
 // Re-define newTestLogger and newTestConfig as they are not in a shared test utility package.

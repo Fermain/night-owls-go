@@ -26,4 +26,8 @@ WHERE
     (start_date IS NULL OR date(?) >= start_date) 
 AND 
     (end_date IS NULL OR date(?) <= end_date)
+ORDER BY name;
+
+-- name: ListAllSchedules :many
+SELECT * FROM schedules
 ORDER BY name; 

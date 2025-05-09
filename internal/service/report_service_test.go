@@ -49,6 +49,7 @@ func (m *MockReportQuerier) UpdateBookingAttendance(ctx context.Context, arg db.
 func (m *MockReportQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.UpdateOutboxItemStatusParams) (db.Outbox, error) { panic("not implemented") }
 func (m *MockReportQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) { panic("not implemented") }
+func (m *MockReportQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) { panic("not implemented") }
 
 
 func newReportTestLogger() *slog.Logger { 

@@ -47,6 +47,7 @@ func (m *MockOutboxQuerier) UpdateBookingAttendance(ctx context.Context, arg db.
 func (m *MockOutboxQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) {panic("not impl")}
+func (m *MockOutboxQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) {panic("not impl")}
 
 // MockMessageSender is a mock implementation of the MessageSender interface.
 type MockMessageSender struct {

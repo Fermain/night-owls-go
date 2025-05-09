@@ -22,6 +22,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	GetUserByPhone(ctx context.Context, phone string) (User, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
+	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)

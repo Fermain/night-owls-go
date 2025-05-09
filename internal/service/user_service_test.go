@@ -107,6 +107,10 @@ func (m *MockQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleP
 	args := m.Called(ctx, arg)
 	return args.Get(0).(db.Schedule), args.Error(1)
 }
+func (m *MockQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]db.Schedule), args.Error(1)
+}
 
 // Helper to create a test logger that discards output
 func newTestLogger() *slog.Logger {

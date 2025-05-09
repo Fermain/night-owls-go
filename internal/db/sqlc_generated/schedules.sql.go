@@ -124,3 +124,39 @@ func (q *Queries) ListActiveSchedules(ctx context.Context, arg ListActiveSchedul
 	}
 	return items, nil
 }
+
+const listAllSchedules = `-- name: ListAllSchedules :many
+SELECT schedule_id, name, cron_expr, start_date, end_date, duration_minutes, timezone FROM schedules
+ORDER BY name
+`
+
+func (q *Queries) ListAllSchedules(ctx context.Context) ([]Schedule, error) {
+	rows, err := q.db.QueryContext(ctx, listAllSchedules)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Schedule{}
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.Name,
+			&i.CronExpr,
+			&i.StartDate,
+			&i.EndDate,
+			&i.DurationMinutes,
+			&i.Timezone,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
