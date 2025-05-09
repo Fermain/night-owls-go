@@ -169,6 +169,7 @@ func main() {
 	router.Get("/schedules", scheduleAPIHandler.ListSchedulesHandler)             // Optional, as per guide
 	router.Get("/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	router.Get("/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
+	router.Post("/api/ping", api.PingHandler(logger)) // New Ping endpoint
 
 	// Protected routes (require auth)
 	router.Group(func(r chi.Router) {
