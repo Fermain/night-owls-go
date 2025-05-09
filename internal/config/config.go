@@ -52,7 +52,7 @@ func LoadConfig() (*Config, error) {
 
 		// PWA / WebPush defaults
 		VAPIDSubject: "mailto:admin@example.com", // Default VAPID subject
-		StaticDir:    "./frontend/dist",          // Default static file directory
+		StaticDir:    "app/build",          // Default static file directory - Hardcoded as per user request
 	}
 
 	if port := os.Getenv("SERVER_PORT"); port != "" {
