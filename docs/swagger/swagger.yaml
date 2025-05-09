@@ -126,7 +126,7 @@ info:
   contact:
     email: support@example.com
     name: API Support
-  description: '"Enter JWT Bearer token"'
+  description: API for managing community watch shifts, bookings, and reports
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT

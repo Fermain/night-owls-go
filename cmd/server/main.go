@@ -51,14 +51,6 @@ import (
 // @BasePath /
 // @schemes http
 
-// @securityDefinitions.HttpBearer BearerAuth
-// @type http
-// @scheme bearer
-// @bearerFormat JWT
-// @description "Enter JWT Bearer token"
-
-// @openapi 3.0.0
-
 // slogCronLogger is an adapter to use slog.Logger with cron.PrintfLogger.
 type slogCronLogger struct {
 	logger *slog.Logger

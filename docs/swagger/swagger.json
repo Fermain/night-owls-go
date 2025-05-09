@@ -4,7 +4,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "\"Enter JWT Bearer token\"",
+        "description": "API for managing community watch shifts, bookings, and reports",
         "title": "Community Watch Shift Scheduler API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
