@@ -5,9 +5,6 @@
   import { dev } from '$app/environment'; // SvelteKit environment module
 
   // For client-side only SPA as per SvelteKit SPA guide
-  export const ssr = false;
-  // export const prerender = true; // Prerendering might not be what we want for a fully dynamic SPA with client-side data fetching.
-                                  // Let's keep it simple for now and potentially revisit if specific prerendering needs arise.
 
   const queryClient = new QueryClient();
 
