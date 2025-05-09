@@ -624,7 +624,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{"http"},
 	Title:            "Community Watch Shift Scheduler API",
-	Description:      "API for managing community watch shifts, bookings, and reports",
+	Description:      "\"Enter JWT Bearer token\"",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -1,0 +1,715 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "contact": {
+      "email": "support@example.com",
+      "name": "API Support"
+    },
+    "description": "\"Enter JWT Bearer token\"",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "termsOfService": "http://swagger.io/terms/",
+    "title": "Community Watch Shift Scheduler API",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.RegisterResponse"
+                }
+              }
+            },
+            "description": "OTP sent successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid phone number or request format"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "description": "Registers a new user with phone number or starts login flow for existing user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api.RegisterRequest"
+              }
+            }
+          },
+          "description": "User registration details",
+          "required": true
+        },
+        "summary": "Register a new user or request OTP for existing user"
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.VerifyResponse"
+                }
+              }
+            },
+            "description": "Verified successfully, returns JWT token"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request format"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid OTP or verification failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "description": "Verifies the one-time password (OTP) and returns a JWT token on success",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api.VerifyRequest"
+              }
+            }
+          },
+          "description": "Verification details",
+          "required": true
+        },
+        "summary": "Verify OTP and get authentication token"
+      }
+    },
+    "/bookings": {
+      "post": {
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.BookingResponse"
+                }
+              }
+            },
+            "description": "Booking created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request format or data"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Schedule not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Slot already booked (conflict)"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "bookings"
+        ],
+        "description": "Books a shift slot for a user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api.CreateBookingRequest"
+              }
+            }
+          },
+          "description": "Booking details",
+          "required": true
+        },
+        "summary": "Create a new booking"
+      }
+    },
+    "/bookings/{id}/attendance": {
+      "patch": {
+        "parameters": [
+          {
+            "description": "Booking ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.BookingResponse"
+                }
+              }
+            },
+            "description": "Attendance marked successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request format"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - authentication required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden - not authorized to mark this booking"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Booking not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "bookings"
+        ],
+        "description": "Updates a booking to record whether the volunteer attended",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api.MarkAttendanceRequest"
+              }
+            }
+          },
+          "description": "Attendance status",
+          "required": true
+        },
+        "summary": "Mark attendance for a booking"
+      }
+    },
+    "/bookings/{id}/report": {
+      "post": {
+        "parameters": [
+          {
+            "description": "Booking ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ReportResponse"
+                }
+              }
+            },
+            "description": "Report created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request format or severity out of range"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - authentication required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden - not authorized to report on this booking"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Booking not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "reports"
+        ],
+        "description": "Submits an incident report for a specific booking",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api.CreateReportRequest"
+              }
+            }
+          },
+          "description": "Report details",
+          "required": true
+        },
+        "summary": "Create a report for a booking"
+      }
+    },
+    "/schedules": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/api.ScheduleResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of schedules"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "tags": [
+          "schedules"
+        ],
+        "description": "Returns a list of all defined schedules",
+        "summary": "List all schedules"
+      }
+    },
+    "/shifts/available": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Start date for shift window (RFC3339 format)",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "End date for shift window (RFC3339 format)",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum number of shifts to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/service.AvailableShiftSlot"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of available shift slots"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid query parameters"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "tags": [
+          "shifts"
+        ],
+        "description": "Returns a list of available shift slots based on schedule definitions",
+        "summary": "List available shift slots"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "api.BookingResponse": {
+        "properties": {
+          "attended": {
+            "type": "boolean"
+          },
+          "booking_id": {
+            "type": "integer"
+          },
+          "buddy_name": {
+            "type": "string"
+          },
+          "buddy_user_id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "schedule_id": {
+            "type": "integer"
+          },
+          "shift_end": {
+            "type": "string"
+          },
+          "shift_start": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "api.CreateBookingRequest": {
+        "properties": {
+          "buddy_name": {
+            "type": "string"
+          },
+          "buddy_phone": {
+            "type": "string"
+          },
+          "schedule_id": {
+            "type": "integer"
+          },
+          "start_time": {
+            "description": "Expected in RFC3339 format e.g. \"2025-05-10T18:00:00Z\"",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.CreateReportRequest": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "description": "0, 1, or 2",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "api.ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.MarkAttendanceRequest": {
+        "properties": {
+          "attended": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "api.RegisterRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.RegisterResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.ReportResponse": {
+        "properties": {
+          "booking_id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "report_id": {
+            "type": "integer"
+          },
+          "severity": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "api.ScheduleResponse": {
+        "properties": {
+          "cron_expr": {
+            "type": "string"
+          },
+          "duration_minutes": {
+            "type": "integer"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schedule_id": {
+            "type": "integer"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.VerifyRequest": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "api.VerifyResponse": {
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "service.AvailableShiftSlot": {
+        "properties": {
+          "end_time": {
+            "type": "string"
+          },
+          "is_booked": {
+            "description": "Should always be false when returned by GetUpcomingAvailableSlots",
+            "type": "boolean"
+          },
+          "schedule_id": {
+            "type": "integer"
+          },
+          "schedule_name": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}
