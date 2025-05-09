@@ -22,7 +22,7 @@ var (
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
 	querier    db.Querier // From sqlc
-	otpStore   *auth.InMemoryOTPStore
+	otpStore   auth.OTPStore
 	jwtSecret  string
 	otpLogPath string
 	logger     *slog.Logger
@@ -30,7 +30,7 @@ type UserService struct {
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(querier db.Querier, otpStore *auth.InMemoryOTPStore, cfg *config.Config, logger *slog.Logger) *UserService {
+func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Config, logger *slog.Logger) *UserService {
 	return &UserService{
 		querier:    querier,
 		otpStore:   otpStore,

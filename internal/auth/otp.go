@@ -13,6 +13,12 @@ const (
 	// otpValidityMinutes = 5 // Moved to config
 )
 
+// OTPStore defines the interface for OTP storage and validation
+type OTPStore interface {
+	StoreOTP(identifier string, otp string, validityDuration time.Duration)
+	ValidateOTP(identifier string, otpToValidate string) bool
+}
+
 // OTPStoreEntry holds the OTP and its expiry time.
 type OTPStoreEntry struct {
 	OTP       string
@@ -25,6 +31,9 @@ type InMemoryOTPStore struct {
 	store map[string]OTPStoreEntry
 	mu    sync.RWMutex
 }
+
+// Ensure InMemoryOTPStore implements OTPStore interface
+var _ OTPStore = (*InMemoryOTPStore)(nil)
 
 // NewInMemoryOTPStore now takes OTPValidityMinutes from outside (e.g. config)
 // However, the cleanup goroutine is internal. For simplicity, we might keep its ticker fixed

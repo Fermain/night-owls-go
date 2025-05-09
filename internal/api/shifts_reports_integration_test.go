@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,17 +100,13 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	rrInvalidReport := app.makeRequest(t, "POST", reportPath, bytes.NewBuffer(invalidReportPayloadBytes), userToken)
 	assert.Equal(t, http.StatusBadRequest, rrInvalidReport.Code, "Expected 400 for invalid severity: %s", rrInvalidReport.Body.String())
 
-	// TODO: Fix test for forbidden report by another user
-	// This part was failing with phone format validation in the auth handler
-	// Skipping for now as it's not essential for testing the API converters
-	/* 
 	// --- Test POST /bookings/{id}/report (For a booking not owned by user) ---
-	otherUserPhone := "+447700900006"
+	otherUserPhone := "+14155550999" // Using US format that passes validation
 	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String:"Another Reporter", Valid:true})
-    require.NoError(t, err, "Failed to register other user")
+	require.NoError(t, err, "Failed to register other user")
 
-    // Get a fresh look at outbox items for the other user
-    outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
+	// Get a fresh look at outbox items for the other user
+	outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
 	
 	// Find the OTP for the other user
@@ -123,8 +120,8 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 			break
 		}
 	}
-    require.NotEmpty(t, otherOtpValue, "OTP not found for other reporter %s", otherUserPhone)
-    
+	require.NotEmpty(t, otherOtpValue, "OTP not found for other reporter %s", otherUserPhone)
+	
 	// Verify the other user to get their token
 	verifyOtherPayload := api.VerifyRequest{Phone: otherUserPhone, Code: otherOtpValue}
 	verOtherPayloadBytes, _ := json.Marshal(verifyOtherPayload)
@@ -139,7 +136,6 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 
 	rrForbiddenReport := app.makeRequest(t, "POST", reportPath, bytes.NewBuffer(reportPayloadBytes), otherUserToken)
 	assert.Equal(t, http.StatusForbidden, rrForbiddenReport.Code, "Expected 403 when reporting on non-owned booking: %s", rrForbiddenReport.Body.String())
-	*/
 }
 
 func TestShiftsAvailable_FilteringAndLimits(t *testing.T) {
