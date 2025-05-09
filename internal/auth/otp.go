@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	otpLength        = 6
-	otpValidityMinutes = 5 // OTPs are valid for 5 minutes
+	otpLength = 6 // Keeping OTP length as a fixed const for now
+	// otpValidityMinutes = 5 // Moved to config
 )
 
 // OTPStoreEntry holds the OTP and its expiry time.
@@ -26,12 +26,15 @@ type InMemoryOTPStore struct {
 	mu    sync.RWMutex
 }
 
-// NewInMemoryOTPStore creates a new in-memory OTP store and starts a cleanup goroutine.
+// NewInMemoryOTPStore now takes OTPValidityMinutes from outside (e.g. config)
+// However, the cleanup goroutine is internal. For simplicity, we might keep its ticker fixed
+// or make InMemoryOTPStore take the duration as a parameter for StoreOTP's Expiry calculation.
+// Let's adjust StoreOTP to take validity duration.
 func NewInMemoryOTPStore() *InMemoryOTPStore {
 	s := &InMemoryOTPStore{
 		store: make(map[string]OTPStoreEntry),
 	}
-	go s.cleanupExpiredOTPs()
+	go s.cleanupExpiredOTPs() // Cleanup interval is still internal, every 1 minute
 	return s
 }
 
@@ -49,13 +52,13 @@ func GenerateOTP() (string, error) {
 	return string(otpChars), nil
 }
 
-// StoreOTP stores an OTP for a given identifier (e.g., phone number).
-func (s *InMemoryOTPStore) StoreOTP(identifier string, otp string) {
+// StoreOTP stores an OTP for a given identifier (e.g., phone number) with a specific validity duration.
+func (s *InMemoryOTPStore) StoreOTP(identifier string, otp string, validityDuration time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.store[identifier] = OTPStoreEntry{
 		OTP:       otp,
-		ExpiresAt: time.Now().Add(otpValidityMinutes * time.Minute),
+		ExpiresAt: time.Now().Add(validityDuration),
 	}
 }
 

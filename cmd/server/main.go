@@ -87,7 +87,7 @@ func main() {
 	scheduleService := service.NewScheduleService(querier, logger)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, logger)
+	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, logger, cfg)
 
 	// --- Setup Cron Jobs ---
 	cronLoggerAdapter := &slogCronLogger{logger: logger.With("component", "cron")}

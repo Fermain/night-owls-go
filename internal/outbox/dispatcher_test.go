@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/outbox"
 
@@ -57,18 +58,24 @@ func (m *MockMessageSender) Send(recipient, messageType, payload string) error {
 	return args.Error(0)
 }
 
-func newOutboxTestLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+// newOutboxTestDeps creates logger and a basic config for outbox tests.
+func newOutboxTestDeps() (*slog.Logger, *config.Config) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := &config.Config{ // Provide defaults relevant to outbox
+		OutboxBatchSize: 10, 
+		OutboxMaxRetries: 3,
+	}
+	return logger, cfg
 }
 
 func TestDispatcherService_ProcessPendingOutboxMessages_NoItems(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
+	testLogger, cfg := newOutboxTestDeps()
 
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, cfg)
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return([]db.Outbox{}, nil).Once()
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(cfg.OutboxBatchSize)).Return([]db.Outbox{}, nil).Once()
 
 	processed, errors := dispatcher.ProcessPendingOutboxMessages(context.Background())
 
@@ -81,14 +88,14 @@ func TestDispatcherService_ProcessPendingOutboxMessages_NoItems(t *testing.T) {
 func TestDispatcherService_ProcessPendingOutboxMessages_SendSuccess(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	testLogger, cfg := newOutboxTestDeps()
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, cfg)
 
 	item1 := db.Outbox{OutboxID: 1, Recipient: "r1", MessageType: "t1", Payload: sql.NullString{String: "p1", Valid: true}, Status: "pending"}
 	item2 := db.Outbox{OutboxID: 2, Recipient: "r2", MessageType: "t2", Payload: sql.NullString{String: "p2", Valid: true}, Status: "pending"}
 	pendingItems := []db.Outbox{item1, item2}
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return(pendingItems, nil).Once()
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(cfg.OutboxBatchSize)).Return(pendingItems, nil).Once()
 
 	// Expect Send to be called for each item
 	mockSender.On("Send", item1.Recipient, item1.MessageType, item1.Payload.String).Return(nil).Once()
@@ -113,13 +120,13 @@ func TestDispatcherService_ProcessPendingOutboxMessages_SendSuccess(t *testing.T
 func TestDispatcherService_ProcessPendingOutboxMessages_SendFailure_Retry(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	testLogger, cfg := newOutboxTestDeps()
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, cfg)
 
 	item1 := db.Outbox{OutboxID: 1, Recipient: "r1", MessageType: "t1", Payload: sql.NullString{String: "p1", Valid: true}, Status: "pending", RetryCount: sql.NullInt64{Int64: 0, Valid: true}}
 	pendingItems := []db.Outbox{item1}
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return(pendingItems, nil).Once()
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(cfg.OutboxBatchSize)).Return(pendingItems, nil).Once()
 
 	// Send fails for item1
 	mockSender.On("Send", item1.Recipient, item1.MessageType, item1.Payload.String).Return(errors.New("send failed")).Once()
@@ -140,20 +147,19 @@ func TestDispatcherService_ProcessPendingOutboxMessages_SendFailure_Retry(t *tes
 func TestDispatcherService_ProcessPendingOutboxMessages_SendFailure_MaxRetries(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	testLogger, cfg := newOutboxTestDeps()
+	// Use a specific config for this test to control max retries easily
+	customCfg := *cfg // copy base
+	customCfg.OutboxMaxRetries = 1 // Set max retries to 1 for this test
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, &customCfg)
 
-	item1 := db.Outbox{OutboxID: 1, Recipient: "r1", MessageType: "t1", Payload: sql.NullString{String: "p1", Valid: true}, Status: "pending", RetryCount: sql.NullInt64{Int64: 2, Valid: true}} // Already retried twice
+	item1 := db.Outbox{OutboxID: 1, Recipient: "r1", MessageType: "t1", Payload: sql.NullString{String: "p1", Valid: true}, Status: "pending", RetryCount: sql.NullInt64{Int64: int64(customCfg.OutboxMaxRetries -1) , Valid: true}} 
 	pendingItems := []db.Outbox{item1}
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return(pendingItems, nil).Once()
-
-	// Send fails again
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(customCfg.OutboxBatchSize)).Return(pendingItems, nil).Once()
 	mockSender.On("Send", item1.Recipient, item1.MessageType, item1.Payload.String).Return(errors.New("send failed again")).Once()
-
-	// Expect UpdateOutboxItemStatus to be called with status "permanently_failed"
 	mockQuerier.On("UpdateOutboxItemStatus", mock.Anything, mock.MatchedBy(func(params db.UpdateOutboxItemStatusParams) bool {
-		return params.OutboxID == item1.OutboxID && params.Status == "permanently_failed" && params.RetryCount.Int64 == 3
+		return params.OutboxID == item1.OutboxID && params.Status == "permanently_failed" && params.RetryCount.Int64 == int64(customCfg.OutboxMaxRetries)
 	})).Return(db.Outbox{}, nil).Once()
 
 	processed, errCount := dispatcher.ProcessPendingOutboxMessages(context.Background())
@@ -167,10 +173,10 @@ func TestDispatcherService_ProcessPendingOutboxMessages_SendFailure_MaxRetries(t
 func TestDispatcherService_ProcessPendingOutboxMessages_GetPendingError(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	testLogger, cfg := newOutboxTestDeps()
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, cfg)
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return([]db.Outbox{}, errors.New("db error")).Once()
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(cfg.OutboxBatchSize)).Return([]db.Outbox{}, errors.New("db error")).Once()
 
 	processed, errCount := dispatcher.ProcessPendingOutboxMessages(context.Background())
 
@@ -183,13 +189,13 @@ func TestDispatcherService_ProcessPendingOutboxMessages_GetPendingError(t *testi
 func TestDispatcherService_ProcessPendingOutboxMessages_UpdateStatusError(t *testing.T) {
 	mockQuerier := new(MockOutboxQuerier)
 	mockSender := new(MockMessageSender)
-	testLogger := newOutboxTestLogger()
-	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger)
+	testLogger, cfg := newOutboxTestDeps()
+	dispatcher := outbox.NewDispatcherService(mockQuerier, mockSender, testLogger, cfg)
 
 	item1 := db.Outbox{OutboxID: 1, Recipient: "r1", MessageType: "t1", Payload: sql.NullString{String: "p1", Valid: true}, Status: "pending"}
 	pendingItems := []db.Outbox{item1}
 
-	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(10)).Return(pendingItems, nil).Once()
+	mockQuerier.On("GetPendingOutboxItems", mock.Anything, int64(cfg.OutboxBatchSize)).Return(pendingItems, nil).Once()
 	mockSender.On("Send", item1.Recipient, item1.MessageType, item1.Payload.String).Return(nil).Once()
 	mockQuerier.On("UpdateOutboxItemStatus", mock.Anything, mock.AnythingOfType("db.UpdateOutboxItemStatusParams")).Return(db.Outbox{}, errors.New("update failed")).Once()
 

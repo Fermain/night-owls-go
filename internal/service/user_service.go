@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config"
@@ -25,6 +26,7 @@ type UserService struct {
 	jwtSecret  string
 	otpLogPath string
 	logger     *slog.Logger
+	cfg        *config.Config
 }
 
 // NewUserService creates a new UserService.
@@ -35,6 +37,7 @@ func NewUserService(querier db.Querier, otpStore *auth.InMemoryOTPStore, cfg *co
 		jwtSecret:  cfg.JWTSecret,
 		otpLogPath: cfg.OTPLogPath,
 		logger:     logger.With("service", "UserService"),
+		cfg:        cfg,
 	}
 }
 
@@ -67,8 +70,9 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 		return ErrInternalServer
 	}
 
-	s.otpStore.StoreOTP(phone, otp) // Store OTP in memory
-	s.logger.DebugContext(ctx, "OTP generated and stored for user (dev only, will be in outbox log)", "phone", phone) // More subtle log for dev
+	otpValidityDuration := time.Duration(s.cfg.OTPValidityMinutes) * time.Minute // Use from config
+	s.otpStore.StoreOTP(phone, otp, otpValidityDuration) 
+	s.logger.DebugContext(ctx, "OTP generated and stored for user", "phone", phone, "validity_minutes", s.cfg.OTPValidityMinutes)
 
 	// Queue OTP message to outbox (actual DB write)
 	// For now, we directly use the querier. Later, an outbox service might wrap this.
@@ -113,7 +117,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	// Generate JWT (e.g., valid for 24 hours)
 	// The expiration duration could also come from config.
-	tokenString, err := auth.GenerateJWT(user.UserID, user.Phone, s.jwtSecret, 24)
+	tokenString, err := auth.GenerateJWT(user.UserID, user.Phone, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT", "phone", phone, "user_id", user.UserID, "error", err)
 		return "", ErrInternalServer

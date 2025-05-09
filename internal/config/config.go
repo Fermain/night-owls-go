@@ -17,6 +17,12 @@ type Config struct {
 	OTPLogPath         string // Path for logging OTPs instead of sending them
 	LogLevel           string // e.g., "debug", "info", "warn", "error"
 	LogFormat          string // e.g., "json", "text"
+
+	JWTExpirationHours int
+	OTPValidityMinutes int
+	// OTPLength          int // Usually fixed by implementation, less often configured
+	OutboxBatchSize    int
+	OutboxMaxRetries   int
 }
 
 // LoadConfig loads configuration from environment variables
@@ -31,6 +37,12 @@ func LoadConfig() (*Config, error) {
 		OTPLogPath:         "./sms_outbox.log",
 		LogLevel:           "info", // Default log level
 		LogFormat:          "json", // Default log format
+
+		JWTExpirationHours: 24,    // Default 24 hours
+		OTPValidityMinutes: 5,     // Default 5 minutes
+		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
+		OutboxBatchSize:    10,    // Default 10 messages per batch
+		OutboxMaxRetries:   3,     // Default 3 retries
 	}
 
 	if port := os.Getenv("SERVER_PORT"); port != "" {
@@ -63,6 +75,29 @@ func LoadConfig() (*Config, error) {
 
 	if logFormat := os.Getenv("LOG_FORMAT"); logFormat != "" {
 		cfg.LogFormat = strings.ToLower(logFormat)
+	}
+
+	// Load new integer fields
+	if val := os.Getenv("JWT_EXPIRATION_HOURS"); val != "" {
+		if intVal, err := strconv.Atoi(val); err == nil && intVal > 0 {
+			cfg.JWTExpirationHours = intVal
+		}
+	}
+	if val := os.Getenv("OTP_VALIDITY_MINUTES"); val != "" {
+		if intVal, err := strconv.Atoi(val); err == nil && intVal > 0 {
+			cfg.OTPValidityMinutes = intVal
+		}
+	}
+	// if val := os.Getenv("OTP_LENGTH"); val != "" { ... cfg.OTPLength = intVal ... }
+	if val := os.Getenv("OUTBOX_BATCH_SIZE"); val != "" {
+		if intVal, err := strconv.Atoi(val); err == nil && intVal > 0 {
+			cfg.OutboxBatchSize = intVal
+		}
+	}
+	if val := os.Getenv("OUTBOX_MAX_RETRIES"); val != "" {
+		if intVal, err := strconv.Atoi(val); err == nil && intVal >= 0 { // Max retries can be 0
+			cfg.OutboxMaxRetries = intVal
+		}
 	}
 
 	return cfg, nil
