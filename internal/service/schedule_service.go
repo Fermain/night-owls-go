@@ -162,4 +162,14 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 	}
 
 	return availableSlots, nil
+}
+
+// Add the ListAllSchedules method to retrieve all schedules
+func (s *ScheduleService) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) {
+	schedules, err := s.querier.ListAllSchedules(ctx)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to list all schedules", "error", err)
+		return nil, ErrInternalServer
+	}
+	return schedules, nil
 } 

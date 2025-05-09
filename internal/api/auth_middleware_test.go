@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"testing"
 
+	"night-owls-go/internal/api"
 	"night-owls-go/internal/auth"
-	db "night-owls-go/internal/db/sqlc_generated"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,7 +85,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 
 	// Test 6: Test middleware properly adds user to context
 	// We'll check this by marking attendance on our own booking
-	var booking db.Booking
+	var booking api.BookingResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &booking)
 	require.NoError(t, err)
 	

@@ -103,13 +103,13 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	rr = app.makeRequest(t, "POST", "/bookings", bytes.NewBuffer(bookingPayloadBytes), userToken)
 
 	assert.Equal(t, http.StatusCreated, rr.Code, "Create booking failed: %s", rr.Body.String())
-	var createdBooking db.Booking
+	var createdBooking api.BookingResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &createdBooking)
 	require.NoError(t, err)
 	assert.Equal(t, summerSchedule.ScheduleID, createdBooking.ScheduleID)
 	assert.Equal(t, shiftStartTime, createdBooking.ShiftStart.UTC())
 	assert.Equal(t, authUserID, createdBooking.UserID)
-	assert.Equal(t, "Test Buddy", createdBooking.BuddyName.String)
+	assert.Equal(t, "Test Buddy", createdBooking.BuddyName)
 	assert.False(t, createdBooking.Attended)
 
 	// --- Test POST /bookings (Attempt to book same slot - Conflict) ---
@@ -123,7 +123,7 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	rr = app.makeRequest(t, "PATCH", attendancePath, bytes.NewBuffer(attendancePayloadBytes), userToken)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Mark attendance failed: %s", rr.Body.String())
-	var updatedBooking db.Booking
+	var updatedBooking api.BookingResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &updatedBooking)
 	require.NoError(t, err)
 	assert.True(t, updatedBooking.Attended)

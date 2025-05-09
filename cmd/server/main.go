@@ -1,3 +1,4 @@
+// Package main is the entry point for the Community Watch API server
 package main
 
 import (
@@ -28,7 +29,25 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/robfig/cron/v3"
+	httpSwagger "github.com/swaggo/http-swagger"
+	// Import the generated swagger docs when available
+	// _ "night-owls-go/docs"
 )
+
+// @title Community Watch Shift Scheduler API
+// @version 1.0
+// @description API for managing community watch shifts, bookings, and reports
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@example.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /
+// @schemes http
 
 // slogCronLogger is an adapter to use slog.Logger with cron.PrintfLogger.
 type slogCronLogger struct {
@@ -153,6 +172,11 @@ func main() {
 		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 		// r.Get("/reports", reportAPIHandler.ListReportsHandler) // Optional
 	})
+
+	// Swagger documentation
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"), // The URL pointing to API definition
+	))
 
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{

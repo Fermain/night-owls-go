@@ -9,7 +9,7 @@ import (
 	"night-owls-go/internal/service"
 )
 
-// ScheduleHandler handles schedule and shift availability related HTTP requests.
+// ScheduleHandler handles schedule-related HTTP requests.
 type ScheduleHandler struct {
 	scheduleService *service.ScheduleService
 	logger          *slog.Logger
@@ -24,75 +24,80 @@ func NewScheduleHandler(scheduleService *service.ScheduleService, logger *slog.L
 }
 
 // ListSchedulesHandler handles GET /schedules
-// It retrieves and returns all defined schedules (or active ones, current implementation fetches all via service).
+// @Summary List all schedules
+// @Description Returns a list of all defined schedules
+// @Tags schedules
+// @Produce json
+// @Success 200 {array} ScheduleResponse "List of schedules"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /schedules [get]
 func (h *ScheduleHandler) ListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
-	// For now, this directly calls a method that might be added to ScheduleService
-	// or directly uses the querier if simple enough. The plan was ListActiveSchedules from querier.
-	// Let's assume ScheduleService will have a method to list schedules (perhaps all for now for simplicity).
+	// Fetch all schedules from the database
+	schedules, err := h.scheduleService.ListAllSchedules(r.Context())
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve schedules", h.logger, "error", err.Error())
+		return
+	}
 
-	// This endpoint is optional in the guide and not fully detailed for ScheduleService.
-	// For now, let's return a placeholder or a direct query if that's easier.
-	// To align with the service layer pattern, we would ideally add a `ListAllSchedules` to `ScheduleService`.
-	// As a simplification for now, we'll acknowledge it's planned and might be empty or basic.
-	
-	// Placeholder response as the service method for this wasn't fully detailed in GetUpcomingAvailableSlots phase.
-	// A full implementation would fetch from s.scheduleService.GetAllSchedules(r.Context())
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Listing schedules - TBD or use GetUpcomingAvailableSlots"}, h.logger)
-	// Example of how it *could* look if service.ListAllSchedules existed and returned []db.Schedule:
-	// schedules, err := h.scheduleService.ListAllSchedules(r.Context())
-	// if err != nil {
-	// 	RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve schedules", h.logger, "error", err.Error())
-	// 	return
-	// }
-	// RespondWithJSON(w, http.StatusOK, schedules, h.logger)
+	// Convert to API response format
+	scheduleResponses := ToScheduleResponses(schedules)
+	RespondWithJSON(w, http.StatusOK, scheduleResponses, h.logger)
 }
 
 // ListAvailableShiftsHandler handles GET /shifts/available
+// @Summary List available shift slots
+// @Description Returns a list of available shift slots based on schedule definitions
+// @Tags shifts
+// @Produce json
+// @Param from query string false "Start date for shift window (RFC3339 format)"
+// @Param to query string false "End date for shift window (RFC3339 format)"
+// @Param limit query int false "Maximum number of shifts to return"
+// @Success 200 {array} service.AvailableShiftSlot "List of available shift slots"
+// @Failure 400 {object} ErrorResponse "Invalid query parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /shifts/available [get]
 func (h *ScheduleHandler) ListAvailableShiftsHandler(w http.ResponseWriter, r *http.Request) {
-	queryParams := r.URL.Query()
-
-	var fromTime, toTime *time.Time
+	// Parse optional query parameters for date range and limit
+	var fromTime *time.Time
+	var toTime *time.Time
 	var limit *int
 
-	if fromStr := queryParams.Get("from"); fromStr != "" {
-		t, err := time.Parse(time.RFC3339, fromStr) // Expect ISO 8601 / RFC3339 like "2024-05-10T00:00:00Z"
+	fromStr := r.URL.Query().Get("from")
+	if fromStr != "" {
+		parsedFromTime, err := time.Parse(time.RFC3339, fromStr)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Invalid 'from' date format. Use RFC3339.", h.logger, "value", fromStr, "error", err.Error())
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'from' date format, use RFC3339", h.logger)
 			return
 		}
-		fromTime = &t
+		fromTime = &parsedFromTime
 	}
 
-	if toStr := queryParams.Get("to"); toStr != "" {
-		t, err := time.Parse(time.RFC3339, toStr)
+	toStr := r.URL.Query().Get("to")
+	if toStr != "" {
+		parsedToTime, err := time.Parse(time.RFC3339, toStr)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Invalid 'to' date format. Use RFC3339.", h.logger, "value", toStr, "error", err.Error())
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'to' date format, use RFC3339", h.logger)
 			return
 		}
-		toTime = &t
+		toTime = &parsedToTime
 	}
 
-	if limitStr := queryParams.Get("limit"); limitStr != "" {
-		l, err := strconv.Atoi(limitStr)
-		if err != nil || l <= 0 {
-			RespondWithError(w, http.StatusBadRequest, "Invalid 'limit' value. Must be a positive integer.", h.logger, "value", limitStr, "error", err)
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil || parsedLimit <= 0 {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'limit' parameter, must be a positive integer", h.logger)
 			return
 		}
-		limit = &l
+		limit = &parsedLimit
 	}
 
-	availableSlots, err := h.scheduleService.GetUpcomingAvailableSlots(r.Context(), fromTime, toTime, limit)
+	// Get available shifts from the service
+	shifts, err := h.scheduleService.GetUpcomingAvailableSlots(r.Context(), fromTime, toTime, limit)
 	if err != nil {
-		// The service layer already logs specifics, so we send a generic server error.
-		// Specific mapping could be done if service returns typed errors (e.g., ErrInvalidInput)
-		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve available shifts", h.logger, "service_error", err.Error())
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve available shifts", h.logger)
 		return
 	}
 
-	if len(availableSlots) == 0 {
-		RespondWithJSON(w, http.StatusOK, []service.AvailableShiftSlot{}, h.logger) // Return empty array, not null
-		return
-	}
-
-	RespondWithJSON(w, http.StatusOK, availableSlots, h.logger)
+	RespondWithJSON(w, http.StatusOK, shifts, h.logger)
 } 

@@ -15,6 +15,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// ErrorResponse represents an error response in the API
+// Used for Swagger documentation
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 // BookingHandler handles booking-related HTTP requests.
 type BookingHandler struct {
 	bookingService *service.BookingService
@@ -38,6 +44,20 @@ type CreateBookingRequest struct {
 }
 
 // CreateBookingHandler handles POST /bookings
+// @Summary Create a new booking
+// @Description Books a shift slot for a user
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param request body CreateBookingRequest true "Booking details"
+// @Success 201 {object} BookingResponse "Booking created successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request format or data"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 404 {object} ErrorResponse "Schedule not found"
+// @Failure 409 {object} ErrorResponse "Slot already booked (conflict)"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bookings [post]
 func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	userIDVal := r.Context().Value(UserIDKey)
 	userID, ok := userIDVal.(int64)
@@ -88,7 +108,9 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, booking, h.logger)
+	// Convert to API response format
+	bookingResponse := ToBookingResponse(booking)
+	RespondWithJSON(w, http.StatusCreated, bookingResponse, h.logger)
 }
 
 // MarkAttendanceRequest is the expected JSON for PATCH /bookings/{id}/attendance
@@ -97,6 +119,21 @@ type MarkAttendanceRequest struct {
 }
 
 // MarkAttendanceHandler handles PATCH /bookings/{id}/attendance
+// @Summary Mark attendance for a booking
+// @Description Updates a booking to record whether the volunteer attended
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Param request body MarkAttendanceRequest true "Attendance status"
+// @Success 200 {object} BookingResponse "Attendance marked successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request format"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 403 {object} ErrorResponse "Forbidden - not authorized to mark this booking"
+// @Failure 404 {object} ErrorResponse "Booking not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bookings/{id}/attendance [patch]
 func (h *BookingHandler) MarkAttendanceHandler(w http.ResponseWriter, r *http.Request) {
 	userIDFromAuthVal := r.Context().Value(UserIDKey)
 	userIDFromAuth, ok := userIDFromAuthVal.(int64)
@@ -132,5 +169,7 @@ func (h *BookingHandler) MarkAttendanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, updatedBooking, h.logger)
+	// Convert to API response format
+	bookingResponse := ToBookingResponse(updatedBooking)
+	RespondWithJSON(w, http.StatusOK, bookingResponse, h.logger)
 } 
