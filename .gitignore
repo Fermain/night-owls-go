@@ -1,0 +1,29 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+*.out
+coverage.txt
+profile.out
+
+# Environment variables file
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.idea/
+.vscode/
+*.iml
+
+# Database file (if local)
+community_watch.db
+
+# Log files (if OTP or other logs are written to specific files)
+sms_outbox.log 
