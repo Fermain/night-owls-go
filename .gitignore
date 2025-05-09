@@ -27,3 +27,5 @@ community_watch.db
 
 # Log files (if OTP or other logs are written to specific files)
 sms_outbox.log 
+
+node_modules/
