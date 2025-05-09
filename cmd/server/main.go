@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,19 +44,20 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 }
 
 func main() {
-	logger := logging.NewLogger()
-	slog.SetDefault(logger)
-
 	err := godotenv.Load()
 	if err != nil {
-		slog.Info("No .env file found, using environment variables or defaults")
+		// Log this initial finding using standard log before slog is fully set up
+		log.Println("No .env file found, using environment variables or defaults")
 	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		slog.Error("Error loading configuration", "error", err)
-		os.Exit(1)
+		log.Fatalf("Critical: Error loading configuration: %v", err)
 	}
+
+	logger := logging.NewLogger(cfg) // Initialize logger with config
+	slog.SetDefault(logger)          // Set as global default
+
 	slog.Info("Configuration loaded successfully")
 
 	dbConn, err := sql.Open("sqlite3", cfg.DatabasePath)
@@ -70,7 +72,7 @@ func main() {
 	}
 	slog.Info("Successfully connected to the database", "path", cfg.DatabasePath)
 
-	runMigrations(dbConn, logger)
+	runMigrations(dbConn, cfg, logger)
 
 	// --- Initialize Dependencies & Services ---
 	querier := db.New(dbConn) // sqlc generated querier
@@ -198,7 +200,7 @@ func main() {
 	slog.Info("Server gracefully stopped.")
 }
 
-func runMigrations(dbConn *sql.DB, logger *slog.Logger) {
+func runMigrations(dbConn *sql.DB, cfg *config.Config, logger *slog.Logger) {
 	driver, err := sqlite3.WithInstance(dbConn, &sqlite3.Config{})
 	if err != nil {
 		logger.Error("Failed to create database driver instance for migrations", "error", err)

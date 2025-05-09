@@ -3,15 +3,42 @@ package logging
 import (
 	"log/slog"
 	"os"
+	"strings"
+
+	"night-owls-go/internal/config"
 )
 
-// NewLogger creates and returns a new slog.Logger instance.
-// It defaults to a JSON handler writing to os.Stdout.
-func NewLogger() *slog.Logger {
-	// TODO: Make log level configurable (e.g., from Config struct)
-	// TODO: Allow different handlers (e.g., text vs json) based on config
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug, // Default to Debug for now, can be changed
-	}))
+// NewLogger creates and returns a new slog.Logger instance based on config.
+func NewLogger(cfg *config.Config) *slog.Logger {
+	var level slog.Level
+	switch strings.ToLower(cfg.LogLevel) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo // Default to Info if invalid or empty
+	}
+
+	opts := &slog.HandlerOptions{
+		Level: level,
+		// AddSource: true, // Optionally add source file and line to logs
+	}
+
+	var handler slog.Handler
+	switch strings.ToLower(cfg.LogFormat) {
+	case "text":
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	case "json":
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	default:
+		handler = slog.NewJSONHandler(os.Stdout, opts) // Default to JSON
+	}
+
+	logger := slog.New(handler)
 	return logger
 } 

@@ -68,7 +68,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	}
 
 	s.otpStore.StoreOTP(phone, otp) // Store OTP in memory
-	s.logger.InfoContext(ctx, "Generated and stored OTP", "phone", phone, "otp", otp) // Log OTP for dev
+	s.logger.DebugContext(ctx, "OTP generated and stored for user (dev only, will be in outbox log)", "phone", phone) // More subtle log for dev
 
 	// Queue OTP message to outbox (actual DB write)
 	// For now, we directly use the querier. Later, an outbox service might wrap this.

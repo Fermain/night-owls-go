@@ -6,10 +6,15 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"night-owls-go/internal/service"
 )
+
+// Simple E.164-like regex: + followed by 7 to 15 digits.
+// This is a basic check; a proper library should be used for production validation.
+var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
@@ -45,11 +50,15 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if strings.TrimSpace(req.Phone) == "" {
+	trimmedPhone := strings.TrimSpace(req.Phone)
+	if trimmedPhone == "" {
 		RespondWithError(w, http.StatusBadRequest, "Phone number cannot be empty", h.logger)
 		return
 	}
-	// TODO: Add more robust phone number validation (e.g., regex, library)
+	if !phoneRegex.MatchString(trimmedPhone) {
+		RespondWithError(w, http.StatusBadRequest, "Invalid phone number format (e.g., +12223334444)", h.logger, "phone_provided", trimmedPhone)
+		return
+	}
 
 	var sqlName sql.NullString
 	if req.Name != "" {
@@ -57,12 +66,12 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		sqlName.Valid = true
 	}
 
-	err := h.userService.RegisterOrLoginUser(r.Context(), req.Phone, sqlName)
+	err := h.userService.RegisterOrLoginUser(r.Context(), trimmedPhone, sqlName)
 	if err != nil {
 		if errors.Is(err, service.ErrInternalServer) { // Example of mapping service errors
-			RespondWithError(w, http.StatusInternalServerError, "Failed to process registration", h.logger, "phone", req.Phone)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to process registration", h.logger, "phone", trimmedPhone)
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "phone", req.Phone, "service_error", err.Error())
+			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "phone", trimmedPhone, "service_error", err.Error())
 		}
 		return
 	}
@@ -90,19 +99,22 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if strings.TrimSpace(req.Phone) == "" || strings.TrimSpace(req.Code) == "" {
+	trimmedPhone := strings.TrimSpace(req.Phone)
+	trimmedCode := strings.TrimSpace(req.Code)
+
+	if trimmedPhone == "" || trimmedCode == "" {
 		RespondWithError(w, http.StatusBadRequest, "Phone number and code cannot be empty", h.logger)
 		return
 	}
 
-	token, err := h.userService.VerifyOTP(r.Context(), req.Phone, req.Code)
+	token, err := h.userService.VerifyOTP(r.Context(), trimmedPhone, trimmedCode)
 	if err != nil {
 		if errors.Is(err, service.ErrOTPValidationFailed) {
-			RespondWithError(w, http.StatusUnauthorized, "Invalid or expired OTP", h.logger, "phone", req.Phone)
+			RespondWithError(w, http.StatusUnauthorized, "Invalid or expired OTP", h.logger, "phone", trimmedPhone)
 		} else if errors.Is(err, service.ErrUserNotFound) {
-			RespondWithError(w, http.StatusNotFound, "User not found for this phone number", h.logger, "phone", req.Phone)
+			RespondWithError(w, http.StatusNotFound, "User not found for this phone number", h.logger, "phone", trimmedPhone)
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "Failed to verify OTP", h.logger, "phone", req.Phone, "service_error", err.Error())
+			RespondWithError(w, http.StatusInternalServerError, "Failed to verify OTP", h.logger, "phone", trimmedPhone, "service_error", err.Error())
 		}
 		return
 	}
