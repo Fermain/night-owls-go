@@ -73,7 +73,6 @@ func (s *InMemoryOTPStore) ValidateOTP(identifier string, otpToValidate string) 
 	}
 
 	if time.Now().After(entry.ExpiresAt) {
-		// OTP has expired, remove it proactively (though cleanup goroutine also handles this)
 		s.mu.Lock()
 		delete(s.store, identifier)
 		s.mu.Unlock()
@@ -82,9 +81,8 @@ func (s *InMemoryOTPStore) ValidateOTP(identifier string, otpToValidate string) 
 
 	valid := entry.OTP == otpToValidate
 	if valid {
-		// OTP is valid and used, remove it to prevent reuse
 		s.mu.Lock()
-		delete(s.store, identifier)
+		delete(s.store, identifier) 
 		s.mu.Unlock()
 	}
 	return valid

@@ -6,12 +6,13 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"night-owls-go/internal/service"
-
-	"github.com/nyaruka/phonenumbers"
 )
+
+var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
@@ -41,8 +42,8 @@ type RegisterResponse struct {
 // RegisterHandler handles requests to /auth/register.
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
+	if errJSON := json.NewDecoder(r.Body).Decode(&req); errJSON != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", errJSON.Error())
 		return
 	}
 	defer r.Body.Close()
@@ -53,21 +54,10 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate phone number using phonenumbers library
-	// For numbers with a leading "+", the defaultRegion is usually ignored by Parse.
-	// If we expect numbers without a country code, a defaultRegion (e.g., "ZA" for South Africa) would be crucial.
-	num, err := phonenumbers.Parse(trimmedPhone, "") // Using empty defaultRegion, relies on "+" for international
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid phone number format.", h.logger, "phone_provided", trimmedPhone, "parse_error", err.Error())
+	if !phoneRegex.MatchString(trimmedPhone) {
+		RespondWithError(w, http.StatusBadRequest, "Invalid phone number format (e.g., +12223334444).", h.logger, "phone_provided", trimmedPhone)
 		return
 	}
-	if !phonenumbers.IsValidNumber(num) {
-		RespondWithError(w, http.StatusBadRequest, "Phone number is not valid.", h.logger, "phone_provided", trimmedPhone)
-		return
-	}
-
-	// Optionally, format to E.164 for consistent storage, though not strictly enforced here yet
-	e164Phone := phonenumbers.Format(num, phonenumbers.E164)
 
 	var sqlName sql.NullString
 	if req.Name != "" {
@@ -75,13 +65,12 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		sqlName.Valid = true
 	}
 
-	// Use the E164 formatted phone number for registration
-	err = h.userService.RegisterOrLoginUser(r.Context(), e164Phone, sqlName)
+	err := h.userService.RegisterOrLoginUser(r.Context(), trimmedPhone, sqlName)
 	if err != nil {
 		if errors.Is(err, service.ErrInternalServer) { 
-			RespondWithError(w, http.StatusInternalServerError, "Failed to process registration", h.logger, "phone", e164Phone)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to process registration", h.logger, "phone", trimmedPhone)
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "phone", e164Phone, "service_error", err.Error())
+			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "phone", trimmedPhone, "service_error", err.Error())
 		}
 		return
 	}
@@ -103,8 +92,8 @@ type VerifyResponse struct {
 // VerifyHandler handles requests to /auth/verify.
 func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	var req VerifyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
+	if errJSON := json.NewDecoder(r.Body).Decode(&req); errJSON != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", errJSON.Error())
 		return
 	}
 	defer r.Body.Close()
@@ -117,24 +106,19 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// It might be good to parse/validate phone here too, or ensure it's stored in E164
-	// For now, assume phone from request is what user initially entered for register.
-	// If we decide to always use E164 internally, this might need adjustment.
-	numVerify, err := phonenumbers.Parse(trimmedPhone, "")
-	if err != nil || !phonenumbers.IsValidNumber(numVerify) {
+	if !phoneRegex.MatchString(trimmedPhone) {
 		RespondWithError(w, http.StatusBadRequest, "Invalid phone number format for verification.", h.logger, "phone_provided", trimmedPhone)
 		return
 	}
-	e164PhoneVerify := phonenumbers.Format(numVerify, phonenumbers.E164)
 
-	token, err := h.userService.VerifyOTP(r.Context(), e164PhoneVerify, trimmedCode)
+	token, err := h.userService.VerifyOTP(r.Context(), trimmedPhone, trimmedCode)
 	if err != nil {
 		if errors.Is(err, service.ErrOTPValidationFailed) {
-			RespondWithError(w, http.StatusUnauthorized, "Invalid or expired OTP", h.logger, "phone", e164PhoneVerify)
+			RespondWithError(w, http.StatusUnauthorized, "Invalid or expired OTP", h.logger, "phone", trimmedPhone)
 		} else if errors.Is(err, service.ErrUserNotFound) {
-			RespondWithError(w, http.StatusNotFound, "User not found for this phone number", h.logger, "phone", e164PhoneVerify)
+			RespondWithError(w, http.StatusNotFound, "User not found for this phone number", h.logger, "phone", trimmedPhone)
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "Failed to verify OTP", h.logger, "phone", e164PhoneVerify, "service_error", err.Error())
+			RespondWithError(w, http.StatusInternalServerError, "Failed to verify OTP", h.logger, "phone", trimmedPhone, "service_error", err.Error())
 		}
 		return
 	}

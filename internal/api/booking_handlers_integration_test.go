@@ -24,7 +24,7 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	defer app.DB.Close()
 
 	// --- User Registration and Login (to get a token) ---
-	userPhone := "+17778889990"
+	userPhone := "+14155550103"
 	userName := "Booking User"
 	registerPayload := api.RegisterRequest{Phone: userPhone, Name: userName}
 	regPayloadBytes, _ := json.Marshal(registerPayload)
@@ -131,7 +131,7 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 
 	// --- Test PATCH /bookings/{id}/attendance (by another user - Forbidden) ---
 	// Register and login another user
-	otherUserPhone := "+17778889991"
+	otherUserPhone := "+14155550104"
 	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Other User", Valid: true})
     require.NoError(t, err, "Failed to register other user")
 

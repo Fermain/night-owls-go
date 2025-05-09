@@ -75,8 +75,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	s.logger.DebugContext(ctx, "OTP generated and stored for user", "phone", phone, "validity_minutes", s.cfg.OTPValidityMinutes)
 
 	// Queue OTP message to outbox (actual DB write)
-	// For now, we directly use the querier. Later, an outbox service might wrap this.
-	outboxPayload := fmt.Sprintf(`{"otp": "%s"}`, otp) // Example JSON payload
+	outboxPayload := fmt.Sprintf(`{"otp": "%s"}`, otp)
 	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
 		MessageType: "OTP_VERIFICATION",
 		Recipient:   phone,

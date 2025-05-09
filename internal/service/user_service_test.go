@@ -113,12 +113,14 @@ func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// Helper to create a default test config
+// Helper to create a default test config - ensure OTPValidityMinutes is present
 func newTestConfig() *config.Config {
 	return &config.Config{
 		JWTSecret: "test-secret",
-		OTPLogPath: "/dev/null", // Or a temp file if we want to inspect
+		OTPLogPath: "/dev/null", 
 		DefaultShiftDuration: 2 * time.Hour,
+		OTPValidityMinutes: 5, // Added for tests
+        JWTExpirationHours: 24, // Added for tests that might use it
 	}
 }
 
@@ -178,15 +180,15 @@ func TestUserService_RegisterOrLoginUser_ExistingUser(t *testing.T) {
 
 func TestUserService_VerifyOTP_Success(t *testing.T) {
 	mockQuerier := new(MockQuerier)
-	otpStore := auth.NewInMemoryOTPStore() // Fresh store for each test
+	otpStore := auth.NewInMemoryOTPStore() 
 	cfg := newTestConfig()
 	testLogger := newTestLogger()
-
 	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
 
 	phone := "+1122334455"
-	otp, _ := auth.GenerateOTP() // Generate a real OTP for the test
-	otpStore.StoreOTP(phone, otp) // Manually store it
+	otp, _ := auth.GenerateOTP()
+	otpValidityDuration := time.Duration(cfg.OTPValidityMinutes) * time.Minute
+	otpStore.StoreOTP(phone, otp, otpValidityDuration) // Pass duration
 
 	expectedUser := db.User{UserID: 3, Phone: phone, Name: sql.NullString{String: "Verified User", Valid: true}}
 	mockQuerier.On("GetUserByPhone", mock.Anything, phone).Return(expectedUser, nil).Once()
@@ -196,8 +198,6 @@ func TestUserService_VerifyOTP_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 	mockQuerier.AssertExpectations(t)
-
-	// Validate the token content (optional, but good for thoroughness)
 	claims, err := auth.ValidateJWT(token, cfg.JWTSecret)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedUser.UserID, claims.UserID)
@@ -209,18 +209,18 @@ func TestUserService_VerifyOTP_InvalidOTP(t *testing.T) {
 	otpStore := auth.NewInMemoryOTPStore()
 	cfg := newTestConfig()
 	testLogger := newTestLogger()
-
 	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
 
 	phone := "+1555667788"
-	otpStore.StoreOTP(phone, "123456") // Store a known OTP
+	otpValidityDuration := time.Duration(cfg.OTPValidityMinutes) * time.Minute
+	otpStore.StoreOTP(phone, "123456", otpValidityDuration) // Pass duration
 
-	token, err := userService.VerifyOTP(context.Background(), phone, "654321") // Attempt with wrong OTP
+	token, err := userService.VerifyOTP(context.Background(), phone, "654321")
 
 	assert.Error(t, err)
 	assert.Equal(t, service.ErrOTPValidationFailed, err)
 	assert.Empty(t, token)
-	mockQuerier.AssertNotCalled(t, "GetUserByPhone", mock.Anything, mock.Anything) // Should not proceed to GetUserByPhone
+	mockQuerier.AssertNotCalled(t, "GetUserByPhone", mock.Anything, mock.Anything)
 }
 
 func TestUserService_VerifyOTP_OTPExpired(t *testing.T) {
@@ -238,12 +238,12 @@ func TestUserService_VerifyOTP_UserNotFoundAfterValidOTP(t *testing.T) {
 	otpStore := auth.NewInMemoryOTPStore()
 	cfg := newTestConfig()
 	testLogger := newTestLogger()
-
 	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
 
 	phone := "+1777888999"
 	otp, _ := auth.GenerateOTP()
-	otpStore.StoreOTP(phone, otp)
+	otpValidityDuration := time.Duration(cfg.OTPValidityMinutes) * time.Minute
+	otpStore.StoreOTP(phone, otp, otpValidityDuration) // Pass duration
 
 	mockQuerier.On("GetUserByPhone", mock.Anything, phone).Return(db.User{}, sql.ErrNoRows).Once()
 
@@ -295,21 +295,17 @@ func TestUserService_RegisterOrLoginUser_CreateUserError(t *testing.T) {
 func TestUserService_VerifyOTP_JWTGenerationError(t *testing.T) {
     t.Skip("Skipping test for JWT generation error: Current method of forcing error via empty secret is not reliably causing GenerateJWT to fail as expected. Needs review of JWT library behavior or GenerateJWT refactor for better testability.")
 
-    // To test JWT generation error, we'd need to make auth.GenerateJWT fallible in a controllable way.
-    // Currently, it only fails if token.SignedString fails, which is rare with valid inputs.
-    // One way would be to pass an invalid JWTSecret (e.g., empty string) that causes GenerateJWT to error.
-    // Let's try that by modifying the test config for this specific test.
 	mockQuerier := new(MockQuerier)
 	otpStore := auth.NewInMemoryOTPStore()
 	cfg := newTestConfig()
-    cfg.JWTSecret = "" // Force JWT signing to fail
+    cfg.JWTSecret = "" 
 	testLogger := newTestLogger()
-
 	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
 
 	phone := "+1122334455"
 	otp, _ := auth.GenerateOTP()
-	otpStore.StoreOTP(phone, otp)
+	otpValidityDuration := time.Duration(cfg.OTPValidityMinutes) * time.Minute
+	otpStore.StoreOTP(phone, otp, otpValidityDuration) // Pass duration
 
 	expectedUser := db.User{UserID: 3, Phone: phone}
 	mockQuerier.On("GetUserByPhone", mock.Anything, phone).Return(expectedUser, nil).Once()
@@ -318,17 +314,12 @@ func TestUserService_VerifyOTP_JWTGenerationError(t *testing.T) {
 
 	assert.Empty(t, token)
 	if assert.NotNil(t, err, "Expected an error when JWT secret is empty for signing, but got nil") {
-        // Check if the error is ErrInternalServer (which wraps the actual signing error)
-        // or if the error message contains typical JWT signing error messages for empty/invalid keys.
         isServiceError := errors.Is(err, service.ErrInternalServer)
-        // Underlying jwt library might produce errors like "key is of invalid type" or "key is too short"
-        // or our wrapper "failed to sign token"
         errMsg := err.Error()
         containsSigningErrorMsg := strings.Contains(errMsg, "failed to sign token") || 
                                    strings.Contains(errMsg, "key is of invalid type") || 
                                    strings.Contains(errMsg, "key is too short") ||
                                    strings.Contains(errMsg, "key must be specified")
-
 	    assert.True(t, isServiceError || containsSigningErrorMsg, 
             "Error should be ErrInternalServer or contain a JWT signing related message. Got: %v", err)
 	}

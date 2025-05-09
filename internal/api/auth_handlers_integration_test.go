@@ -28,6 +28,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/nyaruka/phonenumbers"
 	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock" // For MockMessageSender
@@ -71,9 +72,20 @@ func newTestApp(t *testing.T) *testApp {
 		JWTSecret:          "test-jwt-secret",
 		DefaultShiftDuration: 2 * time.Hour,
 		OTPLogPath:         os.DevNull, 
+		LogLevel:           "debug", // Ensure debug level for this run
+		LogFormat:          "text",  // Text format is easier for quick debug reading
+		// Ensure other new config fields have defaults if not set by tests
+		JWTExpirationHours: 24,
+		OTPValidityMinutes: 5,
+		OutboxBatchSize:    10,
+		OutboxMaxRetries:   3,
 	}
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	// logger := slog.New(slog.NewTextHandler(io.Discard, nil)) // Old discarded logger
+	// Use a logger that prints to stderr for debugging this test run
+	loggerOpts := &slog.HandlerOptions{Level: slog.LevelDebug}
+	logger := slog.New(slog.NewTextHandler(os.Stderr, loggerOpts)) 
+	slog.SetDefault(logger) // Also set as default to catch any slog usage from other packages
 
 	dbConn, err := sql.Open("sqlite", cfg.DatabasePath+"?cache=shared&_foreign_keys=on")
 	require.NoError(t, err, "Failed to open in-memory DB for app")
@@ -127,7 +139,7 @@ func newTestApp(t *testing.T) *testApp {
 	scheduleService := service.NewScheduleService(querier, logger)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxService := outbox.NewDispatcherService(querier, mockSender, logger)
+	outboxService := outbox.NewDispatcherService(querier, mockSender, logger, cfg)
 
 	cronScheduler := cron.New()
 
@@ -186,8 +198,8 @@ func TestAuthEndpoints_RegisterAndVerify_Success(t *testing.T) {
 	app := newTestApp(t)
 	defer app.DB.Close()
 
-	phone := "+1234567001"
-	name := "Integration User"
+	phone := "+442079460001" // Valid UK-style number
+	name := "Integration User UK"
 
 	registerPayload := api.RegisterRequest{Phone: phone, Name: name}
 	payloadBytes, _ := json.Marshal(registerPayload)
@@ -209,17 +221,24 @@ func TestAuthEndpoints_RegisterAndVerify_Success(t *testing.T) {
     require.NoError(t, err)
     require.NotEmpty(t, outboxItems, "Expected an OTP outbox message")
     
+    // We need to check against the E.164 version of the phone number
+    parsedNumForOutboxCheck, _ := phonenumbers.Parse(phone, "GB") // Same parsing as handler
+    e164PhoneForOutbox := phonenumbers.Format(parsedNumForOutboxCheck, phonenumbers.E164)
+
     var otpValue string
+    foundInOutbox := false
     for _, item := range outboxItems {
-        if item.Recipient == phone && item.MessageType == "OTP_VERIFICATION" {
+        if item.Recipient == e164PhoneForOutbox && item.MessageType == "OTP_VERIFICATION" {
             var otpPayload struct { OTP string `json:"otp"` }
             err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
             require.NoError(t, err)
             otpValue = otpPayload.OTP
+            foundInOutbox = true
             break
         }
     }
-    require.NotEmpty(t, otpValue, "Could not find OTP for user in outbox")
+    require.True(t, foundInOutbox, "Could not find OTP for user %s in outbox", e164PhoneForOutbox)
+    require.NotEmpty(t, otpValue, "OTP value is empty")
 
 	verifyPayload := api.VerifyRequest{Phone: phone, Code: otpValue}
 	payloadBytes, _ = json.Marshal(verifyPayload)
@@ -247,7 +266,7 @@ func TestAuthEndpoints_Register_InvalidPayload(t *testing.T) {
 func TestAuthEndpoints_Verify_InvalidOTP(t *testing.T) {
 	app := newTestApp(t)
 	defer app.DB.Close()
-	phone := "+1234567002"
+	phone := "+14155550102"
 	// Register first to store an OTP
 	err := app.UserService.RegisterOrLoginUser(context.Background(), phone, sql.NullString{String:"TestUser", Valid:true})
 	require.NoError(t, err) 

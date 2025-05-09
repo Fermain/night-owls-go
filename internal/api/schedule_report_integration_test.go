@@ -23,8 +23,8 @@ func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
 	defer app.DB.Close()
 
 	// --- User Registration and Login (to get a token for protected report endpoint) ---
-	userPhone := "+16554433220"
-	userName := "Report User"
+	userPhone := "+442079460005" // Valid UK-style number
+	userName := "Report User UK"
 	registerPayload := api.RegisterRequest{Phone: userPhone, Name: userName}
 	regPayloadBytes, _ := json.Marshal(registerPayload)
 	rr := app.makeRequest(t, "POST", "/auth/register", bytes.NewBuffer(regPayloadBytes), "")
@@ -97,7 +97,7 @@ func TestReportEndpoints(t *testing.T) { // Renamed to focus on reports
 	assert.Equal(t, http.StatusBadRequest, rrInvalidReport.Code, "Expected 400 for invalid severity: %s", rrInvalidReport.Body.String())
 
 	// --- Test POST /bookings/{id}/report (For a booking not owned by user) ---
-	otherUserPhone := "+16554433221"
+	otherUserPhone := "+447700900006"
 	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String:"Another Reporter", Valid:true})
     require.NoError(t, err)
 
