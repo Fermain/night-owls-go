@@ -11,7 +11,7 @@
     FlexRender,
   } from "$lib/components/ui/data-table";
   import * as Table from "$lib/components/ui/table";
-  import { Button } from "$lib/components/ui/button";
+  import { Button, buttonVariants } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import ChevronDown from "lucide-svelte/icons/chevron-down";
@@ -106,10 +106,8 @@
 
     <!-- Column Visibility Dropdown -->
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button variant="outline" class="ml-auto" builders={[builder]}>
+      <DropdownMenu.Trigger class={buttonVariants({ variant: "outline", class: "ml-auto" })}>
           Columns <ChevronDown class="ml-2 h-4 w-4" />
-        </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
         {#each table.getAllColumns().filter((col) => col.getCanHide()) as column (column.id)}
@@ -138,9 +136,9 @@
                 {#if !header.isPlaceholder}
                   {@const sortHandler = header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
                   {#if sortHandler}
-                    <Button variant="ghost" on:click={sortHandler}>
+                    <Button variant="ghost" onclick={sortHandler}>
                       <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
-                      {{ asc: ' ↑', desc: ' ↓' }[header.column.getIsSorted() as string] ?? ''}
+                      { ({ asc: ' ↑', desc: ' ↓' })[header.column.getIsSorted() as string] ?? '' }
                     </Button>
                   {:else}
                     <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
@@ -184,7 +182,7 @@
         <Button
             variant="outline"
             size="sm"
-            on:click={() => table.setPageIndex(0)}
+            onclick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
         >
             First
@@ -192,7 +190,7 @@
         <Button
             variant="outline"
             size="sm"
-            on:click={() => table.previousPage()}
+            onclick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
         >
             Previous
@@ -203,7 +201,7 @@
         <Button
             variant="outline"
             size="sm"
-            on:click={() => table.nextPage()}
+            onclick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
         >
             Next
@@ -211,7 +209,7 @@
         <Button
             variant="outline"
             size="sm"
-            on:click={() => table.setPageIndex(table.getPageCount() - 1)}
+            onclick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
         >
             Last
