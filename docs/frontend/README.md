@@ -75,12 +75,35 @@ This document outlines the frontend architecture, key libraries, and development
     *   Base Color: "neutral"
     *   Aliases: `$lib/components`, `$lib/utils`, `$lib/components/ui` (for added components).
 *   **Adding Components:**
+    *   Use the CLI from the `app/` directory:
     ```bash
-    npx shadcn-svelte@next add button
+    # Example for pnpm users:
+    pnpm dlx shadcn-svelte@next add button
     ```
+    *   Components are added to the path specified in `components.json` (e.g., `$lib/components/ui/`).
+*   **Importing Components:**
+    *   Components are typically imported directly from their directories after installation:
+    ```svelte
+    <script lang="ts">
+      import { Button } from "$lib/components/ui/button";
+      import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+    </script>
+    ```
+*   **Event Handling Note (Svelte 5 & `shadcn-svelte@next`):**
+    *   For some components like `Button`, there have been community reports and observed behavior where Svelte's standard `on:click={...}` directive might cause linter errors (e.g., `Argument of type '"click"' is not assignable to parameter of type 'never'`) or may not function as expected in a Svelte 5 context with `@next` versions of `shadcn-svelte`.
+    *   A successful workaround has been to use the standard HTML `onclick={...}` attribute instead:
+    ```svelte
+    <script lang="ts">
+      import { Button } from "$lib/components/ui/button";
+      function handleClick() { console.log("Clicked!"); }
+    </script>
+
+    <Button onclick={handleClick}>Click Me</Button> 
+    ```
+    *   While this resolves linter issues and ensures functionality, it's a point to monitor for future `shadcn-svelte` updates, as `on:click` is the more idiomatic Svelte approach.
 *   **Usage:** (Examples to be added after component integration)
 *   **Theming & Customization:** (Details on customizing the "new-york" style and using CSS variables/Tailwind utilities to be added).
-*   **Official Documentation:** [https://shadcn-svelte.com/docs](https://shadcn-svelte.com/docs) (Note: ensure to check `@next` specific docs if available, or infer from CLI/schema).
+*   **Official Documentation:** [https://www.shadcn-svelte.com/docs](https://www.shadcn-svelte.com/docs) (Note: ensure to check `@next` specific docs if available, or infer from CLI/schema. The `@next` version is specifically for Svelte 5).
 
 ## 4. Styling
 
