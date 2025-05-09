@@ -175,9 +175,13 @@ Remember to use Git effectively throughout the project: commit frequently after 
     - [x] Start HTTP server.
     - [x] Implement graceful shutdown for HTTP server and cron jobs.
 - [ ] **Testing**
-    - [ ] **Unit Tests (`_test.go` files):**
-        - [ ] Test critical service logic: schedule generation, booking validation (slot taken, invalid time), OTP verification, buddy resolution.
-        - [ ] Mock database interactions where appropriate or use helper functions to set up in-memory DB state.
+    - [x] **Unit Tests (`_test.go` files):**
+        - [x] Test critical service logic: OTP verification (`UserService`).
+        - [x] Test critical service logic: schedule generation (`ScheduleService` - GetUpcomingAvailableSlots).
+        - [x] Test critical service logic: booking validation (slot taken, invalid time), buddy resolution (`BookingService` - CreateBooking, MarkAttendance).
+        - [x] Test critical service logic: report creation (`ReportService` - CreateReport).
+        - [x] Test critical service logic: outbox processing (`OutboxDispatcher` - ProcessPendingOutboxMessages).
+        - [x] Mock database interactions where appropriate or use helper functions to set up in-memory DB state (Used testify/mock).
     - [ ] **Integration Tests (`_test.go` files, possibly in `internal/api`):**
         - [ ] Use `httptest` to test API endpoints.
         - [ ] Set up an in-memory SQLite database for each test or test suite, applying migrations.
@@ -189,12 +193,12 @@ Remember to use Git effectively throughout the project: commit frequently after 
             - [ ] Submitting reports.
             - [ ] Authentication enforcement (401/403).
     - [ ] Run tests with `go test ./...` and aim for good coverage.
-- [ ] **Documentation**
-    - [ ] Create/Update `README.md`:
-        - [ ] Project overview.
-        - [ ] Setup instructions (Go version, migrate CLI, env vars).
-        - [ ] How to run (dev server, tests).
-        - [ ] Basic API endpoint documentation (or link to Postman collection/Swagger spec if generated).
+- [x] **Documentation**
+    - [x] Create/Update `README.md`:
+        - [x] Project overview.
+        - [x] Setup instructions (Go version, migrate CLI, env vars).
+        - [x] How to run (dev server, tests).
+        - [x] Basic API endpoint documentation (or link to Postman collection/Swagger spec if generated).
 - [ ] **Final Review & Refinement**
     - [ ] Code review for clarity, consistency, error handling.
     - [ ] Check for hardcoded values that should be in config.
