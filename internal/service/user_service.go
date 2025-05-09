@@ -19,26 +19,36 @@ var (
 	ErrInternalServer    = errors.New("internal server error")
 )
 
+// JWTGenerator defines a function that generates a JWT token
+type JWTGenerator func(userID int64, phone string, secret string, expiryHours int) (string, error)
+
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
-	querier    db.Querier // From sqlc
-	otpStore   auth.OTPStore
-	jwtSecret  string
-	otpLogPath string
-	logger     *slog.Logger
-	cfg        *config.Config
+	querier      db.Querier // From sqlc
+	otpStore     auth.OTPStore
+	jwtSecret    string
+	otpLogPath   string
+	logger       *slog.Logger
+	cfg          *config.Config
+	jwtGenerator JWTGenerator // Function for JWT generation, allows mocking in tests
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Config, logger *slog.Logger) *UserService {
 	return &UserService{
-		querier:    querier,
-		otpStore:   otpStore,
-		jwtSecret:  cfg.JWTSecret,
-		otpLogPath: cfg.OTPLogPath,
-		logger:     logger.With("service", "UserService"),
-		cfg:        cfg,
+		querier:      querier,
+		otpStore:     otpStore,
+		jwtSecret:    cfg.JWTSecret,
+		otpLogPath:   cfg.OTPLogPath,
+		logger:       logger.With("service", "UserService"),
+		cfg:          cfg,
+		jwtGenerator: auth.GenerateJWT, // Use the real implementation by default
 	}
+}
+
+// SetJWTGenerator allows tests to inject a custom JWT generator
+func (s *UserService) SetJWTGenerator(generator JWTGenerator) {
+	s.jwtGenerator = generator
 }
 
 // RegisterOrLoginUser handles creating/finding a user, generating an OTP, storing it,
@@ -116,7 +126,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	// Generate JWT (e.g., valid for 24 hours)
 	// The expiration duration could also come from config.
-	tokenString, err := auth.GenerateJWT(user.UserID, user.Phone, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
+	tokenString, err := s.jwtGenerator(user.UserID, user.Phone, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT", "phone", phone, "user_id", user.UserID, "error", err)
 		return "", ErrInternalServer

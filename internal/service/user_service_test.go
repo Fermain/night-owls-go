@@ -375,8 +375,32 @@ func TestUserService_RegisterOrLoginUser_CreateUserError(t *testing.T) {
 }
 
 func TestUserService_VerifyOTP_JWTGenerationError(t *testing.T) {
-	// We'll use t.Skip for this test since we can't easily mock the package function
-	// In a real codebase, we'd refactor the service to use an interface for JWT generation
-	// that could be mocked, or adjust the package design to allow for testing
-	t.Skip("Skipping JWT generation error test as it's difficult to mock package functions")
+	mockQuerier := new(MockQuerier)
+	otpStore := auth.NewInMemoryOTPStore()
+	cfg := newTestConfig()
+	testLogger := newTestLogger()
+	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
+	
+	// Inject a custom JWT generator that always fails
+	userService.SetJWTGenerator(func(userID int64, phone string, secret string, expiryHours int) (string, error) {
+		return "", errors.New("forced JWT generation error")
+	})
+
+	phone := "+1122334455"
+	otp, _ := auth.GenerateOTP()
+	otpValidityDuration := time.Duration(cfg.OTPValidityMinutes) * time.Minute
+	otpStore.StoreOTP(phone, otp, otpValidityDuration)
+
+	// Mock the database to return a valid user
+	expectedUser := db.User{UserID: 3, Phone: phone}
+	mockQuerier.On("GetUserByPhone", mock.Anything, phone).Return(expectedUser, nil).Once()
+	
+	// Try to verify the OTP - our mocked JWT generator will fail
+	token, err := userService.VerifyOTP(context.Background(), phone, otp)
+
+	// Check that we got the expected error and empty token
+	assert.Empty(t, token, "Token should be empty when JWT generation fails")
+	assert.Error(t, err, "An error should be returned when JWT generation fails")
+	assert.Equal(t, service.ErrInternalServer, err, "Error should be ErrInternalServer when JWT generation fails")
+	mockQuerier.AssertExpectations(t)
 } 
