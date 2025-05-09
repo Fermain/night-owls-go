@@ -2,8 +2,10 @@
 INSERT INTO outbox (
     message_type,
     recipient,
-    payload
+    payload,
+    user_id
 ) VALUES (
+    ?,
     ?,
     ?,
     ?

@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -106,7 +108,13 @@ func main() {
 	scheduleService := service.NewScheduleService(querier, logger)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, logger, cfg)
+
+	// Instantiate PushSender service
+	pushSenderService := service.NewPushSender(querier, cfg, logger)
+
+	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, pushSenderService, logger, cfg)
+
+	pushAPIHandler := api.NewPushHandler(querier, cfg, logger)
 
 	// --- Setup Cron Jobs ---
 	cronLoggerAdapter := &slogCronLogger{logger: logger.With("component", "cron")}
@@ -160,6 +168,7 @@ func main() {
 	router.Post("/auth/verify", authAPIHandler.VerifyHandler)
 	router.Get("/schedules", scheduleAPIHandler.ListSchedulesHandler)             // Optional, as per guide
 	router.Get("/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	router.Get("/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 
 	// Protected routes (require auth)
 	router.Group(func(r chi.Router) {
@@ -171,12 +180,34 @@ func main() {
 
 		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 		// r.Get("/reports", reportAPIHandler.ListReportsHandler) // Optional
+
+		// Push notification routes (protected)
+		r.Post("/push/subscribe", pushAPIHandler.SubscribePush)
+		r.Delete("/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
 	})
 
 	// Swagger documentation
 	router.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"), // The URL pointing to API definition
 	))
+
+	// Static file serving for PWA
+	// After API routes are mounted
+	fs := http.FileServer(http.Dir(cfg.StaticDir))
+	// Serve static files (e.g. /static/js/app.js) by stripping /static prefix
+	// and serving from cfg.StaticDir (e.g. ./frontend/dist/js/app.js)
+	router.Handle("/static/*", http.StripPrefix("/static", fs))
+
+	// SPA fallback: for any route not matched by API or static file server,
+	// serve the index.html from the static directory.
+	// This allows client-side routing to handle deep links.
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(cfg.StaticDir, "index.html"))
+	})
+
+	// MIME tweak for webmanifest
+	// This ensures .webmanifest files are served with the correct Content-Type.
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{

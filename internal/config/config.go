@@ -23,6 +23,12 @@ type Config struct {
 	// OTPLength          int // Usually fixed by implementation, less often configured
 	OutboxBatchSize    int
 	OutboxMaxRetries   int
+
+	// PWA / WebPush specific
+	VAPIDPublic  string
+	VAPIDPrivate string
+	VAPIDSubject string
+	StaticDir    string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -43,6 +49,10 @@ func LoadConfig() (*Config, error) {
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
 		OutboxBatchSize:    10,    // Default 10 messages per batch
 		OutboxMaxRetries:   3,     // Default 3 retries
+
+		// PWA / WebPush defaults
+		VAPIDSubject: "mailto:admin@example.com", // Default VAPID subject
+		StaticDir:    "./frontend/dist",          // Default static file directory
 	}
 
 	if port := os.Getenv("SERVER_PORT"); port != "" {
@@ -98,6 +108,20 @@ func LoadConfig() (*Config, error) {
 		if intVal, err := strconv.Atoi(val); err == nil && intVal >= 0 { // Max retries can be 0
 			cfg.OutboxMaxRetries = intVal
 		}
+	}
+
+	// Load PWA / WebPush specific environment variables
+	if vapidPublic := os.Getenv("VAPID_PUBLIC"); vapidPublic != "" {
+		cfg.VAPIDPublic = vapidPublic
+	}
+	if vapidPrivate := os.Getenv("VAPID_PRIVATE"); vapidPrivate != "" {
+		cfg.VAPIDPrivate = vapidPrivate
+	}
+	if vapidSubject := os.Getenv("VAPID_SUBJECT"); vapidSubject != "" {
+		cfg.VAPIDSubject = vapidSubject
+	}
+	if staticDir := os.Getenv("STATIC_DIR"); staticDir != "" {
+		cfg.StaticDir = staticDir
 	}
 
 	return cfg, nil

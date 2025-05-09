@@ -30,6 +30,18 @@ type Outbox struct {
 	CreatedAt   sql.NullTime   `json:"created_at"`
 	SentAt      sql.NullTime   `json:"sent_at"`
 	RetryCount  sql.NullInt64  `json:"retry_count"`
+	UserID      sql.NullInt64  `json:"user_id"`
+}
+
+type PushSubscription struct {
+	ID        int64          `json:"id"`
+	UserID    int64          `json:"user_id"`
+	Endpoint  string         `json:"endpoint"`
+	P256dhKey string         `json:"p256dh_key"`
+	AuthKey   string         `json:"auth_key"`
+	UserAgent sql.NullString `json:"user_agent"`
+	Platform  sql.NullString `json:"platform"`
+	CreatedAt sql.NullTime   `json:"created_at"`
 }
 
 type Report struct {

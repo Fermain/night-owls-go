@@ -14,23 +14,31 @@ const createOutboxItem = `-- name: CreateOutboxItem :one
 INSERT INTO outbox (
     message_type,
     recipient,
-    payload
+    payload,
+    user_id
 ) VALUES (
+    ?,
     ?,
     ?,
     ?
 )
-RETURNING outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count
+RETURNING outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count, user_id
 `
 
 type CreateOutboxItemParams struct {
 	MessageType string         `json:"message_type"`
 	Recipient   string         `json:"recipient"`
 	Payload     sql.NullString `json:"payload"`
+	UserID      sql.NullInt64  `json:"user_id"`
 }
 
 func (q *Queries) CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error) {
-	row := q.db.QueryRowContext(ctx, createOutboxItem, arg.MessageType, arg.Recipient, arg.Payload)
+	row := q.db.QueryRowContext(ctx, createOutboxItem,
+		arg.MessageType,
+		arg.Recipient,
+		arg.Payload,
+		arg.UserID,
+	)
 	var i Outbox
 	err := row.Scan(
 		&i.OutboxID,
@@ -41,12 +49,13 @@ func (q *Queries) CreateOutboxItem(ctx context.Context, arg CreateOutboxItemPara
 		&i.CreatedAt,
 		&i.SentAt,
 		&i.RetryCount,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getPendingOutboxItems = `-- name: GetPendingOutboxItems :many
-SELECT outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count FROM outbox
+SELECT outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count, user_id FROM outbox
 WHERE status = 'pending'
 ORDER BY created_at ASC
 LIMIT ?
@@ -70,6 +79,7 @@ func (q *Queries) GetPendingOutboxItems(ctx context.Context, limit int64) ([]Out
 			&i.CreatedAt,
 			&i.SentAt,
 			&i.RetryCount,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -91,7 +101,7 @@ SET status = ?,
     sent_at = ?,
     retry_count = ?
 WHERE outbox_id = ?
-RETURNING outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count
+RETURNING outbox_id, message_type, recipient, payload, status, created_at, sent_at, retry_count, user_id
 `
 
 type UpdateOutboxItemStatusParams struct {
@@ -119,6 +129,7 @@ func (q *Queries) UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxIt
 		&i.CreatedAt,
 		&i.SentAt,
 		&i.RetryCount,
+		&i.UserID,
 	)
 	return i, err
 }

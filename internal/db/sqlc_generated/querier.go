@@ -14,11 +14,13 @@ type Querier interface {
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
+	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	GetUserByPhone(ctx context.Context, phone string) (User, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
@@ -28,6 +30,7 @@ type Querier interface {
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
 	// Limit to prevent processing too many at once
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
+	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 }
 
 var _ Querier = (*Queries)(nil)
