@@ -7,6 +7,8 @@ Key features include:
 - Recurring shifts defined by Cron expressions with seasonal validity.
 - Ephemeral shifts: shift instances are only created in the database upon booking.
 - Transactional outbox pattern for reliable (mocked) SMS/notification dispatch.
+- API documentation with Swagger/OpenAPI
+- Converter-based approach for transforming DB models to API responses
 
 ## Tech Stack
 
@@ -18,6 +20,7 @@ Key features include:
 - **slog** for structured logging
 - **robfig/cron** for background job scheduling (outbox dispatcher)
 - **golang-jwt/jwt** for JWT handling
+- **swaggo/swag** for Swagger/OpenAPI documentation
 
 ## Setup Instructions
 
@@ -33,6 +36,10 @@ Key features include:
 3.  **sqlc CLI:** Install the CLI tool for generating Go code from SQL.
     ```bash
     go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+    ```
+4.  **swag CLI:** Install the CLI tool for generating Swagger documentation.
+    ```bash
+    go install github.com/swaggo/swag/cmd/swag@latest
     ```
 
 ### Project Setup
@@ -94,6 +101,14 @@ If you modify any SQL queries in `internal/db/queries/` or change the schema (an
 sqlc generate
 ```
 
+### Swagger Documentation Generation
+
+To generate or update the Swagger documentation after making API changes:
+
+```bash
+swag init -g cmd/server/main.go -o ./docs/swagger
+```
+
 ## How to Run
 
 ### Development Server
@@ -107,11 +122,11 @@ go run ./cmd/server/main.go
 The server will start (by default on port 8080, as per config) and apply database migrations if needed.
 Output, including mock OTPs and other notifications, will be logged to the console (structured JSON) and potentially to `sms_outbox.log` (as per `OTP_LOG_PATH` config).
 
+Swagger API documentation will be available at: http://localhost:8080/swagger/index.html
+
 ### Running Tests
 
-(Test suite is currently under development)
-
-To run tests (once implemented):
+To run all tests:
 
 ```bash
 go test ./...
@@ -119,7 +134,7 @@ go test ./...
 
 ## API Endpoints
 
-(This section will be populated with details of available API endpoints, request/response formats, and authentication requirements.)
+The API is fully documented using Swagger/OpenAPI. When the server is running, you can access the interactive documentation at: http://localhost:8080/swagger/index.html
 
 ### Authentication
 
@@ -135,7 +150,7 @@ go test ./...
 ### Schedules & Shifts
 
 -   `GET /schedules`
-    -   (Optional) Lists defined shift schedules. (Currently placeholder)
+    -   Lists defined shift schedules.
 -   `GET /shifts/available`
     -   Lists upcoming available shift slots.
     -   Query Params: `from` (RFC3339), `to` (RFC3339), `limit` (int)
@@ -159,9 +174,29 @@ go test ./...
     -   Request: `{ "severity": 0-2, "message": "..." }`
     -   Response: `201 Created` with report details.
 
+## Project Architecture
+
+The project follows a clean architecture approach with the following layers:
+
+1. **API Layer (`internal/api/`)**: HTTP handlers, middleware, and request/response models
+2. **Service Layer (`internal/service/`)**: Business logic and orchestration
+3. **Data Layer (`internal/db/`)**: Database queries and models
+
+The project uses a converter-based approach for transforming database models to API responses, ensuring clean separation between internal data structures and external API contracts.
+
+## Future Enhancements
+
+For a comprehensive list of potential future enhancements to the project, see the [ENHANCEMENTS.md](docs/ENHANCEMENTS.md) document. This includes:
+
+- Security improvements (rate limiting, JWT enhancements)
+- Error handling and observability enhancements
+- Performance optimizations
+- Architecture improvements
+- Testing improvements
+
 ## Contributing
 
-(Details on how to contribute, coding standards, etc. - TBD)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Troubleshooting / Known Issues
 
