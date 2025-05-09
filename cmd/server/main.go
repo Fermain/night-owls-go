@@ -26,8 +26,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // Driver for reading migration files from disk
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3" // Blank import for DSN-based migration driver registration
+	_ "github.com/golang-migrate/migrate/v4/source/file"      // Driver for reading migration files from disk
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/robfig/cron/v3"
@@ -191,18 +191,40 @@ func main() {
 		httpSwagger.URL("/swagger/doc.json"), // The URL pointing to API definition
 	))
 
-	// Static file serving for PWA
-	// After API routes are mounted
-	fs := http.FileServer(http.Dir(cfg.StaticDir))
-	// Serve static files (e.g. /static/js/app.js) by stripping /static prefix
-	// and serving from cfg.StaticDir (e.g. ./frontend/dist/js/app.js)
-	router.Handle("/static/*", http.StripPrefix("/static", fs))
+	// --- Serve Static Assets & SPA ---
+	// Get the absolute path to the static directory (app/build)
+	staticPath, err := filepath.Abs(cfg.StaticDir)
+	if err != nil {
+		slog.Error("Failed to get absolute path for static directory", "path", cfg.StaticDir, "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Serving static files from", "path", staticPath)
 
-	// SPA fallback: for any route not matched by API or static file server,
-	// serve the index.html from the static directory.
-	// This allows client-side routing to handle deep links.
+	// The NotFound handler will now attempt to serve static files first.
+	// If a specific file is not found at the requested path, it serves index.html for SPA routing.
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(cfg.StaticDir, "index.html"))
+		// Construct the path to the potential file in the static directory.
+		// r.URL.Path is already relative to the server root.
+		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
+
+		// Check if the requested path corresponds to an existing file (and not a directory).
+		stat, err := os.Stat(requestedFilePath)
+		if err == nil && !stat.IsDir() {
+			// If the file exists, serve it.
+			http.ServeFile(w, r, requestedFilePath)
+			return
+		}
+
+		// If the file doesn't exist (or it's a directory), serve the main index.html
+		// This allows SPA client-side routing to take over.
+		indexPage := filepath.Join(staticPath, "index.html")
+		// Log if index.html itself is missing, which would be a critical build/config error.
+		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
+			slog.ErrorContext(r.Context(), "SPA index.html not found", "path", indexPage)
+			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPage)
 	})
 
 	// MIME tweak for webmanifest
@@ -256,32 +278,41 @@ func main() {
 }
 
 func runMigrations(dbConn *sql.DB, cfg *config.Config, logger *slog.Logger) {
-	driver, err := sqlite3.WithInstance(dbConn, &sqlite3.Config{})
-	if err != nil {
-		logger.Error("Failed to create database driver instance for migrations", "error", err)
-		os.Exit(1)
-	}
-	m, err := migrate.NewWithDatabaseInstance(
+	// For migrations, it's cleaner to let migrate manage its own DB connection
+	// based on the DSN, rather than sharing and potentially closing the main app's dbConn.
+	migrationDSN := "sqlite3://" + cfg.DatabasePath
+	logger.Info("Preparing to run migrations using DSN", "dsn", migrationDSN)
+
+	m, err := migrate.New(
 		"file://internal/db/migrations",
-		"sqlite3", driver)
+		migrationDSN)
 	if err != nil {
-		logger.Error("Failed to create migrate instance", "error", err)
+		logger.Error("Failed to create migrate instance with DSN", "dsn", migrationDSN, "error", err)
 		os.Exit(1)
 	}
+	// It's important to defer Close on the migrate instance created with New()
+	// to clean up its own database connection and source file handles.
+	defer func() {
+		if srcErr, dbErr := m.Close(); srcErr != nil || dbErr != nil {
+			if srcErr != nil {
+				logger.Warn("Error closing migration source after DSN-based migration", "error", srcErr)
+			}
+			if dbErr != nil {
+				logger.Warn("Error closing migration database connection after DSN-based migration", "error", dbErr)
+			}
+		} else {
+			logger.Info("Migration instance (DSN-based) closed successfully.")
+		}
+	}()
+
 	logger.Info("Running database migrations...")
 	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
-		logger.Error("Failed to apply migrations", "error", err)
+		logger.Error("Failed to apply migrations using DSN", "dsn", migrationDSN, "error", err)
 		os.Exit(1)
 	} else if err == migrate.ErrNoChange {
 		logger.Info("No new migrations to apply.")
 	} else {
 		logger.Info("Database migrations applied successfully.")
 	}
-	srcErr, dbErr := m.Close()
-	if srcErr != nil {
-		logger.Warn("Error closing migration source", "error", srcErr)
-	}
-	if dbErr != nil {
-		logger.Warn("Error closing migration database connection", "error", dbErr)
-	}
+	// The main dbConn (passed as an argument but no longer directly used here) remains untouched and managed by main().
 } 
