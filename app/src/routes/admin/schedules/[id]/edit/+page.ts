@@ -6,7 +6,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
 	try {
 		const response = await fetch(`/api/admin/schedules/${scheduleId}`);
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ message: 'Failed to load schedule data' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ message: 'Failed to load schedule data' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		const schedule = (await response.json()) as ScheduleData;
@@ -24,4 +26,4 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			error: error instanceof Error ? error.message : 'Unknown error loading schedule'
 		};
 	}
-}; 
+};

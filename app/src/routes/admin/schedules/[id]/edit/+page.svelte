@@ -24,4 +24,4 @@
 			<a href="/admin/schedules" class="text-blue-600 hover:underline">Return to schedules list</a>
 		</p>
 	</div>
-{/if} 
+{/if}

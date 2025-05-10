@@ -7,8 +7,8 @@ const config = {
 	preprocess: [
 		vitePreprocess(),
 		sveltePreprocess({
-			postcss: true,
-		}),
+			postcss: true
+		})
 	],
 	kit: {
 		adapter: adapter({

@@ -20,7 +20,7 @@ test.describe('Admin Schedule Editing', () => {
 
 			await page.locator('input#name').fill(scheduleListName);
 			await page.locator('input#cron_expr').fill(scheduleCronExpr);
-			
+
 			await page.getByRole('button', { name: 'Create Schedule' }).click();
 			await expect(page).toHaveURL(/.*\/admin\/schedules/); // Should redirect to list
 			await expect(page.locator(`tr:has-text("${scheduleListName}")`)).toBeVisible();
@@ -29,7 +29,7 @@ test.describe('Admin Schedule Editing', () => {
 
 	test('should allow editing an existing schedule name and not duplicate it', async ({ page }) => {
 		await page.goto('/admin/schedules');
-		
+
 		// Get the total number of schedule rows before editing
 		const initialScheduleRows = page.locator('table tbody tr');
 		const initialRowCount = await initialScheduleRows.count();
@@ -46,7 +46,7 @@ test.describe('Admin Schedule Editing', () => {
 		// Verify navigation to the edit page
 		// URL should contain /edit and the schedule ID (which we don't know explicitly here, so regex)
 		await expect(page).toHaveURL(/.*\/admin\/schedules\/\d+\/edit/);
-		
+
 		// The name input should be pre-filled with the current name
 		const nameInput = page.locator('input#name');
 		await expect(nameInput).toHaveValue(scheduleListName);
@@ -67,7 +67,7 @@ test.describe('Admin Schedule Editing', () => {
 
 		// Verify the schedule with the old name is NOT visible (unless it was a partial edit of a different schedule)
 		await expect(page.locator(`tr:has-text("${scheduleListName}")`)).not.toBeVisible();
-		
+
 		// Verify the total number of schedules has not increased
 		const finalScheduleRows = page.locator('table tbody tr');
 		const finalRowCount = await finalScheduleRows.count();
@@ -76,6 +76,6 @@ test.describe('Admin Schedule Editing', () => {
 
 	// Clean up: delete the schedule after tests if needed (optional)
 	// test.afterAll(async ({ page }) => {
-		// This would require a delete button and functionality
+	// This would require a delete button and functionality
 	// });
-}); 
+});

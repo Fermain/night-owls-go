@@ -75,7 +75,9 @@
 	$: validateAndHumanizeCron(formData.cron_expr);
 
 	// Helper to extract string value from SQLNullString/SQLNullTime like objects or direct strings
-	function getStringValue(value: { String: string; Valid: boolean } | string | null | undefined): string | null {
+	function getStringValue(
+		value: { String: string; Valid: boolean } | string | null | undefined
+	): string | null {
 		if (value && typeof value === 'object' && 'Valid' in value && value.Valid) {
 			// For date fields from backend, sometimes they come as YYYY-MM-DDTHH:MM:SSZ
 			// We only need the YYYY-MM-DD part for the input type="date"
@@ -91,7 +93,8 @@
 	}
 
 	onMount(() => {
-		if (schedule?.schedule_id !== undefined && schedule) { // Check schedule_id for edit mode determination
+		if (schedule?.schedule_id !== undefined && schedule) {
+			// Check schedule_id for edit mode determination
 			formData = {
 				name: schedule.name,
 				cron_expr: schedule.cron_expr,
@@ -106,15 +109,18 @@
 	const queryClient = useQueryClient();
 
 	const mutation = createMutation<
-		Response,       // Response type from fetch
-		Error,          // Error type
+		Response, // Response type from fetch
+		Error, // Error type
 		MutationVariables // Variables type updated here
 	>({
-		mutationFn: async (vars) => { // vars is now MutationVariables
+		mutationFn: async (vars) => {
+			// vars is now MutationVariables
 			const { payload, scheduleId: currentScheduleIdToUse } = vars;
 			const currentIsEditMode = currentScheduleIdToUse !== undefined;
 
-			const url = currentIsEditMode ? `/api/admin/schedules/${currentScheduleIdToUse}` : '/api/admin/schedules';
+			const url = currentIsEditMode
+				? `/api/admin/schedules/${currentScheduleIdToUse}`
+				: '/api/admin/schedules';
 			const method = currentIsEditMode ? 'PUT' : 'POST';
 
 			// --- BEGIN DEBUG LOGGING ---
@@ -142,7 +148,8 @@
 			}
 			return response;
 		},
-		onSuccess: async (_data, vars) => { // vars is MutationVariables here too
+		onSuccess: async (_data, vars) => {
+			// vars is MutationVariables here too
 			const { scheduleId: mutatedScheduleId } = vars;
 			const currentIsEditMode = mutatedScheduleId !== undefined;
 			toast.success(`Schedule ${currentIsEditMode ? 'updated' : 'created'} successfully!`);
@@ -182,7 +189,9 @@
 </svelte:head>
 
 <div class="container mx-auto p-4">
-	<h1 class="text-2xl font-bold mb-6">{schedule?.schedule_id !== undefined ? 'Edit' : 'Create New'} Schedule</h1>
+	<h1 class="text-2xl font-bold mb-6">
+		{schedule?.schedule_id !== undefined ? 'Edit' : 'Create New'} Schedule
+	</h1>
 
 	<form on:submit|preventDefault={handleSubmit} class="space-y-6 max-w-lg">
 		<div>
@@ -203,9 +212,7 @@
 					</div>
 				{/if}
 			{:else}
-				<p class="text-sm text-muted-foreground mt-1">
-					E.g., "0 0 * * *" for daily at midnight.
-				</p>
+				<p class="text-sm text-muted-foreground mt-1">E.g., "0 0 * * *" for daily at midnight.</p>
 			{/if}
 		</div>
 
@@ -252,4 +259,4 @@
 			<p class="text-sm text-destructive">Error: {$mutation.error?.message}</p>
 		{/if}
 	</form>
-</div> 
+</div>
