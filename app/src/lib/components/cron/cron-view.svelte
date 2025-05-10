@@ -160,4 +160,3 @@
 		<p>No CRON expression provided.</p>
 	{/if}
 </div>
-

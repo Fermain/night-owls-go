@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { toast } from 'svelte-sonner';
 	import { formatDistanceToNow } from 'date-fns';
+	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
 
 	// --- Types ---
 	type AdminShiftSlot = {
@@ -86,11 +85,11 @@
 
 			// Example: Saturday 00:00 - 04:59 is "Friday Night"
 			if (day === 6 && hour >= 0 && hour < 5) {
-				return "Friday Night";
+				return 'Friday Night';
 			}
 			// Example: Sunday 00:00 - 04:59 is "Saturday Night"
 			if (day === 0 && hour >= 0 && hour < 5) {
-				return "Saturday Night";
+				return 'Saturday Night';
 			}
 			// Add more rules as needed for other AKA descriptions
 
@@ -101,10 +100,12 @@
 	}
 
 	// --- State ---
-	let fromDateStr = $state(formatDateForInput(new Date()));
-	const toDateInitial = new Date();
-	toDateInitial.setDate(toDateInitial.getDate() + 7); // Default to 7 days from today for admin view
-	let toDateStr = $state(formatDateForInput(toDateInitial));
+	const initialFromDate = new Date();
+	const initialToDate = new Date();
+	initialToDate.setDate(initialToDate.getDate() + 7);
+
+	let fromDateStr = $state(formatDateForInput(initialFromDate));
+	let toDateStr = $state(formatDateForInput(initialToDate));
 
 	// --- Data Fetching ---
 	const fetchAdminShiftSlots = async (
@@ -114,7 +115,7 @@
 		const params = new URLSearchParams();
 		if (currentFromDate) {
 			const fromDT = new Date(currentFromDate);
-			fromDT.setHours(0,0,0,0);
+			fromDT.setHours(0, 0, 0, 0);
 			params.append('from', fromDT.toISOString());
 		}
 		if (currentToDate) {
@@ -130,7 +131,9 @@
 			try {
 				const errorData = await response.json();
 				errorMsg = errorData.message || errorData.error || errorMsg;
-			} catch (e) {/* Failed to parse JSON, use default error*/}
+			} catch (e) {
+				/* Failed to parse JSON, use default error*/
+			}
 			toast.error(`Failed to fetch shift slots: ${errorMsg}`);
 			throw new Error(errorMsg);
 		}
@@ -138,15 +141,21 @@
 	};
 
 	const queryEnabled = $derived(!!fromDateStr && !!toDateStr);
-
-	const slotsQuery = createQuery<AdminShiftSlot[], Error, AdminShiftSlot[], [string, string, string]>(
-		{
-			queryKey: ['adminShiftSlots', fromDateStr, toDateStr],
-			queryFn: () => fetchAdminShiftSlots(fromDateStr, toDateStr),
-			enabled: queryEnabled
-		}
-	);
-
+	const slotsQuery = createQuery<
+		AdminShiftSlot[],
+		Error,
+		AdminShiftSlot[],
+		// Explicit TQueryKey, matching the structure of the direct array + runes
+		// This could be [string, string | null, string | null] or more broadly ReadonlyArray<string | null>
+		// For simplicity and to match direct usage, let's use a more concrete tuple if possible,
+		// or fallback to ReadonlyArray<unknown> or ReadonlyArray<string | null> if inference is tricky.
+		// Given that fromDateStr and toDateStr are strings, [string, string, string] is suitable here.
+		[string, string, string]
+	>({
+		queryKey: ['adminShiftSlots', fromDateStr, toDateStr],
+		queryFn: () => fetchAdminShiftSlots(fromDateStr, toDateStr),
+		enabled: queryEnabled
+	});
 </script>
 
 <svelte:head>
@@ -156,14 +165,15 @@
 <div class="container mx-auto p-4 space-y-6">
 	<h1 class="text-2xl font-bold mb-4">Shift Slots Dashboard</h1>
 	<div class="flex flex-col sm:flex-row gap-4 items-end p-4 border rounded-lg bg-card">
-		<div class="flex-1 min-w-[200px]">
-			<Label for="fromDate">From Date</Label>
-			<Input id="fromDate" type="date" bind:value={fromDateStr} class="w-full"/>
-		</div>
-		<div class="flex-1 min-w-[200px]">
-			<Label for="toDate">To Date</Label>
-			<Input id="toDate" type="date" bind:value={toDateStr} class="w-full"/>
-		</div>
+		<DateRangePicker
+			initialStartDate={fromDateStr}
+			initialEndDate={toDateStr}
+			on:change={(e: CustomEvent<{ start: string | null; end: string | null }>) => {
+				if (e.detail.start) fromDateStr = e.detail.start;
+				if (e.detail.end) toDateStr = e.detail.end;
+			}}
+			placeholderText="Select date range for slots"
+		/>
 	</div>
 
 	{#if $slotsQuery.isLoading}
@@ -217,7 +227,8 @@
 										<span class="text-orange-600 font-semibold">Taken</span>
 										{#if slot.user_name || slot.user_phone}
 											<span class="text-xs text-muted-foreground ml-1">
-												by: {slot.user_name ?? 'N/A'}{#if slot.user_phone} ({slot.user_phone}){/if}
+												by: {slot.user_name ?? 'N/A'}{#if slot.user_phone}
+													({slot.user_phone}){/if}
 											</span>
 										{/if}
 									{:else}
@@ -226,7 +237,7 @@
 								</Table.Cell>
 								<Table.Cell class="text-xs text-muted-foreground">
 									{getAkaDescription(slot.start_time) || '-'}
-								</Table.Cell> 
+								</Table.Cell>
 							</Table.Row>
 						{/each}
 					</Table.Body>
@@ -236,4 +247,4 @@
 	{:else}
 		<p>Select dates to view shift slots.</p>
 	{/if}
-</div> 
+</div>

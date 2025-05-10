@@ -15,12 +15,19 @@
 		const response = await fetch('/api/admin/schedules');
 		if (!response.ok) {
 			const errorText = await response.text();
-			throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+			throw new Error(
+				`API request failed: ${response.status} ${response.statusText} - ${errorText}`
+			);
 		}
 		return response.json();
 	};
 
-	const adminSchedulesQuery = createQuery<AdminSchedulesAPIResponse, Error, AdminSchedulesAPIResponse, string[]>({
+	const adminSchedulesQuery = createQuery<
+		AdminSchedulesAPIResponse,
+		Error,
+		AdminSchedulesAPIResponse,
+		string[]
+	>({
 		queryKey: ['adminSchedules'],
 		queryFn: fetchAdminSchedules
 	});
@@ -35,17 +42,25 @@
 		const response = await fetch(`/api/admin/schedules/${id}`);
 		if (!response.ok) {
 			const errorText = await response.text();
-			throw new Error(`API request failed for schedule ${id}: ${response.status} ${response.statusText} - ${errorText}`);
+			throw new Error(
+				`API request failed for schedule ${id}: ${response.status} ${response.statusText} - ${errorText}`
+			);
 		}
 		return response.json();
 	};
 
-	const scheduleDetailQuery = $derived(createQuery<ScheduleDetailAPIResponse, Error, ScheduleDetailAPIResponse, [string, string | null]>({
-		queryKey: ['adminScheduleDetail', selectedScheduleId], // Reactive query key
-		queryFn: () => fetchScheduleDetail(selectedScheduleId!), // Assert non-null as it's enabled only when id is present
-		enabled: !!selectedScheduleId // Only run query if selectedScheduleId has a value
-	}));
-
+	const scheduleDetailQuery = $derived(
+		createQuery<
+			ScheduleDetailAPIResponse,
+			Error,
+			ScheduleDetailAPIResponse,
+			[string, string | null]
+		>({
+			queryKey: ['adminScheduleDetail', selectedScheduleId], // Reactive query key
+			queryFn: () => fetchScheduleDetail(selectedScheduleId!), // Assert non-null as it's enabled only when id is present
+			enabled: !!selectedScheduleId // Only run query if selectedScheduleId has a value
+		})
+	);
 </script>
 
 <svelte:head>
@@ -58,7 +73,9 @@
 		{#if $scheduleDetailQuery.isLoading}
 			<p>Loading schedule details for ID: {selectedScheduleId}...</p>
 		{:else if $scheduleDetailQuery.isError}
-			<p class="text-red-500">Error fetching schedule details: {$scheduleDetailQuery.error?.message}</p>
+			<p class="text-red-500">
+				Error fetching schedule details: {$scheduleDetailQuery.error?.message}
+			</p>
 		{:else if $scheduleDetailQuery.data}
 			<!-- Use ScheduleForm to display the selected schedule -->
 			<ScheduleForm schedule={$scheduleDetailQuery.data} />
@@ -85,7 +102,9 @@
 		{:else if $adminSchedulesQuery.data}
 			{#if tableData.length === 0}
 				<p>
-					No schedules found. <a href="/admin/schedules/new" class="text-blue-600 hover:underline">Create the first one!</a>
+					No schedules found. <a href="/admin/schedules/new" class="text-blue-600 hover:underline"
+						>Create the first one!</a
+					>
 				</p>
 			{:else}
 				<SchedulesDataTable columns={tableColumns} data={tableData} />

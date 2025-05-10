@@ -33,10 +33,12 @@
 	};
 
 	// Using $derived for the query, simplifying by removing explicit generic types for createQuery
-	const schedulesListQuery = $derived(createQuery({
-		queryKey: ['adminSchedulesForSidebar'], // Static key, as search term doesn't apply here
-		queryFn: fetchSchedulesForSidebar
-	}));
+	const schedulesListQuery = $derived(
+		createQuery({
+			queryKey: ['adminSchedulesForSidebar'], // Static key, as search term doesn't apply here
+			queryFn: fetchSchedulesForSidebar
+		})
+	);
 
 	const selectSchedule = (schedule: ScheduleData) => {
 		// Navigate to show this schedule's details in the main content area
@@ -52,7 +54,7 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
->
+			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
 				{/if}
@@ -73,7 +75,8 @@
 					<a
 						href={`/admin/schedules?scheduleId=${schedule.schedule_id}`}
 						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
-						class:active={page.url.searchParams.get('scheduleId') === schedule.schedule_id.toString()}
+						class:active={page.url.searchParams.get('scheduleId') ===
+							schedule.schedule_id.toString()}
 						onclick={(event) => {
 							event.preventDefault();
 							selectSchedule(schedule);
@@ -104,4 +107,4 @@
 
 <SidebarPage listContent={scheduleListContent} title="Schedules" bind:searchTerm>
 	{@render children()}
-</SidebarPage> 
+</SidebarPage>

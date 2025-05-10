@@ -238,7 +238,7 @@
 				readonly={Boolean(user?.id)}
 				bind:value={formData.phone}
 				bind:valid={phoneInputValid}
-				country={'ZA'}
+				country="ZA"
 				options={{
 					strictCountry: true,
 					autoPlaceholder: true,
@@ -353,9 +353,7 @@
 			<div class="py-4">
 				<Label for="dialog-role" class="block mb-2">New Role</Label>
 				<Select.Root type="single" bind:value={formData.role}>
-					<Select.Trigger class="w-full" id="dialog-role">
-						Select a role
-					</Select.Trigger>
+					<Select.Trigger class="w-full" id="dialog-role">Select a role</Select.Trigger>
 					<Select.Content>
 						<Select.Group>
 							<Select.GroupHeading>User Role</Select.GroupHeading>

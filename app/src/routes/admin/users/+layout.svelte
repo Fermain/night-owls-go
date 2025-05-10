@@ -37,10 +37,12 @@
 	};
 
 	// Create a query for users
-	const usersQuery = $derived(createQuery<UserData[], Error, UserData[], [string, string]>({
-		queryKey: ['adminUsers', searchTerm],
-		queryFn: () => fetchUsers(searchTerm)
-	}));
+	const usersQuery = $derived(
+		createQuery<UserData[], Error, UserData[], [string, string]>({
+			queryKey: ['adminUsers', searchTerm],
+			queryFn: () => fetchUsers(searchTerm)
+		})
+	);
 
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {

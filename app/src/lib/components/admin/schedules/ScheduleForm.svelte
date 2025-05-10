@@ -1,4 +1,4 @@
-<script context="module" lang="ts">
+<script module lang="ts">
 	export type ScheduleData = {
 		schedule_id: number;
 		name: string;
@@ -19,6 +19,8 @@
 	import { onMount } from 'svelte';
 	import cronstrue from 'cronstrue';
 	import CronView from '$lib/components/cron/cron-view.svelte';
+	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
+	import { parseIsoToYyyyMmDd } from '$lib/utils/date'; // For initial parsing from prop
 
 	// Type for the schedule data passed as a prop (for editing)
 	// This should match the structure returned by GET /api/admin/schedules/{id}
@@ -77,16 +79,11 @@
 	});
 
 	// Helper to extract string value from SQLNullString/SQLNullTime like objects or direct strings
+	// This function is now effectively replaced by parseIsoToYyyyMmDd for dates,
+	// but we might keep it if other string-like props need similar null/undefined handling.
+	// For now, let's assume it's mainly for dates and can be superseded by the new util.
 	function getStringValue(value: string | null | undefined): string | null {
-		if (typeof value === 'string') {
-			// For date fields from backend, sometimes they come as YYYY-MM-DDTHH:MM:SSZ
-			// We only need the YYYY-MM-DD part for the input type="date"
-			if (value.includes('T')) {
-				return value.split('T')[0];
-			}
-			return value;
-		}
-		return null;
+		return parseIsoToYyyyMmDd(value);
 	}
 
 	onMount(() => {
@@ -157,8 +154,14 @@
 
 		const payloadForSubmit: SchedulePayload = {
 			...formData,
-			start_date: typeof formData.start_date === 'string' && formData.start_date.trim() === '' ? null : formData.start_date,
-			end_date: typeof formData.end_date === 'string' && formData.end_date.trim() === '' ? null : formData.end_date
+			start_date:
+				typeof formData.start_date === 'string' && formData.start_date.trim() === ''
+					? null
+					: formData.start_date,
+			end_date:
+				typeof formData.end_date === 'string' && formData.end_date.trim() === ''
+					? null
+					: formData.end_date
 			// timezone: typeof formData.timezone === 'string' && formData.timezone.trim() === '' ? null : formData.timezone // Removed timezone
 		};
 
@@ -180,7 +183,7 @@
 		{schedule?.schedule_id !== undefined ? 'Edit' : 'Create New'} Schedule
 	</h1>
 
-	<form on:submit|preventDefault={handleSubmit} class="space-y-4">
+	<form onsubmit={handleSubmit} class="space-y-4">
 		<div>
 			<Label for="name">Name</Label>
 			<Input id="name" type="text" bind:value={formData.name} required />
@@ -203,16 +206,16 @@
 			{/if}
 		</div>
 
-
-
 		<div>
-			<Label for="start_date">Start Date</Label>
-			<Input id="start_date" type="date" bind:value={formData.start_date} />
-		</div>
-
-		<div>
-			<Label for="end_date">End Date</Label>
-			<Input id="end_date" type="date" bind:value={formData.end_date} />
+			<DateRangePicker
+				initialStartDate={formData.start_date}
+				initialEndDate={formData.end_date}
+				on:change={(e: CustomEvent<{ start: string | null; end: string | null }>) => {
+					formData.start_date = e.detail.start;
+					formData.end_date = e.detail.end;
+				}}
+				placeholderText="Pick start and end dates"
+			/>
 		</div>
 
 		<div>

@@ -9,7 +9,7 @@
 		CalendarDate
 	} from '@internationalized/date';
 	import { cn } from '$lib/utils';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar';
 	import * as Popover from '$lib/components/ui/popover';
 	import { parseYyyyMmDdToCalendarDate, formatCalendarDateToYyyyMmDd } from '$lib/utils/date';
@@ -31,8 +31,10 @@
 		change: { start: string | null; end: string | null };
 	}>();
 
-	const df = new DateFormatter(getLocalTimeZone(), {
-		dateStyle: 'medium'
+	// TEMP: Hardcode locale and timezone for DateFormatter to test
+	const df = new DateFormatter('en-ZA', {
+		dateStyle: 'medium',
+		timeZone: 'UTC' // Using UTC for simplicity, can be any valid IANA timezone
 	});
 
 	// Internal state for the RangeCalendar, using DateValue objects
@@ -42,25 +44,45 @@
 
 	// Effect to initialize or update currentRange when props change
 	$effect(() => {
-		const startVal = parseYyyyMmDdToCalendarDate(initialStartDate);
-		const endVal = parseYyyyMmDdToCalendarDate(initialEndDate);
-		const currentStartString = formatCalendarDateToYyyyMmDd(currentRange?.start);
-		const currentEndString = formatCalendarDateToYyyyMmDd(currentRange?.end);
+		const newPropStart = parseYyyyMmDdToCalendarDate(initialStartDate);
+		const newPropEnd = parseYyyyMmDdToCalendarDate(initialEndDate);
 
-		// Only update from props if the string versions are different
-		// to avoid resetting user interaction unnecessarily or causing loops.
-		if (initialStartDate !== currentStartString || initialEndDate !== currentEndString) {
-			if (startVal && endVal && startVal.compare(endVal) <= 0) {
-				currentRange = { start: startVal, end: endVal };
-			} else if (startVal) {
-				currentRange = { start: startVal, end: undefined };
+		const internalStart = currentRange?.start;
+		const internalEnd = currentRange?.end;
+
+		let needsUpdate = false;
+
+		// Check if start date needs update
+		if (newPropStart && internalStart) {
+			if (newPropStart.compare(internalStart) !== 0) needsUpdate = true;
+		} else if (newPropStart || internalStart) {
+			// One is defined, the other is not (XOR condition)
+			if (newPropStart !== internalStart) needsUpdate = true;
+		}
+
+		// Check if end date needs update, only if start doesn't already necessitate an update
+		if (!needsUpdate) {
+			if (newPropEnd && internalEnd) {
+				if (newPropEnd.compare(internalEnd) !== 0) needsUpdate = true;
+			} else if (newPropEnd || internalEnd) {
+				// One is defined, the other is not (XOR condition)
+				if (newPropEnd !== internalEnd) needsUpdate = true;
+			}
+		}
+
+		if (needsUpdate) {
+			if (newPropStart && newPropEnd && newPropStart.compare(newPropEnd) <= 0) {
+				currentRange = { start: newPropStart, end: newPropEnd };
+			} else if (newPropStart) {
+				currentRange = { start: newPropStart, end: undefined };
 			} else {
 				currentRange = undefined;
 			}
 		}
-		// Update placeholder if no range is set
+
+		// Update placeholder if no range is set (or specifically, if no start date is set)
 		if (!currentRange?.start) {
-			calendarPlaceholder = startVal || today(getLocalTimeZone());
+			calendarPlaceholder = newPropStart || today(getLocalTimeZone());
 		}
 	});
 
@@ -85,33 +107,32 @@
 
 	function getButtonLabel(): string {
 		if (currentRange?.start && currentRange?.end) {
-			return `${df.format(currentRange.start.toDate(getLocalTimeZone()))} - ${df.format(currentRange.end.toDate(getLocalTimeZone()))}`;
+			// Pass the hardcoded timezone to toDate() as well if it expects one,
+			// though DateValue.toDate() usually converts to a JS Date in the system's local TZ by default.
+			// For consistency with DateFormatter, specifying it if needed for toDate is safer.
+			return `${df.format(currentRange.start.toDate('UTC'))} - ${df.format(currentRange.end.toDate('UTC'))}`;
 		} else if (currentRange?.start) {
-			// If only a start date is picked in the range (end is undefined)
-			return df.format(currentRange.start.toDate(getLocalTimeZone()));
+			return df.format(currentRange.start.toDate('UTC'));
 		}
 		return placeholderText;
 	}
 </script>
 
 <Popover.Root bind:open={popoverOpen}>
-	<Popover.Trigger asChild={true}>
-		<Button
-			variant="outline"
-			class={cn(
-				'w-[300px] justify-start text-left font-normal',
-				!currentRange?.start && 'text-muted-foreground' // Show muted if no start date
-			)}
-		>
-			<CalendarIcon class="mr-2 h-4 w-4" />
-			<span>{getButtonLabel()}</span>
-		</Button>
+	<Popover.Trigger
+		class={cn(
+			buttonVariants({ variant: 'outline' }),
+			'w-full justify-start text-left font-normal',
+			!currentRange?.start && 'text-muted-foreground'
+		)}
+	>
+		<CalendarIcon class="mr-2 h-4 w-4" />
+		<span>{getButtonLabel()}</span>
 	</Popover.Trigger>
 	<Popover.Content class="w-auto p-0" align="start">
 		<RangeCalendar
 			bind:value={currentRange}
 			bind:placeholder={calendarPlaceholder}
-			initialFocus={true}
 			numberOfMonths={2}
 			minValue={new CalendarDate(1900, 1, 1)}
 			onValueChange={(v) => {
