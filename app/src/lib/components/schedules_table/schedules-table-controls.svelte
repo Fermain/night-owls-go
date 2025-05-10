@@ -18,7 +18,7 @@
 		table,
 		columnFilters,
 		setColumnFilters,
-		setRowSelection,
+		setRowSelection
 	}: {
 		table: Table<TData>;
 		columnFilters: ColumnFiltersState;
