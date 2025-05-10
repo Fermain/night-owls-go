@@ -35,6 +35,7 @@ type Querier interface {
 	// Limit to prevent processing too many at once
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 }
 

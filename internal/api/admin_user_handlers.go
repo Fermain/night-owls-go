@@ -272,54 +272,55 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// For now, let's just respond with the user data and a message
-	// In a real implementation, you'd update the user in the database
-	// We fetch the existing user to get CreatedAt, as it's not part of updateUserRequest
-	existingDbUser, err := h.db.GetUserByID(r.Context(), id)
-	if err != nil {
-		// This should ideally not happen if the previous check passed, but good for safety
-		h.logger.ErrorContext(r.Context(), "Failed to get existing user for update response", "user_id", id, "error", err)
-		RespondWithError(w, http.StatusInternalServerError, "Failed to finalize user update", h.logger)
+	// Validate role if provided
+	if req.Role != nil && !isValidRole(*req.Role) {
+		RespondWithError(w, http.StatusBadRequest, "Invalid role specified. Must be one of: admin, owl, guest", h.logger)
 		return
 	}
 
-	var namePtr *string
-	if req.Name != "" {
-		namePtr = &req.Name
+	// Prepare parameters for database update
+	updateParams := db.UpdateUserParams{
+		UserID: id,
+		Phone:  sql.NullString{String: req.Phone, Valid: req.Phone != ""}, // Assume phone is always provided from frontend form
+		Name:   sql.NullString{String: req.Name, Valid: req.Name != ""},   // Will be null if name is empty string
 	}
-	
-	var createdAtStr string
-	if existingDbUser.CreatedAt.Valid {
-		createdAtStr = existingDbUser.CreatedAt.Time.Format(time.RFC3339)
+
+	if req.Role != nil {
+		updateParams.Role = sql.NullString{String: *req.Role, Valid: true}
+	} else {
+		// If role is not in the request, we don't want to change it.
+		// sqlc.narg('role') in the query handles this by coalescing to the existing value if we pass a non-Valid NullString or if the field is omitted.
+		// However, to be explicit and align with how sqlc generates nullable fields,
+		// we can pass a NullString that is not Valid if the role is not meant to be updated.
+		// Given COALESCE(sqlc.narg('role'), role), if req.Role is nil,
+		// generated Go code for UpdateUserParams will have Role as a sql.NullString.
+		// If we don't set it, its zero value has Valid=false, which sqlc treats as NULL for sqlc.narg.
+		// So, not explicitly setting updateParams.Role when req.Role is nil is correct.
+	}
+
+	// Perform the update
+	updatedDbUser, err := h.db.UpdateUser(r.Context(), updateParams)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to update user in database", "user_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to update user", h.logger)
+		return
+	}
+
+	var updatedNamePtr *string
+	if updatedDbUser.Name.Valid {
+		updatedNamePtr = &updatedDbUser.Name.String
+	}
+	var updatedCreatedAtStr string
+	if updatedDbUser.CreatedAt.Valid {
+		updatedCreatedAtStr = updatedDbUser.CreatedAt.Time.Format(time.RFC3339)
 	}
 
 	apiUser := UserAPIResponse{
-		ID:    id,
-		Phone: req.Phone,
-		Name:  namePtr,
-		CreatedAt: createdAtStr, // Preserve original creation timestamp
-		Role:  existingDbUser.Role, // Include role from fetched user
-	}
-
-	// TODO: Implement actual user update logic in the database
-	// For now, just pretend we updated the user
-	// TODO: Implement actual update logic for user details including role
-	// Placeholder: fetch the user again to return current data including potentially unchanged role
-	dbUpdatedUser, _ := h.db.GetUserByID(r.Context(), id) // Ignoring error for placeholder
-	var updatedNamePtr *string
-	if dbUpdatedUser.Name.Valid {
-		updatedNamePtr = &dbUpdatedUser.Name.String
-	}
-	var updatedCreatedAtStr string
-	if dbUpdatedUser.CreatedAt.Valid {
-		updatedCreatedAtStr = dbUpdatedUser.CreatedAt.Time.Format(time.RFC3339)
-	}
-	apiUser = UserAPIResponse{
-		ID:        dbUpdatedUser.UserID,
-		Phone:     dbUpdatedUser.Phone,
+		ID:        updatedDbUser.UserID,
+		Phone:     updatedDbUser.Phone,
 		Name:      updatedNamePtr,
 		CreatedAt: updatedCreatedAtStr,
-		Role:      dbUpdatedUser.Role, // Include role from fetched user
+		Role:      updatedDbUser.Role,
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiUser, h.logger)

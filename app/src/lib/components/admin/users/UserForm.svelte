@@ -4,7 +4,7 @@
 		phone: string;
 		name: string | null;
 		created_at: string;
-		role: string;
+		role: 'admin' | 'owl' | 'guest';
 	};
 </script>
 
@@ -12,6 +12,8 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
+	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
 	import { toast } from 'svelte-sonner';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
@@ -19,15 +21,7 @@
 	import { TelInput } from 'svelte-tel-input';
 	import type { E164Number } from 'svelte-tel-input/types';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-	import {
-		Select,
-		SelectContent,
-		SelectGroup,
-		SelectItem,
-		SelectLabel,
-		SelectTrigger,
-		SelectValue
-	} from '$lib/components/ui/select';
+	import * as Select from '$lib/components/ui/select';
 
 	// Use $props() for Svelte 5 runes mode
 	let { user }: { user?: UserData } = $props();
@@ -54,6 +48,31 @@
 		name: user?.name || null,
 		role: user?.role || 'guest'
 	});
+
+	const roleDisplayValues = {
+		admin: 'Admin',
+		owl: 'Owl',
+		guest: 'Guest'
+	};
+
+	let showRoleChangeDialog = $state(false);
+	let roleInDialog = $state(formData.role);
+
+	$effect(() => {
+		// When the user prop changes (e.g., selecting a different user to edit),
+		// reset roleInDialog to the new user's current role.
+		roleInDialog = formData.role;
+	});
+
+	function openRoleDialog() {
+		roleInDialog = formData.role; // Initialize dialog with current form role
+		showRoleChangeDialog = true;
+	}
+
+	function confirmRoleChange() {
+		formData.role = roleInDialog;
+		showRoleChangeDialog = false;
+	}
 
 	// State for Zod validation errors
 	let zodErrors = $state<Partial<Record<keyof FormValues, string>>>({});
@@ -215,24 +234,28 @@
 		<div>
 			<Label for="phone" class="block mb-2">Phone Number</Label>
 			<TelInput
+				disabled={Boolean(user?.id)}
+				readonly={Boolean(user?.id)}
 				bind:value={formData.phone}
 				bind:valid={phoneInputValid}
 				country={'ZA'}
-				class={zodErrors.phone || !phoneInputValid ? 'border-red-500 rounded-md' : ''}
-				inputClass="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+				options={{
+					strictCountry: true,
+					autoPlaceholder: true,
+					format: 'international'
+				}}
+				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 invalid:border-red-500"
 				required
 			/>
 			{#if zodErrors.phone}
 				<p class="text-sm text-destructive mt-1">{zodErrors.phone}</p>
 			{:else if !phoneInputValid && formData.phone !== ''}
 				<p class="text-sm text-destructive mt-1">Invalid phone number.</p>
-			{:else}
-				<p class="text-sm text-muted-foreground mt-1">Required. South Africa (+27)</p>
 			{/if}
 		</div>
 
 		<div>
-			<Label for="name" class="block mb-2">Name (Optional)</Label>
+			<Label for="name" class="block mb-2">Name</Label>
 			<Input
 				id="name"
 				type="text"
@@ -242,44 +265,35 @@
 			{#if zodErrors.name}
 				<p class="text-sm text-destructive mt-1">{zodErrors.name}</p>
 			{/if}
-			<p class="text-sm text-muted-foreground mt-1">User's full name</p>
 		</div>
 
 		<div>
-			<Label for="role" class="block mb-2">Role</Label>
-			<Select.Root bind:value={formData.role}>
-				<Select.Trigger class="w-full" id="role">
-					<Select.Value placeholder="Select a role" />
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Group>
-						<Select.Label>User Role</Select.Label>
-						<SelectItem value="guest">Guest</SelectItem>
-						<SelectItem value="owl">Owl</SelectItem>
-						<SelectItem value="admin">Admin</SelectItem>
-					</Select.Group>
-				</Select.Content>
-			</Select.Root>
+			<Label class="block mb-2">Role</Label>
+			<div class="flex items-center gap-4">
+				<Input disabled readonly value={roleDisplayValues[formData.role]} class="flex-grow" />
+				<Button type="button" variant="outline" onclick={openRoleDialog}>Change Role</Button>
+			</div>
 			{#if zodErrors.role}
 				<p class="text-sm text-destructive mt-1">{zodErrors.role}</p>
 			{/if}
-			<p class="text-sm text-muted-foreground mt-1">Defines the user's permissions.</p>
 		</div>
 
 		{#if user?.id !== undefined}
-			<div>
-				<Label>Created At</Label>
-				<p class="text-sm text-muted-foreground mt-1">
+			<div class="text-sm text-muted-foreground">
+				<Label>Created</Label>
+				<time>
 					{new Date(user.created_at).toLocaleString()}
-				</p>
+				</time>
 			</div>
 		{/if}
 
 		<div class="flex gap-4">
-			<Button type="submit" disabled={$mutation.isPending}>
+			<Button type="submit" disabled={$mutation.isPending} class="flex-1">
 				{#if $mutation.isPending}
+					<Loader2Icon class="w-4 h-4 mr-2" />
 					Saving...
 				{:else}
+					<UserPlusIcon class="w-4 h-4" />
 					{user?.id !== undefined ? 'Update' : 'Create'} User
 				{/if}
 			</Button>
@@ -318,6 +332,48 @@
 				>
 					{#if $deleteUserMutation.isPending}Deleting...{:else}Yes, delete user{/if}
 				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+{/if}
+
+{#if showRoleChangeDialog}
+	<AlertDialog.Root
+		open={showRoleChangeDialog}
+		onOpenChange={(open) => (showRoleChangeDialog = open)}
+	>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>Change User Role</AlertDialog.Title>
+				<AlertDialog.Description>
+					Select the new role for {user?.name || 'this user'}.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+
+			<div class="py-4">
+				<Label for="dialog-role" class="block mb-2">New Role</Label>
+				<Select.Root type="single" bind:value={formData.role}>
+					<Select.Trigger class="w-full" id="dialog-role">
+						Select a role
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Group>
+							<Select.GroupHeading>User Role</Select.GroupHeading>
+							<Select.Item value="guest" label="Guest">Guest</Select.Item>
+							<Select.Item value="owl" label="Owl">Owl</Select.Item>
+							<Select.Item value="admin" label="Admin">Admin</Select.Item>
+						</Select.Group>
+					</Select.Content>
+				</Select.Root>
+			</div>
+
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel
+					onclick={() => {
+						roleInDialog = formData.role;
+					}}>Cancel</AlertDialog.Cancel
+				>
+				<AlertDialog.Action onclick={confirmRoleChange}>Confirm Change</AlertDialog.Action>
 			</AlertDialog.Footer>
 		</AlertDialog.Content>
 	</AlertDialog.Root>

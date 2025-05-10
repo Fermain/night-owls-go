@@ -10,7 +10,7 @@ export interface UserData {
 	phone: string;
 	name: string | null;
 	created_at: string; // Assuming this is available and non-optional for existing users
-	role: string; // Added role
+	role: 'admin' | 'owl' | 'guest'; // Updated role to be specific
 }
 
 export const selectedUserForForm = writable<UserData | undefined>(undefined);

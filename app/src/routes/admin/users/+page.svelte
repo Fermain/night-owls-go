@@ -21,7 +21,11 @@
 	let isDashboardView = $derived(page.url.searchParams.get('view') === 'dashboard');
 </script>
 
-{#if isDashboardView}
+{#if currentUserForForm}
+	{#key currentUserForForm.id}
+		<UserForm user={currentUserForForm} />
+	{/key}
+{:else}
 	<div class="p-4 md:p-8">
 		<h1 class="text-2xl font-semibold mb-6">Users Dashboard</h1>
 		<p class="mb-6 text-muted-foreground">
@@ -44,8 +48,4 @@
 			</div>
 		</div>
 	</div>
-{:else if currentUserForForm}
-	{#key currentUserForForm.id}
-		<UserForm user={currentUserForForm} />
-	{/key}
 {/if}

@@ -23,4 +23,14 @@ SELECT user_id, phone, name, created_at, role FROM users;
 
 -- name: DeleteUser :exec
 DELETE FROM users
-WHERE user_id = ?; 
+WHERE user_id = ?;
+
+-- name: UpdateUser :one
+UPDATE users
+SET
+    phone = COALESCE(sqlc.narg('phone'), phone),
+    name = COALESCE(sqlc.narg('name'), name),
+    role = COALESCE(sqlc.narg('role'), role)
+WHERE
+    user_id = sqlc.arg('user_id')
+RETURNING user_id, phone, name, created_at, role; 
