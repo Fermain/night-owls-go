@@ -23,19 +23,19 @@ export type Schedule = {
 	schedule_id: number;
 	name: string;
 	cron_expr: string;
-	start_date?: SQLNullTime | null;
-	end_date?: SQLNullTime | null;
-	timezone?: SQLNullString | null;
+	start_date?: string | null;
+	end_date?: string | null;
+	timezone?: string | null;
 };
 
 // Helper to format date strings from SQLNullTime or return 'N/A'
 // This seems over-engineered and I am sure it can be made more concise.
 // Also not the responsibility of this component to format dates.
-const formatDate = (sqlTime?: SQLNullTime | null): string => {
-	if (!sqlTime || !sqlTime.Valid || !sqlTime.Time) return 'N/A';
+const formatDate = (dateString?: string | null): string => {
+	if (!dateString) return 'N/A';
 	try {
 		// The date from Go might be a full timestamp, extract date part for display.
-		return new Date(sqlTime.Time).toLocaleDateString(undefined, {
+		return new Date(dateString).toLocaleDateString(undefined, {
 			year: 'numeric',
 			month: '2-digit',
 			day: '2-digit'
@@ -118,7 +118,7 @@ export const columns: ColumnDef<Schedule>[] = [
 		accessorKey: 'start_date',
 		header: 'Start Date',
 		cell: ({ row }) => {
-			const startDate = formatDate(row.getValue('start_date') as SQLNullTime | null);
+			const startDate = formatDate(row.getValue('start_date') as string | null | undefined);
 			const snippet = createRawSnippet<[string]>((getDate) => {
 				const val = getDate();
 				return { render: () => `<div>${val}</div>` };
@@ -130,7 +130,7 @@ export const columns: ColumnDef<Schedule>[] = [
 		accessorKey: 'end_date',
 		header: 'End Date',
 		cell: ({ row }) => {
-			const endDate = formatDate(row.getValue('end_date') as SQLNullTime | null);
+			const endDate = formatDate(row.getValue('end_date') as string | null | undefined);
 			const snippet = createRawSnippet<[string]>((getDate) => {
 				const val = getDate();
 				return { render: () => `<div>${val}</div>` };

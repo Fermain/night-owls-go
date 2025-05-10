@@ -3,9 +3,9 @@
 		schedule_id: number;
 		name: string;
 		cron_expr: string;
-		start_date: { String: string; Valid: boolean } | string | null;
-		end_date: { String: string; Valid: boolean } | string | null;
-		timezone: { String: string; Valid: boolean } | string | null;
+		start_date?: string | null;
+		end_date?: string | null;
+		timezone?: string | null;
 	};
 </script>
 
@@ -34,8 +34,6 @@
 		cron_expr: string;
 		start_date?: string | null;
 		end_date?: string | null;
-		// duration_minutes: number; // Removed
-		timezone?: string | null;
 	};
 
 	// Add scheduleId to the mutation variables for clarity and reliable access
@@ -49,8 +47,7 @@
 		cron_expr: '',
 		// duration_minutes: 60, // Removed
 		start_date: null,
-		end_date: null,
-		timezone: null
+		end_date: null
 	};
 
 	let cronError: string | null = null;
@@ -75,18 +72,13 @@
 	$: validateAndHumanizeCron(formData.cron_expr);
 
 	// Helper to extract string value from SQLNullString/SQLNullTime like objects or direct strings
-	function getStringValue(
-		value: { String: string; Valid: boolean } | string | null | undefined
-	): string | null {
-		if (value && typeof value === 'object' && 'Valid' in value && value.Valid) {
+	function getStringValue(value: string | null | undefined): string | null {
+		if (typeof value === 'string') {
 			// For date fields from backend, sometimes they come as YYYY-MM-DDTHH:MM:SSZ
 			// We only need the YYYY-MM-DD part for the input type="date"
-			if (value.String && value.String.includes('T')) {
-				return value.String.split('T')[0];
+			if (value.includes('T')) {
+				return value.split('T')[0];
 			}
-			return value.String;
-		}
-		if (typeof value === 'string') {
 			return value;
 		}
 		return null;
@@ -100,8 +92,7 @@
 				cron_expr: schedule.cron_expr,
 				// duration_minutes: schedule.duration_minutes, // Removed
 				start_date: getStringValue(schedule.start_date),
-				end_date: getStringValue(schedule.end_date),
-				timezone: getStringValue(schedule.timezone)
+				end_date: getStringValue(schedule.end_date)
 			};
 		}
 	});
@@ -122,15 +113,6 @@
 				? `/api/admin/schedules/${currentScheduleIdToUse}`
 				: '/api/admin/schedules';
 			const method = currentIsEditMode ? 'PUT' : 'POST';
-
-			// --- BEGIN DEBUG LOGGING ---
-			console.log('mutationFn executing');
-			console.log('currentIsEditMode (inside mutationFn):', currentIsEditMode);
-			console.log('Schedule ID (inside mutationFn from vars):', currentScheduleIdToUse);
-			console.log('Request URL (inside mutationFn):', url);
-			console.log('Request Method (inside mutationFn):', method);
-			console.log('Payload being sent (inside mutationFn):', JSON.stringify(payload, null, 2));
-			// --- END DEBUG LOGGING ---
 
 			const response = await fetch(url, {
 				method: method,
@@ -171,8 +153,7 @@
 			...formData,
 			// duration_minutes: Number(formData.duration_minutes), // Removed
 			start_date: formData.start_date?.trim() === '' ? null : formData.start_date,
-			end_date: formData.end_date?.trim() === '' ? null : formData.end_date,
-			timezone: formData.timezone?.trim() === '' ? null : formData.timezone
+			end_date: formData.end_date?.trim() === '' ? null : formData.end_date
 		};
 
 		const mutationVars: MutationVariables = {
@@ -243,20 +224,16 @@
 		</div>
 
 		<div>
-			<Label for="timezone">Timezone (Optional)</Label>
-			<Input id="timezone" type="text" bind:value={formData.timezone} />
-			<p class="text-sm text-muted-foreground mt-1">E.g., "America/New_York", "UTC".</p>
-		</div>
-
-		<Button type="submit" disabled={$mutation.isPending || !!cronError}>
-			{#if $mutation.isPending}
-				{schedule?.schedule_id !== undefined ? 'Updating...' : 'Creating...'}
-			{:else}
-				{schedule?.schedule_id !== undefined ? 'Save Changes' : 'Create Schedule'}
+			<Button type="submit" disabled={$mutation.isPending || !!cronError}>
+				{#if $mutation.isPending}
+					{schedule?.schedule_id !== undefined ? 'Updating...' : 'Creating...'}
+				{:else}
+					{schedule?.schedule_id !== undefined ? 'Save Changes' : 'Create Schedule'}
+				{/if}
+			</Button>
+			{#if $mutation.isError}
+				<p class="text-sm text-destructive">Error: {$mutation.error?.message}</p>
 			{/if}
-		</Button>
-		{#if $mutation.isError}
-			<p class="text-sm text-destructive">Error: {$mutation.error?.message}</p>
-		{/if}
+		</div>
 	</form>
 </div>
