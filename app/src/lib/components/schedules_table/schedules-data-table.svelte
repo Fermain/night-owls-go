@@ -6,7 +6,6 @@
 		ColumnFiltersState,
 		VisibilityState,
 		Updater,
-		FilterFn,
 		RowSelectionState
 	} from '@tanstack/table-core';
 	import {

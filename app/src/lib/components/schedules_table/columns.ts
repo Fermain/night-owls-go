@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/table-core';
 import { createRawSnippet } from 'svelte';
 import { renderSnippet, renderComponent } from '$lib/components/ui/data-table';
 import { CronVisualizer } from '$lib/components/cron_visualizer';
-import ScheduleActions from './ScheduleActions.svelte';
+import ScheduleActions from './schedule-actions.svelte';
 import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 
 // Define types for how Go's sql.NullString and sql.NullTime are serialized to JSON
