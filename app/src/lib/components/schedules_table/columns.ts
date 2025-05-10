@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/table-core";
 import { createRawSnippet } from "svelte";
 import { renderSnippet, renderComponent } from "$lib/components/ui/data-table"; // Adjusted import path
-import CronHumanizer from "$lib/components/cron_humanizer/CronHumanizer.svelte";
+import { CronVisualizer } from "$lib/components/cron_visualizer"; // Import the new visualizer
 // import { Button } from "$lib/components/ui/button"; // Button import removed as not directly used
 import ScheduleActions from "./ScheduleActions.svelte"; // Import the new component
 
@@ -24,7 +24,6 @@ export type Schedule = {
   cron_expr: string;
   start_date?: SQLNullTime | null; 
   end_date?: SQLNullTime | null;   
-  duration_minutes: number;
   timezone?: SQLNullString | null; 
 };
 
@@ -60,9 +59,24 @@ export const columns: ColumnDef<Schedule>[] = [
     header: "Cron Expression",
     cell: ({ row }) => {
       const cronExpr = row.getValue("cron_expr") as string;
-      // Use renderComponent with CronHumanizer
-      return renderComponent(CronHumanizer, { cronExpression: cronExpr });
+      // Display raw CRON expression string
+      const cronSnippet = createRawSnippet<[string]>((getExpr) => {
+        const val = getExpr();
+        return {
+          render: () => `<pre>${val}</pre>` 
+        };
+      });
+      return renderSnippet(cronSnippet, cronExpr);
     }
+  },
+  {
+    id: "cron_visualization",
+    header: "Schedule Visualization",
+    cell: ({ row }) => {
+      const cronExpr = row.original.cron_expr;
+      return renderComponent(CronVisualizer, { cronExpr: cronExpr });
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "start_date",
@@ -86,31 +100,6 @@ export const columns: ColumnDef<Schedule>[] = [
         return { render: () => `<div>${val}</div>`};
       });
       return renderSnippet(snippet, endDate);
-    }
-  },
-  {
-    accessorKey: "duration_minutes",
-    header: "Duration (Mins)",
-    cell: ({ row }) => {
-      const duration = row.getValue("duration_minutes") as number;
-      const snippet = createRawSnippet<[number]>((getDuration) => {
-        const val = getDuration();
-        return { render: () => `<div class="text-right">${val}</div>`}; // Example: right align
-      });
-      return renderSnippet(snippet, duration);
-    }
-  },
-  {
-    accessorKey: "timezone",
-    header: "Timezone",
-    cell: ({ row }) => {
-      const tzValue = row.getValue("timezone") as SQLNullString | null;
-      const timezone = (tzValue && tzValue.Valid) ? tzValue.String : "N/A";
-       const snippet = createRawSnippet<[string]>((getTz) => {
-        const val = getTz();
-        return { render: () => `<div>${val}</div>`};
-      });
-      return renderSnippet(snippet, timezone);
     }
   },
   {
