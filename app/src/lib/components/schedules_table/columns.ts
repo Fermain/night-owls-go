@@ -18,6 +18,7 @@ export type SQLNullTime = {
 
 // This type is used to define the shape of our data.
 // We are fetching this from the Go backend.
+// Why aren't we using a derived or centralised type?
 export type Schedule = {
 	schedule_id: number;
 	name: string;
@@ -28,6 +29,8 @@ export type Schedule = {
 };
 
 // Helper to format date strings from SQLNullTime or return 'N/A'
+// This seems over-engineered and I am sure it can be made more concise.
+// Also not the responsibility of this component to format dates.
 const formatDate = (sqlTime?: SQLNullTime | null): string => {
 	if (!sqlTime || !sqlTime.Valid || !sqlTime.Time) return 'N/A';
 	try {
