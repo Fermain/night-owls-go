@@ -106,7 +106,7 @@ func (h *AdminScheduleHandlers) AdminListSchedules(w http.ResponseWriter, r *htt
 		RespondWithError(w, http.StatusInternalServerError, "Failed to list schedules", h.logger, "error", err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, schedules, h.logger)
+	RespondWithJSON(w, http.StatusOK, ToScheduleResponses(schedules), h.logger)
 }
 
 // AdminGetSchedule handles GET /api/admin/schedules/{id}
@@ -127,7 +127,7 @@ func (h *AdminScheduleHandlers) AdminGetSchedule(w http.ResponseWriter, r *http.
 		RespondWithError(w, http.StatusInternalServerError, "Failed to get schedule", h.logger, "schedule_id", scheduleID, "error", err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, schedule, h.logger)
+	RespondWithJSON(w, http.StatusOK, ToScheduleResponse(schedule), h.logger)
 }
 
 // AdminUpdateScheduleRequest reuses AdminCreateScheduleRequest for simplicity.
@@ -222,6 +222,58 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedule deleted successfully"}, h.logger)
+}
+
+// AdminListAllShiftSlots handles GET /api/admin/schedules/all-slots
+func (h *AdminScheduleHandlers) AdminListAllShiftSlots(w http.ResponseWriter, r *http.Request) {
+	// Parse optional query parameters for date range and limit
+	var fromTime *time.Time
+	var toTime *time.Time
+	var limit *int
+
+	fromStr := r.URL.Query().Get("from")
+	if fromStr != "" {
+		parsedFromTime, err := time.Parse(time.RFC3339, fromStr)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'from' date format, use RFC3339 (e.g., YYYY-MM-DDTHH:MM:SSZ)", h.logger, "input_from", fromStr)
+			return
+		}
+		fromTime = &parsedFromTime
+	}
+
+	toStr := r.URL.Query().Get("to")
+	if toStr != "" {
+		parsedToTime, err := time.Parse(time.RFC3339, toStr)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'to' date format, use RFC3339 (e.g., YYYY-MM-DDTHH:MM:SSZ)", h.logger, "input_to", toStr)
+			return
+		}
+		toTime = &parsedToTime
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil || parsedLimit <= 0 {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'limit' parameter, must be a positive integer", h.logger, "input_limit", limitStr)
+			return
+		}
+		limit = &parsedLimit
+	}
+
+	// Get all shift slots (booked or not) from the service
+	slots, err := h.scheduleService.AdminGetAllShiftSlots(r.Context(), fromTime, toTime, limit)
+	if err != nil {
+		// The service layer should return specific errors like ErrNotFound or ErrInternalServer
+		if errors.Is(err, service.ErrInternalServer) { // Assuming service might return this
+			RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve shift slots due to an internal error", h.logger, "error", err)
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve shift slots", h.logger, "error", err) 
+		}
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, slots, h.logger)
 }
 
 // AdminBulkDeleteSchedules handles requests to bulk delete schedules.

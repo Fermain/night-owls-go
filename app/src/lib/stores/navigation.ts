@@ -4,6 +4,7 @@ import CalendarRange from '@lucide/svelte/icons/calendar-range';
 import ChartCandlestick from '@lucide/svelte/icons/chart-candlestick';
 import Users from '@lucide/svelte/icons/users';
 import Send from '@lucide/svelte/icons/send';
+import ListChecks from '@lucide/svelte/icons/list-checks';
 
 interface NavItem {
 	title: string;
@@ -21,6 +22,11 @@ const navMain: NavItem[] = [
 		title: 'Shifts',
 		url: '/admin/schedules',
 		icon: CalendarRange
+	},
+	{
+		title: 'Shift Slots',
+		url: '/admin/schedules/slots',
+		icon: ListChecks
 	},
 	{
 		title: 'Statistics',

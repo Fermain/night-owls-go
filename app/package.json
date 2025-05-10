@@ -63,6 +63,7 @@
 		"@tanstack/zod-form-adapter": "^0.42.1",
 		"cron-parser": "^5.1.1",
 		"cronstrue": "^2.61.0",
+		"date-fns": "^4.1.0",
 		"lucide-svelte": "^0.509.0",
 		"svelte-sonner": "^0.3.28",
 		"svelte-tel-input": "^3.6.0",

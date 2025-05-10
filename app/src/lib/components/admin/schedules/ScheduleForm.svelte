@@ -24,8 +24,10 @@
 	// This should match the structure returned by GET /api/admin/schedules/{id}
 	// and include an 'id' field.
 
-	// Prop for existing schedule data (undefined if creating a new one)
-	export let schedule: ScheduleData | undefined = undefined;
+	type Props = {
+		schedule?: ScheduleData;
+	};
+	const { schedule = undefined }: Props = $props();
 
 	// const isEditMode = !!schedule; // Not strictly needed due to direct schedule.schedule_id checks
 
@@ -34,6 +36,7 @@
 		cron_expr: string;
 		start_date?: string | null;
 		end_date?: string | null;
+		// timezone?: string | null; // Removed timezone
 	};
 
 	// Add scheduleId to the mutation variables for clarity and reliable access
@@ -42,16 +45,16 @@
 		scheduleId?: number; // Only present in edit mode
 	};
 
-	let formData: SchedulePayload = {
+	let formData = $state<SchedulePayload>({
 		name: '',
 		cron_expr: '',
-		// duration_minutes: 60, // Removed
 		start_date: null,
 		end_date: null
-	};
+		// timezone: null // Removed timezone
+	});
 
-	let cronError: string | null = null;
-	let humanizedCron: string | null = null;
+	let cronError: string | null = $state(null);
+	let humanizedCron: string | null = $state(null);
 
 	function validateAndHumanizeCron(cronValue: string) {
 		if (!cronValue || cronValue.trim() === '') {
@@ -69,7 +72,9 @@
 	}
 
 	// Validate and humanize when cron_expr changes
-	$: validateAndHumanizeCron(formData.cron_expr);
+	$effect(() => {
+		validateAndHumanizeCron(formData.cron_expr);
+	});
 
 	// Helper to extract string value from SQLNullString/SQLNullTime like objects or direct strings
 	function getStringValue(value: string | null | undefined): string | null {
@@ -85,15 +90,15 @@
 	}
 
 	onMount(() => {
+		console.log('[ScheduleForm onMount] schedule prop:', schedule);
 		if (schedule?.schedule_id !== undefined && schedule) {
-			// Check schedule_id for edit mode determination
-			formData = {
-				name: schedule.name,
-				cron_expr: schedule.cron_expr,
-				// duration_minutes: schedule.duration_minutes, // Removed
-				start_date: getStringValue(schedule.start_date),
-				end_date: getStringValue(schedule.end_date)
-			};
+			// Mutate properties of $state object directly
+			formData.name = schedule.name;
+			formData.cron_expr = schedule.cron_expr;
+			formData.start_date = getStringValue(schedule.start_date);
+			formData.end_date = getStringValue(schedule.end_date);
+			// formData.timezone = schedule.timezone || null; // Removed timezone assignment
+			console.log('[ScheduleForm onMount] formData after init (mutated):', formData);
 		}
 	});
 
@@ -147,13 +152,14 @@
 	});
 
 	function handleSubmit() {
+		console.log('[ScheduleForm handleSubmit] formData before parentSubmit:', formData);
 		const currentScheduleIdFromProp = schedule?.schedule_id;
 
 		const payloadForSubmit: SchedulePayload = {
 			...formData,
-			// duration_minutes: Number(formData.duration_minutes), // Removed
-			start_date: formData.start_date?.trim() === '' ? null : formData.start_date,
-			end_date: formData.end_date?.trim() === '' ? null : formData.end_date
+			start_date: typeof formData.start_date === 'string' && formData.start_date.trim() === '' ? null : formData.start_date,
+			end_date: typeof formData.end_date === 'string' && formData.end_date.trim() === '' ? null : formData.end_date
+			// timezone: typeof formData.timezone === 'string' && formData.timezone.trim() === '' ? null : formData.timezone // Removed timezone
 		};
 
 		const mutationVars: MutationVariables = {
@@ -174,7 +180,7 @@
 		{schedule?.schedule_id !== undefined ? 'Edit' : 'Create New'} Schedule
 	</h1>
 
-	<form on:submit|preventDefault={handleSubmit} class="space-y-6 max-w-lg">
+	<form on:submit|preventDefault={handleSubmit} class="space-y-4">
 		<div>
 			<Label for="name">Name</Label>
 			<Input id="name" type="text" bind:value={formData.name} required />
@@ -197,30 +203,16 @@
 			{/if}
 		</div>
 
-		<!-- Duration Input Removed -->
-		<!-- 
-		<div>
-			<Label for="duration_minutes">Duration (minutes)</Label>
-			<Input
-				id="duration_minutes"
-				type="number"
-				bind:value={formData.duration_minutes}
-				required
-				min="1"
-			/>
-		</div>
-		-->
+
 
 		<div>
-			<Label for="start_date">Start Date (Optional)</Label>
+			<Label for="start_date">Start Date</Label>
 			<Input id="start_date" type="date" bind:value={formData.start_date} />
-			<p class="text-sm text-muted-foreground mt-1">Format: YYYY-MM-DD</p>
 		</div>
 
 		<div>
-			<Label for="end_date">End Date (Optional)</Label>
+			<Label for="end_date">End Date</Label>
 			<Input id="end_date" type="date" bind:value={formData.end_date} />
-			<p class="text-sm text-muted-foreground mt-1">Format: YYYY-MM-DD</p>
 		</div>
 
 		<div>

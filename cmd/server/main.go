@@ -197,6 +197,7 @@ func main() {
 		router.Route("/api/admin/schedules", func(r chi.Router) {
 			r.Get("/", adminScheduleAPIHandler.AdminListSchedules)          // GET /api/admin/schedules
 			r.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)         // POST /api/admin/schedules
+			r.Get("/all-slots", adminScheduleAPIHandler.AdminListAllShiftSlots) // GET /api/admin/schedules/all-slots
 			r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
 			r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
 			r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
