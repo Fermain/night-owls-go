@@ -136,10 +136,10 @@ func newTestApp(t *testing.T) *testApp {
     mockSender := new(MockMessageSender) 
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
-	scheduleService := service.NewScheduleService(querier, logger)
+	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxService := outbox.NewDispatcherService(querier, mockSender, logger, cfg)
+	outboxService := outbox.NewDispatcherService(querier, mockSender, nil, logger, cfg)
 
 	cronScheduler := cron.New()
 

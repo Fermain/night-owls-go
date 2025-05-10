@@ -43,7 +43,7 @@
 	});
 
 	// State for Zod validation errors
-	let zodErrors: Partial<Record<keyof FormValues, string>> = {};
+	let zodErrors = $state<Partial<Record<keyof FormValues, string>>>({});
 
 	// State for controlling delete confirmation dialog
 	let showDeleteConfirm = $state(false);
@@ -191,15 +191,15 @@
 		{user?.id !== undefined ? 'Edit' : 'Create New'} User
 	</h1>
 
-	<form on:submit|preventDefault={handleSubmit} class="space-y-6 max-w-lg">
+	<form onsubmit={(event) => { event.preventDefault(); handleSubmit(); }} class="space-y-6 max-w-lg">
 		<div>
-			<Label for="phone">Phone Number</Label>
+			<Label for="phone" class="block mb-2">Phone Number</Label>
 			<TelInput
 				bind:value={formData.phone}
 				bind:valid={phoneInputValid}
 				country={'ZA'}
-				class={zodErrors.phone || !phoneInputValid ? 'border-red-500' : ''}
-				inputClass="w-full p-2 border rounded-md focus:ring-primary focus:border-primary"
+				class={zodErrors.phone || !phoneInputValid ? 'border-red-500 rounded-md' : ''}
+				inputClass="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 				required
 			/>
 			{#if zodErrors.phone}
@@ -212,7 +212,7 @@
 		</div>
 
 		<div>
-			<Label for="name">Name (Optional)</Label>
+			<Label for="name" class="block mb-2">Name (Optional)</Label>
 			<Input
 				id="name"
 				type="text"

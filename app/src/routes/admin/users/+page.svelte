@@ -3,38 +3,50 @@
 	import { selectedUserForForm, type UserData } from '$lib/stores/userEditingStore';
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state'; // For reading URL params
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js'; // For dashboard placeholders
 
-	// No need to fetch individual user data here anymore,
-	// it comes from the layout via the store if a user is selected for editing.
-
-	// To clear the selection and show dashboard, the layout now handles setting the store to undefined.
-	// This page just reflects the store's content.
-
-	let currentUserForForm: UserData | undefined = undefined;
-	const unsubscribe = selectedUserForForm.subscribe((value) => {
+	// currentUserForForm is derived from the store, which is synced with URL by the layout
+	let currentUserForForm = $state<UserData | undefined>(undefined);
+	selectedUserForForm.subscribe((value) => {
 		currentUserForForm = value;
 	});
 
-	// Ensure to unsubscribe when the component is destroyed
-	import { onDestroy } from 'svelte';
-	onDestroy(unsubscribe);
+	// No need for onDestroy(unsubscribe) with auto-unsubscription for stores in Svelte 5 components,
+	// but if selectedUserForForm were a raw Svelte store used directly in markup ($selectedUserForForm),
+	// then manual sub/unsub like this would be for reacting and setting local $state.
+	// Given currentUserForForm is $state, the subscription is to update this local reactive state.
+	// This pattern is fine.
+
+	let isDashboardView = $derived(page.url.searchParams.get('view') === 'dashboard');
+
 </script>
 
-{#if currentUserForForm}
+{#if isDashboardView}
+	<div class="p-4 md:p-8">
+		<h1 class="text-2xl font-semibold mb-6">Users Dashboard</h1>
+		<p class="mb-6 text-muted-foreground">
+			Analytics and statistics related to users will be displayed here.
+		</p>
+		<div class="space-y-4">
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				{#each [1, 2, 3] as i (i)}
+					<div class="p-4 border rounded-lg">
+						<Skeleton class="h-6 w-3/4 mb-2" />
+						<Skeleton class="h-10 w-1/2 mb-4" />
+						<Skeleton class="h-4 w-full" />
+						<Skeleton class="h-4 w-5/6 mt-1" />
+					</div>
+				{/each}
+			</div>
+			<div class="p-4 border rounded-lg">
+				<Skeleton class="h-8 w-1/4 mb-4" />
+				<Skeleton class="h-48 w-full" />
+			</div>
+		</div>
+	</div>
+{:else if currentUserForForm}
 	{#key currentUserForForm.id}
 		<UserForm user={currentUserForForm} />
 	{/key}
-{:else}
-	<div class="p-4 text-center">
-		<h1 class="text-2xl font-semibold mb-4">Manage Users</h1>
-		<p class="mb-6 text-muted-foreground">
-			Select a user from the list to view or edit their details, or create a new user.
-		</p>
-		<Button onclick={() => goto('/admin/users/new')}>Create New User</Button>
-		<!-- 
-			Alternative: if 'Create New User' in sidebar already clears selectedUserForForm 
-			and navigates to /admin/users/new, this button might be redundant 
-			or could directly call selectedUserForForm.set(undefined) and then goto(...)
-		-->
-	</div>
 {/if}
