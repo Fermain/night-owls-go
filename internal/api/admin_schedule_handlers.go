@@ -34,7 +34,6 @@ type AdminCreateScheduleRequest struct {
 	CronExpr        string  `json:"cron_expr"`
 	StartDate       *string `json:"start_date,omitempty"` // Expected format: "YYYY-MM-DD"
 	EndDate         *string `json:"end_date,omitempty"`   // Expected format: "YYYY-MM-DD"
-	DurationMinutes int32   `json:"duration_minutes"`
 	Timezone        *string `json:"timezone,omitempty"`
 }
 
@@ -52,15 +51,14 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	// Basic validation (more can be added)
-	if req.Name == "" || req.CronExpr == "" || req.DurationMinutes <= 0 {
-		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr, duration_minutes)", h.logger)
+	if req.Name == "" || req.CronExpr == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr)", h.logger)
 		return
 	}
 
 	params := db.CreateScheduleParams{
 		Name:            req.Name,
 		CronExpr:        req.CronExpr,
-		DurationMinutes: int64(req.DurationMinutes),
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {
@@ -144,8 +142,8 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if req.Name == "" || req.CronExpr == "" || req.DurationMinutes <= 0 {
-		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr, duration_minutes)", h.logger)
+	if req.Name == "" || req.CronExpr == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr)", h.logger)
 		return
 	}
 
@@ -153,7 +151,6 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		ScheduleID:      scheduleID,
 		Name:            req.Name,
 		CronExpr:        req.CronExpr,
-		DurationMinutes: int64(req.DurationMinutes),
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 
 	"github.com/gorhill/cronexpr"
@@ -24,13 +25,15 @@ var (
 type ScheduleService struct {
 	querier db.Querier
 	logger  *slog.Logger
+	config  *config.Config
 }
 
 // NewScheduleService creates a new ScheduleService.
-func NewScheduleService(querier db.Querier, logger *slog.Logger) *ScheduleService {
+func NewScheduleService(querier db.Querier, logger *slog.Logger, cfg *config.Config) *ScheduleService {
 	return &ScheduleService{
 		querier: querier,
 		logger:  logger.With("service", "ScheduleService"),
+		config:  cfg,
 	}
 }
 
@@ -183,6 +186,8 @@ func (s *ScheduleService) ListAllSchedules(ctx context.Context) ([]db.Schedule, 
 
 // AdminCreateSchedule creates a new schedule (admin operation).
 func (s *ScheduleService) AdminCreateSchedule(ctx context.Context, params db.CreateScheduleParams) (db.Schedule, error) {
+	params.DurationMinutes = int64(s.config.DefaultShiftDuration.Minutes())
+
 	schedule, err := s.querier.CreateSchedule(ctx, params)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create schedule (admin)", "params", params, "error", err)
@@ -208,6 +213,8 @@ func (s *ScheduleService) AdminGetScheduleByID(ctx context.Context, scheduleID i
 
 // AdminUpdateSchedule updates an existing schedule (admin operation).
 func (s *ScheduleService) AdminUpdateSchedule(ctx context.Context, params db.UpdateScheduleParams) (db.Schedule, error) {
+	params.DurationMinutes = int64(s.config.DefaultShiftDuration.Minutes())
+
 	schedule, err := s.querier.UpdateSchedule(ctx, params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) { 

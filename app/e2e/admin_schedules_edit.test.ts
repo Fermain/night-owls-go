@@ -3,7 +3,6 @@ import { expect, test } from '@playwright/test';
 test.describe('Admin Schedule Editing', () => {
 	const scheduleListName = 'Test Schedule E2E';
 	const scheduleCronExpr = '0 0 1 1 *'; // Yearly on Jan 1st at midnight
-	const scheduleDuration = '30';
 	const editedSuffix = ' - Edited by Playwright';
 
 	test.beforeEach(async ({ page }) => {
@@ -21,7 +20,6 @@ test.describe('Admin Schedule Editing', () => {
 
 			await page.locator('input#name').fill(scheduleListName);
 			await page.locator('input#cron_expr').fill(scheduleCronExpr);
-			await page.locator('input#duration_minutes').fill(scheduleDuration);
 			
 			await page.getByRole('button', { name: 'Create Schedule' }).click();
 			await expect(page).toHaveURL(/.*\/admin\/schedules/); // Should redirect to list

@@ -5,7 +5,6 @@
 		cron_expr: string;
 		start_date: { String: string; Valid: boolean } | string | null;
 		end_date: { String: string; Valid: boolean } | string | null;
-		duration_minutes: number;
 		timezone: { String: string; Valid: boolean } | string | null;
 	};
 </script>
@@ -26,14 +25,14 @@
 	// Prop for existing schedule data (undefined if creating a new one)
 	export let schedule: ScheduleData | undefined = undefined;
 
-	const isEditMode = !!schedule;
+	// const isEditMode = !!schedule; // Not strictly needed due to direct schedule.schedule_id checks
 
 	type SchedulePayload = {
 		name: string;
 		cron_expr: string;
 		start_date?: string | null;
 		end_date?: string | null;
-		duration_minutes: number;
+		// duration_minutes: number; // Removed
 		timezone?: string | null;
 	};
 
@@ -46,7 +45,7 @@
 	let formData: SchedulePayload = {
 		name: '',
 		cron_expr: '',
-		duration_minutes: 60,
+		// duration_minutes: 60, // Removed
 		start_date: null,
 		end_date: null,
 		timezone: null
@@ -69,11 +68,11 @@
 	}
 
 	onMount(() => {
-		if (isEditMode && schedule) {
+		if (schedule?.schedule_id !== undefined && schedule) { // Check schedule_id for edit mode determination
 			formData = {
 				name: schedule.name,
 				cron_expr: schedule.cron_expr,
-				duration_minutes: schedule.duration_minutes,
+				// duration_minutes: schedule.duration_minutes, // Removed
 				start_date: getStringValue(schedule.start_date),
 				end_date: getStringValue(schedule.end_date),
 				timezone: getStringValue(schedule.timezone)
@@ -140,7 +139,7 @@
 
 		const payloadForSubmit: SchedulePayload = {
 			...formData,
-			duration_minutes: Number(formData.duration_minutes),
+			// duration_minutes: Number(formData.duration_minutes), // Removed
 			start_date: formData.start_date?.trim() === '' ? null : formData.start_date,
 			end_date: formData.end_date?.trim() === '' ? null : formData.end_date,
 			timezone: formData.timezone?.trim() === '' ? null : formData.timezone
@@ -176,6 +175,8 @@
 			</p>
 		</div>
 
+		<!-- Duration Input Removed -->
+		<!-- 
 		<div>
 			<Label for="duration_minutes">Duration (minutes)</Label>
 			<Input
@@ -186,6 +187,7 @@
 				min="1"
 			/>
 		</div>
+		-->
 
 		<div>
 			<Label for="start_date">Start Date (Optional)</Label>
