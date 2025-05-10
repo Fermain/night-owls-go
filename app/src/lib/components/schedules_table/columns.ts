@@ -46,16 +46,14 @@ export const columns: ColumnDef<Schedule>[] = [
 	{
 		id: 'select',
 		header: ({ table }) => {
-			// For shadcn-svelte Checkbox, pass `checked` (boolean) and `indeterminate` (boolean) separately.
 			const isAllPageRowsSelected = table.getIsAllPageRowsSelected();
 			const isSomePageRowsSelected = table.getIsSomePageRowsSelected();
 
 			return renderComponent(Checkbox, {
 				checked: isAllPageRowsSelected,
 				indeterminate: isSomePageRowsSelected && !isAllPageRowsSelected,
-				onCheckedChange: () => {
-					// Callback provides boolean or undefined based on primitive
-					table.getToggleAllPageRowsSelectedHandler()({} as Event);
+				onCheckedChange: (checked: boolean) => {
+					table.toggleAllPageRowsSelected(checked);
 				},
 				'aria-label': 'Select all rows on current page'
 			});
@@ -63,10 +61,8 @@ export const columns: ColumnDef<Schedule>[] = [
 		cell: ({ row }) => {
 			return renderComponent(Checkbox, {
 				checked: row.getIsSelected(),
-				// Individual rows are not indeterminate in this context
-				// indeterminate: false, // or omit
-				onCheckedChange: () => {
-					row.getToggleSelectedHandler()({} as Event);
+				onCheckedChange: (checked: boolean) => {
+					row.toggleSelected(checked);
 				},
 				'aria-label': 'Select row',
 				disabled: !row.getCanSelect()
@@ -74,7 +70,7 @@ export const columns: ColumnDef<Schedule>[] = [
 		},
 		enableSorting: false,
 		enableHiding: false,
-		size: 40 // Give it a small fixed size
+		size: 40
 	},
 	{
 		accessorKey: 'name',

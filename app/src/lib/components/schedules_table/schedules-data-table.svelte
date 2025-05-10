@@ -27,6 +27,7 @@
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import type { Schedule } from './columns'; // Assuming Schedule type is exported from columns.ts
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 
 	// Define the props for this component
 	type DataTableProps = {
@@ -144,6 +145,9 @@
 			toast.error(`Error deleting schedules: ${error.message}`);
 		}
 	});
+
+	let isBulkDeleteDialogOpen = $state(false);
+	let pendingBulkDeleteIds = $state<number[]>([]);
 </script>
 
 <div class="w-full space-y-4">
@@ -157,26 +161,51 @@
 		/>
 
 		{#if table.getSelectedRowModel().rows.length > 0}
-			<Button
-				variant="destructive"
-				class="ml-4"
-				disabled={$bulkDeleteMutation.isPending}
-				onclick={() => {
-					const selectedOriginalRows = table
-						.getSelectedRowModel()
-						.rows.map((row) => row.original as Schedule);
-					const selectedIds = selectedOriginalRows.map((schedule) => schedule.schedule_id);
-					if (selectedIds.length > 0) {
-						$bulkDeleteMutation.mutate(selectedIds);
-					}
-				}}
-			>
-				{#if $bulkDeleteMutation.isPending}
-					Deleting...
-				{:else}
-					Delete Selected ({table.getSelectedRowModel().rows.length})
-				{/if}
-			</Button>
+			<AlertDialog.Root bind:open={isBulkDeleteDialogOpen}>
+				<AlertDialog.Trigger>
+					<Button
+						variant="destructive"
+						class="ml-4"
+						disabled={$bulkDeleteMutation.isPending}
+						onclick={() => {
+							const selectedOriginalRows = table
+								.getSelectedRowModel()
+								.rows.map((row) => row.original as Schedule);
+							const selectedIds = selectedOriginalRows.map((schedule) => schedule.schedule_id);
+							if (selectedIds.length > 0) {
+								pendingBulkDeleteIds = selectedIds;
+							}
+						}}
+					>
+						{#if $bulkDeleteMutation.isPending}
+							Deleting...
+						{:else}
+							Delete Selected ({table.getSelectedRowModel().rows.length})
+						{/if}
+					</Button>
+				</AlertDialog.Trigger>
+				<AlertDialog.Content>
+					<AlertDialog.Header>
+						<AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+						<AlertDialog.Description>
+							This action cannot be undone. This will permanently delete {pendingBulkDeleteIds.length} schedule(s).
+						</AlertDialog.Description>
+					</AlertDialog.Header>
+					<AlertDialog.Footer>
+						<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+						<AlertDialog.Action
+							onclick={() => {
+								if (pendingBulkDeleteIds.length > 0) {
+									$bulkDeleteMutation.mutate(pendingBulkDeleteIds);
+								}
+							}}
+							disabled={$bulkDeleteMutation.isPending}
+						>
+							Yes, delete selected
+						</AlertDialog.Action>
+					</AlertDialog.Footer>
+				</AlertDialog.Content>
+			</AlertDialog.Root>
 		{/if}
 
 		<!-- Column Visibility Dropdown -->
