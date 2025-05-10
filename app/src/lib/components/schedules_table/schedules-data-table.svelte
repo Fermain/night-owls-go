@@ -218,7 +218,8 @@
 												content={header.column.columnDef.header}
 												context={header.getContext()}
 											/>
-											{{ asc: ' ↑', desc: ' ↓' }[header.column.getIsSorted() as string] ?? ''}
+											{@const sorted = header.column.getIsSorted() as 'asc' | 'dsc' | undefined}
+											{sorted ? (sorted === 'asc' ? ' ↑' : ' ↓') : ''}
 										</Button>
 									{:else}
 										<FlexRender
