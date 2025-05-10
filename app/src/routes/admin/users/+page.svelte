@@ -19,7 +19,6 @@
 	// This pattern is fine.
 
 	let isDashboardView = $derived(page.url.searchParams.get('view') === 'dashboard');
-
 </script>
 
 {#if isDashboardView}

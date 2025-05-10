@@ -13,27 +13,31 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     phone,
-    name
+    name,
+    role
 ) VALUES (
     ?,
-    ?
+    ?,
+    COALESCE(?3, 'guest') -- Use guest if role is not provided
 )
-RETURNING user_id, phone, name, created_at
+RETURNING user_id, phone, name, created_at, role
 `
 
 type CreateUserParams struct {
 	Phone string         `json:"phone"`
 	Name  sql.NullString `json:"name"`
+	Role  interface{}    `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Phone, arg.Name)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Phone, arg.Name, arg.Role)
 	var i User
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
@@ -49,7 +53,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT user_id, phone, name, created_at FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?
 `
 
@@ -61,12 +65,13 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int64) (User, error) {
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
 
 const getUserByPhone = `-- name: GetUserByPhone :one
-SELECT user_id, phone, name, created_at FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE phone = ?
 `
 
@@ -78,12 +83,13 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT user_id, phone, name, created_at FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -100,6 +106,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Phone,
 			&i.Name,
 			&i.CreatedAt,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}

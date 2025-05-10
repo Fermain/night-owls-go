@@ -67,4 +67,5 @@ type User struct {
 	Phone     string         `json:"phone"`
 	Name      sql.NullString `json:"name"`
 	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
 }

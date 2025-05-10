@@ -1,23 +1,25 @@
 -- name: CreateUser :one
 INSERT INTO users (
     phone,
-    name
+    name,
+    role
 ) VALUES (
     ?,
-    ?
+    ?,
+    COALESCE(sqlc.narg('role'), 'guest') -- Use guest if role is not provided
 )
-RETURNING *;
+RETURNING user_id, phone, name, created_at, role;
 
 -- name: GetUserByPhone :one
-SELECT * FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE phone = ?;
 
 -- name: GetUserByID :one
-SELECT * FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?;
 
 -- name: ListUsers :many
-SELECT * FROM users;
+SELECT user_id, phone, name, created_at, role FROM users;
 
 -- name: DeleteUser :exec
 DELETE FROM users

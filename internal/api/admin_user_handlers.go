@@ -15,13 +15,15 @@ import (
 
 // Request/response types
 type createUserRequest struct {
-	Phone string `json:"phone"`
-	Name  string `json:"name"`
+	Phone string  `json:"phone"`
+	Name  string  `json:"name"`
+	Role  *string `json:"role,omitempty"` // Optional role
 }
 
 type updateUserRequest struct {
-	Phone string `json:"phone"`
-	Name  string `json:"name"`
+	Phone string  `json:"phone"`
+	Name  string  `json:"name"`
+	Role  *string `json:"role,omitempty"` // Optional role, assuming we'll add update role logic later
 }
 
 // UserAPIResponse defines the structure for user data sent to the frontend.
@@ -30,6 +32,7 @@ type UserAPIResponse struct {
 	Phone     string  `json:"phone"`
 	Name      *string `json:"name"`
 	CreatedAt string  `json:"created_at"`
+	Role      string  `json:"role"` // Added role
 }
 
 // AdminUserHandler handles admin-specific user API requests.
@@ -77,6 +80,7 @@ func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request
 			Phone:     u.Phone,
 			Name:      namePtr,
 			CreatedAt: createdAtStr,
+			Role:      u.Role, // Added role
 		})
 	}
 
@@ -127,6 +131,7 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 		Phone:     dbUser.Phone,
 		Name:      namePtr,
 		CreatedAt: createdAtStr,
+		Role:      dbUser.Role, // Added role
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiUser, h.logger)
@@ -169,10 +174,17 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Validate role if provided
+	if req.Role != nil && !isValidRole(*req.Role) {
+		RespondWithError(w, http.StatusBadRequest, "Invalid role specified. Must be one of: admin, owl, guest", h.logger)
+		return
+	}
+
 	// Create user
 	params := db.CreateUserParams{
 		Phone: req.Phone,
 		Name:  sql.NullString{String: req.Name, Valid: req.Name != ""},
+		Role:  sql.NullString{String: derefString(req.Role), Valid: req.Role != nil},
 	}
 
 	dbUser, err := h.db.CreateUser(r.Context(), params)
@@ -196,6 +208,7 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 		Phone:     dbUser.Phone,
 		Name:      namePtr,
 		CreatedAt: createdAtStr,
+		Role:      dbUser.Role, // Added role
 	}
 
 	RespondWithJSON(w, http.StatusCreated, apiUser, h.logger)
@@ -285,10 +298,30 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		Phone: req.Phone,
 		Name:  namePtr,
 		CreatedAt: createdAtStr, // Preserve original creation timestamp
+		Role:  existingDbUser.Role, // Include role from fetched user
 	}
 
 	// TODO: Implement actual user update logic in the database
 	// For now, just pretend we updated the user
+	// TODO: Implement actual update logic for user details including role
+	// Placeholder: fetch the user again to return current data including potentially unchanged role
+	dbUpdatedUser, _ := h.db.GetUserByID(r.Context(), id) // Ignoring error for placeholder
+	var updatedNamePtr *string
+	if dbUpdatedUser.Name.Valid {
+		updatedNamePtr = &dbUpdatedUser.Name.String
+	}
+	var updatedCreatedAtStr string
+	if dbUpdatedUser.CreatedAt.Valid {
+		updatedCreatedAtStr = dbUpdatedUser.CreatedAt.Time.Format(time.RFC3339)
+	}
+	apiUser = UserAPIResponse{
+		ID:        dbUpdatedUser.UserID,
+		Phone:     dbUpdatedUser.Phone,
+		Name:      updatedNamePtr,
+		CreatedAt: updatedCreatedAtStr,
+		Role:      dbUpdatedUser.Role, // Include role from fetched user
+	}
+
 	RespondWithJSON(w, http.StatusOK, apiUser, h.logger)
 }
 
@@ -333,4 +366,22 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"}, h.logger)
+}
+
+// Helper function to validate role
+func isValidRole(role string) bool {
+	switch role {
+	case "admin", "owl", "guest":
+		return true
+	default:
+		return false
+	}
+}
+
+// Helper function to dereference string pointer or return empty string if nil
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 } 

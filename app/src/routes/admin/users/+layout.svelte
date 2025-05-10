@@ -88,7 +88,9 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={page.url.pathname === '/admin/users' && page.url.searchParams.get('view') === 'dashboard' && !currentSelectedUserIdInStore}
+				class:active={page.url.pathname === '/admin/users' &&
+					page.url.searchParams.get('view') === 'dashboard' &&
+					!currentSelectedUserIdInStore}
 			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
@@ -111,7 +113,10 @@
 						href={`/admin/users?userId=${user.id}`}
 						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
 						class:active={currentSelectedUserIdInStore === user.id}
-						onclick={(event) => { event.preventDefault(); selectUserForEditing(user); }}
+						onclick={(event) => {
+							event.preventDefault();
+							selectUserForEditing(user);
+						}}
 					>
 						{#if user?.role === 'admin'}
 							<ShieldUserIcon class="h-4 w-4" />
@@ -128,8 +133,8 @@
 
 		<!-- Create User button at the bottom -->
 		<div class="p-3 border-t mt-auto">
-			<Button 
-				href="/admin/users/new" 
+			<Button
+				href="/admin/users/new"
 				class="w-full"
 				variant={page.url.pathname === '/admin/users/new' ? 'default' : 'outline'}
 			>

@@ -4,6 +4,7 @@
 		phone: string;
 		name: string | null;
 		created_at: string;
+		role: string;
 	};
 </script>
 
@@ -18,6 +19,15 @@
 	import { TelInput } from 'svelte-tel-input';
 	import type { E164Number } from 'svelte-tel-input/types';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import {
+		Select,
+		SelectContent,
+		SelectGroup,
+		SelectItem,
+		SelectLabel,
+		SelectTrigger,
+		SelectValue
+	} from '$lib/components/ui/select';
 
 	// Use $props() for Svelte 5 runes mode
 	let { user }: { user?: UserData } = $props();
@@ -25,12 +35,14 @@
 	// Define schema with Zod
 	const userSchema = z.object({
 		phone: z.string().min(1, 'Phone number is required'),
-		name: z.string().nullable()
+		name: z.string().nullable(),
+		role: z.enum(['admin', 'owl', 'guest'], { message: 'Role must be admin, owl, or guest' })
 	});
 
 	type FormValues = {
 		phone: E164Number | '';
 		name: string | null;
+		role: 'admin' | 'owl' | 'guest';
 	};
 
 	// State for svelte-tel-input validity
@@ -39,7 +51,8 @@
 	// Local Svelte state for form data, initialized with user prop data if available
 	let formData = $state<FormValues>({
 		phone: (user?.phone as E164Number) || '',
-		name: user?.name || null
+		name: user?.name || null,
+		role: user?.role || 'guest'
 	});
 
 	// State for Zod validation errors
@@ -51,7 +64,7 @@
 	const queryClient = useQueryClient();
 
 	type MutationVariables = {
-		payload: { phone: E164Number; name: string | null };
+		payload: { phone: E164Number; name: string | null; role: 'admin' | 'owl' | 'guest' };
 		userId?: number;
 	};
 
@@ -158,7 +171,8 @@
 
 		const payloadForSubmit = {
 			phone: formData.phone as E164Number,
-			name: formData.name?.trim() === '' ? null : formData.name
+			name: formData.name?.trim() === '' ? null : formData.name,
+			role: formData.role
 		};
 
 		const mutationVars: MutationVariables = {
@@ -191,7 +205,13 @@
 		{user?.id !== undefined ? 'Edit' : 'Create New'} User
 	</h1>
 
-	<form onsubmit={(event) => { event.preventDefault(); handleSubmit(); }} class="space-y-6 max-w-lg">
+	<form
+		onsubmit={(event) => {
+			event.preventDefault();
+			handleSubmit();
+		}}
+		class="space-y-6 max-w-lg"
+	>
 		<div>
 			<Label for="phone" class="block mb-2">Phone Number</Label>
 			<TelInput
@@ -223,6 +243,27 @@
 				<p class="text-sm text-destructive mt-1">{zodErrors.name}</p>
 			{/if}
 			<p class="text-sm text-muted-foreground mt-1">User's full name</p>
+		</div>
+
+		<div>
+			<Label for="role" class="block mb-2">Role</Label>
+			<Select.Root bind:value={formData.role}>
+				<Select.Trigger class="w-full" id="role">
+					<Select.Value placeholder="Select a role" />
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						<Select.Label>User Role</Select.Label>
+						<SelectItem value="guest">Guest</SelectItem>
+						<SelectItem value="owl">Owl</SelectItem>
+						<SelectItem value="admin">Admin</SelectItem>
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+			{#if zodErrors.role}
+				<p class="text-sm text-destructive mt-1">{zodErrors.role}</p>
+			{/if}
+			<p class="text-sm text-muted-foreground mt-1">Defines the user's permissions.</p>
 		</div>
 
 		{#if user?.id !== undefined}
