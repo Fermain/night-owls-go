@@ -14,4 +14,7 @@ WHERE phone = ?;
 
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE user_id = ?; 
+WHERE user_id = ?;
+
+-- name: ListUsers :many
+SELECT * FROM users; 

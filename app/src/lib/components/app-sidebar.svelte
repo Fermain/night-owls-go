@@ -1,61 +1,30 @@
-<script lang="ts" module>
-	import Inbox from "@lucide/svelte/icons/inbox";
-	import CalendarRange from "@lucide/svelte/icons/calendar-range";
-	import ChartCandlestick from "@lucide/svelte/icons/chart-candlestick";
-	import Users from "@lucide/svelte/icons/users";
-	import Send from "@lucide/svelte/icons/send";
-
-	const data = {
-		user: {
-			name: "owl",
-			phone: "+2700000000",
-			avatar: "/avatars/shadcn.jpg",
-		},
-		navMain: [
-			{
-				title: "Reports",
-				url: "/admin/reports",
-				icon: Inbox,
-				isActive: true,
-			},
-			{
-				title: "Shifts",
-				url: "/admin/schedules",
-				icon: CalendarRange,
-				isActive: false,
-			},
-			{
-				title: "Statistics",
-				url: "#",
-				icon: ChartCandlestick,
-				isActive: false,
-			},
-			{
-				title: "Users",
-				url: "/admin/users",
-				icon: Users,
-				isActive: false,
-			},
-			{
-				title: "Broadcasts",
-				url: "/admin/broadcasts",
-				icon: Send,
-				isActive: false,
-			},
-		],
-	};
-</script>
-
 <script lang="ts">
-	import NavUser from "$lib/components/nav-user.svelte";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import { useSidebar } from "$lib/components/ui/sidebar/index.js";
-	import Command from "@lucide/svelte/icons/command";
-	import type { ComponentProps } from "svelte";
+	import NavUser from '$lib/components/nav-user.svelte';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	import Command from '@lucide/svelte/icons/command';
+	import type { ComponentProps, Snippet } from 'svelte';
+	import { page } from '$app/state';
 
-	let { ref = $bindable(null), children, ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
+	// Import the navigation store
+	import { navigation } from '$lib/stores/navigation';
+	import { goto } from '$app/navigation';
 
-	let activeItem = $state(data.navMain[0]);
+	let {
+		ref = $bindable(null),
+		children,
+		listContent,
+		...restProps
+	}: ComponentProps<typeof Sidebar.Root> & { listContent?: Snippet; children?: Snippet } = $props();
+
+	// Placeholder user data, ideally this would come from another store or context
+	const user = {
+		// Define user data here or import from a store
+		name: 'owl',
+		phone: '+2700000000',
+		avatar: '/avatars/shadcn.jpg'
+	};
+
 	const sidebar = useSidebar();
 </script>
 
@@ -91,15 +60,14 @@
 			<Sidebar.Group>
 				<Sidebar.GroupContent class="px-1.5 md:px-0">
 					<Sidebar.Menu>
-						{#each data.navMain as item (item.title)}
+						{#each $navigation as item (item.title)}
 							<Sidebar.MenuItem>
 								<Sidebar.MenuButton
 									tooltipContentProps={{
-										hidden: false,
+										hidden: false
 									}}
-									onclick={() => {
-									}}
-									isActive={activeItem.title === item.title}
+									onclick={() => goto(item.url)}
+									isActive={page.url.pathname === item.url}
 									class="px-2.5 md:px-2"
 								>
 									{#snippet tooltipContent()}
@@ -116,7 +84,7 @@
 		</Sidebar.Content>
 		<Sidebar.Footer>
 			<!-- // This will be a persistant svelte store -->
-			<NavUser user={data.user} />
+			<NavUser {user} />
 		</Sidebar.Footer>
 	</Sidebar.Root>
 
@@ -125,8 +93,13 @@
 	<Sidebar.Root collapsible="none" class="hidden flex-1 md:flex">
 		<Sidebar.Header class="gap-3.5 border-b p-4">
 			<div class="flex w-full items-center justify-between">
+				<!-- Use $page.url.pathname to derive the title -->
 				<div class="text-foreground text-base font-medium">
-					{activeItem.title}
+					{page.url.pathname
+						.split('/')
+						.pop()
+						?.replace(/-/g, ' ')
+						.replace(/\w/g, (char) => char.toUpperCase()) || 'Dashboard'}
 				</div>
 			</div>
 			<Sidebar.Input placeholder="Type to search..." />
@@ -134,9 +107,18 @@
 		<Sidebar.Content>
 			<Sidebar.Group class="px-0">
 				<Sidebar.GroupContent>
-					{@render children?.()}
+					{#if listContent}
+						{@render listContent()}
+					{/if}
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
 		</Sidebar.Content>
 	</Sidebar.Root>
+
+	<!-- This is the MAIN CONTENT area -->
+	<div class="flex-1 overflow-auto">
+		{#if children}
+			{@render children()}
+		{/if}
+	</div>
 </Sidebar.Root>

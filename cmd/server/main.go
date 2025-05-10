@@ -163,6 +163,7 @@ func main() {
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService) // Instantiate AdminScheduleHandlers
+	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger) // Instantiate AdminUserHandler
 
 	// Public routes
 	router.Post("/auth/register", authAPIHandler.RegisterHandler)
@@ -189,13 +190,28 @@ func main() {
 	})
 
 	// Admin routes (currently unprotected for development of CRUD views)
-	router.Route("/api/admin/schedules", func(r chi.Router) {
-		r.Get("/", adminScheduleAPIHandler.AdminListSchedules)          // GET /api/admin/schedules
-		r.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)         // POST /api/admin/schedules
-		r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
-		r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
-		r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
-		r.Delete("/", adminScheduleAPIHandler.AdminBulkDeleteSchedules) // DELETE /api/admin/schedules
+	router.Route("/api/admin", func(r chi.Router) {
+		r.Use(api.AuthMiddleware(cfg, logger))
+
+		// Admin Schedules routes
+		router.Route("/api/admin/schedules", func(r chi.Router) {
+			r.Get("/", adminScheduleAPIHandler.AdminListSchedules)          // GET /api/admin/schedules
+			r.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)         // POST /api/admin/schedules
+			r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
+			r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
+			r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
+			r.Delete("/", adminScheduleAPIHandler.AdminBulkDeleteSchedules) // DELETE /api/admin/schedules
+		})
+
+		// Admin Users routes
+		router.Route("/api/admin/users", func(r chi.Router) {
+			r.Get("/", adminUserAPIHandler.AdminListUsers)           // GET /api/admin/users
+			r.Post("/", adminUserAPIHandler.AdminCreateUser)          // POST /api/admin/users
+			r.Get("/{id}", adminUserAPIHandler.AdminGetUser)          // GET /api/admin/users/{id}
+			r.Put("/{id}", adminUserAPIHandler.AdminUpdateUser)        // PUT /api/admin/users/{id}
+		})
+
+		// Add other admin routes here
 	})
 
 	// Swagger documentation

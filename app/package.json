@@ -57,11 +57,14 @@
 		]
 	},
 	"dependencies": {
+		"@tanstack/svelte-form": "^1.11.1",
 		"@tanstack/svelte-query": "^5.75.7",
 		"@tanstack/table-core": "^8.21.3",
+		"@tanstack/zod-form-adapter": "^0.42.1",
 		"cron-parser": "^5.1.1",
 		"cronstrue": "^2.61.0",
 		"lucide-svelte": "^0.509.0",
-		"svelte-sonner": "^0.3.28"
+		"svelte-sonner": "^0.3.28",
+		"zod": "^3.24.4"
 	}
 }
