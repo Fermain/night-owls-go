@@ -237,4 +237,9 @@ func (s *ScheduleService) AdminDeleteSchedule(ctx context.Context, scheduleID in
 	}
 	s.logger.InfoContext(ctx, "Schedule deleted (admin)", "schedule_id", scheduleID)
 	return nil
+}
+
+// AdminBulkDeleteSchedules deletes multiple schedules by their IDs.
+func (s *ScheduleService) AdminBulkDeleteSchedules(ctx context.Context, scheduleIDs []int64) error {
+	return s.querier.AdminBulkDeleteSchedules(ctx, scheduleIDs)
 } 

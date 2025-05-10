@@ -8,7 +8,28 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
+
+const adminBulkDeleteSchedules = `-- name: AdminBulkDeleteSchedules :exec
+DELETE FROM schedules
+WHERE schedule_id IN (/*SLICE:schedule_ids*/?)
+`
+
+func (q *Queries) AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error {
+	query := adminBulkDeleteSchedules
+	var queryParams []interface{}
+	if len(scheduleIds) > 0 {
+		for _, v := range scheduleIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:schedule_ids*/?", strings.Repeat(",?", len(scheduleIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:schedule_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const createSchedule = `-- name: CreateSchedule :one
 INSERT INTO schedules (

@@ -1,10 +1,13 @@
 <script lang="ts" generics="TData, TValue">
-  import type { ColumnDef, PaginationState, SortingState, ColumnFiltersState, VisibilityState, Updater, FilterFn } from "@tanstack/table-core";
+  import type { ColumnDef, PaginationState, SortingState, ColumnFiltersState, VisibilityState, Updater, FilterFn, RowSelectionState } from "@tanstack/table-core";
   import { 
     getCoreRowModel, 
     getPaginationRowModel, 
     getSortedRowModel, 
-    getFilteredRowModel 
+    getFilteredRowModel, 
+    getFacetedRowModel,
+    getFacetedUniqueValues,
+    getFacetedMinMaxValues
   } from "@tanstack/table-core";
   import {
     createSvelteTable,
@@ -15,6 +18,9 @@
   import { Input } from "$lib/components/ui/input";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import { createMutation, useQueryClient } from "@tanstack/svelte-query";
+  import { toast } from "svelte-sonner";
+  import type { Schedule } from "./columns"; // Assuming Schedule type is exported from columns.ts
 
   // Define the props for this component
   type DataTableProps = {
@@ -30,7 +36,7 @@
   let columnFilters = $state<ColumnFiltersState>([]);
   let columnVisibility = $state<VisibilityState>({});
   // For row selection (optional, can be added later if needed)
-  // let rowSelection = $state<RowSelectionState>({}); 
+  let rowSelection = $state<RowSelectionState>({}); 
 
   const table = createSvelteTable<TData>({
     // Getter for data ensures reactivity if the prop changes
@@ -44,8 +50,9 @@
       get sorting() { return sorting; },
       get columnFilters() { return columnFilters; },
       get columnVisibility() { return columnVisibility; },
-      // get rowSelection() { return rowSelection; }, // If using row selection
+      get rowSelection() { return rowSelection; }, // If using row selection
     },
+    enableRowSelection: true, // enable row selection
     // Enable features by providing their row model getters
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -64,9 +71,9 @@
     onColumnVisibilityChange: (updater: Updater<VisibilityState>) => {
       columnVisibility = typeof updater === 'function' ? updater(columnVisibility) : updater;
     },
-    // onRowSelectionChange: (updater) => { // If using row selection
-    //   rowSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
-    // },
+    onRowSelectionChange: (updater: Updater<RowSelectionState>) => { // If using row selection
+      rowSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+    },
     // Optional: default column settings, e.g., min size
     // defaultColumn: {
     //   minSize: 20,
@@ -92,6 +99,33 @@
     columnFilters = newFilters;
   };
 
+  const queryClient = useQueryClient();
+
+  const bulkDeleteMutation = createMutation<unknown, Error, number[], unknown>({
+    mutationFn: async (scheduleIds: number[]) => {
+      const response = await fetch("/api/admin/schedules", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ schedule_ids: scheduleIds }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Failed to delete schedules. Unknown error." }));
+        throw new Error(errorData.message || "Failed to delete schedules.");
+      }
+      return response.json(); 
+    },
+    onSuccess: () => {
+      toast.success("Schedules deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["adminSchedules"] }); // Matches the queryKey in admin/schedules/+page.svelte
+      rowSelection = {}; // Clear selection
+    },
+    onError: (error) => {
+      toast.error(`Error deleting schedules: ${error.message}`);
+    },
+  });
+
 </script>
 
 <div class="w-full space-y-4">
@@ -103,6 +137,27 @@
       oninput={(event) => setFilterValue('name', event.currentTarget.value)}
       class="max-w-sm"
     />
+
+    {#if table.getSelectedRowModel().rows.length > 0}
+      <Button 
+        variant="destructive" 
+        class="ml-4"
+        disabled={$bulkDeleteMutation.isPending}
+        onclick={() => {
+          const selectedOriginalRows = table.getSelectedRowModel().rows.map(row => row.original as Schedule);
+          const selectedIds = selectedOriginalRows.map(schedule => schedule.schedule_id);
+          if (selectedIds.length > 0) {
+            $bulkDeleteMutation.mutate(selectedIds);
+          }
+        }}
+      >
+        {#if $bulkDeleteMutation.isPending}
+          Deleting...
+        {:else}
+          Delete Selected ({table.getSelectedRowModel().rows.length})
+        {/if}
+      </Button>
+    {/if}
 
     <!-- Column Visibility Dropdown -->
     <DropdownMenu.Root>
@@ -175,8 +230,9 @@
   <div class="flex items-center justify-between space-x-2 py-4">
     <div class="text-muted-foreground flex-1 text-sm">
       <!-- Row selection count (if enabled) -->
-      <!-- {table.getFilteredSelectedRowModel().rows.length} of {" "} -->
-      {table.getFilteredRowModel().rows.length} row(s) found.
+      {table.getFilteredSelectedRowModel().rows.length} of {" "}
+      {table.getFilteredRowModel().rows.length} row(s) selected.
+      ({table.getFilteredRowModel().rows.length} total rows found)
     </div>
     <div class="flex items-center space-x-2">
         <Button

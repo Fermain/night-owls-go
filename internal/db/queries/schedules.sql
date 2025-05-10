@@ -47,4 +47,8 @@ RETURNING *;
 
 -- name: DeleteSchedule :exec
 DELETE FROM schedules
-WHERE schedule_id = ?; 
+WHERE schedule_id = ?;
+
+-- name: AdminBulkDeleteSchedules :exec
+DELETE FROM schedules
+WHERE schedule_id IN (sqlc.slice('schedule_ids')); 

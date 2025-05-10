@@ -195,6 +195,7 @@ func main() {
 		r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
 		r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
 		r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
+		r.Delete("/", adminScheduleAPIHandler.AdminBulkDeleteSchedules) // DELETE /api/admin/schedules
 	})
 
 	// Swagger documentation

@@ -222,4 +222,35 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedule deleted successfully"}, h.logger)
+}
+
+// AdminBulkDeleteSchedules handles requests to bulk delete schedules.
+func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, r *http.Request) {
+	type BulkDeleteRequest struct {
+		ScheduleIDs []int64 `json:"schedule_ids"`
+	}
+	var req BulkDeleteRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger)
+		return
+	}
+
+	if len(req.ScheduleIDs) == 0 {
+		RespondWithError(w, http.StatusBadRequest, "No schedule IDs provided for deletion", h.logger)
+		return
+	}
+
+	err := h.scheduleService.AdminBulkDeleteSchedules(r.Context(), req.ScheduleIDs)
+	if err != nil {
+		// Log the error for server-side observability
+		slog.ErrorContext(r.Context(), "Error bulk deleting schedules", "error", err, "schedule_ids", req.ScheduleIDs)
+		
+		// Check for specific errors if needed, e.g., if some IDs were not found (though DELETE is often idempotent)
+		// For a simple bulk delete, a generic server error might be sufficient if any part fails.
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedules", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedules deleted successfully"}, h.logger)
 } 
