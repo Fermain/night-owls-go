@@ -12,6 +12,7 @@ import (
 	"night-owls-go/internal/service"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorhill/cronexpr"
 )
 
 // AdminScheduleHandlers holds handlers for admin schedule operations.
@@ -53,6 +54,12 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	// Basic validation (more can be added)
 	if req.Name == "" || req.CronExpr == "" {
 		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr)", h.logger)
+		return
+	}
+
+	// Validate CRON expression format
+	if _, err := cronexpr.Parse(req.CronExpr); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid CRON expression format", h.logger, "cron_expr", req.CronExpr, "error", err.Error())
 		return
 	}
 
@@ -144,6 +151,12 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 
 	if req.Name == "" || req.CronExpr == "" {
 		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr)", h.logger)
+		return
+	}
+
+	// Validate CRON expression format
+	if _, err := cronexpr.Parse(req.CronExpr); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid CRON expression format", h.logger, "cron_expr", req.CronExpr, "error", err.Error())
 		return
 	}
 

@@ -17,6 +17,7 @@
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import cronstrue from 'cronstrue';
 
 	// Type for the schedule data passed as a prop (for editing)
 	// This should match the structure returned by GET /api/admin/schedules/{id}
@@ -50,6 +51,27 @@
 		end_date: null,
 		timezone: null
 	};
+
+	let cronError: string | null = null;
+	let humanizedCron: string | null = null;
+
+	function validateAndHumanizeCron(cronValue: string) {
+		if (!cronValue || cronValue.trim() === '') {
+			cronError = 'CRON expression is required.'; // Or handle as per form's `required` attribute
+			humanizedCron = null;
+			return;
+		}
+		try {
+			humanizedCron = cronstrue.toString(cronValue, { verbose: true });
+			cronError = null; // Clear error if cronstrue parsing succeeds
+		} catch (e) {
+			cronError = e instanceof Error ? e.message : 'Invalid CRON expression';
+			humanizedCron = null;
+		}
+	}
+
+	// Validate and humanize when cron_expr changes
+	$: validateAndHumanizeCron(formData.cron_expr);
 
 	// Helper to extract string value from SQLNullString/SQLNullTime like objects or direct strings
 	function getStringValue(value: { String: string; Valid: boolean } | string | null | undefined): string | null {
@@ -170,9 +192,15 @@
 		<div>
 			<Label for="cron_expr">CRON Expression</Label>
 			<Input id="cron_expr" type="text" bind:value={formData.cron_expr} required />
-			<p class="text-sm text-muted-foreground mt-1">
-				E.g., "0 0 * * *" for daily at midnight.
-			</p>
+			{#if cronError}
+				<p class="text-sm text-destructive mt-1">{cronError}</p>
+			{:else if humanizedCron}
+				<p class="text-sm text-muted-foreground mt-1">Interprets as: {humanizedCron}</p>
+			{:else}
+				<p class="text-sm text-muted-foreground mt-1">
+					E.g., "0 0 * * *" for daily at midnight.
+				</p>
+			{/if}
 		</div>
 
 		<!-- Duration Input Removed -->
@@ -207,7 +235,7 @@
 			<p class="text-sm text-muted-foreground mt-1">E.g., "America/New_York", "UTC".</p>
 		</div>
 
-		<Button type="submit" disabled={$mutation.isPending}>
+		<Button type="submit" disabled={$mutation.isPending || !!cronError}>
 			{#if $mutation.isPending}
 				{schedule?.schedule_id !== undefined ? 'Updating...' : 'Creating...'}
 			{:else}

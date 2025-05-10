@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { buttonVariants, Button } from "$lib/components/ui/button"; // Using buttonVariants for styling, added Button for Delete
+    import { buttonVariants, Button } from "$lib/components/ui/button";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog"; // Import AlertDialog components
     import type { HTMLAnchorAttributes } from "svelte/elements";
     import { createMutation, useQueryClient } from "@tanstack/svelte-query";
     import { toast } from "svelte-sonner";
@@ -7,13 +8,14 @@
     export let scheduleId: number;
 
     let href: HTMLAnchorAttributes['href'] = `/admin/schedules/${scheduleId}/edit`;
+    let isConfirmDialogOpen = false;
 
     const queryClient = useQueryClient();
 
     const deleteMutation = createMutation<
-        Response, // Response type from fetch
-        Error,    // Error type
-        number    // Variables type (scheduleId)
+        Response, 
+        Error,    
+        number    
     >({
         mutationFn: async (idToDelete) => {
             const response = await fetch(`/api/admin/schedules/${idToDelete}`, {
@@ -28,16 +30,16 @@
         onSuccess: () => {
             toast.success('Schedule deleted successfully!');
             queryClient.invalidateQueries({ queryKey: ['adminSchedules'] });
+            isConfirmDialogOpen = false; // Close dialog on success
         },
         onError: (error) => {
             toast.error(`Error deleting schedule: ${error.message}`);
+            isConfirmDialogOpen = false; // Close dialog on error too, or handle differently
         }
     });
 
-    function handleDelete() {
-        if (window.confirm(`Are you sure you want to delete schedule ID ${scheduleId}? This action cannot be undone.`)) {
-            $deleteMutation.mutate(scheduleId);
-        }
+    function confirmDelete() {
+        $deleteMutation.mutate(scheduleId);
     }
 </script>
 
@@ -45,16 +47,32 @@
     <a {href} class={buttonVariants({ variant: "outline", size: "sm" })} role="button">
         Edit
     </a>
-    <Button 
-        variant="destructive" 
-        size="sm" 
-        onclick={handleDelete} 
-        disabled={$deleteMutation.isPending}
-    >
-        {#if $deleteMutation.isPending}
-            Deleting...
-        {:else}
-            Delete
-        {/if}
-    </Button>
+
+    <AlertDialog.Root bind:open={isConfirmDialogOpen}>
+        <AlertDialog.Trigger>
+            {#snippet child({ props })}
+                <button {...props} class={buttonVariants({ variant: "destructive", size: "sm" })} disabled={$deleteMutation.isPending}>
+                    {#if $deleteMutation.isPending}
+                        Deleting...
+                    {:else}
+                        Delete
+                    {/if}
+                </button>
+            {/snippet}
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+                <AlertDialog.Description>
+                    This action cannot be undone. This will permanently delete schedule ID {scheduleId}.
+                </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action onclick={confirmDelete} disabled={$deleteMutation.isPending}>
+                    Yes, delete schedule
+                </AlertDialog.Action>
+            </AlertDialog.Footer>
+        </AlertDialog.Content>
+    </AlertDialog.Root>
 </div>
