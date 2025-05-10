@@ -114,11 +114,4 @@
 			</Sidebar.Group>
 		</Sidebar.Content>
 	</Sidebar.Root>
-
-	<!-- This is the MAIN CONTENT area -->
-	<div class="flex-1 overflow-auto">
-		{#if children}
-			{@render children()}
-		{/if}
-	</div>
 </Sidebar.Root>

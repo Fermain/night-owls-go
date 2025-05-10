@@ -59,6 +59,8 @@
 		});
 		return unsub;
 	});
+
+  let { children } = $props();
 </script>
 
 {#snippet userListContent()}
@@ -105,7 +107,7 @@
 
 {#snippet pageSlotContent()}
 	<div class="p-4">
-		<slot />
+		{@render children()}
 	</div>
 {/snippet}
 

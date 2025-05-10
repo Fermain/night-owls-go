@@ -36,10 +36,13 @@
 		</Breadcrumb.Root>
 	</header>
 	{#if children}
-		{@render children()} <!-- This 'children' is the pageSlotContent from +layout.svelte -->
+		{@render children()}
 	{/if}
 {/snippet}
 
 <Sidebar.Provider style="--sidebar-width: 350px;">
-	<AppSidebar listContent={listContent} children={mainContentWithHeader} />
+	<AppSidebar listContent={listContent} />
+	<Sidebar.Inset>
+		{@render mainContentWithHeader()}
+	</Sidebar.Inset>
 </Sidebar.Provider>
