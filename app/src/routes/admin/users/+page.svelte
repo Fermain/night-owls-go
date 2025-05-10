@@ -4,21 +4,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 
-	// No need to fetch individual user data here anymore, 
+	// No need to fetch individual user data here anymore,
 	// it comes from the layout via the store if a user is selected for editing.
 
 	// To clear the selection and show dashboard, the layout now handles setting the store to undefined.
 	// This page just reflects the store's content.
 
 	let currentUserForForm: UserData | undefined = undefined;
-	const unsubscribe = selectedUserForForm.subscribe(value => {
+	const unsubscribe = selectedUserForForm.subscribe((value) => {
 		currentUserForForm = value;
 	});
 
 	// Ensure to unsubscribe when the component is destroyed
 	import { onDestroy } from 'svelte';
 	onDestroy(unsubscribe);
-
 </script>
 
 {#if currentUserForForm}

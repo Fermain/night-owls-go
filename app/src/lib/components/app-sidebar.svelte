@@ -15,7 +15,8 @@
 		listContent,
 		title,
 		...restProps
-	}: Omit<ComponentProps<typeof Sidebar.Root>, 'children'> & { // Omit children from Sidebar.Root props if it conflicts
+	}: Omit<ComponentProps<typeof Sidebar.Root>, 'children'> & {
+		// Omit children from Sidebar.Root props if it conflicts
 		listContent?: Snippet;
 		// children?: Snippet; // Removed from explicit type as well
 		title?: string;

@@ -35,7 +35,6 @@
 		queryFn: fetchUsers
 	});
 
-
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {
 		goto(`/admin/users?userId=${user.id}`);
@@ -44,7 +43,7 @@
 	// Reactive variable to check if a user is selected for active highlighting
 	let currentSelectedUserIdInStore = $state<number | undefined>(undefined);
 	$effect(() => {
-		const unsub = selectedUserForForm.subscribe(value => {
+		const unsub = selectedUserForForm.subscribe((value) => {
 			currentSelectedUserIdInStore = value?.id;
 		});
 		return unsub;
@@ -57,7 +56,7 @@
 
 		if (userIdFromUrl && users) {
 			const userIdNum = parseInt(userIdFromUrl, 10);
-			const userFromUrl = users.find(u => u.id === userIdNum);
+			const userFromUrl = users.find((u) => u.id === userIdNum);
 			const currentStoreUserId = $selectedUserForForm?.id;
 
 			if (userFromUrl) {
@@ -76,7 +75,7 @@
 		}
 	});
 
-  let { children } = $props();
+	let { children } = $props();
 </script>
 
 {#snippet userListContent()}
@@ -85,7 +84,9 @@
 			<a
 				href={item.url || undefined}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
-				class:active={page.url.pathname === item.url && !currentSelectedUserIdInStore && !page.url.searchParams.has('userId')}
+				class:active={page.url.pathname === item.url &&
+					!currentSelectedUserIdInStore &&
+					!page.url.searchParams.has('userId')}
 			>
 				<span>{item.title}</span>
 			</a>
@@ -93,7 +94,9 @@
 		{#if $usersQuery.isLoading}
 			<div class="p-4 text-sm">Loading users...</div>
 		{:else if $usersQuery.isError}
-			<div class="p-4 text-sm text-destructive">Error loading users: {$usersQuery.error.message}</div>
+			<div class="p-4 text-sm text-destructive">
+				Error loading users: {$usersQuery.error.message}
+			</div>
 		{:else if $usersQuery.data}
 			{#each $usersQuery.data as user (user.id)}
 				<a
@@ -110,5 +113,5 @@
 {/snippet}
 
 <SidebarPage listContent={userListContent} title="Users">
-  {@render children()}
+	{@render children()}
 </SidebarPage>

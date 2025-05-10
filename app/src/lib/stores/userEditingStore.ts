@@ -12,4 +12,4 @@ export interface UserData {
 	created_at: string; // Assuming this is available and non-optional for existing users
 }
 
-export const selectedUserForForm = writable<UserData | undefined>(undefined); 
+export const selectedUserForForm = writable<UserData | undefined>(undefined);

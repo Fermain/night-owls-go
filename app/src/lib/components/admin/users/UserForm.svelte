@@ -24,9 +24,7 @@
 
 	// Define schema with Zod
 	const userSchema = z.object({
-		phone: z
-			.string()
-			.min(1, 'Phone number is required'),
+		phone: z.string().min(1, 'Phone number is required'),
 		name: z.string().nullable()
 	});
 
@@ -57,11 +55,7 @@
 		userId?: number;
 	};
 
-	const mutation = createMutation<
-		Response,
-		Error,
-		MutationVariables
-	>({
+	const mutation = createMutation<Response, Error, MutationVariables>({
 		mutationFn: async (vars) => {
 			const { payload, userId: currentUserIdToUse } = vars;
 			const currentIsEditMode = currentUserIdToUse !== undefined;
@@ -115,7 +109,7 @@
 			}
 			// For DELETE, response might be empty (204) or have a message (200)
 			// We don't strictly need to parse JSON if it might be empty
-			return response; 
+			return response;
 		},
 		onSuccess: async () => {
 			toast.success('User deleted successfully!');
@@ -210,8 +204,8 @@
 			/>
 			{#if zodErrors.phone}
 				<p class="text-sm text-destructive mt-1">{zodErrors.phone}</p>
-			{:else if !phoneInputValid && formData.phone !== '' } 
-				 <p class="text-sm text-destructive mt-1">Invalid phone number.</p>
+			{:else if !phoneInputValid && formData.phone !== ''}
+				<p class="text-sm text-destructive mt-1">Invalid phone number.</p>
 			{:else}
 				<p class="text-sm text-muted-foreground mt-1">Required. South Africa (+27)</p>
 			{/if}
@@ -250,7 +244,12 @@
 			</Button>
 			<Button type="button" variant="outline" onclick={() => goto('/admin/users')}>Cancel</Button>
 			{#if user?.id !== undefined}
-				<Button type="button" variant="destructive" onclick={handleDeleteClick} disabled={$deleteUserMutation.isPending}>
+				<Button
+					type="button"
+					variant="destructive"
+					onclick={handleDeleteClick}
+					disabled={$deleteUserMutation.isPending}
+				>
 					{#if $deleteUserMutation.isPending}Deleting...{:else}Delete User{/if}
 				</Button>
 			{/if}
@@ -259,13 +258,14 @@
 </div>
 
 {#if showDeleteConfirm}
-	<AlertDialog.Root open={showDeleteConfirm} onOpenChange={(open) => showDeleteConfirm = open}>
+	<AlertDialog.Root open={showDeleteConfirm} onOpenChange={(open) => (showDeleteConfirm = open)}>
 		<AlertDialog.Content>
 			<AlertDialog.Header>
 				<AlertDialog.Title>Are you sure you want to delete this user?</AlertDialog.Title>
 				<AlertDialog.Description>
 					This action cannot be undone. This will permanently delete the user
-					{user?.name ? ` "${user.name}"` : ''} {user?.phone ? `(${user.phone})` : ''}.
+					{user?.name ? ` "${user.name}"` : ''}
+					{user?.phone ? `(${user.phone})` : ''}.
 				</AlertDialog.Description>
 			</AlertDialog.Header>
 			<AlertDialog.Footer>

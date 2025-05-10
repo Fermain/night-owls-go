@@ -6,21 +6,27 @@
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 
-	let { children, listContent, title }: { children?: Snippet; listContent?: Snippet; title?: string } = $props();
+	let {
+		children,
+		listContent,
+		title
+	}: { children?: Snippet; listContent?: Snippet; title?: string } = $props();
 
-	const breadcrumbs = $derived((() => {
-		const pathSegments = page.url.pathname.split('/').filter(Boolean); // filter(Boolean) removes empty strings from leading/trailing slashes
-		return pathSegments.map((segment, index) => {
-			const href = '/' + pathSegments.slice(0, index + 1).join('/');
-			const label = segment
-				.replace(/-/g, ' ') // Replace hyphens with spaces
-				.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
-			return {
-				label,
-				href
-			};
-		});
-	})());
+	const breadcrumbs = $derived(
+		(() => {
+			const pathSegments = page.url.pathname.split('/').filter(Boolean); // filter(Boolean) removes empty strings from leading/trailing slashes
+			return pathSegments.map((segment, index) => {
+				const href = '/' + pathSegments.slice(0, index + 1).join('/');
+				const label = segment
+					.replace(/-/g, ' ') // Replace hyphens with spaces
+					.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
+				return {
+					label,
+					href
+				};
+			});
+		})()
+	);
 </script>
 
 {#snippet mainContentWithHeader()}
@@ -45,7 +51,7 @@
 {/snippet}
 
 <Sidebar.Provider style="--sidebar-width: 350px;">
-	<AppSidebar listContent={listContent} title={title} />
+	<AppSidebar {listContent} {title} />
 	<Sidebar.Inset>
 		{@render mainContentWithHeader()}
 	</Sidebar.Inset>
