@@ -6,7 +6,6 @@
 	import type { ComponentProps, Snippet } from 'svelte';
 	import { page } from '$app/state';
 
-	// Import the navigation store
 	import { navigation } from '$lib/stores/navigation';
 	import { goto } from '$app/navigation';
 
@@ -14,8 +13,13 @@
 		ref = $bindable(null),
 		children,
 		listContent,
+		title,
 		...restProps
-	}: ComponentProps<typeof Sidebar.Root> & { listContent?: Snippet; children?: Snippet } = $props();
+	}: ComponentProps<typeof Sidebar.Root> & {
+		listContent?: Snippet;
+		children?: Snippet;
+		title?: string;
+	} = $props();
 
 	// Placeholder user data, ideally this would come from another store or context
 	const user = {
@@ -92,20 +96,17 @@
 	<!-- We disable collapsible and let it fill remaining space -->
 	<Sidebar.Root collapsible="none" class="hidden flex-1 md:flex">
 		<Sidebar.Header class="gap-3.5 border-b p-4">
-			<div class="flex w-full items-center justify-between">
-				<!-- Use $page.url.pathname to derive the title -->
-				<div class="text-foreground text-base font-medium">
-					{page.url.pathname
-						.split('/')
-						.pop()
-						?.replace(/-/g, ' ')
-						.replace(/\w/g, (char) => char.toUpperCase()) || 'Dashboard'}
+			{#if title}
+				<div class="flex w-full items-center justify-between">
+					<div class="text-foreground text-base font-medium">
+						{title}
+					</div>
 				</div>
-			</div>
+			{/if}
 			<Sidebar.Input placeholder="Type to search..." />
 		</Sidebar.Header>
 		<Sidebar.Content>
-			<Sidebar.Group class="px-0">
+			<Sidebar.Group class="p-0">
 				<Sidebar.GroupContent>
 					{#if listContent}
 						{@render listContent()}

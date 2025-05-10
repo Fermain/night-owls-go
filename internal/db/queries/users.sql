@@ -17,4 +17,8 @@ SELECT * FROM users
 WHERE user_id = ?;
 
 -- name: ListUsers :many
-SELECT * FROM users; 
+SELECT * FROM users;
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE user_id = ?; 

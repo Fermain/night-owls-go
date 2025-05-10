@@ -37,18 +37,16 @@
 		queryFn: fetchUsers
 	});
 
-	// Handle click for static nav items
-	const handleStaticNavClick = (url: string) => {
-		if (url === '/admin/users/new' || url === '/admin/users') {
-			selectedUserForForm.set(undefined);
+	$effect(() => {
+		// Log the data when it's available or changes
+		if ($usersQuery.data) {
+			console.log('Admin Users Data:', $usersQuery.data);
 		}
-		goto(url);
-	};
+	});
 
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {
-		selectedUserForForm.set(user);
-		goto('/admin/users');
+		goto(`/admin/users?userId=${user.id}`);
 	};
 
 	// Reactive variable to check if a user is selected for active highlighting
@@ -60,26 +58,61 @@
 		return unsub;
 	});
 
+	// Effect to synchronize the selectedUserForForm store with the userId URL query parameter
+	$effect(() => {
+		const userIdFromUrl = page.url.searchParams.get('userId');
+		const users = $usersQuery.data;
+
+		if (userIdFromUrl && users) {
+			const userIdNum = parseInt(userIdFromUrl, 10);
+			const userFromUrl = users.find(u => u.id === userIdNum);
+
+			const currentStoreUserId = $selectedUserForForm?.id;
+
+			if (userFromUrl) {
+				if (currentStoreUserId !== userIdNum) {
+					selectedUserForForm.set(userFromUrl);
+				}
+			} else {
+				// User ID in URL but not found (e.g. invalid ID, or list not fully loaded yet for a deep link)
+				if ($selectedUserForForm !== undefined) {
+					selectedUserForForm.set(undefined);
+				}
+				// Optional: if truly invalid and not just a loading race, clear URL
+				// if (page.url.pathname === '/admin/users') { // only if on the main users page
+				// goto('/admin/users', { replaceState: true, noScroll: true });
+				// }
+			}
+		} else if (!userIdFromUrl) {
+			// No userId in URL (e.g. /admin/users or /admin/users/new)
+			if ($selectedUserForForm !== undefined) {
+				selectedUserForForm.set(undefined);
+			}
+		}
+		// This effect depends on page.url and $usersQuery.data
+		// Access them to ensure reactivity if not already done: page.url; $usersQuery.data;
+	});
+
   let { children } = $props();
 </script>
 
 {#snippet userListContent()}
-	<Sidebar.Group>
+	<Sidebar.Group class="p-0">
 		<Sidebar.GroupContent>
-			<Sidebar.Menu>
+			<Sidebar.Menu class="gap-0">
 				{#each usersNavItems as item (item.title)}
-					<Sidebar.MenuItem>
-						<Sidebar.MenuButton onclick={() => handleStaticNavClick(item.url || '')}>
+					<!-- <Sidebar.MenuItem> -->
+						<!-- <Sidebar.MenuButton onclick={() => handleStaticNavClick(item.url || '')}> -->
 							<a
 								href={item.url || undefined}
-								class="flex items-center w-full h-full"
-								class:active={page.url.pathname === item.url && !currentSelectedUserIdInStore}
+								class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
+								class:active={page.url.pathname === item.url && !currentSelectedUserIdInStore && !page.url.searchParams.has('userId')}
 							>
-								<item.icon />
+								<!-- <item.icon /> -->
 								<span>{item.title}</span>
 							</a>
-						</Sidebar.MenuButton>
-					</Sidebar.MenuItem>
+						<!-- </Sidebar.MenuButton> -->
+					<!-- </Sidebar.MenuItem> -->
 				{/each}
 				{#if $usersQuery.isLoading}
 					<Sidebar.MenuItem>Loading users...</Sidebar.MenuItem>
@@ -87,17 +120,18 @@
 					<Sidebar.MenuItem>Error loading users: {$usersQuery.error.message}</Sidebar.MenuItem>
 				{:else if $usersQuery.data}
 					{#each $usersQuery.data as user (user.id)}
-						<Sidebar.MenuItem>
-							<Sidebar.MenuButton onclick={() => selectUserForEditing(user)}>
+						<!-- <Sidebar.MenuItem> -->
+							<!-- <Sidebar.MenuButton onclick={() => selectUserForEditing(user)}> -->
 								<a
-									href={'/admin/users'} 
-									class="flex items-center w-full h-full"
+									href={`/admin/users?userId=${user.id}`}
+									class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
 									class:active={currentSelectedUserIdInStore === user.id}
+                  onclick={() => selectUserForEditing(user)}
 								>
-									<span>{user.name || user.phone || `User ${user.id}`}</span>
+									<span>{user.name} [{user.phone}]</span>
 								</a>
-							</Sidebar.MenuButton>
-						</Sidebar.MenuItem>
+							<!-- </Sidebar.MenuButton> -->
+						<!-- </Sidebar.MenuItem> -->
 					{/each}
 				{/if}
 			</Sidebar.Menu>
@@ -105,10 +139,6 @@
 	</Sidebar.Group>
 {/snippet}
 
-{#snippet pageSlotContent()}
-	<div class="p-4">
-		{@render children()}
-	</div>
-{/snippet}
-
-<SidebarPage listContent={userListContent} children={pageSlotContent} /> 
+<SidebarPage listContent={userListContent} title="Users">
+  {@render children()}
+</SidebarPage>

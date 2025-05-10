@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
 
@@ -21,6 +22,14 @@ type createUserRequest struct {
 type updateUserRequest struct {
 	Phone string `json:"phone"`
 	Name  string `json:"name"`
+}
+
+// UserAPIResponse defines the structure for user data sent to the frontend.
+type UserAPIResponse struct {
+	ID        int64   `json:"id"`
+	Phone     string  `json:"phone"`
+	Name      *string `json:"name"`
+	CreatedAt string  `json:"created_at"`
 }
 
 // AdminUserHandler handles admin-specific user API requests.
@@ -42,18 +51,36 @@ func NewAdminUserHandler(db db.Querier, logger *slog.Logger) *AdminUserHandler {
 // @Description Get a list of all users in the system. Requires admin authentication.
 // @Tags admin/users
 // @Produce json
-// @Success 200 {array} db.User "List of users"
+// @Success 200 {array} UserAPIResponse "List of users"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users [get]
 func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.db.ListUsers(r.Context())
+	dbUsers, err := h.db.ListUsers(r.Context())
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to list users", "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to fetch users", h.logger)
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, users, h.logger)
+	apiUsers := make([]UserAPIResponse, 0, len(dbUsers))
+	for _, u := range dbUsers {
+		var namePtr *string
+		if u.Name.Valid {
+			namePtr = &u.Name.String
+		}
+		var createdAtStr string
+		if u.CreatedAt.Valid {
+			createdAtStr = u.CreatedAt.Time.Format(time.RFC3339)
+		}
+		apiUsers = append(apiUsers, UserAPIResponse{
+			ID:        u.UserID,
+			Phone:     u.Phone,
+			Name:      namePtr,
+			CreatedAt: createdAtStr,
+		})
+	}
+
+	RespondWithJSON(w, http.StatusOK, apiUsers, h.logger)
 }
 
 // AdminGetUser handles GET /api/admin/users/{id}
@@ -62,7 +89,7 @@ func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request
 // @Tags admin/users
 // @Produce json
 // @Param id path int64 true "User ID"
-// @Success 200 {object} db.User "User details"
+// @Success 200 {object} UserAPIResponse "User details"
 // @Failure 400 {object} ErrorResponse "Invalid user ID"
 // @Failure 404 {object} ErrorResponse "User not found"
 // @Failure 500 {object} ErrorResponse "Internal server error"
@@ -75,7 +102,7 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := h.db.GetUserByID(r.Context(), id)
+	dbUser, err := h.db.GetUserByID(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			RespondWithError(w, http.StatusNotFound, "User not found", h.logger)
@@ -86,7 +113,23 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, user, h.logger)
+	var namePtr *string
+	if dbUser.Name.Valid {
+		namePtr = &dbUser.Name.String
+	}
+	var createdAtStr string
+	if dbUser.CreatedAt.Valid {
+		createdAtStr = dbUser.CreatedAt.Time.Format(time.RFC3339)
+	}
+
+	apiUser := UserAPIResponse{
+		ID:        dbUser.UserID,
+		Phone:     dbUser.Phone,
+		Name:      namePtr,
+		CreatedAt: createdAtStr,
+	}
+
+	RespondWithJSON(w, http.StatusOK, apiUser, h.logger)
 }
 
 // AdminCreateUser handles POST /api/admin/users
@@ -96,7 +139,7 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Param user body createUserRequest true "User information"
-// @Success 201 {object} db.User "Created user"
+// @Success 201 {object} UserAPIResponse "Created user"
 // @Failure 400 {object} ErrorResponse "Invalid request"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users [post]
@@ -132,14 +175,30 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 		Name:  sql.NullString{String: req.Name, Valid: req.Name != ""},
 	}
 
-	user, err := h.db.CreateUser(r.Context(), params)
+	dbUser, err := h.db.CreateUser(r.Context(), params)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to create user", "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create user", h.logger)
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, user, h.logger)
+	var namePtr *string
+	if dbUser.Name.Valid {
+		namePtr = &dbUser.Name.String
+	}
+	var createdAtStr string
+	if dbUser.CreatedAt.Valid {
+		createdAtStr = dbUser.CreatedAt.Time.Format(time.RFC3339)
+	}
+
+	apiUser := UserAPIResponse{
+		ID:        dbUser.UserID,
+		Phone:     dbUser.Phone,
+		Name:      namePtr,
+		CreatedAt: createdAtStr,
+	}
+
+	RespondWithJSON(w, http.StatusCreated, apiUser, h.logger)
 }
 
 // AdminUpdateUser handles PUT /api/admin/users/{id}
@@ -150,7 +209,7 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 // @Produce json
 // @Param id path int64 true "User ID"
 // @Param user body updateUserRequest true "User information"
-// @Success 200 {object} db.User "Updated user"
+// @Success 200 {object} UserAPIResponse "Updated user"
 // @Failure 400 {object} ErrorResponse "Invalid request"
 // @Failure 404 {object} ErrorResponse "User not found"
 // @Failure 500 {object} ErrorResponse "Internal server error"
@@ -200,20 +259,78 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Since there's no UpdateUser method in the DB interface, we'll have to do a workaround:
-	// Delete the user and create a new one with the same ID
-	// This is a simplified approach for this demo - in a real app, you'd add a proper UPDATE query to the DB
-
 	// For now, let's just respond with the user data and a message
 	// In a real implementation, you'd update the user in the database
-	user := db.User{
-		UserID: id,
-		Phone:  req.Phone,
-		Name:   sql.NullString{String: req.Name, Valid: req.Name != ""},
-		// CreatedAt would be preserved from the original user
+	// We fetch the existing user to get CreatedAt, as it's not part of updateUserRequest
+	existingDbUser, err := h.db.GetUserByID(r.Context(), id)
+	if err != nil {
+		// This should ideally not happen if the previous check passed, but good for safety
+		h.logger.ErrorContext(r.Context(), "Failed to get existing user for update response", "user_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to finalize user update", h.logger)
+		return
+	}
+
+	var namePtr *string
+	if req.Name != "" {
+		namePtr = &req.Name
+	}
+	
+	var createdAtStr string
+	if existingDbUser.CreatedAt.Valid {
+		createdAtStr = existingDbUser.CreatedAt.Time.Format(time.RFC3339)
+	}
+
+	apiUser := UserAPIResponse{
+		ID:    id,
+		Phone: req.Phone,
+		Name:  namePtr,
+		CreatedAt: createdAtStr, // Preserve original creation timestamp
 	}
 
 	// TODO: Implement actual user update logic in the database
 	// For now, just pretend we updated the user
-	RespondWithJSON(w, http.StatusOK, user, h.logger)
+	RespondWithJSON(w, http.StatusOK, apiUser, h.logger)
+}
+
+// AdminDeleteUser handles DELETE /api/admin/users/{id}
+// @Summary Delete a user (Admin)
+// @Description Deletes a user by their ID. Requires admin authentication.
+// @Tags admin/users
+// @Produce json
+// @Param id path int64 true "User ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} ErrorResponse "Invalid user ID"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/admin/users/{id} [delete]
+func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "error", err)
+		return
+	}
+
+	// Optional: Check if user exists before attempting delete, to return 404 if not found.
+	// However, DELETE is often idempotent, so an error from db.DeleteUser if not found might be okay too.
+	// For a better UX, checking first is good.
+	_, err = h.db.GetUserByID(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			RespondWithError(w, http.StatusNotFound, "User not found", h.logger)
+		} else {
+			h.logger.ErrorContext(r.Context(), "Failed to check user before delete", "user_id", id, "error", err)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to delete user", h.logger)
+		}
+		return
+	}
+
+	err = h.db.DeleteUser(r.Context(), id)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to delete user", "user_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete user", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"}, h.logger)
 } 

@@ -209,6 +209,7 @@ func main() {
 			r.Post("/", adminUserAPIHandler.AdminCreateUser)          // POST /api/admin/users
 			r.Get("/{id}", adminUserAPIHandler.AdminGetUser)          // GET /api/admin/users/{id}
 			r.Put("/{id}", adminUserAPIHandler.AdminUpdateUser)        // PUT /api/admin/users/{id}
+			r.Delete("/{id}", adminUserAPIHandler.AdminDeleteUser)    // DELETE /api/admin/users/{id}
 		})
 
 		// Add other admin routes here

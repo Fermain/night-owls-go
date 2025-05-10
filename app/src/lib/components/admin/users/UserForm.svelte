@@ -1,4 +1,4 @@
-<script context="module" lang="ts">
+<script module lang="ts">
 	export type UserData = {
 		id: number;
 		phone: string;
@@ -16,46 +16,48 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { z } from 'zod';
+	import { TelInput } from 'svelte-tel-input';
+	import type { E164Number } from 'svelte-tel-input/types';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
-	// Prop for existing user data (undefined if creating a new one)
-	export let user: UserData | undefined = undefined;
+	// Use $props() for Svelte 5 runes mode
+	let { user }: { user?: UserData } = $props();
 
 	// Define schema with Zod
 	const userSchema = z.object({
 		phone: z
 			.string()
 			.min(1, 'Phone number is required')
-			.regex(
-				/^\+?[0-9]{10,15}$/,
-				'Please enter a valid phone number (10-15 digits, can start with +)'
-			),
+			.refine((val) => val === null || typeof val === 'string' && val.startsWith('+'), {
+				message: 'Phone number must be in E164 format (e.g., +27...)'
+			}),
 		name: z.string().nullable()
 	});
 
-	type FormValues = z.infer<typeof userSchema>;
-
-	// Local Svelte state for form data
-	let formData: FormValues = {
-		phone: '',
-		name: null
+	type FormValues = {
+		phone: E164Number | '';
+		name: string | null;
 	};
 
-	// State for validation errors
-	let errors: Partial<Record<keyof FormValues, string>> = {};
+	// State for svelte-tel-input validity
+	let phoneInputValid = $state(true);
 
-	onMount(() => {
-		if (user) {
-			formData = {
-				phone: user.phone,
-				name: user.name
-			};
-		}
+	// Local Svelte state for form data, initialized with user prop data if available
+	let formData = $state<FormValues>({
+		phone: (user?.phone as E164Number) || '',
+		name: user?.name || null
 	});
+
+	// State for Zod validation errors
+	let zodErrors: Partial<Record<keyof FormValues, string>> = {};
+
+	// State for controlling delete confirmation dialog
+	let showDeleteConfirm = $state(false);
 
 	const queryClient = useQueryClient();
 
 	type MutationVariables = {
-		payload: FormValues;
+		payload: { phone: E164Number; name: string | null };
 		userId?: number;
 	};
 
@@ -104,6 +106,35 @@
 		}
 	});
 
+	const deleteUserMutation = createMutation<
+		Response, // Assuming server returns a success response (e.g. { message: "..." } or just 200/204)
+		Error,
+		number // Variable type is userId
+	>({
+		mutationFn: async (userIdToDelete) => {
+			const response = await fetch(`/api/admin/users/${userIdToDelete}`, {
+				method: 'DELETE'
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: 'Failed to delete user' }));
+				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+			}
+			// For DELETE, response might be empty (204) or have a message (200)
+			// We don't strictly need to parse JSON if it might be empty
+			return response; 
+		},
+		onSuccess: async () => {
+			toast.success('User deleted successfully!');
+			await queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+			goto('/admin/users'); // Navigate away from the potentially deleted user's form
+			showDeleteConfirm = false; // Close dialog on success
+		},
+		onError: (error) => {
+			toast.error(`Error deleting user: ${error.message}`);
+			showDeleteConfirm = false; // Close dialog on error too
+		}
+	});
+
 	function validateForm(): boolean {
 		const result = userSchema.safeParse(formData);
 		if (!result.success) {
@@ -113,11 +144,16 @@
 					newErrors[issue.path[0] as keyof FormValues] = issue.message;
 				}
 			}
-			errors = newErrors;
-			return false;
+			zodErrors = newErrors;
+		} else {
+			zodErrors = {};
 		}
-		errors = {};
-		return true;
+
+		if (!phoneInputValid && !zodErrors.phone) {
+			zodErrors.phone = 'Invalid phone number format.';
+		}
+
+		return result.success && phoneInputValid;
 	}
 
 	function handleSubmit() {
@@ -127,8 +163,13 @@
 
 		const currentUserIdFromProp = user?.id;
 
-		const payloadForSubmit: FormValues = {
-			phone: formData.phone.trim(),
+		if (formData.phone === '' || !phoneInputValid) {
+			toast.error('Phone number is invalid or empty.');
+			return;
+		}
+
+		const payloadForSubmit = {
+			phone: formData.phone as E164Number,
 			name: formData.name?.trim() === '' ? null : formData.name
 		};
 
@@ -138,6 +179,18 @@
 		};
 
 		$mutation.mutate(mutationVars);
+	}
+
+	function handleDeleteClick() {
+		if (user?.id) {
+			showDeleteConfirm = true;
+		}
+	}
+
+	function confirmDelete() {
+		if (user?.id) {
+			$deleteUserMutation.mutate(user.id);
+		}
 	}
 </script>
 
@@ -153,17 +206,20 @@
 	<form on:submit|preventDefault={handleSubmit} class="space-y-6 max-w-lg">
 		<div>
 			<Label for="phone">Phone Number</Label>
-			<Input
-				id="phone"
-				type="text"
+			<TelInput
 				bind:value={formData.phone}
+				bind:valid={phoneInputValid}
+				country={'ZA'}
+				class={zodErrors.phone || !phoneInputValid ? 'border-red-500' : ''}
+				inputClass="w-full p-2 border rounded-md focus:ring-primary focus:border-primary"
 				required
-				class={errors.phone ? 'border-red-500' : ''}
 			/>
-			{#if errors.phone}
-				<p class="text-sm text-destructive mt-1">{errors.phone}</p>
+			{#if zodErrors.phone}
+				<p class="text-sm text-destructive mt-1">{zodErrors.phone}</p>
+			{:else if !phoneInputValid && formData.phone !== '' } 
+				 <p class="text-sm text-destructive mt-1">Invalid phone number.</p>
 			{:else}
-				<p class="text-sm text-muted-foreground mt-1">Required. Format: +1234567890</p>
+				<p class="text-sm text-muted-foreground mt-1">Required. South Africa (+27)</p>
 			{/if}
 		</div>
 
@@ -173,10 +229,10 @@
 				id="name"
 				type="text"
 				bind:value={formData.name}
-				class={errors.name ? 'border-red-500' : ''}
+				class={zodErrors.name ? 'border-red-500' : ''}
 			/>
-			{#if errors.name}
-				<p class="text-sm text-destructive mt-1">{errors.name}</p>
+			{#if zodErrors.name}
+				<p class="text-sm text-destructive mt-1">{zodErrors.name}</p>
 			{/if}
 			<p class="text-sm text-muted-foreground mt-1">User's full name</p>
 		</div>
@@ -199,6 +255,35 @@
 				{/if}
 			</Button>
 			<Button type="button" variant="outline" onclick={() => goto('/admin/users')}>Cancel</Button>
+			{#if user?.id !== undefined}
+				<Button type="button" variant="destructive" onclick={handleDeleteClick} disabled={$deleteUserMutation.isPending}>
+					{#if $deleteUserMutation.isPending}Deleting...{:else}Delete User{/if}
+				</Button>
+			{/if}
 		</div>
 	</form>
 </div>
+
+{#if showDeleteConfirm}
+	<AlertDialog.Root open={showDeleteConfirm} onOpenChange={(open) => showDeleteConfirm = open}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>Are you sure you want to delete this user?</AlertDialog.Title>
+				<AlertDialog.Description>
+					This action cannot be undone. This will permanently delete the user
+					{user?.name ? ` "${user.name}"` : ''} {user?.phone ? `(${user.phone})` : ''}.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel disabled={$deleteUserMutation.isPending}>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action
+					onclick={confirmDelete}
+					disabled={$deleteUserMutation.isPending}
+					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+				>
+					{#if $deleteUserMutation.isPending}Deleting...{:else}Yes, delete user{/if}
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+{/if}

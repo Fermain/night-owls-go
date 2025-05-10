@@ -6,7 +6,7 @@
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 
-	let { children, listContent }: { children?: Snippet; listContent?: Snippet } = $props();
+	let { children, listContent, title }: { children?: Snippet; listContent?: Snippet; title?: string } = $props();
 
 	const breadcrumbs = $derived(
 		page.url.pathname
@@ -41,7 +41,7 @@
 {/snippet}
 
 <Sidebar.Provider style="--sidebar-width: 350px;">
-	<AppSidebar listContent={listContent} />
+	<AppSidebar listContent={listContent} title={title} />
 	<Sidebar.Inset>
 		{@render mainContentWithHeader()}
 	</Sidebar.Inset>

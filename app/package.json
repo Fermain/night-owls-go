@@ -65,6 +65,7 @@
 		"cronstrue": "^2.61.0",
 		"lucide-svelte": "^0.509.0",
 		"svelte-sonner": "^0.3.28",
+		"svelte-tel-input": "^3.6.0",
 		"zod": "^3.24.4"
 	}
 }

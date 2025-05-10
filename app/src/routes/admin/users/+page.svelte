@@ -22,7 +22,9 @@
 </script>
 
 {#if currentUserForForm}
-	<UserForm user={currentUserForForm} />
+	{#key currentUserForForm.id}
+		<UserForm user={currentUserForForm} />
+	{/key}
 {:else}
 	<div class="p-4 text-center">
 		<h1 class="text-2xl font-semibold mb-4">Manage Users</h1>
