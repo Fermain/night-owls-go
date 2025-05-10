@@ -13,6 +13,13 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
+// Service specific errors
+var (
+	ErrNotFound       = errors.New("requested resource not found")
+	// ErrInternalServer is assumed to be defined globally or in another service package.
+	// Add other common service errors here if needed, e.g., ErrInvalidInput
+)
+
 // ScheduleService handles logic related to schedules and shift availability.
 type ScheduleService struct {
 	querier db.Querier
@@ -172,4 +179,55 @@ func (s *ScheduleService) ListAllSchedules(ctx context.Context) ([]db.Schedule, 
 		return nil, ErrInternalServer
 	}
 	return schedules, nil
+}
+
+// AdminCreateSchedule creates a new schedule (admin operation).
+func (s *ScheduleService) AdminCreateSchedule(ctx context.Context, params db.CreateScheduleParams) (db.Schedule, error) {
+	schedule, err := s.querier.CreateSchedule(ctx, params)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create schedule (admin)", "params", params, "error", err)
+		return db.Schedule{}, ErrInternalServer
+	}
+	s.logger.InfoContext(ctx, "Schedule created (admin)", "schedule_id", schedule.ScheduleID, "name", schedule.Name)
+	return schedule, nil
+}
+
+// AdminGetScheduleByID retrieves a specific schedule by its ID (admin operation).
+func (s *ScheduleService) AdminGetScheduleByID(ctx context.Context, scheduleID int64) (db.Schedule, error) {
+	schedule, err := s.querier.GetScheduleByID(ctx, scheduleID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "Schedule not found (admin)", "schedule_id", scheduleID, "error", err)
+			return db.Schedule{}, ErrNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get schedule by ID (admin)", "schedule_id", scheduleID, "error", err)
+		return db.Schedule{}, ErrInternalServer
+	}
+	return schedule, nil
+}
+
+// AdminUpdateSchedule updates an existing schedule (admin operation).
+func (s *ScheduleService) AdminUpdateSchedule(ctx context.Context, params db.UpdateScheduleParams) (db.Schedule, error) {
+	schedule, err := s.querier.UpdateSchedule(ctx, params)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) { 
+			s.logger.WarnContext(ctx, "Schedule not found for update (admin)", "schedule_id", params.ScheduleID, "error", err)
+			return db.Schedule{}, ErrNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to update schedule (admin)", "params", params, "error", err)
+		return db.Schedule{}, ErrInternalServer
+	}
+	s.logger.InfoContext(ctx, "Schedule updated (admin)", "schedule_id", schedule.ScheduleID, "name", schedule.Name)
+	return schedule, nil
+}
+
+// AdminDeleteSchedule deletes a schedule by its ID (admin operation).
+func (s *ScheduleService) AdminDeleteSchedule(ctx context.Context, scheduleID int64) error {
+	err := s.querier.DeleteSchedule(ctx, scheduleID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete schedule (admin)", "schedule_id", scheduleID, "error", err)
+		return ErrInternalServer
+	}
+	s.logger.InfoContext(ctx, "Schedule deleted (admin)", "schedule_id", scheduleID)
+	return nil
 } 

@@ -60,6 +60,16 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 	return i, err
 }
 
+const deleteSchedule = `-- name: DeleteSchedule :exec
+DELETE FROM schedules
+WHERE schedule_id = ?
+`
+
+func (q *Queries) DeleteSchedule(ctx context.Context, scheduleID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteSchedule, scheduleID)
+	return err
+}
+
 const getScheduleByID = `-- name: GetScheduleByID :one
 SELECT schedule_id, name, cron_expr, start_date, end_date, duration_minutes, timezone FROM schedules
 WHERE schedule_id = ?
@@ -159,4 +169,51 @@ func (q *Queries) ListAllSchedules(ctx context.Context) ([]Schedule, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateSchedule = `-- name: UpdateSchedule :one
+UPDATE schedules
+SET
+    name = ?,
+    cron_expr = ?,
+    start_date = ?,
+    end_date = ?,
+    duration_minutes = ?,
+    timezone = ?
+WHERE
+    schedule_id = ?
+RETURNING schedule_id, name, cron_expr, start_date, end_date, duration_minutes, timezone
+`
+
+type UpdateScheduleParams struct {
+	Name            string         `json:"name"`
+	CronExpr        string         `json:"cron_expr"`
+	StartDate       sql.NullTime   `json:"start_date"`
+	EndDate         sql.NullTime   `json:"end_date"`
+	DurationMinutes int64          `json:"duration_minutes"`
+	Timezone        sql.NullString `json:"timezone"`
+	ScheduleID      int64          `json:"schedule_id"`
+}
+
+func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error) {
+	row := q.db.QueryRowContext(ctx, updateSchedule,
+		arg.Name,
+		arg.CronExpr,
+		arg.StartDate,
+		arg.EndDate,
+		arg.DurationMinutes,
+		arg.Timezone,
+		arg.ScheduleID,
+	)
+	var i Schedule
+	err := row.Scan(
+		&i.ScheduleID,
+		&i.Name,
+		&i.CronExpr,
+		&i.StartDate,
+		&i.EndDate,
+		&i.DurationMinutes,
+		&i.Timezone,
+	)
+	return i, err
 }

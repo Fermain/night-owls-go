@@ -162,6 +162,7 @@ func main() {
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
+	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService) // Instantiate AdminScheduleHandlers
 
 	// Public routes
 	router.Post("/auth/register", authAPIHandler.RegisterHandler)
@@ -185,6 +186,15 @@ func main() {
 		// Push notification routes (protected)
 		r.Post("/push/subscribe", pushAPIHandler.SubscribePush)
 		r.Delete("/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
+	})
+
+	// Admin routes (currently unprotected for development of CRUD views)
+	router.Route("/api/admin/schedules", func(r chi.Router) {
+		r.Get("/", adminScheduleAPIHandler.AdminListSchedules)          // GET /api/admin/schedules
+		r.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)         // POST /api/admin/schedules
+		r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
+		r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
+		r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
 	})
 
 	// Swagger documentation
