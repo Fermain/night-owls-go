@@ -18,7 +18,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import cronstrue from 'cronstrue';
-	import { CronVisualizer } from '$lib/components/cron_visualizer';
+	import CronView from '$lib/components/cron/cron-view.svelte';
 
 	// Type for the schedule data passed as a prop (for editing)
 	// This should match the structure returned by GET /api/admin/schedules/{id}
@@ -189,7 +189,7 @@
 				<p class="text-sm text-muted-foreground mt-1">Interprets as: {humanizedCron}</p>
 				{#if formData.cron_expr.trim() !== ''}
 					<div class="mt-2">
-						<CronVisualizer cronExpr={formData.cron_expr} />
+						<CronView cronExpr={formData.cron_expr} />
 					</div>
 				{/if}
 			{:else}

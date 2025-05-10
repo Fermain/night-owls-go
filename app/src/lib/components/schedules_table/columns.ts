@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { createRawSnippet } from 'svelte';
 import { renderSnippet, renderComponent } from '$lib/components/ui/data-table';
-import { CronVisualizer } from '$lib/components/cron_visualizer';
+import CronView from '$lib/components/cron/cron-view.svelte';
 import ScheduleActions from './schedule-actions.svelte';
 import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 
@@ -110,7 +110,7 @@ export const columns: ColumnDef<Schedule>[] = [
 		header: 'Schedule Visualization',
 		cell: ({ row }) => {
 			const cronExpr = row.original.cron_expr;
-			return renderComponent(CronVisualizer, { cronExpr: cronExpr });
+			return renderComponent(CronView, { cronExpr: cronExpr });
 		},
 		enableSorting: false
 	},

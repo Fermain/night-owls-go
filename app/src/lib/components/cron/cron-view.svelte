@@ -161,6 +161,3 @@
 	{/if}
 </div>
 
-<style>
-	/* Styles can be added here if needed later */
-</style>
