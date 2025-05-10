@@ -2,6 +2,8 @@ import type { ColumnDef } from "@tanstack/table-core";
 import { createRawSnippet } from "svelte";
 import { renderSnippet, renderComponent } from "$lib/components/ui/data-table"; // Adjusted import path
 import CronHumanizer from "$lib/components/cron_humanizer/CronHumanizer.svelte";
+// import { Button } from "$lib/components/ui/button"; // Button import removed as not directly used
+import ScheduleActions from "./ScheduleActions.svelte"; // Import the new component
 
 // Define types for how Go's sql.NullString and sql.NullTime are serialized to JSON
 export type SQLNullString = {
@@ -111,13 +113,14 @@ export const columns: ColumnDef<Schedule>[] = [
       return renderSnippet(snippet, timezone);
     }
   },
-  // TODO: Consider adding an 'actions' column later if needed
-  // {
-  //   id: "actions",
-  //   cell: ({ row }) => {
-  //     // const schedule = row.original;
-  //     // return renderComponent(ScheduleActions, { id: schedule.schedule_id });
-  //     return "Actions..."; // Placeholder
-  //   },
-  // },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const schedule = row.original;
+      return renderComponent(ScheduleActions, { scheduleId: schedule.schedule_id });
+    },
+    enableSorting: false,
+    enableHiding: false,
+  },
 ]; 
