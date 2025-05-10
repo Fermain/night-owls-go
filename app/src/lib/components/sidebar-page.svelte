@@ -8,15 +8,19 @@
 
 	let { children, listContent, title }: { children?: Snippet; listContent?: Snippet; title?: string } = $props();
 
-	const breadcrumbs = $derived(
-		page.url.pathname
-			.split('/')
-			.slice(1)
-			.map((crumb, index) => ({
-				label: crumb.replace(/-/g, ' ').replace(/ \w/g, (char) => char.toUpperCase()),
-				href: `${index === 0 ? '/' : '/' + page.url.pathname.split(crumb)[0]}${crumb}`
-			}))
-	);
+	const breadcrumbs = $derived((() => {
+		const pathSegments = page.url.pathname.split('/').filter(Boolean); // filter(Boolean) removes empty strings from leading/trailing slashes
+		return pathSegments.map((segment, index) => {
+			const href = '/' + pathSegments.slice(0, index + 1).join('/');
+			const label = segment
+				.replace(/-/g, ' ') // Replace hyphens with spaces
+				.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
+			return {
+				label,
+				href
+			};
+		});
+	})());
 </script>
 
 {#snippet mainContentWithHeader()}

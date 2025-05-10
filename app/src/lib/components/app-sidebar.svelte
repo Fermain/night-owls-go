@@ -1,7 +1,7 @@
 <script lang="ts">
 	import NavUser from '$lib/components/nav-user.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	// import { useSidebar } from '$lib/components/ui/sidebar/index.js'; // useSidebar was called but not used
 	import Command from '@lucide/svelte/icons/command';
 	import type { ComponentProps, Snippet } from 'svelte';
 	import { page } from '$app/state';
@@ -11,13 +11,13 @@
 
 	let {
 		ref = $bindable(null),
-		children,
+		// children, // children prop was defined but not used by AppSidebar directly, nor passed by SidebarPage
 		listContent,
 		title,
 		...restProps
-	}: ComponentProps<typeof Sidebar.Root> & {
+	}: Omit<ComponentProps<typeof Sidebar.Root>, 'children'> & { // Omit children from Sidebar.Root props if it conflicts
 		listContent?: Snippet;
-		children?: Snippet;
+		// children?: Snippet; // Removed from explicit type as well
 		title?: string;
 	} = $props();
 
@@ -29,7 +29,7 @@
 		avatar: '/avatars/shadcn.jpg'
 	};
 
-	const sidebar = useSidebar();
+	// const sidebar = useSidebar(); // Removed as sidebar variable was not used
 </script>
 
 <Sidebar.Root

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import UsersIcon from '@lucide/svelte/icons/users';
-	import PlusIcon from '@lucide/svelte/icons/plus-circle';
+	// import * as Sidebar from '$lib/components/ui/sidebar/index.js'; // No longer used directly
+	import UsersIcon from '@lucide/svelte/icons/users'; // Keep if icons might return, or remove if definitely not
+	import PlusIcon from '@lucide/svelte/icons/plus-circle'; // Keep if icons might return, or remove if definitely not
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -12,13 +12,11 @@
 	const usersNavItems = [
 		{
 			title: 'All Users',
-			url: '/admin/users',
-			icon: UsersIcon
+			url: '/admin/users'
 		},
 		{
 			title: 'Create User',
-			url: '/admin/users/new',
-			icon: PlusIcon
+			url: '/admin/users/new'
 		}
 	];
 
@@ -37,12 +35,6 @@
 		queryFn: fetchUsers
 	});
 
-	$effect(() => {
-		// Log the data when it's available or changes
-		if ($usersQuery.data) {
-			console.log('Admin Users Data:', $usersQuery.data);
-		}
-	});
 
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {
@@ -66,7 +58,6 @@
 		if (userIdFromUrl && users) {
 			const userIdNum = parseInt(userIdFromUrl, 10);
 			const userFromUrl = users.find(u => u.id === userIdNum);
-
 			const currentStoreUserId = $selectedUserForForm?.id;
 
 			if (userFromUrl) {
@@ -74,69 +65,48 @@
 					selectedUserForForm.set(userFromUrl);
 				}
 			} else {
-				// User ID in URL but not found (e.g. invalid ID, or list not fully loaded yet for a deep link)
 				if ($selectedUserForForm !== undefined) {
 					selectedUserForForm.set(undefined);
 				}
-				// Optional: if truly invalid and not just a loading race, clear URL
-				// if (page.url.pathname === '/admin/users') { // only if on the main users page
-				// goto('/admin/users', { replaceState: true, noScroll: true });
-				// }
 			}
 		} else if (!userIdFromUrl) {
-			// No userId in URL (e.g. /admin/users or /admin/users/new)
 			if ($selectedUserForForm !== undefined) {
 				selectedUserForForm.set(undefined);
 			}
 		}
-		// This effect depends on page.url and $usersQuery.data
-		// Access them to ensure reactivity if not already done: page.url; $usersQuery.data;
 	});
 
   let { children } = $props();
 </script>
 
 {#snippet userListContent()}
-	<Sidebar.Group class="p-0">
-		<Sidebar.GroupContent>
-			<Sidebar.Menu class="gap-0">
-				{#each usersNavItems as item (item.title)}
-					<!-- <Sidebar.MenuItem> -->
-						<!-- <Sidebar.MenuButton onclick={() => handleStaticNavClick(item.url || '')}> -->
-							<a
-								href={item.url || undefined}
-								class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
-								class:active={page.url.pathname === item.url && !currentSelectedUserIdInStore && !page.url.searchParams.has('userId')}
-							>
-								<!-- <item.icon /> -->
-								<span>{item.title}</span>
-							</a>
-						<!-- </Sidebar.MenuButton> -->
-					<!-- </Sidebar.MenuItem> -->
-				{/each}
-				{#if $usersQuery.isLoading}
-					<Sidebar.MenuItem>Loading users...</Sidebar.MenuItem>
-				{:else if $usersQuery.isError}
-					<Sidebar.MenuItem>Error loading users: {$usersQuery.error.message}</Sidebar.MenuItem>
-				{:else if $usersQuery.data}
-					{#each $usersQuery.data as user (user.id)}
-						<!-- <Sidebar.MenuItem> -->
-							<!-- <Sidebar.MenuButton onclick={() => selectUserForEditing(user)}> -->
-								<a
-									href={`/admin/users?userId=${user.id}`}
-									class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
-									class:active={currentSelectedUserIdInStore === user.id}
-                  onclick={() => selectUserForEditing(user)}
-								>
-									<span>{user.name} [{user.phone}]</span>
-								</a>
-							<!-- </Sidebar.MenuButton> -->
-						<!-- </Sidebar.MenuItem> -->
-					{/each}
-				{/if}
-			</Sidebar.Menu>
-		</Sidebar.GroupContent>
-	</Sidebar.Group>
+	<div class="flex flex-col">
+		{#each usersNavItems as item (item.title)}
+			<a
+				href={item.url || undefined}
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
+				class:active={page.url.pathname === item.url && !currentSelectedUserIdInStore && !page.url.searchParams.has('userId')}
+			>
+				<span>{item.title}</span>
+			</a>
+		{/each}
+		{#if $usersQuery.isLoading}
+			<div class="p-4 text-sm">Loading users...</div>
+		{:else if $usersQuery.isError}
+			<div class="p-4 text-sm text-destructive">Error loading users: {$usersQuery.error.message}</div>
+		{:else if $usersQuery.data}
+			{#each $usersQuery.data as user (user.id)}
+				<a
+					href={`/admin/users?userId=${user.id}`}
+					class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
+					class:active={currentSelectedUserIdInStore === user.id}
+					on:click={() => selectUserForEditing(user)}
+				>
+					<span>{user.name || 'Unnamed User'} [{user.phone}]</span>
+				</a>
+			{/each}
+		{/if}
+	</div>
 {/snippet}
 
 <SidebarPage listContent={userListContent} title="Users">

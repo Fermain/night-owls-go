@@ -14,7 +14,6 @@
 	import { toast } from 'svelte-sonner';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { z } from 'zod';
 	import { TelInput } from 'svelte-tel-input';
 	import type { E164Number } from 'svelte-tel-input/types';
@@ -27,10 +26,7 @@
 	const userSchema = z.object({
 		phone: z
 			.string()
-			.min(1, 'Phone number is required')
-			.refine((val) => val === null || typeof val === 'string' && val.startsWith('+'), {
-				message: 'Phone number must be in E164 format (e.g., +27...)'
-			}),
+			.min(1, 'Phone number is required'),
 		name: z.string().nullable()
 	});
 
@@ -72,8 +68,6 @@
 
 			const url = currentIsEditMode ? `/api/admin/users/${currentUserIdToUse}` : '/api/admin/users';
 			const method = currentIsEditMode ? 'PUT' : 'POST';
-
-			console.log('Sending request:', { method, url, payload });
 
 			const response = await fetch(url, {
 				method: method,
