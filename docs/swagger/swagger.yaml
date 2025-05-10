@@ -93,6 +93,20 @@ definitions:
       timezone:
         type: string
     type: object
+  api.UserAPIResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      role:
+        description: Added role
+        type: string
+    type: object
   api.VerifyRequest:
     properties:
       code:
@@ -103,6 +117,26 @@ definitions:
   api.VerifyResponse:
     properties:
       token:
+        type: string
+    type: object
+  api.createUserRequest:
+    properties:
+      name:
+        type: string
+      phone:
+        type: string
+      role:
+        description: Optional role
+        type: string
+    type: object
+  api.updateUserRequest:
+    properties:
+      name:
+        type: string
+      phone:
+        type: string
+      role:
+        description: Optional role, assuming we'll add update role logic later
         type: string
     type: object
   service.AvailableShiftSlot:
@@ -134,6 +168,160 @@ info:
   title: Community Watch Shift Scheduler API
   version: "1.0"
 paths:
+  /api/admin/users:
+    get:
+      description: Get a list of all users in the system. Requires admin authentication.
+      parameters:
+      - description: Search term to filter users by name or phone
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            items:
+              $ref: '#/definitions/api.UserAPIResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: List all users (Admin)
+      tags:
+      - admin/users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user in the system. Requires admin authentication.
+      parameters:
+      - description: User information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.createUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            $ref: '#/definitions/api.UserAPIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Create a new user (Admin)
+      tags:
+      - admin/users
+  /api/admin/users/{id}:
+    delete:
+      description: Deletes a user by their ID. Requires admin authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Delete a user (Admin)
+      tags:
+      - admin/users
+    get:
+      description: Get a specific user's details by their ID. Requires admin authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/api.UserAPIResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get a user by ID (Admin)
+      tags:
+      - admin/users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's details by their ID. Requires admin authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.updateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated user
+          schema:
+            $ref: '#/definitions/api.UserAPIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Update a user (Admin)
+      tags:
+      - admin/users
   /auth/register:
     post:
       consumes:

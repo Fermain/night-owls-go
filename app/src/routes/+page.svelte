@@ -38,40 +38,9 @@
 		<p>Loading schedules...</p>
 	{:else if $schedulesQuery.isError}
 		<p class="text-red-500">Error fetching schedules: {$schedulesQuery.error?.message}</p>
-	{:else if $schedulesQuery.data}
+	{:else if $schedulesQuery.data && $schedulesQuery.data.length > 0}
 		<SchedulesDataTable {columns} data={tableData} />
-		<!-- Debug output, remove later -->
-		<!-- <div class="mt-4 p-2 bg-gray-100 rounded">
-            <h3 class="font-semibold">Raw Data:</h3>
-            <pre class="text-xs whitespace-pre-wrap">{JSON.stringify($schedulesQuery.data, null, 2)}</pre>
-        </div> -->
 	{:else}
-		<p>No schedules found.</p>
+		<p>No schedules available at the moment.</p>
 	{/if}
-
-	<hr class="my-6" />
-
-	<div class="mt-4 p-4 border rounded shadow-sm">
-		<h2 class="text-xl font-semibold mb-2">API Reachability Test (with Svelte Query)</h2>
-		{#if $schedulesQuery.isLoading}
-			<p>Status: Loading...</p>
-		{:else if $schedulesQuery.isError}
-			<p>Status: <span class="text-red-500">Error: {$schedulesQuery.error?.message}</span></p>
-		{:else if $schedulesQuery.data}
-			<p>
-				Status: <span class="text-green-500"
-					>Successfully fetched {$schedulesQuery.data.length} schedule(s).</span
-				>
-			</p>
-			{#if $schedulesQuery.data.length > 0}
-				<p>First schedule name: {$schedulesQuery.data[0].name}</p>
-			{/if}
-		{:else}
-			<p>Status: No data yet.</p>
-		{/if}
-		<p class="text-sm text-gray-600 mt-2">
-			This page attempts to fetch data from the <code>/schedules</code> API endpoint using
-			<code>@tanstack/svelte-query</code>.
-		</p>
-	</div>
 </div>

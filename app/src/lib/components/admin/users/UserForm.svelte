@@ -219,7 +219,7 @@
 	<title>{user?.id !== undefined ? 'Edit' : 'Create New'} User</title>
 </svelte:head>
 
-<div class="container mx-auto p-4">
+<div class="container mr-auto p-4">
 	<h1 class="text-2xl font-bold mb-6">
 		{user?.id !== undefined ? 'Edit' : 'Create New'} User
 	</h1>
@@ -229,7 +229,7 @@
 			event.preventDefault();
 			handleSubmit();
 		}}
-		class="space-y-6 max-w-lg"
+		class="space-y-4"
 	>
 		<div>
 			<Label for="phone" class="block mb-2">Phone Number</Label>

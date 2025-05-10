@@ -54,11 +54,21 @@ func NewAdminUserHandler(db db.Querier, logger *slog.Logger) *AdminUserHandler {
 // @Description Get a list of all users in the system. Requires admin authentication.
 // @Tags admin/users
 // @Produce json
+// @Param search query string false "Search term to filter users by name or phone"
 // @Success 200 {array} UserAPIResponse "List of users"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users [get]
 func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
-	dbUsers, err := h.db.ListUsers(r.Context())
+	searchTerm := r.URL.Query().Get("search")
+
+	var searchQuery sql.NullString
+	if searchTerm != "" {
+		searchQuery = sql.NullString{String: "%" + searchTerm + "%", Valid: true}
+	} else {
+		searchQuery = sql.NullString{Valid: false}
+	}
+
+	dbUsers, err := h.db.ListUsers(r.Context(), searchQuery)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to list users", "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to fetch users", h.logger)

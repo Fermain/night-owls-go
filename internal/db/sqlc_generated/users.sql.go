@@ -89,11 +89,19 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT user_id, phone, name, created_at, role FROM users
+SELECT user_id, phone, name, created_at, role
+FROM users
+WHERE
+    -- sqlc.narg ensures that if search_query is NULL, this condition is true
+    (?1 IS NULL 
+    -- if search_query is not NULL, then we apply the LIKE conditions
+    OR LOWER(name) LIKE LOWER(?1) 
+    OR LOWER(phone) LIKE LOWER(?1))
+ORDER BY name ASC
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listUsers)
+func (q *Queries) ListUsers(ctx context.Context, searchQuery interface{}) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers, searchQuery)
 	if err != nil {
 		return nil, err
 	}

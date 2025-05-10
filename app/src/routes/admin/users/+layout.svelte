@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import PlusIcon from '@lucide/svelte/icons/plus-circle';
 	import UserIcon from '@lucide/svelte/icons/user';
@@ -9,6 +10,8 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { selectedUserForForm, type UserData } from '$lib/stores/userEditingStore';
+
+	let searchTerm = $state('');
 
 	// Define specific navigation items for the users section
 	const usersNavItems = [
@@ -21,8 +24,12 @@
 	];
 
 	// Function to fetch users
-	const fetchUsers = async () => {
-		const response = await fetch('/api/admin/users');
+	const fetchUsers = async (currentSearchTerm: string) => {
+		let url = '/api/admin/users';
+		if (currentSearchTerm) {
+			url += `?search=${encodeURIComponent(currentSearchTerm)}`;
+		}
+		const response = await fetch(url);
 		if (!response.ok) {
 			throw new Error('Failed to fetch users');
 		}
@@ -30,10 +37,10 @@
 	};
 
 	// Create a query for users
-	const usersQuery = createQuery<UserData[], Error, UserData[], string[]>({
-		queryKey: ['adminUsers'],
-		queryFn: fetchUsers
-	});
+	const usersQuery = $derived(createQuery<UserData[], Error, UserData[], [string, string]>({
+		queryKey: ['adminUsers', searchTerm],
+		queryFn: () => fetchUsers(searchTerm)
+	}));
 
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {
@@ -123,7 +130,7 @@
 						{:else}
 							<UserIcon class="h-4 w-4" />
 						{/if}
-						<span>{user.name || 'Unnamed User'} [{user.phone}]</span>
+						<span>{user.name || 'Unnamed User'}</span>
 					</a>
 				{/each}
 			{:else if $usersQuery.data && $usersQuery.data.length === 0}
@@ -145,6 +152,6 @@
 	</div>
 {/snippet}
 
-<SidebarPage listContent={userListContent} title="Users">
+<SidebarPage listContent={userListContent} title="Users" bind:searchTerm>
 	{@render children()}
 </SidebarPage>

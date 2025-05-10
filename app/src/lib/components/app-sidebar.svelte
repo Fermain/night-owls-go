@@ -14,12 +14,14 @@
 		// children, // children prop was defined but not used by AppSidebar directly, nor passed by SidebarPage
 		listContent,
 		title,
+		searchTerm = $bindable(''),
 		...restProps
 	}: Omit<ComponentProps<typeof Sidebar.Root>, 'children'> & {
 		// Omit children from Sidebar.Root props if it conflicts
 		listContent?: Snippet;
 		// children?: Snippet; // Removed from explicit type as well
 		title?: string;
+		searchTerm?: string;
 	} = $props();
 
 	// Placeholder user data, ideally this would come from another store or context
@@ -104,7 +106,7 @@
 					</div>
 				</div>
 			{/if}
-			<Sidebar.Input placeholder="Type to search..." />
+			<Sidebar.Input placeholder="Type to search..." bind:value={searchTerm} />
 		</Sidebar.Header>
 		<Sidebar.Content>
 			<Sidebar.Group class="p-0">

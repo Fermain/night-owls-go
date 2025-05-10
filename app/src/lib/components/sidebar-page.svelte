@@ -9,8 +9,9 @@
 	let {
 		children,
 		listContent,
-		title
-	}: { children?: Snippet; listContent?: Snippet; title?: string } = $props();
+		title,
+		searchTerm = $bindable('')
+	}: { children?: Snippet; listContent?: Snippet; title?: string; searchTerm?: string } = $props();
 
 	const breadcrumbs = $derived(
 		(() => {
@@ -30,20 +31,25 @@
 </script>
 
 {#snippet mainContentWithHeader()}
-	<header class="bg-background sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b p-4">
-		<Separator orientation="vertical" class="mr-2 h-4" />
-		<Breadcrumb.Root>
-			<Breadcrumb.List>
-				{#each breadcrumbs as crumb, i}
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					{#if i < breadcrumbs.length - 1}
-						<Breadcrumb.Separator class="hidden md:block" />
-					{/if}
-				{/each}
-			</Breadcrumb.List>
-		</Breadcrumb.Root>
+	<header class="bg-background sticky top-0 z-10 flex shrink-0 items-center gap-4 border-b p-4">
+		{#if title}
+			<h1 class="font-semibold tracking-tight">{title}</h1>
+		{/if}
+		{#if breadcrumbs.length > 0}
+			<Separator orientation="vertical" class="h-6" />
+			<Breadcrumb.Root>
+				<Breadcrumb.List>
+					{#each breadcrumbs as crumb, i}
+						<Breadcrumb.Item class="hidden md:block">
+							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+						</Breadcrumb.Item>
+						{#if i < breadcrumbs.length - 1}
+							<Breadcrumb.Separator class="hidden md:block" />
+						{/if}
+					{/each}
+				</Breadcrumb.List>
+			</Breadcrumb.Root>
+		{/if}
 	</header>
 	{#if children}
 		{@render children()}
@@ -51,7 +57,7 @@
 {/snippet}
 
 <Sidebar.Provider style="--sidebar-width: 350px;">
-	<AppSidebar {listContent} {title} />
+	<AppSidebar {listContent} bind:searchTerm />
 	<Sidebar.Inset>
 		{@render mainContentWithHeader()}
 	</Sidebar.Inset>
