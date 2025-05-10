@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { buttonVariants, Button } from '$lib/components/ui/button';
+	import { buttonVariants } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog'; // Import AlertDialog components
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
@@ -45,20 +45,15 @@
 	<a {href} class={buttonVariants({ variant: 'outline', size: 'sm' })} role="button"> Edit </a>
 
 	<AlertDialog.Root bind:open={isConfirmDialogOpen}>
-		<AlertDialog.Trigger>
-			{#snippet child({ props })}
-				<button
-					{...props}
-					class={buttonVariants({ variant: 'destructive', size: 'sm' })}
-					disabled={$deleteMutation.isPending}
-				>
-					{#if $deleteMutation.isPending}
-						Deleting...
-					{:else}
-						Delete
-					{/if}
-				</button>
-			{/snippet}
+		<AlertDialog.Trigger
+			class={buttonVariants({ variant: 'destructive', size: 'sm' })}
+			disabled={$deleteMutation.isPending}
+		>
+			{#if $deleteMutation.isPending}
+				Deleting...
+			{:else}
+				Delete
+			{/if}
 		</AlertDialog.Trigger>
 		<AlertDialog.Content>
 			<AlertDialog.Header>

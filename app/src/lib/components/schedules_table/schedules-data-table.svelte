@@ -14,20 +14,12 @@
 		getPaginationRowModel,
 		getSortedRowModel,
 		getFilteredRowModel,
-		getFacetedRowModel,
-		getFacetedUniqueValues,
-		getFacetedMinMaxValues
 	} from '@tanstack/table-core';
 	import { createSvelteTable, FlexRender } from '$lib/components/ui/data-table';
 	import * as Table from '$lib/components/ui/table';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { toast } from 'svelte-sonner';
-	import type { Schedule } from './columns'; // Assuming Schedule type is exported from columns.ts
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import { Button } from '$lib/components/ui/button';
+	import SchedulesTableControls from './schedules-table-controls.svelte';
+	import SchedulesTablePagination from './schedules-table-pagination.svelte';
 
 	// Define the props for this component
 	type DataTableProps = {
@@ -92,142 +84,22 @@
 			// If using row selection
 			rowSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
 		}
-		// Optional: default column settings, e.g., min size
-		// defaultColumn: {
-		//   minSize: 20,
-		//   maxSize: 500,
-		// },
-		// debugTable: dev, // Enable debug logging in dev mode
 	});
-
-	// Helper to get filter value for a column (e.g., for an input binding)
-	const getFilterValue = (columnId: string): string => {
-		const filter = columnFilters.find((f: { id: string; value: unknown }) => f.id === columnId);
-		return (filter?.value as string) ?? '';
-	};
-
-	// Helper to set filter value for a column
-	const setFilterValue = (columnId: string, value: any) => {
-		// Remove existing filter for this column
-		const newFilters = columnFilters.filter((f: { id: string }) => f.id !== columnId);
-		// Add new filter if value is not empty
-		if (value !== null && value !== undefined && value !== '') {
-			newFilters.push({ id: columnId, value });
-		}
-		columnFilters = newFilters;
-	};
-
-	const queryClient = useQueryClient();
-
-	const bulkDeleteMutation = createMutation<unknown, Error, number[], unknown>({
-		mutationFn: async (scheduleIds: number[]) => {
-			const response = await fetch('/api/admin/schedules', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ schedule_ids: scheduleIds })
-			});
-			if (!response.ok) {
-				const errorData = await response
-					.json()
-					.catch(() => ({ message: 'Failed to delete schedules. Unknown error.' }));
-				throw new Error(errorData.message || 'Failed to delete schedules.');
-			}
-			return response.json();
-		},
-		onSuccess: () => {
-			toast.success('Schedules deleted successfully!');
-			queryClient.invalidateQueries({ queryKey: ['adminSchedules'] }); // Matches the queryKey in admin/schedules/+page.svelte
-			rowSelection = {}; // Clear selection
-		},
-		onError: (error) => {
-			toast.error(`Error deleting schedules: ${error.message}`);
-		}
-	});
-
-	let isBulkDeleteDialogOpen = $state(false);
-	let pendingBulkDeleteIds = $state<number[]>([]);
 </script>
 
 <div class="w-full space-y-4">
 	<!-- Filtering Input (Example for 'name' column) -->
-	<div class="flex items-center py-4">
-		<Input
-			placeholder="Filter by name..."
-			value={getFilterValue('name')}
-			oninput={(event) => setFilterValue('name', event.currentTarget.value)}
-			class="max-w-sm"
-		/>
-
-		{#if table.getSelectedRowModel().rows.length > 0}
-			<AlertDialog.Root bind:open={isBulkDeleteDialogOpen}>
-				<AlertDialog.Trigger>
-					<Button
-						variant="destructive"
-						class="ml-4"
-						disabled={$bulkDeleteMutation.isPending}
-						onclick={() => {
-							const selectedOriginalRows = table
-								.getSelectedRowModel()
-								.rows.map((row) => row.original as Schedule);
-							const selectedIds = selectedOriginalRows.map((schedule) => schedule.schedule_id);
-							if (selectedIds.length > 0) {
-								pendingBulkDeleteIds = selectedIds;
-							}
-						}}
-					>
-						{#if $bulkDeleteMutation.isPending}
-							Deleting...
-						{:else}
-							Delete Selected ({table.getSelectedRowModel().rows.length})
-						{/if}
-					</Button>
-				</AlertDialog.Trigger>
-				<AlertDialog.Content>
-					<AlertDialog.Header>
-						<AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
-						<AlertDialog.Description>
-							This action cannot be undone. This will permanently delete {pendingBulkDeleteIds.length} schedule(s).
-						</AlertDialog.Description>
-					</AlertDialog.Header>
-					<AlertDialog.Footer>
-						<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-						<AlertDialog.Action
-							onclick={() => {
-								if (pendingBulkDeleteIds.length > 0) {
-									$bulkDeleteMutation.mutate(pendingBulkDeleteIds);
-								}
-							}}
-							disabled={$bulkDeleteMutation.isPending}
-						>
-							Yes, delete selected
-						</AlertDialog.Action>
-					</AlertDialog.Footer>
-				</AlertDialog.Content>
-			</AlertDialog.Root>
-		{/if}
-
-		<!-- Column Visibility Dropdown -->
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', class: 'ml-auto' })}>
-				Columns <ChevronDown class="ml-2 h-4 w-4" />
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end">
-				{#each table.getAllColumns().filter((col) => col.getCanHide()) as column (column.id)}
-					<DropdownMenu.CheckboxItem
-						class="capitalize"
-						checked={column.getIsVisible()}
-						onCheckedChange={(value) => {
-							column.toggleVisibility(!!value);
-						}}
-					>
-						{column.id}
-					</DropdownMenu.CheckboxItem>
-				{/each}
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
-	</div>
+	<!-- Bulk Delete Button and Dialog -->
+	<!-- Column Visibility Dropdown -->
+	<SchedulesTableControls
+		{table}
+		{columnFilters}
+		setColumnFilters={(updater) => (columnFilters = updater)}
+		{rowSelection}
+		setRowSelection={(updater) => (rowSelection = updater)}
+		{columnVisibility}
+		setColumnVisibility={(updater) => (columnVisibility = updater)}
+	/>
 
 	<!-- Table -->
 	<div class="rounded-md border">
@@ -283,67 +155,5 @@
 	</div>
 
 	<!-- Pagination Controls -->
-	<div class="flex items-center justify-between space-x-2 py-4">
-		<div class="text-muted-foreground flex-1 text-sm">
-			<!-- Row selection count (if enabled) -->
-			{table.getFilteredSelectedRowModel().rows.length} of {' '}
-			{table.getFilteredRowModel().rows.length} row(s) selected. ({table.getFilteredRowModel().rows
-				.length} total rows found)
-		</div>
-		<div class="flex items-center space-x-2">
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => table.setPageIndex(0)}
-				disabled={!table.getCanPreviousPage()}
-			>
-				First
-			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => table.previousPage()}
-				disabled={!table.getCanPreviousPage()}
-			>
-				Previous
-			</Button>
-			<span class="text-sm">
-				Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() > 0
-					? table.getPageCount()
-					: 1}
-			</span>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => table.nextPage()}
-				disabled={!table.getCanNextPage()}
-			>
-				Next
-			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => table.setPageIndex(table.getPageCount() - 1)}
-				disabled={!table.getCanNextPage()}
-			>
-				Last
-			</Button>
-		</div>
-		<div class="flex items-center space-x-2">
-			<span class="text-sm">Rows per page:</span>
-			<select
-				class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-auto rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-				value={table.getState().pagination.pageSize}
-				onchange={(e) => {
-					table.setPageSize(Number(e.currentTarget.value));
-				}}
-			>
-				{#each [10, 20, 30, 40, 50] as pageSize (pageSize)}
-					<option value={pageSize}>
-						{pageSize}
-					</option>
-				{/each}
-			</select>
-		</div>
-	</div>
+	<SchedulesTablePagination {table} />
 </div>
