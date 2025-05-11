@@ -19,7 +19,7 @@ export default ts.config(
 	...svelte.configs.prettier,
 	{
 		plugins: {
-			'unused-imports': unusedImports,
+			'unused-imports': unusedImports
 		},
 		rules: {
 			'no-unused-vars': 'off',
@@ -28,19 +28,19 @@ export default ts.config(
 			'unused-imports/no-unused-vars': [
 				'warn',
 				{
-					'vars': 'all',
-					'varsIgnorePattern': '^_',
-					'args': 'after-used',
-					'argsIgnorePattern': '^_',
-					'caughtErrors': 'all',
-					'caughtErrorsIgnorePattern': '^_'
-				},
+					vars: 'all',
+					varsIgnorePattern: '^_',
+					args: 'after-used',
+					argsIgnorePattern: '^_',
+					caughtErrors: 'all',
+					caughtErrorsIgnorePattern: '^_'
+				}
 			],
 			'no-undef': 'off'
 		},
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
-		},
+		}
 	},
 	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],

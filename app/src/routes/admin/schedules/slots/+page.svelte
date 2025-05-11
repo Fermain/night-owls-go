@@ -8,8 +8,14 @@
 	// import SidebarPage from '$lib/components/sidebar-page.svelte'; // Removed
 	import { Button } from '$lib/components/ui/button'; // Assuming this is the correct path from other files
 	import { Skeleton } from '$lib/components/ui/skeleton'; // Assuming path
-	import { Calendar } from '$lib/components/ui/calendar'; 
-	import { CalendarDate, today, getLocalTimeZone, startOfMonth, endOfMonth } from '@internationalized/date'; 
+	import { Calendar } from '$lib/components/ui/calendar';
+	import {
+		CalendarDate,
+		today,
+		getLocalTimeZone,
+		startOfMonth,
+		endOfMonth
+	} from '@internationalized/date';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
@@ -145,7 +151,9 @@
 	});
 
 	// --- Data Fetching for Calendar View (new) ---
-	const fetchShiftSlotsForCalendarMonth = async (monthDate: CalendarDate): Promise<AdminShiftSlot[]> => {
+	const fetchShiftSlotsForCalendarMonth = async (
+		monthDate: CalendarDate
+	): Promise<AdminShiftSlot[]> => {
 		const from = startOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
 		const to = endOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
 		const response = await fetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`);
@@ -169,11 +177,11 @@
 		const slots = $calendarMonthSlotsQuery.data;
 		if (!slots) return [];
 		const uniqueDates = new Set<string>();
-		slots.forEach(slot => {
-			const dateStr = slot.start_time.split('T')[0]; 
+		slots.forEach((slot) => {
+			const dateStr = slot.start_time.split('T')[0];
 			uniqueDates.add(dateStr);
 		});
-		return Array.from(uniqueDates).map(dateStr => {
+		return Array.from(uniqueDates).map((dateStr) => {
 			const [year, month, day] = dateStr.split('-').map(Number);
 			return new CalendarDate(year, month, day);
 		});
@@ -191,8 +199,8 @@
 
 <svelte:head>
 	<title
-		>Admin - {selectedShift 
-			? `Shift Details - ${selectedShift.schedule_name} @ ${new Date(selectedShift.start_time).toLocaleDateString()}` 
+		>Admin - {selectedShift
+			? `Shift Details - ${selectedShift.schedule_name} @ ${new Date(selectedShift.start_time).toLocaleDateString()}`
 			: 'Shifts Calendar View'}</title
 	>
 </svelte:head>
@@ -247,20 +255,28 @@
 					<Skeleton class="h-48 w-full max-w-md" />
 				</div>
 			{:else if $calendarMonthSlotsQuery.isError}
-				<p class="text-destructive">Error loading shifts for calendar: {$calendarMonthSlotsQuery.error.message}</p>
+				<p class="text-destructive">
+					Error loading shifts for calendar: {$calendarMonthSlotsQuery.error.message}
+				</p>
 			{:else}
 				<div class="flex items-center gap-4 mb-4">
-					<Button variant="outline" size="icon" onclick={prevMonth} aria-label="Previous month"><ChevronLeftIcon class="h-4 w-4" /></Button>
+					<Button variant="outline" size="icon" onclick={prevMonth} aria-label="Previous month"
+						><ChevronLeftIcon class="h-4 w-4" /></Button
+					>
 					<h2 class="text-xl font-medium">
-						{currentDisplayMonth.toDate(getLocalTimeZone()).toLocaleString('default', { month: 'long', year: 'numeric' })}
+						{currentDisplayMonth
+							.toDate(getLocalTimeZone())
+							.toLocaleString('default', { month: 'long', year: 'numeric' })}
 					</h2>
-					<Button variant="outline" size="icon" onclick={nextMonth} aria-label="Next month"><ChevronRightIcon class="h-4 w-4" /></Button>
+					<Button variant="outline" size="icon" onclick={nextMonth} aria-label="Next month"
+						><ChevronRightIcon class="h-4 w-4" /></Button
+					>
 				</div>
-				<Calendar 
-					class="p-0 rounded-md border w-full max-w-3xl" 
-					type="multiple" 
-					value={shiftDatesForCalendarDisplay} 
-					bind:placeholder={currentDisplayMonth} 
+				<Calendar
+					class="p-0 rounded-md border w-full max-w-3xl"
+					type="multiple"
+					value={shiftDatesForCalendarDisplay}
+					bind:placeholder={currentDisplayMonth}
 					weekdayFormat="long"
 					readonly
 				/>
