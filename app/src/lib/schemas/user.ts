@@ -29,4 +29,4 @@ export type UserData = {
 	name: string | null;
 	created_at: string;
 	role: 'admin' | 'owl' | 'guest';
-}; 
+};

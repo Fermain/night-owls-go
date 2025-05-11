@@ -113,13 +113,17 @@ export function parseYyyyMmDdToJsDate(dateStr: string | null | undefined): Date 
 		// Important: Month is 0-indexed in JavaScript Date constructor
 		const date = new Date(Date.UTC(year, month - 1, day));
 		// Check if the constructed date is valid (e.g., not an invalid date like 2023-02-30)
-		if (!isNaN(date.valueOf()) && 
-		    date.getUTCFullYear() === year && 
-		    date.getUTCMonth() === month - 1 && 
-		    date.getUTCDate() === day) {
+		if (
+			!isNaN(date.valueOf()) &&
+			date.getUTCFullYear() === year &&
+			date.getUTCMonth() === month - 1 &&
+			date.getUTCDate() === day
+		) {
 			return date;
 		}
 	}
-	console.warn(`[parseYyyyMmDdToJsDate] Failed to parse date string "${dateStr}" into a valid JS Date.`);
+	console.warn(
+		`[parseYyyyMmDdToJsDate] Failed to parse date string "${dateStr}" into a valid JS Date.`
+	);
 	return null;
 }

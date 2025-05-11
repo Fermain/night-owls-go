@@ -2,6 +2,7 @@ import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import type { E164Number } from 'svelte-tel-input/types';
+import { authenticatedFetch } from '$lib/utils/api';
 
 interface UserPayload {
 	phone: E164Number;
@@ -32,7 +33,7 @@ export function createSaveUserMutation() {
 			const url = isEditMode ? `/api/admin/users/${userId}` : '/api/admin/users';
 			const method = isEditMode ? 'PUT' : 'POST';
 
-			const response = await fetch(url, {
+			const response = await authenticatedFetch(url, {
 				method: method,
 				headers: {
 					'Content-Type': 'application/json'
@@ -64,4 +65,4 @@ export function createSaveUserMutation() {
 			toast.error(`Error: ${error.message}`);
 		}
 	});
-} 
+}

@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { createQuery, type CreateQueryResult, useQueryClient, createMutation } from '@tanstack/svelte-query';
+	import {
+		createQuery,
+		useQueryClient,
+		createMutation
+	} from '@tanstack/svelte-query';
 	// import * as Table from '$lib/components/ui/table/index.js'; // Not currently used
 	import { toast } from 'svelte-sonner';
 	import { formatDistanceToNow } from 'date-fns';
@@ -18,8 +22,8 @@
 	} from '@internationalized/date';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import * as Select from "$lib/components/ui/select"; // For User Select
-	import { z } from 'zod'; // For form validation
+	import * as Select from '$lib/components/ui/select'; // For User Select
+	// For form validation
 
 	// --- Types ---
 	type AdminShiftSlot = {
@@ -161,7 +165,8 @@
 	$effect(() => {
 		const allSlots = $allSlotsForDetailLookupQuery.data;
 		if (shiftStartTimeFromUrl && allSlots && allSlots.length > 0) {
-			selectedShift = allSlots.find((s: AdminShiftSlot) => s.start_time === shiftStartTimeFromUrl) || null;
+			selectedShift =
+				allSlots.find((s: AdminShiftSlot) => s.start_time === shiftStartTimeFromUrl) || null;
 			selectedUserIdForBooking = undefined;
 			bookingFormError = null;
 		} else if (!shiftStartTimeFromUrl) {
@@ -234,10 +239,10 @@
 	});
 
 	// --- Booking Mutation ---
-	type AdminBookingPayload = { 
-		schedule_id: number; 
-		start_time: string; 
-		user_id: number 
+	type AdminBookingPayload = {
+		schedule_id: number;
+		start_time: string;
+		user_id: number;
 	};
 
 	const bookShiftMutation = createMutation<any, Error, AdminBookingPayload>({
@@ -248,14 +253,18 @@
 				body: JSON.stringify(bookingData)
 			});
 			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Failed to assign shift' }));
+				const errorData = await response
+					.json()
+					.catch(() => ({ message: 'Failed to assign shift' }));
 				throw new Error(errorData.message || `HTTP error ${response.status}`);
 			}
 			return response.json();
 		},
 		onSuccess: () => {
 			toast.success('Shift assigned to user successfully!');
-			queryClient.invalidateQueries({ queryKey: ['allAdminShiftSlotsForSlotDetailPageLookup', shiftStartTimeFromUrl] }); 
+			queryClient.invalidateQueries({
+				queryKey: ['allAdminShiftSlotsForSlotDetailPageLookup', shiftStartTimeFromUrl]
+			});
 			queryClient.invalidateQueries({ queryKey: ['adminCalendarMonthSlots'] });
 			selectedUserIdForBooking = undefined;
 		},
@@ -265,7 +274,8 @@
 		}
 	});
 
-	function handleBookShift(event: SubmitEvent) { // Added event type
+	function handleBookShift(event: SubmitEvent) {
+		// Added event type
 		event.preventDefault(); // Manual preventDefault
 		bookingFormError = null;
 		const userIdToBook = selectedUserIdForBooking ? parseInt(selectedUserIdForBooking) : undefined;
@@ -276,7 +286,7 @@
 		}
 		$bookShiftMutation.mutate({
 			schedule_id: selectedShift.schedule_id,
-			start_time: selectedShift.start_time, 
+			start_time: selectedShift.start_time,
 			user_id: userIdToBook
 		});
 	}
@@ -324,7 +334,9 @@
 								<strong class="font-medium">Assigned to: </strong>
 								<span class="text-gray-700">{selectedShift.user_name ?? 'N/A'}</span>
 								{#if selectedShift.user_phone}
-									<span class="text-xs text-muted-foreground ml-1">({selectedShift.user_phone})</span>
+									<span class="text-xs text-muted-foreground ml-1"
+										>({selectedShift.user_phone})</span
+									>
 								{/if}
 							</p>
 							<!-- Future: Add Unassign/Reassign button here -->
@@ -349,18 +361,24 @@
 				{:else if $usersQuery.data}
 					<form onsubmit={handleBookShift} class="space-y-4">
 						<div>
-							<Select.Root 
+							<Select.Root
 								type="single"
-								value={selectedUserIdForBooking} 
-								onValueChange={(val?: string) => { 
+								value={selectedUserIdForBooking}
+								onValueChange={(val?: string) => {
 									selectedUserIdForBooking = val;
-									bookingFormError = null; 
+									bookingFormError = null;
 								}}
 							>
-								<Select.Trigger name="userIdForBookingSelect" class="w-full md:w-[280px]" placeholder="Select a user" />
+								<Select.Trigger
+									name="userIdForBookingSelect"
+									class="w-full md:w-[280px]"
+									placeholder="Select a user"
+								/>
 								<Select.Content>
 									{#each $usersQuery.data as user (user.id)}
-										<Select.Item value={user.id.toString()} label={user.name || user.phone}>{user.name || user.phone}</Select.Item>
+										<Select.Item value={user.id.toString()} label={user.name || user.phone}
+											>{user.name || user.phone}</Select.Item
+										>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -375,7 +393,6 @@
 				{/if}
 			</div>
 		{/if}
-
 	{:else if shiftStartTimeFromUrl && $allSlotsForDetailLookupQuery.isError}
 		<p class="text-destructive">
 			Error loading data to find shift: {$allSlotsForDetailLookupQuery.error.message}
