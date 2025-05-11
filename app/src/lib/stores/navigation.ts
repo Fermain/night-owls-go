@@ -19,12 +19,12 @@ const navMain: NavItem[] = [
 		icon: Inbox
 	},
 	{
-		title: 'Shifts',
+		title: 'Schedules',
 		url: '/admin/schedules',
 		icon: CalendarRange
 	},
 	{
-		title: 'Shift Slots',
+		title: 'Shifts',
 		url: '/admin/schedules/slots',
 		icon: ListChecks
 	},

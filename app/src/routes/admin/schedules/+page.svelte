@@ -5,6 +5,8 @@
 	import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte';
 	import { page } from '$app/state'; // To read URL params
 	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte'; // Import existing form
+	import { goto } from '$app/navigation';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	type AdminSchedulesAPIResponse = Schedule[];
 	// Type for single schedule detail, assuming backend returns the same Schedule structure
@@ -37,6 +39,7 @@
 
 	// --- Logic for fetching and displaying a single selected schedule ---
 	let selectedScheduleId = $derived(page.url.searchParams.get('scheduleId'));
+	let mode = $derived(page.url.searchParams.get('mode')); // For ?mode=new
 
 	const fetchScheduleDetail = async (id: string): Promise<ScheduleDetailAPIResponse> => {
 		const response = await fetch(`/api/admin/schedules/${id}`);
@@ -61,29 +64,43 @@
 			enabled: !!selectedScheduleId // Only run query if selectedScheduleId has a value
 		})
 	);
+
+	function handleCreateNew() {
+		goto('/admin/schedules/new');
+	}
 </script>
 
 <svelte:head>
-	<title>Admin - {selectedScheduleId ? `Schedule Details` : 'All Schedules'}</title>
+	<title>
+		Admin - {selectedScheduleId ? 'Edit Schedule' : mode === 'new' ? 'New Schedule' : 'Schedules'}
+	</title>
 </svelte:head>
 
 <div class="container mx-auto p-4">
-	{#if selectedScheduleId}
-		<!-- Displaying detail/form for a selected schedule -->
+	{#if selectedScheduleId && $scheduleDetailQuery.data}
+		<!-- Displaying detail/form for an existing selected schedule -->
+		<ScheduleForm schedule={$scheduleDetailQuery.data} />
+	{:else if mode === 'new'}
+		<!-- This case will be handled by navigation to /admin/schedules/new, but kept for potential future use if form is embedded -->
+		<ScheduleForm />
+	{:else if selectedScheduleId}
+		<!-- Loading or error state for a selected schedule -->
 		{#if $scheduleDetailQuery.isLoading}
 			<p>Loading schedule details for ID: {selectedScheduleId}...</p>
 		{:else if $scheduleDetailQuery.isError}
 			<p class="text-red-500">
 				Error fetching schedule details: {$scheduleDetailQuery.error?.message}
 			</p>
-		{:else if $scheduleDetailQuery.data}
-			<!-- Use ScheduleForm to display the selected schedule -->
-			<ScheduleForm schedule={$scheduleDetailQuery.data} />
 		{:else}
 			<p>No data for schedule ID: {selectedScheduleId}.</p>
 		{/if}
 	{:else}
 		<!-- Displaying the table of all schedules -->
+		<div class="flex justify-between items-center mb-4">
+			<h1 class="text-xl font-semibold">Manage Schedules</h1>
+			<Button onclick={handleCreateNew}>Create New Schedule</Button>
+		</div>
+
 		{#if $adminSchedulesQuery.isLoading}
 			<p>Loading schedules...</p>
 		{:else if $adminSchedulesQuery.isError}
