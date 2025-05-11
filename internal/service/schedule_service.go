@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sort"
 	"time"
@@ -17,6 +18,7 @@ import (
 // Service specific errors
 var (
 	ErrNotFound       = errors.New("requested resource not found")
+	ErrInvalidInput   = errors.New("invalid input")
 	// ErrInternalServer is assumed to be defined globally or in another service package.
 	// Add other common service errors here if needed, e.g., ErrInvalidInput
 )
@@ -61,6 +63,40 @@ type AdminAvailableShiftSlot struct {
 	UserPhone    *string   `json:"user_phone,omitempty"`
 }
 
+// calculateScheduleBoundaryTimesInLocation determines the effective start and end times
+// of a schedule in its specific timezone, and returns the loaded location.
+// It uses the YYYY-MM-DD from the schedule's StartDate/EndDate (which are UTC in the DB)
+// and interprets them as 00:00:00 and 23:59:59 in the schedule's timezone.
+func calculateScheduleBoundaryTimesInLocation(schedule db.Schedule, defaultLoc *time.Location, logger *slog.Logger, ctx context.Context) (effectiveStartInLoc, effectiveEndInLoc time.Time, loc *time.Location, err error) {
+	loc = defaultLoc // Start with default (usually UTC)
+	if schedule.Timezone.Valid && schedule.Timezone.String != "" {
+		loadedLoc, errLoadLoc := time.LoadLocation(schedule.Timezone.String)
+		if errLoadLoc != nil {
+			logger.WarnContext(ctx, "Failed to load timezone for schedule, using default",
+				"schedule_id", schedule.ScheduleID, "timezone_str", schedule.Timezone.String, "error", errLoadLoc)
+			// loc remains defaultLoc, return an error to indicate potential issue
+			err = fmt.Errorf("failed to load location '%s': %w", schedule.Timezone.String, errLoadLoc)
+			// Still return calculated times using defaultLoc, but caller should be aware of the error.
+		} else {
+			loc = loadedLoc
+		}
+	}
+
+	var startDate, endDate time.Time // Will be zero if not set
+
+	if schedule.StartDate.Valid {
+		y, m, d := schedule.StartDate.Time.Date() // .Time is UTC from DB
+		startDate = time.Date(y, m, d, 0, 0, 0, 0, loc)
+	}
+
+	if schedule.EndDate.Valid {
+		y, m, d := schedule.EndDate.Time.Date() // .Time is UTC from DB
+		endDate = time.Date(y, m, d, 23, 59, 59, 999999999, loc)
+	}
+
+	return startDate, endDate, loc, err // err will be nil if location loaded successfully or no timezone string
+}
+
 // GetUpcomingAvailableSlots finds all available (not booked) shift slots
 // across schedules that are active within the given time window.
 func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFrom *time.Time, queryTo *time.Time, limit *int) ([]AvailableShiftSlot, error) {
@@ -82,7 +118,6 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		return []AvailableShiftSlot{}, nil
 	}
 
-	// 1. Fetch all schedules
 	allSchedules, err := s.querier.ListAllSchedules(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list all schedules", "error", err)
@@ -97,30 +132,15 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 	var allPotentialSlots []AvailableShiftSlot
 
 	for _, schedule := range allSchedules {
-		loc := time.UTC // Default to UTC
-		if schedule.Timezone.Valid && schedule.Timezone.String != "" {
-			loadedLoc, errLoadLoc := time.LoadLocation(schedule.Timezone.String)
-			if errLoadLoc != nil {
-				s.logger.WarnContext(ctx, "Failed to load timezone for schedule, defaulting to UTC",
-					"schedule_id", schedule.ScheduleID, "timezone_str", schedule.Timezone.String, "error", errLoadLoc)
-			} else {
-				loc = loadedLoc
-			}
+		scheduleActiveStartInLoc, scheduleActiveEndInLoc, loc, locErr := calculateScheduleBoundaryTimesInLocation(schedule, time.UTC, s.logger, ctx)
+		if locErr != nil {
+			// Logged in helper, decide if we skip or proceed with UTC for this schedule.
+			// For now, proceeding with UTC (which is loc if LoadLocation failed).
+			s.logger.WarnContext(ctx, "Proceeding with default location for schedule due to load error", "schedule_id", schedule.ScheduleID, "error", locErr)
 		}
 
 		queryFromInLoc := actualFrom.In(loc)
 		queryToInLoc := actualTo.In(loc)
-
-		scheduleActiveStartInLoc := time.Time{}
-		if schedule.StartDate.Valid {
-			y, m, d := schedule.StartDate.Time.Date()
-			scheduleActiveStartInLoc = time.Date(y, m, d, 0, 0, 0, 0, loc)
-		}
-		scheduleActiveEndInLoc := time.Time{}
-		if schedule.EndDate.Valid {
-			y, m, d := schedule.EndDate.Time.Date()
-			scheduleActiveEndInLoc = time.Date(y, m, d, 23, 59, 59, 999999999, loc)
-		}
 
 		iterationStartInLoc := queryFromInLoc
 		if !scheduleActiveStartInLoc.IsZero() && scheduleActiveStartInLoc.After(iterationStartInLoc) {
@@ -138,29 +158,32 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 
 		cronExpression, err := cronexpr.Parse(schedule.CronExpr)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to parse cron expression", "schedule_id", schedule.ScheduleID, "error", err)
+			s.logger.ErrorContext(ctx, "Failed to parse cron expression", "schedule_id", schedule.ScheduleID, "cron_expr", schedule.CronExpr, "error", err)
 			continue
 		}
 
 		nextTime := iterationStartInLoc
-		firstPossibleOccurrence := cronExpression.Next(iterationStartInLoc.Add(-time.Second))
-		if firstPossibleOccurrence.Equal(iterationStartInLoc) {
-			if !firstPossibleOccurrence.After(iterationEndInLoc) {
+		// Check if iterationStartInLoc itself is a valid cron occurrence
+		firstPossibleOccurrence := cronExpression.Next(iterationStartInLoc.Add(-time.Second)) // Check from just before
+
+		if firstPossibleOccurrence.Equal(iterationStartInLoc) { // If it is...
+			if !firstPossibleOccurrence.After(iterationEndInLoc) { // ...and it's within the overall window
 				shiftEndTime := firstPossibleOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
 				potentialSlot := AvailableShiftSlot{
 					ScheduleID:   schedule.ScheduleID,
 					ScheduleName: schedule.Name,
-					StartTime:    firstPossibleOccurrence,
-					EndTime:      shiftEndTime,
+					StartTime:    firstPossibleOccurrence, // In schedule's loc
+					EndTime:      shiftEndTime,          // In schedule's loc
 					Timezone:     loc.String(),
 					IsBooked:     false,
 				}
 				allPotentialSlots = append(allPotentialSlots, potentialSlot)
 			}
-			nextTime = firstPossibleOccurrence
+			nextTime = firstPossibleOccurrence // Start next iteration from this occurrence
 		}
 
 		for {
+			// nextTime is in loc. cronExpression.Next will return time in loc.
 			nextOccurrence := cronExpression.Next(nextTime)
 			if nextOccurrence.IsZero() || nextOccurrence.After(iterationEndInLoc) {
 				break
@@ -170,8 +193,8 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 			potentialSlot := AvailableShiftSlot{
 				ScheduleID:   schedule.ScheduleID,
 				ScheduleName: schedule.Name,
-				StartTime:    nextOccurrence,
-				EndTime:      shiftEndTime,
+				StartTime:    nextOccurrence, // In schedule's loc
+				EndTime:      shiftEndTime,   // In schedule's loc
 				Timezone:     loc.String(),
 				IsBooked:     false,
 			}
@@ -180,21 +203,20 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		}
 	}
 
-	// 2. Filter out booked slots
-	// This could be optimized by fetching all relevant bookings in one go, but for simplicity:
 	var availableSlots []AvailableShiftSlot
 	for _, slot := range allPotentialSlots {
+		// Slot times are in schedule's loc. Booking ShiftStart is UTC.
 		_, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
-			ScheduleID:  slot.ScheduleID,
-			ShiftStart: slot.StartTime,
+			ScheduleID: slot.ScheduleID,
+			ShiftStart: slot.StartTime.UTC(), // Convert to UTC for DB query
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				availableSlots = append(availableSlots, slot)
 			} else {
-				s.logger.ErrorContext(ctx, "Error checking if slot is booked", "schedule_id", slot.ScheduleID, "error", err)
+				s.logger.ErrorContext(ctx, "Error checking if slot is booked", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
 			}
-		} 
+		}
 	}
 	sort.Slice(availableSlots, func(i, j int) bool {
 		return availableSlots[i].StartTime.Before(availableSlots[j].StartTime)
@@ -210,14 +232,13 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 // across all schedules that are active within the given time window,
 // and includes booking details if a slot is booked.
 func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *time.Time, queryTo *time.Time, limit *int) ([]AdminAvailableShiftSlot, error) {
-	now := time.Now().UTC() // Use UTC for baseline "now"
-	// Default window for admin view might be shorter or configurable, e.g., 7 days
+	now := time.Now().UTC()
 	defaultFrom := now
 	defaultTo := now.AddDate(0, 0, 7)
 
 	actualFrom := defaultFrom
 	if queryFrom != nil {
-		actualFrom = (*queryFrom).UTC() // Ensure query parameters are treated as UTC if no TZ info
+		actualFrom = (*queryFrom).UTC()
 	}
 	actualTo := defaultTo
 	if queryTo != nil {
@@ -240,40 +261,17 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		return []AdminAvailableShiftSlot{}, nil
 	}
 
-	var allSlots []AdminAvailableShiftSlot
+	var allSlots []AdminAvailableShiftSlot // Changed from allPotentialSlots for clarity
 
 	for _, schedule := range allSchedules {
-		loc := time.UTC // Default to UTC
-		if schedule.Timezone.Valid && schedule.Timezone.String != "" {
-			loadedLoc, errLoadLoc := time.LoadLocation(schedule.Timezone.String)
-			if errLoadLoc != nil {
-				s.logger.WarnContext(ctx, "Failed to load timezone for schedule, defaulting to UTC",
-					"schedule_id", schedule.ScheduleID, "timezone_str", schedule.Timezone.String, "error", errLoadLoc)
-				// loc remains time.UTC
-			} else {
-				loc = loadedLoc
-			}
+		scheduleActiveStartInLoc, scheduleActiveEndInLoc, loc, locErr := calculateScheduleBoundaryTimesInLocation(schedule, time.UTC, s.logger, ctx)
+		if locErr != nil {
+			s.logger.WarnContext(ctx, "Proceeding with default location for schedule due to load error", "schedule_id", schedule.ScheduleID, "error", locErr)
 		}
-
-		// Convert query window to schedule's location
+		
 		queryFromInLoc := actualFrom.In(loc)
 		queryToInLoc := actualTo.In(loc)
 
-		// Determine schedule's own active start/end in its location
-		scheduleActiveStartInLoc := time.Time{} // Zero time if not set
-		if schedule.StartDate.Valid {
-			// Assuming StartDate from DB is date-only, interpret it in schedule's loc as start of day
-			y, m, d := schedule.StartDate.Time.Date()
-			scheduleActiveStartInLoc = time.Date(y, m, d, 0, 0, 0, 0, loc)
-		}
-		scheduleActiveEndInLoc := time.Time{} // Zero time, effectively no upper bound if not set
-		if schedule.EndDate.Valid {
-			// Assuming EndDate from DB is date-only, interpret it in schedule's loc as end of day
-			y, m, d := schedule.EndDate.Time.Date()
-			scheduleActiveEndInLoc = time.Date(y, m, d, 23, 59, 59, 999999999, loc)
-		}
-
-		// Determine the effective iteration window for this schedule in its location
 		iterationStartInLoc := queryFromInLoc
 		if !scheduleActiveStartInLoc.IsZero() && scheduleActiveStartInLoc.After(iterationStartInLoc) {
 			iterationStartInLoc = scheduleActiveStartInLoc
@@ -284,45 +282,37 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			iterationEndInLoc = scheduleActiveEndInLoc
 		}
 
-		// Check if schedule itself is active/relevant within the query window
-		// This logic effectively replaces the previous scheduleStartsBeforeOrAtQueryEnd/scheduleEndsAfterOrAtQueryStart
 		if iterationStartInLoc.After(iterationEndInLoc) {
-			continue // No overlap between query window and schedule's active period
+			continue
 		}
 
 		cronExpression, err := cronexpr.Parse(schedule.CronExpr)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to parse cron expression for admin slots", "schedule_id", schedule.ScheduleID, "error", err)
+			s.logger.ErrorContext(ctx, "Failed to parse cron expression for admin slots", "schedule_id", schedule.ScheduleID, "cron_expr", schedule.CronExpr, "error", err)
 			continue
 		}
-		
-		// nextTime must be in the schedule's location for cronexpr.Next() to work as intended
+
 		nextTime := iterationStartInLoc
-		
-		// Handle iterationStartInLoc potentially being a valid cron time.
-		// cronexpr.Next() finds the time *after* the given time. To include iterationStartInLoc if it's a hit:
-		// Check if the cron's next time from (iterationStartInLoc - 1 sec) is iterationStartInLoc itself.
+		// Check if iterationStartInLoc itself is a valid cron occurrence
 		firstPossibleOccurrence := cronExpression.Next(iterationStartInLoc.Add(-time.Second))
+
 		if firstPossibleOccurrence.Equal(iterationStartInLoc) {
 			if !firstPossibleOccurrence.After(iterationEndInLoc) {
 				shiftEndTime := firstPossibleOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
 				slot := AdminAvailableShiftSlot{
 					ScheduleID:   schedule.ScheduleID,
 					ScheduleName: schedule.Name,
-					StartTime:    firstPossibleOccurrence, // This is in schedule's loc
-					EndTime:      shiftEndTime,          // This is also in schedule's loc
-					Timezone:     loc.String(),          // Store the location string used
-					IsBooked:     false, 
+					StartTime:    firstPossibleOccurrence, // In schedule's loc
+					EndTime:      shiftEndTime,          // In schedule's loc
+					Timezone:     loc.String(),
+					IsBooked:     false,
 				}
 				allSlots = append(allSlots, slot)
 			}
-			// Set nextTime to firstPossibleOccurrence to ensure the loop starts correctly
-			// if iterationStartInLoc was indeed a hit.
 			nextTime = firstPossibleOccurrence
 		}
 
 		for {
-			// nextTime is already in loc. cronExpression.Next will return time in loc.
 			nextOccurrence := cronExpression.Next(nextTime)
 			if nextOccurrence.IsZero() || nextOccurrence.After(iterationEndInLoc) {
 				break
@@ -332,49 +322,46 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			slot := AdminAvailableShiftSlot{
 				ScheduleID:   schedule.ScheduleID,
 				ScheduleName: schedule.Name,
-				StartTime:    nextOccurrence, // This is in schedule's loc
-				EndTime:      shiftEndTime,   // This is also in schedule's loc
-				Timezone:     loc.String(),   // Store the location string used
-				IsBooked:     false, 
+				StartTime:    nextOccurrence, // In schedule's loc
+				EndTime:      shiftEndTime,   // In schedule's loc
+				Timezone:     loc.String(),
+				IsBooked:     false,
 			}
 			allSlots = append(allSlots, slot)
 			nextTime = nextOccurrence
 		}
 	}
 
-	// Populate booking details
 	var populatedSlots []AdminAvailableShiftSlot
 	for _, slot := range allSlots {
-		populatedSlot := slot // Make a copy to modify
+		populatedSlot := slot 
+		// Slot times are in schedule's loc. Booking ShiftStart is UTC.
 		booking, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
 			ScheduleID: slot.ScheduleID,
-			ShiftStart: slot.StartTime,
+			ShiftStart: slot.StartTime.UTC(), // Convert to UTC for DB query
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				populatedSlot.IsBooked = false
 			} else {
-				s.logger.ErrorContext(ctx, "Error checking booking for admin slot", "schedule_id", slot.ScheduleID, "start_time", slot.StartTime, "error", err)
-				// Decide if we should skip this slot or return it as not booked
-				// For now, assume not booked on error, but log it
-				populatedSlot.IsBooked = false
+				s.logger.ErrorContext(ctx, "Error checking booking for admin slot", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
+				populatedSlot.IsBooked = false 
 			}
 		} else {
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-			// Fetch user details
 			user, userErr := s.querier.GetUserByID(ctx, booking.UserID)
 			if userErr != nil {
 				if !errors.Is(userErr, sql.ErrNoRows) {
 					s.logger.ErrorContext(ctx, "Error fetching user for booked admin slot", "user_id", booking.UserID, "booking_id", booking.BookingID, "error", userErr)
 				}
-				// User details might be missing or an error occurred, leave UserName/UserPhone as nil
 			} else {
 				if user.Name.Valid {
 					populatedSlot.UserName = &user.Name.String
 				}
-				// Assuming User struct has a Phone field of type string
-				populatedSlot.UserPhone = &user.Phone
+				if user.Phone != "" { // Assuming Phone is never null in DB, or handle sql.NullString if it can be
+					populatedSlot.UserPhone = &user.Phone
+				}
 			}
 		}
 		populatedSlots = append(populatedSlots, populatedSlot)

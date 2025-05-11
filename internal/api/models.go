@@ -34,8 +34,8 @@ type ScheduleResponse struct {
 	ScheduleID      int64     `json:"schedule_id"`
 	Name            string    `json:"name"`
 	CronExpr        string    `json:"cron_expr"`
-	StartDate       *time.Time `json:"start_date,omitempty"`
-	EndDate         *time.Time `json:"end_date,omitempty"`
+	StartDate       *string   `json:"start_date,omitempty"`
+	EndDate         *string   `json:"end_date,omitempty"`
 	DurationMinutes int64     `json:"duration_minutes"`
 	Timezone        string    `json:"timezone,omitempty"`
 } 

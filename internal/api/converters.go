@@ -69,29 +69,33 @@ func ToReportResponse(report db.Report) ReportResponse {
 
 // ToScheduleResponse converts a database Schedule to an API-friendly response
 func ToScheduleResponse(schedule db.Schedule) ScheduleResponse {
-	var startDate, endDate *time.Time
+	var startDateStr, endDateStr *string
+
 	if schedule.StartDate.Valid {
-		value := schedule.StartDate.Time
-		startDate = &value
-	}
-	if schedule.EndDate.Valid {
-		value := schedule.EndDate.Time
-		endDate = &value
+		// schedule.StartDate.Time is already 00:00:00 UTC for the given date
+		sDateStr := schedule.StartDate.Time.Format("2006-01-02")
+		startDateStr = &sDateStr
 	}
 
-	var timezone string
+	if schedule.EndDate.Valid {
+		// schedule.EndDate.Time is already 00:00:00 UTC for the given date
+		eDateStr := schedule.EndDate.Time.Format("2006-01-02")
+		endDateStr = &eDateStr
+	}
+
+	var timezoneString string
 	if schedule.Timezone.Valid {
-		timezone = schedule.Timezone.String
+		timezoneString = schedule.Timezone.String
 	}
 
 	return ScheduleResponse{
 		ScheduleID:      schedule.ScheduleID,
 		Name:            schedule.Name,
 		CronExpr:        schedule.CronExpr,
-		StartDate:       startDate,
-		EndDate:         endDate,
+		StartDate:       startDateStr, // This will be a "YYYY-MM-DD" string or nil
+		EndDate:         endDateStr,   // This will be a "YYYY-MM-DD" string or nil
 		DurationMinutes: schedule.DurationMinutes,
-		Timezone:        timezone,
+		Timezone:        timezoneString,
 	}
 }
 

@@ -19,7 +19,9 @@ SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?;
 
 -- name: ListUsers :many
-SELECT user_id, phone, name, created_at, role FROM users;
+SELECT user_id, phone, name, created_at, role FROM users
+WHERE (sqlc.narg('search_term') IS NULL OR name LIKE sqlc.narg('search_term') OR phone LIKE sqlc.narg('search_term'))
+ORDER BY name;
 
 -- name: DeleteUser :exec
 DELETE FROM users

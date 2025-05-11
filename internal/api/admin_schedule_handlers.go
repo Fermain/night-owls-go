@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -38,8 +39,15 @@ type AdminCreateScheduleRequest struct {
 	Timezone        *string `json:"timezone,omitempty"`
 }
 
-func parseDate(dateStr string) (time.Time, error) {
-	return time.Parse("2006-01-02", dateStr)
+// parseDateToUTC parses a "YYYY-MM-DD" string and returns a time.Time
+// representing 00:00:00 UTC on that date.
+func parseDateToUTC(dateStr string) (time.Time, error) {
+	t, err := time.ParseInLocation("2006-01-02", dateStr, time.UTC) // Parse as UTC directly
+	if err != nil {
+		return time.Time{}, err
+	}
+	// Ensure it's specifically 00:00:00 UTC, though ParseInLocation with date-only should do this.
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC), nil
 }
 
 // AdminCreateSchedule handles POST /api/admin/schedules
@@ -51,16 +59,22 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Basic validation (more can be added)
 	if req.Name == "" || req.CronExpr == "" {
-		RespondWithError(w, http.StatusBadRequest, "Missing or invalid required fields (name, cron_expr)", h.logger)
+		RespondWithError(w, http.StatusBadRequest, "Missing required fields (name, cron_expr)", h.logger)
 		return
 	}
 
-	// Validate CRON expression format
 	if _, err := cronexpr.Parse(req.CronExpr); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid CRON expression format", h.logger, "cron_expr", req.CronExpr, "error", err.Error())
 		return
+	}
+
+	// Validate Timezone if provided
+	if req.Timezone != nil && *req.Timezone != "" {
+		if _, err := time.LoadLocation(*req.Timezone); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid timezone string", h.logger, "timezone", *req.Timezone, "error", err.Error())
+			return
+		}
 	}
 
 	params := db.CreateScheduleParams{
@@ -69,26 +83,23 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {
-		parsedDate, err := parseDate(*req.StartDate)
+		parsedDate, err := parseDateToUTC(*req.StartDate) // Use UTC parser
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Invalid start_date format, expected YYYY-MM-DD", h.logger, "input_date", *req.StartDate, "error", err)
 			return
 		}
-		params.StartDate.Time = parsedDate
-		params.StartDate.Valid = true
+		params.StartDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
 	if req.EndDate != nil && *req.EndDate != "" {
-		parsedDate, err := parseDate(*req.EndDate)
+		parsedDate, err := parseDateToUTC(*req.EndDate) // Use UTC parser
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Invalid end_date format, expected YYYY-MM-DD", h.logger, "input_date", *req.EndDate, "error", err)
 			return
 		}
-		params.EndDate.Time = parsedDate
-		params.EndDate.Valid = true
+		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
 	if req.Timezone != nil && *req.Timezone != "" {
-		params.Timezone.String = *req.Timezone
-		params.Timezone.Valid = true
+		params.Timezone = sql.NullString{String: *req.Timezone, Valid: true} // Assign to sql.NullString
 	}
 
 	schedule, err := h.scheduleService.AdminCreateSchedule(r.Context(), params)
@@ -154,10 +165,17 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Validate CRON expression format
 	if _, err := cronexpr.Parse(req.CronExpr); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid CRON expression format", h.logger, "cron_expr", req.CronExpr, "error", err.Error())
 		return
+	}
+
+	// Validate Timezone if provided
+	if req.Timezone != nil && *req.Timezone != "" {
+		if _, err := time.LoadLocation(*req.Timezone); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid timezone string", h.logger, "timezone", *req.Timezone, "error", err.Error())
+			return
+		}
 	}
 
 	params := db.UpdateScheduleParams{
@@ -167,26 +185,23 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {
-		parsedDate, err := parseDate(*req.StartDate)
+		parsedDate, err := parseDateToUTC(*req.StartDate) // Use UTC parser
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Invalid start_date format, expected YYYY-MM-DD", h.logger, "input_date", *req.StartDate, "error", err)
 			return
 		}
-		params.StartDate.Time = parsedDate
-		params.StartDate.Valid = true
+		params.StartDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
 	if req.EndDate != nil && *req.EndDate != "" {
-		parsedDate, err := parseDate(*req.EndDate)
+		parsedDate, err := parseDateToUTC(*req.EndDate) // Use UTC parser
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Invalid end_date format, expected YYYY-MM-DD", h.logger, "input_date", *req.EndDate, "error", err)
 			return
 		}
-		params.EndDate.Time = parsedDate
-		params.EndDate.Valid = true
+		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
 	if req.Timezone != nil && *req.Timezone != "" {
-		params.Timezone.String = *req.Timezone
-		params.Timezone.Valid = true
+		params.Timezone = sql.NullString{String: *req.Timezone, Valid: true} // Assign to sql.NullString
 	}
 
 	schedule, err := h.scheduleService.AdminUpdateSchedule(r.Context(), params)

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import type { DateRange as BitsDateRange } from 'bits-ui'; // Underlying type from bits-ui for RangeCalendar
+	import type { DateRange as BitsDateRange } from 'bits-ui';
 	import {
 		DateFormatter,
 		type DateValue,
@@ -9,126 +9,81 @@
 		CalendarDate
 	} from '@internationalized/date';
 	import { cn } from '$lib/utils';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { buttonVariants } from '$lib/components/ui/button';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar';
 	import * as Popover from '$lib/components/ui/popover';
 	import { parseYyyyMmDdToCalendarDate, formatCalendarDateToYyyyMmDd } from '$lib/utils/date';
-	import { createEventDispatcher } from 'svelte';
-
-	type Props = {
-		initialStartDate?: string | null; // YYYY-MM-DD
-		initialEndDate?: string | null; // YYYY-MM-DD
-		placeholderText?: string;
-	};
 
 	const {
-		initialStartDate = undefined,
-		initialEndDate = undefined,
-		placeholderText = 'Select a date range'
-	}: Props = $props();
-
-	const dispatch = createEventDispatcher<{
-		change: { start: string | null; end: string | null };
+		initialStartDate,
+		initialEndDate,
+		placeholderText = 'Select a date range',
+		change
+	} = $props<{
+		initialStartDate?: string | null;
+		initialEndDate?: string | null;
+		placeholderText?: string;
+		change?: (r: { start: string | null; end: string | null }) => void;
 	}>();
 
-	// TEMP: Hardcode locale and timezone for DateFormatter to test
-	const df = new DateFormatter('en-ZA', {
-		dateStyle: 'medium',
-		timeZone: 'UTC' // Using UTC for simplicity, can be any valid IANA timezone
-	});
+	/* — utilities & state — */
+	const df = new DateFormatter('en-ZA', { dateStyle: 'medium', timeZone: 'UTC' });
 
-	// Internal state for the RangeCalendar, using DateValue objects
 	let currentRange = $state<BitsDateRange | undefined>(undefined);
 	let calendarPlaceholder = $state<DateValue>(today(getLocalTimeZone()));
 	let popoverOpen = $state(false);
 
-	// Effect to initialize or update currentRange when props change
 	$effect(() => {
-		const newPropStart = parseYyyyMmDdToCalendarDate(initialStartDate);
-		const newPropEnd = parseYyyyMmDdToCalendarDate(initialEndDate);
+		if (popoverOpen) return; 
 
-		const internalStart = currentRange?.start;
-		const internalEnd = currentRange?.end;
+		const s = parseYyyyMmDdToCalendarDate(initialStartDate);
+		const e = parseYyyyMmDdToCalendarDate(initialEndDate);
 
-		let needsUpdate = false;
+		const propStartStr = formatCalendarDateToYyyyMmDd(s);
+		const propEndStr = formatCalendarDateToYyyyMmDd(e);
+		const currentStartStr = formatCalendarDateToYyyyMmDd(currentRange?.start);
+		const currentEndStr = formatCalendarDateToYyyyMmDd(currentRange?.end);
 
-		// Check if start date needs update
-		if (newPropStart && internalStart) {
-			if (newPropStart.compare(internalStart) !== 0) needsUpdate = true;
-		} else if (newPropStart || internalStart) {
-			// One is defined, the other is not (XOR condition)
-			if (newPropStart !== internalStart) needsUpdate = true;
+		if (propStartStr !== currentStartStr || propEndStr !== currentEndStr) {
+			currentRange =
+				s && e && s.compare(e) <= 0
+					? { start: s, end: e }
+					: s
+						? { start: s, end: undefined }
+						: undefined;
 		}
 
-		// Check if end date needs update, only if start doesn't already necessitate an update
-		if (!needsUpdate) {
-			if (newPropEnd && internalEnd) {
-				if (newPropEnd.compare(internalEnd) !== 0) needsUpdate = true;
-			} else if (newPropEnd || internalEnd) {
-				// One is defined, the other is not (XOR condition)
-				if (newPropEnd !== internalEnd) needsUpdate = true;
-			}
-		}
-
-		if (needsUpdate) {
-			if (newPropStart && newPropEnd && newPropStart.compare(newPropEnd) <= 0) {
-				currentRange = { start: newPropStart, end: newPropEnd };
-			} else if (newPropStart) {
-				currentRange = { start: newPropStart, end: undefined };
-			} else {
-				currentRange = undefined;
-			}
-		}
-
-		// Update placeholder if no range is set (or specifically, if no start date is set)
 		if (!currentRange?.start) {
-			calendarPlaceholder = newPropStart || today(getLocalTimeZone());
+			calendarPlaceholder = s ?? today(getLocalTimeZone());
+		} else {
+			calendarPlaceholder = currentRange.start;
 		}
 	});
 
-	// Effect to dispatch change when currentRange is updated by the calendar
-	// This needs to be distinct from the prop-driven update to avoid loops
-	// and to ensure we only dispatch when the user interacts with the calendar.
-	$effect(() => {
-		const newStartString = formatCalendarDateToYyyyMmDd(currentRange?.start);
-		const newEndString = formatCalendarDateToYyyyMmDd(currentRange?.end);
-
-		// Check if the actual selected values (now strings) differ from initial props
-		// to decide if a meaningful change occurred that needs dispatching.
-		// This helps avoid dispatching events when the component initializes or props are set externally
-		// without actual user interaction leading to a new distinct range.
-		if (newStartString !== initialStartDate || newEndString !== initialEndDate) {
-			dispatch('change', {
-				start: newStartString,
-				end: newEndString
-			});
-		}
-	});
-
-	function getButtonLabel(): string {
+	function buttonLabel(): string {
 		if (currentRange?.start && currentRange?.end) {
-			// Pass the hardcoded timezone to toDate() as well if it expects one,
-			// though DateValue.toDate() usually converts to a JS Date in the system's local TZ by default.
-			// For consistency with DateFormatter, specifying it if needed for toDate is safer.
-			return `${df.format(currentRange.start.toDate('UTC'))} - ${df.format(currentRange.end.toDate('UTC'))}`;
-		} else if (currentRange?.start) {
-			return df.format(currentRange.start.toDate('UTC'));
+			return `${df.format(currentRange.start.toDate('UTC'))} – ${df.format(
+				currentRange.end.toDate('UTC')
+			)}`;
 		}
+		if (currentRange?.start) return df.format(currentRange.start.toDate('UTC'));
 		return placeholderText;
 	}
 </script>
 
+<!-- — markup — -->
 <Popover.Root bind:open={popoverOpen}>
 	<Popover.Trigger
 		class={cn(
-			buttonVariants({ variant: 'outline' }),
 			'w-full justify-start text-left font-normal',
-			!currentRange?.start && 'text-muted-foreground'
+			!currentRange?.start && 'text-muted-foreground',
+			buttonVariants({ variant: 'outline' })
 		)}
 	>
 		<CalendarIcon class="mr-2 h-4 w-4" />
-		<span>{getButtonLabel()}</span>
+		<span>{buttonLabel()}</span>
 	</Popover.Trigger>
+
 	<Popover.Content class="w-auto p-0" align="start">
 		<RangeCalendar
 			bind:value={currentRange}
@@ -138,7 +93,17 @@
 			onValueChange={(v) => {
 				if (v?.start && v.end && v.start.compare(v.end) <= 0) {
 					popoverOpen = false;
-				}
+					if (change) {
+						const startStr = formatCalendarDateToYyyyMmDd(v.start);
+						const endStr = formatCalendarDateToYyyyMmDd(v.end);
+						if (startStr !== initialStartDate || endStr !== initialEndDate) {
+							change({ start: startStr, end: endStr });
+						}
+					}
+				} 
+				// Add handling for partial selection or clearing if needed in the future
+				// else if (v?.start && !v.end) { /* partial selection */ }
+				// else if (!v?.start && !v.end && currentRange) { /* cleared */ }
 			}}
 		/>
 	</Popover.Content>

@@ -30,7 +30,7 @@ type Querier interface {
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
-	ListUsers(ctx context.Context, searchQuery interface{}) ([]User, error)
+	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
 	// Limit to prevent processing too many at once
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
