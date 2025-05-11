@@ -1,8 +1,7 @@
 <script lang="ts">
 	import UserForm from './UserForm.svelte';
-	import type { UserData } from './UserForm.svelte';
-
-	// The selectedUser prop may come from the parent component with a slightly different structure
+	
+// The selectedUser prop may come from the parent component with a slightly different structure
 	let { selectedUser }: { selectedUser: any | null } = $props();
 
 	// Convert selectedUser to UserData format if needed

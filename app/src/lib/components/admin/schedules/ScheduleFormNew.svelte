@@ -13,8 +13,6 @@
 	import cronstrue from 'cronstrue';
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
 	import type { Schedule as ScheduleData } from '$lib/components/schedules_table/columns';
-	import type { DateRange } from 'bits-ui';
-	import { CalendarDate } from '@internationalized/date';
 	import CronView from '$lib/components/cron/cron-view.svelte';
 
 	let { schedule }: { schedule?: ScheduleData } = $props();

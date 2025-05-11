@@ -1,6 +1,5 @@
 <script lang="ts" generics="TData">
 	import type { Table } from '@tanstack/table-core';
-	import { Button } from '$lib/components/ui/button';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';

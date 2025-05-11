@@ -1,7 +1,6 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import PlusIcon from '@lucide/svelte/icons/plus-circle';
 	import UserIcon from '@lucide/svelte/icons/user';

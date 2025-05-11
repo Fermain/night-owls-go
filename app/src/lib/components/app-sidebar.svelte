@@ -2,7 +2,6 @@
 	import NavUser from '$lib/components/nav-user.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	// import { useSidebar } from '$lib/components/ui/sidebar/index.js'; // useSidebar was called but not used
-	import Command from '@lucide/svelte/icons/command';
 	import type { ComponentProps, Snippet } from 'svelte';
 	import { page } from '$app/state';
 

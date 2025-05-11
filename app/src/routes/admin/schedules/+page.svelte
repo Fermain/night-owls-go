@@ -1,6 +1,5 @@
 <script lang="ts">
 	// import { createQuery } from '@tanstack/svelte-query'; // No longer needed for adminSchedulesQuery here
-	import type { Schedule } from '$lib/components/schedules_table/columns';
 	// import { columns as publicColumns } from '$lib/components/schedules_table/columns'; // Not used for dashboard
 	// import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte'; // Not used for dashboard
 	import { page } from '$app/state';

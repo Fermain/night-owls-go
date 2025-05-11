@@ -3,13 +3,13 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { page } from '$app/state'; // Corrected by user
 	import { goto } from '$app/navigation';
-	import { createQuery, type QueryKey, type CreateQueryResult } from '@tanstack/svelte-query';
+	import { createQuery, type QueryKey } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
 	import { formatDistanceToNow } from 'date-fns'; // Added for upcoming shifts
 	import type { Schedule } from '$lib/components/schedules_table/columns'; // Import the shared Schedule type
-	import { CalendarDays, PlusCircle } from 'lucide-svelte'; // Added CalendarDays
+	import { CalendarDays } from 'lucide-svelte'; // Added CalendarDays
 
 	// Import the new store
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
