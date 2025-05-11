@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createQuery, type CreateQueryResult } from '@tanstack/svelte-query';
+	import { createQuery, type CreateQueryResult, useQueryClient, createMutation } from '@tanstack/svelte-query';
 	// import * as Table from '$lib/components/ui/table/index.js'; // Not currently used
 	import { toast } from 'svelte-sonner';
 	import { formatDistanceToNow } from 'date-fns';
@@ -18,6 +18,8 @@
 	} from '@internationalized/date';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import * as Select from "$lib/components/ui/select"; // For User Select
+	import { z } from 'zod'; // For form validation
 
 	// --- Types ---
 	type AdminShiftSlot = {
@@ -32,14 +34,30 @@
 		user_phone?: string | null;
 	};
 
+	// User type for the dropdown
+	type User = {
+		id: number;
+		name: string | null;
+		phone: string;
+		role: string; // Added role for completeness, might not be used in form
+	};
+
 	// --- State for selected shift ---
 	// This will be set by interaction with the sidebar (defined in the layout)
 	// For now, this page expects selectedShift to be populated (e.g. via URL param or store later)
 	let selectedShift = $state<AdminShiftSlot | null>(null);
 	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
+	// --- Booking Form State ---
+	let selectedUserIdForBooking = $state<string | undefined>(undefined); // Store the string value from select
+	let bookingFormError = $state<string | null>(null);
+	const queryClient = useQueryClient();
+
 	// --- Calendar State (new) ---
 	let currentDisplayMonth = $state(today(getLocalTimeZone()));
+
+	// Derived state for enabling usersQuery
+	let isBookingFormEnabled = $derived(!!selectedShift && !selectedShift.is_booked);
 
 	// --- Utility Functions (formatTimeSlot, formatRelativeTime, getAkaDescription are still useful) ---
 	function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
@@ -105,16 +123,14 @@
 
 	// --- Data Fetching for all slots in a range (to find the selected one by ID/startTime) ---
 	// This page still fetches a broad range of slots to be able to find the specific one selected from the sidebar.
-	const fetchAllShiftSlotsForDetailLookup = async (): Promise<AdminShiftSlot[]> => {
+	const fetchAllShiftSlotsForLookup = async (): Promise<AdminShiftSlot[]> => {
 		const now = new Date();
 		const fromDate = new Date(now);
-		fromDate.setDate(now.getDate() - 7); // Broad range to ensure selected item is found
+		fromDate.setDate(now.getDate() - 30); // Broad range to ensure selected item is found
 		const toDate = new Date(now);
-		toDate.setDate(now.getDate() + 30);
+		toDate.setDate(now.getDate() + 60);
 
-		const params = new URLSearchParams();
-		params.append('from', fromDate.toISOString());
-		params.append('to', toDate.toISOString());
+		const params = new URLSearchParams({ from: fromDate.toISOString(), to: toDate.toISOString() });
 
 		const response = await fetch(`/api/admin/schedules/all-slots?${params.toString()}`);
 		if (!response.ok) {
@@ -125,24 +141,29 @@
 			} catch (e) {
 				/* ignore */
 			}
-			toast.error(`Failed to fetch shift slots for detail: ${errorMsg}`);
+			toast.error(`Failed to fetch shift slots for detail lookup: ${errorMsg}`);
 			throw new Error(errorMsg);
 		}
 		return response.json() as Promise<AdminShiftSlot[]>;
 	};
 
-	const allSlotsForDetailQuery: CreateQueryResult<AdminShiftSlot[], Error> = createQuery({
-		queryKey: ['allAdminShiftSlotsForDetailPage'],
-		queryFn: fetchAllShiftSlotsForDetailLookup
+	const allSlotsForDetailLookupQuery = $derived.by(() => {
+		const currentStartTime = shiftStartTimeFromUrl;
+		return createQuery<AdminShiftSlot[], Error>({
+			queryKey: ['allAdminShiftSlotsForSlotDetailPageLookup', currentStartTime],
+			queryFn: fetchAllShiftSlotsForLookup,
+			enabled: !!currentStartTime
+		});
 	});
 
-	let shiftListForDetail = $derived($allSlotsForDetailQuery.data ?? []);
+	let shiftListForDetail = $derived($allSlotsForDetailLookupQuery.data ?? []);
 
 	$effect(() => {
-		if (shiftStartTimeFromUrl && shiftListForDetail.length > 0) {
-			selectedShift =
-				shiftListForDetail.find((s: AdminShiftSlot) => s.start_time === shiftStartTimeFromUrl) ||
-				null;
+		const allSlots = $allSlotsForDetailLookupQuery.data;
+		if (shiftStartTimeFromUrl && allSlots && allSlots.length > 0) {
+			selectedShift = allSlots.find((s: AdminShiftSlot) => s.start_time === shiftStartTimeFromUrl) || null;
+			selectedUserIdForBooking = undefined;
+			bookingFormError = null;
 		} else if (!shiftStartTimeFromUrl) {
 			selectedShift = null; // Clear selection if URL param is removed
 		}
@@ -164,7 +185,6 @@
 	};
 
 	const calendarMonthSlotsQuery = $derived.by(() => {
-		// Only enable this query if no specific shift is selected for detail view
 		const shouldBeEnabled = !shiftStartTimeFromUrl;
 		return createQuery<AdminShiftSlot[], Error, AdminShiftSlot[], [string, string]>({
 			queryKey: ['adminCalendarMonthSlots', currentDisplayMonth.toString()],
@@ -195,6 +215,71 @@
 	function nextMonth() {
 		currentDisplayMonth = currentDisplayMonth.add({ months: 1 });
 	}
+
+	// --- Data Fetching for Users (for select dropdown) ---
+	const fetchUsers = async (): Promise<User[]> => {
+		const response = await fetch('/api/admin/users');
+		if (!response.ok) {
+			throw new Error('Failed to fetch users');
+		}
+		return response.json();
+	};
+	const usersQuery = $derived.by(() => {
+		const enabled = isBookingFormEnabled;
+		return createQuery<User[], Error>({
+			queryKey: ['allAdminUsersForBooking'],
+			queryFn: fetchUsers,
+			enabled: enabled
+		});
+	});
+
+	// --- Booking Mutation ---
+	type AdminBookingPayload = { 
+		schedule_id: number; 
+		start_time: string; 
+		user_id: number 
+	};
+
+	const bookShiftMutation = createMutation<any, Error, AdminBookingPayload>({
+		mutationFn: async (bookingData: AdminBookingPayload) => {
+			const response = await fetch('/api/admin/bookings/assign', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(bookingData)
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: 'Failed to assign shift' }));
+				throw new Error(errorData.message || `HTTP error ${response.status}`);
+			}
+			return response.json();
+		},
+		onSuccess: () => {
+			toast.success('Shift assigned to user successfully!');
+			queryClient.invalidateQueries({ queryKey: ['allAdminShiftSlotsForSlotDetailPageLookup', shiftStartTimeFromUrl] }); 
+			queryClient.invalidateQueries({ queryKey: ['adminCalendarMonthSlots'] });
+			selectedUserIdForBooking = undefined;
+		},
+		onError: (error: Error) => {
+			toast.error(`Assignment failed: ${error.message}`);
+			bookingFormError = error.message;
+		}
+	});
+
+	function handleBookShift(event: SubmitEvent) { // Added event type
+		event.preventDefault(); // Manual preventDefault
+		bookingFormError = null;
+		const userIdToBook = selectedUserIdForBooking ? parseInt(selectedUserIdForBooking) : undefined;
+
+		if (!selectedShift || !userIdToBook) {
+			bookingFormError = 'Please select a user.';
+			return;
+		}
+		$bookShiftMutation.mutate({
+			schedule_id: selectedShift.schedule_id,
+			start_time: selectedShift.start_time, 
+			user_id: userIdToBook
+		});
+	}
 </script>
 
 <svelte:head>
@@ -207,10 +292,10 @@
 
 <!-- Main content area for selected shift details. No SidebarPage wrapper. -->
 <div class="p-4 md:p-8">
-	{#if shiftStartTimeFromUrl && $allSlotsForDetailQuery.isLoading}
+	{#if shiftStartTimeFromUrl && $allSlotsForDetailLookupQuery.isLoading}
 		<p>Loading shift details...</p>
 	{:else if selectedShift}
-		<div class="border rounded-lg shadow-sm">
+		<div class="border rounded-lg shadow-sm mb-6">
 			<div class="p-6">
 				<h2 class="text-xl font-semibold mb-1">{selectedShift.schedule_name}</h2>
 				<p class="text-sm text-muted-foreground mb-4">
@@ -233,6 +318,18 @@
 							<span class="text-green-600 font-semibold">Available</span>
 						{/if}
 					</p>
+					{#if selectedShift.is_booked && (selectedShift.user_name || selectedShift.user_phone)}
+						<div class="mt-1">
+							<p class="text-sm">
+								<strong class="font-medium">Assigned to: </strong>
+								<span class="text-gray-700">{selectedShift.user_name ?? 'N/A'}</span>
+								{#if selectedShift.user_phone}
+									<span class="text-xs text-muted-foreground ml-1">({selectedShift.user_phone})</span>
+								{/if}
+							</p>
+							<!-- Future: Add Unassign/Reassign button here -->
+						</div>
+					{/if}
 					<p>
 						<strong>Timezone:</strong>
 						{selectedShift.timezone || 'Not specified (defaults to schedule timezone)'}
@@ -241,11 +338,49 @@
 				</div>
 			</div>
 		</div>
-	{:else if shiftStartTimeFromUrl && $allSlotsForDetailQuery.isError}
+
+		{#if !selectedShift.is_booked}
+			<div class="border rounded-lg shadow-sm p-6">
+				<h3 class="text-lg font-medium mb-4">Book Shift for User</h3>
+				{#if $usersQuery.isLoading}
+					<p>Loading users...</p>
+				{:else if $usersQuery.isError}
+					<p class="text-destructive">Error loading users: {$usersQuery.error.message}</p>
+				{:else if $usersQuery.data}
+					<form onsubmit={handleBookShift} class="space-y-4">
+						<div>
+							<Select.Root 
+								type="single"
+								value={selectedUserIdForBooking} 
+								onValueChange={(val?: string) => { 
+									selectedUserIdForBooking = val;
+									bookingFormError = null; 
+								}}
+							>
+								<Select.Trigger name="userIdForBookingSelect" class="w-full md:w-[280px]" placeholder="Select a user" />
+								<Select.Content>
+									{#each $usersQuery.data as user (user.id)}
+										<Select.Item value={user.id.toString()} label={user.name || user.phone}>{user.name || user.phone}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						</div>
+						{#if bookingFormError}
+							<p class="text-sm text-destructive">{bookingFormError}</p>
+						{/if}
+						<Button type="submit" disabled={$bookShiftMutation.isPending}>
+							{#if $bookShiftMutation.isPending}Assigning...{:else}Assign Selected User{/if}
+						</Button>
+					</form>
+				{/if}
+			</div>
+		{/if}
+
+	{:else if shiftStartTimeFromUrl && $allSlotsForDetailLookupQuery.isError}
 		<p class="text-destructive">
-			Error loading data to find shift: {$allSlotsForDetailQuery.error.message}
+			Error loading data to find shift: {$allSlotsForDetailLookupQuery.error.message}
 		</p>
-	{:else if shiftStartTimeFromUrl && !$allSlotsForDetailQuery.isLoading && !selectedShift}
+	{:else if shiftStartTimeFromUrl && !$allSlotsForDetailLookupQuery.isLoading && !selectedShift}
 		<p>Shift with start time {shiftStartTimeFromUrl} not found.</p>
 	{:else}
 		<div class="flex flex-col items-center">

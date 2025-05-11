@@ -162,8 +162,9 @@ func main() {
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
-	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService) // Instantiate AdminScheduleHandlers
-	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger) // Instantiate AdminUserHandler
+	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
+	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
+	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 
 	// Public routes
 	router.Post("/auth/register", authAPIHandler.RegisterHandler)
@@ -211,6 +212,11 @@ func main() {
 			r.Get("/{id}", adminUserAPIHandler.AdminGetUser)          // GET /api/admin/users/{id}
 			r.Put("/{id}", adminUserAPIHandler.AdminUpdateUser)        // PUT /api/admin/users/{id}
 			r.Delete("/{id}", adminUserAPIHandler.AdminDeleteUser)    // DELETE /api/admin/users/{id}
+		})
+
+		// New Admin Bookings routes
+		router.Route("/api/admin/bookings", func(r chi.Router) {
+			r.Post("/assign", adminBookingAPIHandler.AssignUserToShiftHandler) // POST /api/admin/bookings/assign
 		})
 
 		// Add other admin routes here
