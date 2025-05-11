@@ -1,6 +1,7 @@
 import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
+import { authenticatedFetch } from '$lib/utils/api';
 
 // Assuming the API returns a success message or just a status code
 interface DeleteUserResponse {
@@ -12,7 +13,7 @@ export function createDeleteUserMutation(onSettled?: () => void) {
 	const queryClient = useQueryClient();
 	return createMutation<DeleteUserResponse, Error, number>({
 		mutationFn: async (userIdToDelete) => {
-			const response = await fetch(`/api/admin/users/${userIdToDelete}`, {
+			const response = await authenticatedFetch(`/api/admin/users/${userIdToDelete}`, {
 				method: 'DELETE'
 			});
 			if (!response.ok) {
@@ -23,7 +24,12 @@ export function createDeleteUserMutation(onSettled?: () => void) {
 			// Try to parse JSON, but handle cases where it might be empty.
 			const contentType = response.headers.get('content-type');
 			if (contentType && contentType.indexOf('application/json') !== -1) {
-				return response.json() as Promise<DeleteUserResponse>;
+				try {
+					return await response.json() as DeleteUserResponse;
+				} catch (e) {
+					// Handle cases where response might be empty JSON but still valid (e.g. {} from a 200 OK)
+					return { message: 'User deleted successfully (empty JSON response)' };
+				}
 			}
 			return { message: 'User deleted successfully' }; // Or an empty object if preferred for non-JSON responses
 		},

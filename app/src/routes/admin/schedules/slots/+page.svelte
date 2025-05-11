@@ -24,6 +24,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import * as Select from '$lib/components/ui/select'; // For User Select
 	// For form validation
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	// --- Types ---
 	type AdminShiftSlot = {
@@ -127,35 +128,36 @@
 
 	// --- Data Fetching for all slots in a range (to find the selected one by ID/startTime) ---
 	// This page still fetches a broad range of slots to be able to find the specific one selected from the sidebar.
-	const fetchAllShiftSlotsForLookup = async (): Promise<AdminShiftSlot[]> => {
-		const now = new Date();
-		const fromDate = new Date(now);
-		fromDate.setDate(now.getDate() - 30); // Broad range to ensure selected item is found
-		const toDate = new Date(now);
-		toDate.setDate(now.getDate() + 60);
+	async function fetchAllSlotsData(from?: Date, to?: Date) {
+		let isLoadingSlots = true;
+		try {
+			const params = new URLSearchParams();
+			if (from) params.append('from', from.toISOString().split('T')[0]);
+			if (to) params.append('to', to.toISOString().split('T')[0]);
 
-		const params = new URLSearchParams({ from: fromDate.toISOString(), to: toDate.toISOString() });
-
-		const response = await fetch(`/api/admin/schedules/all-slots?${params.toString()}`);
-		if (!response.ok) {
-			let errorMsg = `HTTP error ${response.status}`;
-			try {
-				const errorData = await response.json();
-				errorMsg = errorData.message || errorData.error || errorMsg;
-			} catch (e) {
-				/* ignore */
+			const response = await authenticatedFetch(`/api/admin/schedules/all-slots?${params.toString()}`);
+			if (!response.ok) {
+				let errorMsg = `HTTP error ${response.status}`;
+				try {
+					const errorData = await response.json();
+					errorMsg = errorData.message || errorData.error || errorMsg;
+				} catch (e) {
+					/* ignore */
+				}
+				toast.error(`Failed to fetch shift slots for detail lookup: ${errorMsg}`);
+				throw new Error(errorMsg);
 			}
-			toast.error(`Failed to fetch shift slots for detail lookup: ${errorMsg}`);
-			throw new Error(errorMsg);
+			return response.json() as Promise<AdminShiftSlot[]>;
+		} finally {
+			isLoadingSlots = false;
 		}
-		return response.json() as Promise<AdminShiftSlot[]>;
-	};
+	}
 
 	const allSlotsForDetailLookupQuery = $derived.by(() => {
 		const currentStartTime = shiftStartTimeFromUrl;
 		return createQuery<AdminShiftSlot[], Error>({
 			queryKey: ['allAdminShiftSlotsForSlotDetailPageLookup', currentStartTime],
-			queryFn: fetchAllShiftSlotsForLookup,
+			queryFn: () => fetchAllSlotsData(currentStartTime ? new Date(currentStartTime) : undefined),
 			enabled: !!currentStartTime
 		});
 	});
@@ -222,13 +224,19 @@
 	}
 
 	// --- Data Fetching for Users (for select dropdown) ---
-	const fetchUsers = async (): Promise<User[]> => {
-		const response = await fetch('/api/admin/users');
-		if (!response.ok) {
-			throw new Error('Failed to fetch users');
+	async function fetchUsers() {
+		try {
+			const response = await authenticatedFetch('/api/admin/users');
+			if (!response.ok) {
+				throw new Error('Failed to fetch users');
+			}
+			return response.json();
+		} catch (error) {
+			toast.error('Failed to load users');
+			console.error('Fetch users error:', error);
+			throw error;
 		}
-		return response.json();
-	};
+	}
 	const usersQuery = $derived.by(() => {
 		const enabled = isBookingFormEnabled;
 		return createQuery<User[], Error>({
@@ -247,7 +255,7 @@
 
 	const bookShiftMutation = createMutation<any, Error, AdminBookingPayload>({
 		mutationFn: async (bookingData: AdminBookingPayload) => {
-			const response = await fetch('/api/admin/bookings/assign', {
+			const response = await authenticatedFetch('/api/admin/bookings/assign', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(bookingData)
