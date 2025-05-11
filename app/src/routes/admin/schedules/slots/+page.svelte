@@ -107,22 +107,27 @@
 	let fromDateStr = $state(formatDateForInput(initialFromDate));
 	let toDateStr = $state(formatDateForInput(initialToDate));
 
+	// Function to handle date changes from DateRangePicker
+	function handleDateFilterChange(detail: { start: string | null; end: string | null }) {
+		if (detail.start) fromDateStr = detail.start;
+		if (detail.end) toDateStr = detail.end;
+	}
+
 	// --- Data Fetching ---
 	const fetchAdminShiftSlots = async (
 		currentFromDate: string,
 		currentToDate: string
 	): Promise<AdminShiftSlot[]> => {
 		const params = new URLSearchParams();
-		if (currentFromDate) {
-			const fromDT = new Date(currentFromDate);
-			fromDT.setHours(0, 0, 0, 0);
-			params.append('from', fromDT.toISOString());
-		}
-		if (currentToDate) {
-			const toDT = new Date(currentToDate);
-			toDT.setHours(23, 59, 59, 999);
-			params.append('to', toDT.toISOString());
-		}
+		// currentFromDate and currentToDate will be non-null strings here because
+		// the query is only enabled when fromDateStr and toDateStr are non-null.
+		const fromDT = new Date(currentFromDate);
+		fromDT.setHours(0, 0, 0, 0);
+		params.append('from', fromDT.toISOString());
+		
+		const toDT = new Date(currentToDate);
+		toDT.setHours(23, 59, 59, 999);
+		params.append('to', toDT.toISOString());
 
 		const response = await fetch(`/api/admin/schedules/all-slots?${params.toString()}`);
 
@@ -140,22 +145,24 @@
 		return response.json() as Promise<AdminShiftSlot[]>;
 	};
 
-	const queryEnabled = $derived(!!fromDateStr && !!toDateStr);
+	const queryOptions = $derived({
+		// Ensure queryKey always has 3 string elements to match TQueryKey.
+		// Use empty strings if fromDateStr or toDateStr are null; 'enabled' flag controls execution.
+		queryKey: ['adminShiftSlots', fromDateStr || '', toDateStr || ''] as [string, string, string],
+		queryFn: () => {
+			// This function will only be called if enabled is true,
+			// at which point fromDateStr and toDateStr are guaranteed to be strings.
+			return fetchAdminShiftSlots(fromDateStr!, toDateStr!); 
+		},
+		enabled: !!fromDateStr && !!toDateStr
+	});
+
 	const slotsQuery = createQuery<
 		AdminShiftSlot[],
 		Error,
 		AdminShiftSlot[],
-		// Explicit TQueryKey, matching the structure of the direct array + runes
-		// This could be [string, string | null, string | null] or more broadly ReadonlyArray<string | null>
-		// For simplicity and to match direct usage, let's use a more concrete tuple if possible,
-		// or fallback to ReadonlyArray<unknown> or ReadonlyArray<string | null> if inference is tricky.
-		// Given that fromDateStr and toDateStr are strings, [string, string, string] is suitable here.
-		[string, string, string]
-	>({
-		queryKey: ['adminShiftSlots', fromDateStr, toDateStr],
-		queryFn: () => fetchAdminShiftSlots(fromDateStr, toDateStr),
-		enabled: queryEnabled
-	});
+		[string, string, string] // QueryKey type
+	>(queryOptions);
 </script>
 
 <svelte:head>
@@ -168,10 +175,7 @@
 		<DateRangePicker
 			initialStartDate={fromDateStr}
 			initialEndDate={toDateStr}
-			on:change={(e: CustomEvent<{ start: string | null; end: string | null }>) => {
-				if (e.detail.start) fromDateStr = e.detail.start;
-				if (e.detail.end) toDateStr = e.detail.end;
-			}}
+			change={handleDateFilterChange}
 			placeholderText="Select date range for slots"
 		/>
 	</div>

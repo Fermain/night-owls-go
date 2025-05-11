@@ -99,6 +99,12 @@
 		}
 	});
 
+	// Function to handle date changes from DateRangePicker
+	function handleDateRangeChange(detail: { start: string | null; end: string | null }) {
+		formData.start_date = detail.start;
+		formData.end_date = detail.end;
+	}
+
 	const queryClient = useQueryClient();
 
 	const mutation = createMutation<
@@ -210,10 +216,7 @@
 			<DateRangePicker
 				initialStartDate={formData.start_date}
 				initialEndDate={formData.end_date}
-				on:change={(e: CustomEvent<{ start: string | null; end: string | null }>) => {
-					formData.start_date = e.detail.start;
-					formData.end_date = e.detail.end;
-				}}
+				change={handleDateRangeChange}
 				placeholderText="Pick start and end dates"
 			/>
 		</div>
