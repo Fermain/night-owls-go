@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import ScheduleFormNew from '$lib/components/admin/schedules/ScheduleFormNew.svelte';
+	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte';
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js'; // For dashboard placeholders
 
@@ -30,9 +30,9 @@
 
 <div class="container mx-auto p-4">
 	{#if currentScheduleToEdit}
-		<ScheduleFormNew schedule={currentScheduleToEdit} />
+		<ScheduleForm schedule={currentScheduleToEdit} />
 	{:else if page.url.pathname.endsWith('/new')}
-		<ScheduleFormNew />
+		<ScheduleForm />
 	{:else}
 		<!-- Schedules Dashboard View -->
 		<div class="p-4 md:p-8">
