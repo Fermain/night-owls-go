@@ -299,10 +299,10 @@
 		<div class="flex justify-between mt-6 pt-4 border-t">
 			<div>
 				{#if schedule?.schedule_id}
-					<!-- @ts-ignore -->
 					<Button
+						type="button"
 						variant="destructive"
-						on:click={handleDeleteClick}
+						onclick={handleDeleteClick}
 						disabled={$deleteMutation.isPending || $saveMutation.isPending}
 					>
 						{#if $deleteMutation.isPending}Deleting...{:else}Delete{/if}
@@ -310,10 +310,9 @@
 				{/if}
 			</div>
 			<div class="flex gap-2">
-				<!-- @ts-ignore -->
 				<Button
 					variant="outline"
-					on:click={handleCancel}
+					onclick={handleCancel}
 					disabled={$saveMutation.isPending || $deleteMutation.isPending}>Cancel</Button
 				>
 				<Button
@@ -341,14 +340,12 @@
 				>
 			</AlertDialog.Header>
 			<AlertDialog.Footer>
-				<!-- @ts-ignore -->
 				<AlertDialog.Cancel
-					on:click={() => (showDeleteConfirm = false)}
+					onclick={() => (showDeleteConfirm = false)}
 					disabled={$deleteMutation.isPending}>Cancel</AlertDialog.Cancel
 				>
-				<!-- @ts-ignore -->
 				<AlertDialog.Action
-					on:click={confirmDeleteAction}
+					onclick={confirmDeleteAction}
 					disabled={$deleteMutation.isPending}
 					class={$deleteMutation.isPending ? 'bg-destructive/50' : 'bg-destructive'}
 				>
