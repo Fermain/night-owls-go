@@ -35,17 +35,25 @@
 			let errorText = response.statusText;
 			try {
 				const errorData = await response.text(); // Try to get text for more detailed error
-				console.error('Failed to fetch schedules. Status:', response.status, 'Response:', errorData);
+				console.error(
+					'Failed to fetch schedules. Status:',
+					response.status,
+					'Response:',
+					errorData
+				);
 				errorText = errorData || errorText;
 			} catch (e) {
-				console.error('Failed to fetch schedules and could not parse error response body. Status:', response.status);
+				console.error(
+					'Failed to fetch schedules and could not parse error response body. Status:',
+					response.status
+				);
 			}
 			toast.error(`Failed to fetch schedules: ${response.status} ${errorText}`);
 			throw new Error(`Failed to fetch schedules: ${response.status} ${errorText}`);
 		}
 		// Check content type before parsing
-		const contentType = response.headers.get("content-type");
-		if (contentType && contentType.indexOf("application/json") !== -1) {
+		const contentType = response.headers.get('content-type');
+		if (contentType && contentType.indexOf('application/json') !== -1) {
 			return response.json();
 		} else {
 			const responseText = await response.text();
@@ -55,10 +63,12 @@
 		}
 	};
 
-	const schedulesQuery = $derived(createQuery<Schedule[], Error, Schedule[], QueryKey>({
-		queryKey: ['adminSchedulesForLayout'],
-		queryFn: fetchSchedules
-	}));
+	const schedulesQuery = $derived(
+		createQuery<Schedule[], Error, Schedule[], QueryKey>({
+			queryKey: ['adminSchedulesForLayout'],
+			queryFn: fetchSchedules
+		})
+	);
 
 	const schedulesForTemplate = $derived.by(() => {
 		// First, get the raw data from the query
@@ -68,8 +78,8 @@
 		if (!rawData) return [];
 
 		// Filter out schedules that don't have a valid ID for the key
-		const validKeyedData = rawData.filter(schedule => 
-			schedule.schedule_id !== null && schedule.schedule_id !== undefined
+		const validKeyedData = rawData.filter(
+			(schedule) => schedule.schedule_id !== null && schedule.schedule_id !== undefined
 		);
 
 		// If no search term, return the data that has valid keys
@@ -95,23 +105,30 @@
 		const response = await fetch(`/api/admin/schedules/all-slots?${params.toString()}`);
 		if (!response.ok) {
 			let errorMsg = `HTTP error ${response.status}`;
-			try { const errorData = await response.json(); errorMsg = errorData.message || errorData.error || errorMsg; } catch (e) { /* ignore */ }
+			try {
+				const errorData = await response.json();
+				errorMsg = errorData.message || errorData.error || errorMsg;
+			} catch (e) {
+				/* ignore */
+			}
 			toast.error(`Failed to fetch upcoming shifts: ${errorMsg}`);
 			throw new Error(errorMsg);
 		}
-		const allSlots = await response.json() as AdminShiftSlot[];
+		const allSlots = (await response.json()) as AdminShiftSlot[];
 		return allSlots
-			.filter(slot => new Date(slot.start_time) >= now)
+			.filter((slot) => new Date(slot.start_time) >= now)
 			.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 	};
 
 	const isSlotsPage = $derived(page.url.pathname.startsWith('/admin/schedules/slots'));
 
-	const upcomingSlotsLayoutQuery = $derived(createQuery({
-		queryKey: ['upcomingAdminShiftSlotsForSchedulesLayout'],
-		queryFn: fetchUpcomingShiftSlotsLayout,
-		enabled: isSlotsPage
-	}));
+	const upcomingSlotsLayoutQuery = $derived(
+		createQuery({
+			queryKey: ['upcomingAdminShiftSlotsForSchedulesLayout'],
+			queryFn: fetchUpcomingShiftSlotsLayout,
+			enabled: isSlotsPage
+		})
+	);
 
 	const upcomingShiftsForTemplate = $derived($upcomingSlotsLayoutQuery.data ?? []);
 
@@ -129,13 +146,13 @@
 			}
 
 			// Try to find it in the list already loaded by schedulesQuery
-			const existingSchedule = schedulesForTemplate.find(s => s.schedule_id === scheduleIdNum);
+			const existingSchedule = schedulesForTemplate.find((s) => s.schedule_id === scheduleIdNum);
 			if (existingSchedule) {
 				selectedScheduleForForm.set(existingSchedule);
 			} else {
 				// If not in the list, fetch it individually
 				// Clear the store first to indicate loading for a new ID
-				selectedScheduleForForm.set(undefined); 
+				selectedScheduleForForm.set(undefined);
 				const fetchAndSetSchedule = async () => {
 					try {
 						const response = await fetch(`/api/admin/schedules/${scheduleIdNum}`);
@@ -146,7 +163,7 @@
 						// Check again if the URL still matches, to avoid race conditions if user navigates away quickly
 						if (page.url.searchParams.get('scheduleId') === currentScheduleId) {
 							selectedScheduleForForm.set(scheduleData);
-						} 
+						}
 					} catch (err) {
 						console.error('Error fetching schedule detail for store:', err);
 						toast.error(`Error loading schedule ${scheduleIdNum}: ${(err as Error).message}`);
@@ -188,7 +205,7 @@
 
 			return `${startDay} ${startHourStr}-${endHourStr}${endAmPm}`;
 		} catch (e) {
-			console.error("Error formatting shift title condensed:", e);
+			console.error('Error formatting shift title condensed:', e);
 			return 'Invalid Time';
 		}
 	}
@@ -196,13 +213,10 @@
 	const currentListContentSnippet: Snippet = $derived(
 		isSlotsPage ? upcomingShiftsLayoutListContent : scheduleListContent
 	);
-	const currentTitle: string = $derived(
-		isSlotsPage ? 'Upcoming Shifts' : 'Schedules'
-	);
-	
+	const currentTitle: string = $derived(isSlotsPage ? 'Upcoming Shifts' : 'Schedules');
+
 	const isNewSchedulePage = $derived(page.url.pathname === '/admin/schedules/new');
 	const editScheduleId = $derived(page.url.searchParams.get('scheduleId'));
-
 </script>
 
 {#snippet scheduleListContent()}
@@ -213,7 +227,7 @@
 				class="w-full justify-start"
 				onclick={() => goto('/admin/schedules/new')}
 			>
-				Create New Schedule 
+				Create New Schedule
 			</Button>
 		</Sidebar.MenuItem>
 
@@ -224,13 +238,15 @@
 				Error loading schedules: {$schedulesQuery.error?.message ?? 'Unknown error'}
 			</p>
 		{:else if !$schedulesQuery.data}
-			 <p class="p-2 text-sm text-muted-foreground">No data received for schedules.</p>
+			<p class="p-2 text-sm text-muted-foreground">No data received for schedules.</p>
 		{:else if schedulesForTemplate.length > 0}
 			{#each schedulesForTemplate as schedule (schedule.schedule_id)}
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton
 						onclick={() => goto(`/admin/schedules?scheduleId=${schedule.schedule_id}`)}
-						isActive={editScheduleId === String(schedule.schedule_id) && !isSlotsPage && !isNewSchedulePage }
+						isActive={editScheduleId === String(schedule.schedule_id) &&
+							!isSlotsPage &&
+							!isNewSchedulePage}
 					>
 						<CalendarDays class="mr-2 h-4 w-4 text-muted-foreground" />
 						{schedule.name}
@@ -250,19 +266,28 @@
 		{#if $upcomingSlotsLayoutQuery.isLoading}
 			<p class="p-4 text-sm text-muted-foreground">Loading upcoming shifts...</p>
 		{:else if $upcomingSlotsLayoutQuery.isError}
-			<p class="p-4 text-sm text-destructive">Error: {$upcomingSlotsLayoutQuery.error?.message ?? 'Unknown error'}</p>
+			<p class="p-4 text-sm text-destructive">
+				Error: {$upcomingSlotsLayoutQuery.error?.message ?? 'Unknown error'}
+			</p>
 		{:else if upcomingShiftsForTemplate.length > 0}
 			<Sidebar.Menu class="p-2">
 				{#each upcomingShiftsForTemplate as shift (shift.schedule_id + shift.start_time)}
 					<Sidebar.MenuItem>
 						<Sidebar.MenuButton
-							onclick={() => goto(`/admin/schedules/slots?shiftStartTime=${encodeURIComponent(shift.start_time)}`)}
+							onclick={() =>
+								goto(
+									`/admin/schedules/slots?shiftStartTime=${encodeURIComponent(shift.start_time)}`
+								)}
 							isActive={page.url.searchParams.get('shiftStartTime') === shift.start_time}
 							class="flex flex-col items-start h-auto py-2 w-full text-left"
 						>
-							<span class="font-semibold text-sm">{formatShiftTitleCondensed(shift.start_time, shift.end_time)}</span>
+							<span class="font-semibold text-sm"
+								>{formatShiftTitleCondensed(shift.start_time, shift.end_time)}</span
+							>
 							<span class="text-xs text-muted-foreground">{shift.schedule_name}</span>
-							<span class="text-xs text-muted-foreground">{formatDistanceToNow(new Date(shift.start_time), { addSuffix: true })}</span>
+							<span class="text-xs text-muted-foreground"
+								>{formatDistanceToNow(new Date(shift.start_time), { addSuffix: true })}</span
+							>
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
 				{/each}

@@ -47,14 +47,14 @@
 	</div>
 
 	<div class="space-x-2">
-		<button 
+		<button
 			class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-			onclick={setDatesProgrammatically}
-		>Set Dates (Aug 1-5, 2024)</button>
-		<button 
+			onclick={setDatesProgrammatically}>Set Dates (Aug 1-5, 2024)</button
+		>
+		<button
 			class="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-			onclick={clearDatesProgrammatically}
-		>Clear Dates</button>
+			onclick={clearDatesProgrammatically}>Clear Dates</button
+		>
 	</div>
 
 	<div>
@@ -62,7 +62,9 @@
 		<ol class="list-decimal list-inside">
 			<li>Interact with the date picker.</li>
 			<li>Observe if the "Current State on Test Page" updates.</li>
-			<li>Use the buttons to set or clear dates and see if the picker reflects these prop changes.</li>
+			<li>
+				Use the buttons to set or clear dates and see if the picker reflects these prop changes.
+			</li>
 		</ol>
 	</div>
 </div>

@@ -1,9 +1,9 @@
 <script lang="ts">
 	// import { createQuery } from '@tanstack/svelte-query'; // No longer needed for adminSchedulesQuery here
-	import type { Schedule } from '$lib/components/schedules_table/columns'; 
+	import type { Schedule } from '$lib/components/schedules_table/columns';
 	// import { columns as publicColumns } from '$lib/components/schedules_table/columns'; // Not used for dashboard
 	// import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte'; // Not used for dashboard
-	import { page } from '$app/state'; 
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import ScheduleFormNew from '$lib/components/admin/schedules/ScheduleFormNew.svelte';
@@ -15,13 +15,17 @@
 
 	function handleCreateNew() {
 		selectedScheduleForForm.set(undefined);
-		goto('/admin/schedules/new'); 
+		goto('/admin/schedules/new');
 	}
 </script>
 
 <svelte:head>
 	<title>
-		Admin - {currentScheduleToEdit ? 'Edit Schedule' : page.url.pathname.endsWith('/new') ? 'New Schedule' : 'Schedules Dashboard'}
+		Admin - {currentScheduleToEdit
+			? 'Edit Schedule'
+			: page.url.pathname.endsWith('/new')
+				? 'New Schedule'
+				: 'Schedules Dashboard'}
 	</title>
 </svelte:head>
 
@@ -29,7 +33,7 @@
 	{#if currentScheduleToEdit}
 		<ScheduleFormNew schedule={currentScheduleToEdit} />
 	{:else if page.url.pathname.endsWith('/new')}
-		<ScheduleFormNew /> 
+		<ScheduleFormNew />
 	{:else}
 		<!-- Schedules Dashboard View -->
 		<div class="p-4 md:p-8">

@@ -37,7 +37,7 @@
 					{ message: 'Invalid CRON expression format' }
 				),
 			start_date: z.date().nullable().optional(),
-			end_date: z.date().nullable().optional(),
+			end_date: z.date().nullable().optional()
 		})
 		.refine(
 			(data) => {
@@ -64,7 +64,7 @@
 		name: '',
 		cron_expr: '',
 		start_date_str: null,
-		end_date_str: null,
+		end_date_str: null
 	});
 
 	let zodErrors = $state<Partial<Record<keyof ZodSchemaValues, string>>>({});
@@ -190,7 +190,7 @@
 			name: formData.name,
 			cron_expr: formData.cron_expr,
 			start_date: parseYyyyMmDdToJsDate(formData.start_date_str),
-			end_date: parseYyyyMmDdToJsDate(formData.end_date_str),
+			end_date: parseYyyyMmDdToJsDate(formData.end_date_str)
 		};
 		const result = scheduleZodSchema.safeParse(valuesToValidate);
 		if (!result.success) {
@@ -216,7 +216,7 @@
 			name: formData.name,
 			cron_expr: formData.cron_expr,
 			start_date: formData.start_date_str,
-			end_date: formData.end_date_str,
+			end_date: formData.end_date_str
 		};
 		$saveMutation.mutate({ payload, scheduleId: schedule?.schedule_id });
 	}

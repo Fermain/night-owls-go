@@ -34,7 +34,7 @@
 	let popoverOpen = $state(false);
 
 	$effect(() => {
-		if (popoverOpen) return; 
+		if (popoverOpen) return;
 
 		const s = parseYyyyMmDdToCalendarDate(initialStartDate);
 		const e = parseYyyyMmDdToCalendarDate(initialEndDate);
@@ -100,7 +100,7 @@
 							change({ start: startStr, end: endStr });
 						}
 					}
-				} 
+				}
 				// Add handling for partial selection or clearing if needed in the future
 				// else if (v?.start && !v.end) { /* partial selection */ }
 				// else if (!v?.start && !v.end && currentRange) { /* cleared */ }
