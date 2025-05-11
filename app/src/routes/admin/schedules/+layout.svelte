@@ -9,6 +9,7 @@
 	import type { Snippet } from 'svelte';
 	import { formatDistanceToNow } from 'date-fns'; // Added for upcoming shifts
 	import type { Schedule } from '$lib/components/schedules_table/columns'; // Import the shared Schedule type
+	import { CalendarDays, PlusCircle } from 'lucide-svelte'; // Added CalendarDays
 
 	type AdminShiftSlot = {
 		schedule_id: number;
@@ -146,7 +147,7 @@
 	);
 	
 	const isNewSchedulePage = $derived(page.url.pathname === '/admin/schedules/new');
-	const editScheduleId = $derived(page.url.pathname.match(/\/admin\/schedules\/(\d+)\/edit/)?.[1]);
+	const editScheduleId = $derived(page.url.searchParams.get('scheduleId'));
 
 </script>
 
@@ -158,7 +159,7 @@
 				class="w-full justify-start"
 				onclick={() => goto('/admin/schedules/new')}
 			>
-				+ Create New Schedule
+				Create New Schedule 
 			</Button>
 		</Sidebar.MenuItem>
 
@@ -174,9 +175,10 @@
 			{#each schedulesForTemplate as schedule (schedule.schedule_id)}
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton
-						onclick={() => goto(`/admin/schedules/${schedule.schedule_id}/edit`)}
-						isActive={editScheduleId === String(schedule.schedule_id)}
+						onclick={() => goto(`/admin/schedules?scheduleId=${schedule.schedule_id}`)}
+						isActive={editScheduleId === String(schedule.schedule_id) && !isSlotsPage && !isNewSchedulePage }
 					>
+						<CalendarDays class="mr-2 h-4 w-4 text-muted-foreground" />
 						{schedule.name}
 					</Sidebar.MenuButton>
 				</Sidebar.MenuItem>

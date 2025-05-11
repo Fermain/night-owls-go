@@ -20,7 +20,9 @@
 	import cronstrue from 'cronstrue';
 	import CronView from '$lib/components/cron/cron-view.svelte';
 	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
-	import { parseIsoToYyyyMmDd } from '$lib/utils/date'; // For initial parsing from prop
+	import { parseIsoToYyyyMmDd } from '$lib/utils/date';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
 
 	// Type for the schedule data passed as a prop (for editing)
 	// This should match the structure returned by GET /api/admin/schedules/{id}
@@ -57,6 +59,7 @@
 
 	let cronError: string | null = $state(null);
 	let humanizedCron: string | null = $state(null);
+	let isDeleteDialogOpen = $state(false);
 
 	function validateAndHumanizeCron(cronValue: string) {
 		if (!cronValue || cronValue.trim() === '') {
@@ -86,16 +89,21 @@
 		return parseIsoToYyyyMmDd(value);
 	}
 
-	onMount(() => {
-		console.log('[ScheduleForm onMount] schedule prop:', schedule);
+	// $effect to reactively update formData when the schedule prop changes.
+	$effect(() => {
+		console.log('[ScheduleForm $effect] schedule prop changed:', schedule);
 		if (schedule?.schedule_id !== undefined && schedule) {
-			// Mutate properties of $state object directly
 			formData.name = schedule.name;
 			formData.cron_expr = schedule.cron_expr;
-			formData.start_date = getStringValue(schedule.start_date);
-			formData.end_date = getStringValue(schedule.end_date);
-			// formData.timezone = schedule.timezone || null; // Removed timezone assignment
-			console.log('[ScheduleForm onMount] formData after init (mutated):', formData);
+			formData.start_date = parseIsoToYyyyMmDd(schedule.start_date); 
+			formData.end_date = parseIsoToYyyyMmDd(schedule.end_date);
+			console.log('[ScheduleForm $effect] formData updated:', JSON.stringify(formData));
+		} else {
+			formData.name = '';
+			formData.cron_expr = '';
+			formData.start_date = null;
+			formData.end_date = null;
+			console.log('[ScheduleForm $effect] schedule prop undefined, formData reset.');
 		}
 	});
 
@@ -144,13 +152,42 @@
 			const currentIsEditMode = mutatedScheduleId !== undefined;
 			toast.success(`Schedule ${currentIsEditMode ? 'updated' : 'created'} successfully!`);
 			await queryClient.invalidateQueries({ queryKey: ['adminSchedules'] }); // Invalidate list
+			await queryClient.invalidateQueries({ queryKey: ['adminSchedulesForLayout'] }); // Also invalidate layout query
 			if (currentIsEditMode && mutatedScheduleId) {
-				await queryClient.invalidateQueries({ queryKey: ['adminSchedule', mutatedScheduleId] });
+				await queryClient.invalidateQueries({ queryKey: ['adminScheduleDetail', String(mutatedScheduleId)] });
 			}
 			goto('/admin/schedules');
 		},
 		onError: (error) => {
 			toast.error(`Error: ${error.message}`);
+		}
+	});
+
+	// Delete Mutation
+	const deleteMutation = createMutation<
+		Response, 
+		Error, 
+		number // Expects schedule_id as variable
+	>({
+		mutationFn: async (scheduleId: number) => {
+			const response = await fetch(`/api/admin/schedules/${scheduleId}`, {
+				method: 'DELETE'
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: 'Failed to delete schedule' }));
+				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+			}
+			return response;
+		},
+		onSuccess: (_data, scheduleId) => {
+			toast.success('Schedule deleted successfully!');
+			queryClient.invalidateQueries({ queryKey: ['adminSchedules'] });
+			queryClient.invalidateQueries({ queryKey: ['adminSchedulesForLayout'] });
+			queryClient.invalidateQueries({ queryKey: ['adminScheduleDetail', String(scheduleId)] }); // Invalidate specific detail
+			goto('/admin/schedules');
+		},
+		onError: (error) => {
+			toast.error(`Error deleting schedule: ${error.message}`);
 		}
 	});
 
@@ -177,6 +214,19 @@
 		};
 
 		$mutation.mutate(mutationVars);
+	}
+
+	function openDeleteDialog() {
+		if (schedule?.schedule_id !== undefined) {
+			isDeleteDialogOpen = true;
+		}
+	}
+
+	function confirmDelete() {
+		if (schedule?.schedule_id !== undefined) {
+			$deleteMutation.mutate(schedule.schedule_id);
+		}
+		isDeleteDialogOpen = false; // Close dialog regardless of mutation outcome initially
 	}
 </script>
 
@@ -221,7 +271,7 @@
 			/>
 		</div>
 
-		<div>
+		<div class="flex items-center space-x-2">
 			<Button type="submit" disabled={$mutation.isPending || !!cronError}>
 				{#if $mutation.isPending}
 					{schedule?.schedule_id !== undefined ? 'Updating...' : 'Creating...'}
@@ -229,9 +279,37 @@
 					{schedule?.schedule_id !== undefined ? 'Save Changes' : 'Create Schedule'}
 				{/if}
 			</Button>
+
+			{#if schedule?.schedule_id !== undefined}
+				<Button variant="destructive" type="button" onclick={openDeleteDialog} disabled={$deleteMutation.isPending}>
+					<Trash2 class="mr-2 h-4 w-4" />
+					Delete Schedule
+				</Button>
+			{/if}
+
 			{#if $mutation.isError}
 				<p class="text-sm text-destructive">Error: {$mutation.error?.message}</p>
 			{/if}
 		</div>
 	</form>
+
+	{#if schedule?.schedule_id !== undefined}
+		<AlertDialog.Root bind:open={isDeleteDialogOpen}>
+			<AlertDialog.Content>
+				<AlertDialog.Header>
+					<AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+					<AlertDialog.Description>
+						This action cannot be undone. This will permanently delete the schedule
+						"{schedule.name}" and all of its associated data.
+					</AlertDialog.Description>
+				</AlertDialog.Header>
+				<AlertDialog.Footer>
+					<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+					<AlertDialog.Action onclick={confirmDelete} disabled={$deleteMutation.isPending}>
+						{#if $deleteMutation.isPending}Deleting...{:else}Yes, delete schedule{/if}
+					</AlertDialog.Action>
+				</AlertDialog.Footer>
+			</AlertDialog.Content>
+		</AlertDialog.Root>
+	{/if}
 </div>
