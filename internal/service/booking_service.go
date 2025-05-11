@@ -189,4 +189,131 @@ func (s *BookingService) MarkAttendance(ctx context.Context, bookingID int64, us
 
 	s.logger.InfoContext(ctx, "Booking attendance marked successfully", "booking_id", updatedBooking.BookingID, "attended", updatedBooking.Attended)
 	return updatedBooking, nil
+}
+
+// AdminAssignUserToShift handles the logic for an admin assigning a user to a specific shift slot.
+func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserID int64, scheduleID int64, shiftStartTime time.Time) (db.Booking, error) {
+	// 1. Validate target user
+	_, err := s.querier.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "Target user not found for admin assignment", "target_user_id", targetUserID)
+			return db.Booking{}, ErrUserNotFound // Assuming ErrUserNotFound is defined, or use a generic error
+		}
+		s.logger.ErrorContext(ctx, "Failed to get target user by ID for admin assignment", "target_user_id", targetUserID, "error", err)
+		return db.Booking{}, ErrInternalServer
+	}
+
+	// 2. Validate schedule and start time
+	schedule, err := s.querier.GetScheduleByID(ctx, scheduleID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "Schedule not found for admin assignment", "schedule_id", scheduleID)
+			return db.Booking{}, ErrScheduleNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get schedule by ID for admin assignment", "schedule_id", scheduleID, "error", err)
+		return db.Booking{}, ErrInternalServer
+	}
+
+	// Ensure shiftStartTime is UTC before any comparisons or calculations that assume UTC
+	// The shiftStartTime from the request should ideally be parsed as UTC or converted if it has timezone info.
+	// For this service method, we'll assume it's provided as UTC, consistent with how bookings are stored.
+	utcShiftStartTime := shiftStartTime.UTC()
+
+
+	// Check if shiftStartTime is within the schedule's overall active period (start_date and end_date)
+	// Dates in DB are YYYY-MM-DD, effectively UTC. startTime is also UTC.
+	if (schedule.StartDate.Valid && utcShiftStartTime.Before(schedule.StartDate.Time)) ||
+		(schedule.EndDate.Valid && utcShiftStartTime.After(schedule.EndDate.Time.AddDate(0,0,1).Add(-time.Nanosecond))) { // end_date is inclusive
+		s.logger.WarnContext(ctx, "Admin assignment attempt for shift time outside schedule active dates",
+			"schedule_id", scheduleID, "start_time", utcShiftStartTime,
+			"schedule_start_date", schedule.StartDate, "schedule_end_date", schedule.EndDate)
+		return db.Booking{}, ErrShiftTimeInvalid
+	}
+	
+	// Handle timezone for cron expression validation
+	// Load the schedule's timezone, or default to UTC if not specified or invalid
+	loc := time.UTC
+	if schedule.Timezone.Valid && schedule.Timezone.String != "" {
+		loadedLoc, locErr := time.LoadLocation(schedule.Timezone.String)
+		if locErr == nil {
+			loc = loadedLoc
+		} else {
+			s.logger.WarnContext(ctx, "Failed to load timezone for schedule during admin assignment, using UTC",
+				"schedule_id", schedule.ScheduleID, "timezone_str", schedule.Timezone.String, "error", locErr)
+		}
+	}
+	// Convert the UTC shiftStartTime to the schedule's local time for cron validation
+	localShiftStartTimeForCron := utcShiftStartTime.In(loc)
+
+
+	cronExpression, err := cronexpr.Parse(schedule.CronExpr)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to parse cron expression for schedule during admin assignment", "schedule_id", scheduleID, "cron_expr", schedule.CronExpr, "error", err)
+		return db.Booking{}, ErrInternalServer
+	}
+
+	// Validate the localShiftStartTimeForCron against the schedule's cron expression.
+	nextOccurrenceFromAlmostStartTime := cronExpression.Next(localShiftStartTimeForCron.Add(-1 * time.Second))
+	if nextOccurrenceFromAlmostStartTime.IsZero() || !nextOccurrenceFromAlmostStartTime.Equal(localShiftStartTimeForCron) {
+		s.logger.WarnContext(ctx, "Requested start_time does not match a cron expression occurrence in schedule's timezone",
+			"schedule_id", scheduleID, "start_time_utc", utcShiftStartTime, "start_time_local", localShiftStartTimeForCron, "cron_expr", schedule.CronExpr, "calculated_next_local", nextOccurrenceFromAlmostStartTime)
+		return db.Booking{}, ErrShiftTimeInvalid
+	}
+
+	// 3. Check for booking conflicts (using UTC start time)
+	_, err = s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
+		ScheduleID: scheduleID,
+		ShiftStart: utcShiftStartTime,
+	})
+	if err == nil {
+		// A booking was found, so it's a conflict
+		s.logger.WarnContext(ctx, "Admin assignment conflict: Slot already booked", "schedule_id", scheduleID, "start_time", utcShiftStartTime)
+		return db.Booking{}, ErrBookingConflict
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		// An unexpected error occurred while checking for conflicts
+		s.logger.ErrorContext(ctx, "Failed to check for booking conflict during admin assignment", "schedule_id", scheduleID, "start_time", utcShiftStartTime, "error", err)
+		return db.Booking{}, ErrInternalServer
+	}
+	// If err is sql.ErrNoRows, the slot is available, proceed.
+
+	// 4. Calculate shift_end (using UTC start time)
+	shiftEndTime := utcShiftStartTime.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
+
+	// 5. Create booking
+	bookingParams := db.CreateBookingParams{
+		UserID:      targetUserID,
+		ScheduleID:  scheduleID,
+		ShiftStart:  utcShiftStartTime, // Store in UTC
+		ShiftEnd:    shiftEndTime,   // Store in UTC
+		BuddyUserID: sql.NullInt64{Valid: false}, // No buddy for admin assignment by default
+		BuddyName:   sql.NullString{Valid: false},// No buddy for admin assignment by default
+	}
+
+	createdBooking, err := s.querier.CreateBooking(ctx, bookingParams)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create booking in DB during admin assignment", "params", bookingParams, "error", err)
+		if isUniqueConstraintError(err) {
+			return db.Booking{}, ErrBookingConflict // Should have been caught above, but as a safeguard
+		}
+		return db.Booking{}, ErrInternalServer
+	}
+	s.logger.InfoContext(ctx, "Booking created successfully by admin", "booking_id", createdBooking.BookingID, "assigned_user_id", targetUserID, "schedule_id", scheduleID)
+
+	// 6. (Optional) Queue confirmation message to outbox for the assigned user
+	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "assigned_by": "admin"}`,
+		createdBooking.BookingID, createdBooking.UserID, createdBooking.ShiftStart.Format(time.RFC3339))
+	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
+		MessageType: "ADMIN_SHIFT_ASSIGNMENT",
+		Recipient:   fmt.Sprintf("%d", createdBooking.UserID), // Or user's phone if preferred for notification
+		Payload:     sql.NullString{String: outboxPayload, Valid: true},
+		UserID:      sql.NullInt64{Int64: targetUserID, Valid: true},
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create outbox item for admin assignment notification", "booking_id", createdBooking.BookingID, "error", err)
+		// Non-fatal for booking creation itself, but log it.
+	}
+
+	return createdBooking, nil
 } 

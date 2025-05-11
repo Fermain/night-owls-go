@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -62,20 +63,30 @@ func (h *AdminBookingHandler) AssignUserToShiftHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	// In a real scenario, the booking service method would be designed to accept a target UserID.
-	// For now, let's assume bookingService.AdminCreateBookingForUser exists or will be created.
-	// This service method would handle all business logic (validating user, schedule, slot, conflicts) 
-	// and create the booking for the target req.UserID.
+	// Ensure StartTime is in UTC, as service layer and DB expect UTC.
+	// The request JSON unmarshaler for time.Time typically parses RFC3339, which includes offset info.
+	// Converting to UTC standardizes it.
+	utcStartTime := req.StartTime.UTC()
 
-	// booking, err := h.bookingService.AdminCreateBookingForUser(r.Context(), req.UserID, req.ScheduleID, req.StartTime)
-	// For now, we'll respond with a placeholder success, assuming the service call would work.
-	// The actual implementation will depend on changes in booking_service.go
+	createdBooking, err := h.bookingService.AdminAssignUserToShift(r.Context(), req.UserID, req.ScheduleID, utcStartTime)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			RespondWithError(w, http.StatusNotFound, "Target user not found", h.logger, "user_id", req.UserID, "error", err.Error())
+		case errors.Is(err, service.ErrScheduleNotFound):
+			RespondWithError(w, http.StatusNotFound, "Schedule not found", h.logger, "schedule_id", req.ScheduleID, "error", err.Error())
+		case errors.Is(err, service.ErrShiftTimeInvalid):
+			RespondWithError(w, http.StatusBadRequest, "Invalid shift start time for the schedule", h.logger, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "error", err.Error())
+		case errors.Is(err, service.ErrBookingConflict):
+			RespondWithError(w, http.StatusConflict, "Shift slot is already booked or a conflict exists", h.logger, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "error", err.Error())
+		case errors.Is(err, service.ErrInternalServer):
+			RespondWithError(w, http.StatusInternalServerError, "Internal server error processing assignment", h.logger, "error", err.Error())
+		default:
+			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "error", err.Error())
+		}
+		return
+	}
 
-	h.logger.InfoContext(r.Context(), "Placeholder: Admin assigning user to shift", 
-		"target_user_id", req.UserID, 
-		"schedule_id", req.ScheduleID, 
-		"start_time", req.StartTime.Format(time.RFC3339))
-
-	// Placeholder response - replace with actual booking response after service implementation
-	RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Shift assigned to user (placeholder)"}, h.logger)
+	bookingResponse := ToBookingResponse(createdBooking)
+	RespondWithJSON(w, http.StatusCreated, bookingResponse, h.logger)
 } 
