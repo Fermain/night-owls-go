@@ -6,6 +6,7 @@ import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
+import unusedImports from 'eslint-plugin-unused-imports';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
@@ -17,10 +18,29 @@ export default ts.config(
 	prettier,
 	...svelte.configs.prettier,
 	{
+		plugins: {
+			'unused-imports': unusedImports,
+		},
+		rules: {
+			'no-unused-vars': 'off',
+			'@typescript-eslint/no-unused-vars': 'off',
+			'unused-imports/no-unused-imports': 'warn',
+			'unused-imports/no-unused-vars': [
+				'warn',
+				{
+					'vars': 'all',
+					'varsIgnorePattern': '^_',
+					'args': 'after-used',
+					'argsIgnorePattern': '^_',
+					'caughtErrors': 'all',
+					'caughtErrorsIgnorePattern': '^_'
+				},
+			],
+			'no-undef': 'off'
+		},
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
 		},
-		rules: { 'no-undef': 'off' }
 	},
 	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
@@ -32,5 +52,8 @@ export default ts.config(
 				svelteConfig
 			}
 		}
+	},
+	{
+		ignores: ['.DS_Store', 'build/', '.svelte-kit/', 'package/', 'dist/']
 	}
 );
