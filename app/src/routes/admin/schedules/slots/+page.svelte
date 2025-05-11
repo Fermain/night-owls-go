@@ -6,6 +6,12 @@
 	import { page } from '$app/state'; // Changed from $app/state for consistency
 	// import * as Sidebar from '$lib/components/ui/sidebar/index.js'; // No longer directly used here for list rendering
 	// import SidebarPage from '$lib/components/sidebar-page.svelte'; // Removed
+	import { Button } from '$lib/components/ui/button'; // Assuming this is the correct path from other files
+	import { Skeleton } from '$lib/components/ui/skeleton'; // Assuming path
+	import { Calendar } from '$lib/components/ui/calendar'; 
+	import { CalendarDate, today, getLocalTimeZone, startOfMonth, endOfMonth } from '@internationalized/date'; 
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
 	// --- Types ---
 	type AdminShiftSlot = {
@@ -24,6 +30,10 @@
 	// This will be set by interaction with the sidebar (defined in the layout)
 	// For now, this page expects selectedShift to be populated (e.g. via URL param or store later)
 	let selectedShift = $state<AdminShiftSlot | null>(null);
+	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
+
+	// --- Calendar State (new) ---
+	let currentDisplayMonth = $state(today(getLocalTimeZone()));
 
 	// --- Utility Functions (formatTimeSlot, formatRelativeTime, getAkaDescription are still useful) ---
 	function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
@@ -121,7 +131,6 @@
 	});
 
 	let shiftListForDetail = $derived($allSlotsForDetailQuery.data ?? []);
-	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
 	$effect(() => {
 		if (shiftStartTimeFromUrl && shiftListForDetail.length > 0) {
@@ -134,19 +143,63 @@
 		// If shiftStartTimeFromUrl is present but not found, selectedShift will be null (handled by find)
 		// If query is loading, selectedShift might be null temporarily, which is fine.
 	});
+
+	// --- Data Fetching for Calendar View (new) ---
+	const fetchShiftSlotsForCalendarMonth = async (monthDate: CalendarDate): Promise<AdminShiftSlot[]> => {
+		const from = startOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
+		const to = endOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
+		const response = await fetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`);
+		if (!response.ok) {
+			throw new Error('Failed to fetch shift slots for calendar');
+		}
+		return response.json();
+	};
+
+	const calendarMonthSlotsQuery = $derived.by(() => {
+		// Only enable this query if no specific shift is selected for detail view
+		const shouldBeEnabled = !shiftStartTimeFromUrl;
+		return createQuery<AdminShiftSlot[], Error, AdminShiftSlot[], [string, string]>({
+			queryKey: ['adminCalendarMonthSlots', currentDisplayMonth.toString()],
+			queryFn: () => fetchShiftSlotsForCalendarMonth(currentDisplayMonth),
+			enabled: shouldBeEnabled
+		});
+	});
+
+	const shiftDatesForCalendarDisplay = $derived.by(() => {
+		const slots = $calendarMonthSlotsQuery.data;
+		if (!slots) return [];
+		const uniqueDates = new Set<string>();
+		slots.forEach(slot => {
+			const dateStr = slot.start_time.split('T')[0]; 
+			uniqueDates.add(dateStr);
+		});
+		return Array.from(uniqueDates).map(dateStr => {
+			const [year, month, day] = dateStr.split('-').map(Number);
+			return new CalendarDate(year, month, day);
+		});
+	});
+
+	// Re-adding prevMonth and nextMonth functions
+	function prevMonth() {
+		currentDisplayMonth = currentDisplayMonth.add({ months: -1 });
+	}
+
+	function nextMonth() {
+		currentDisplayMonth = currentDisplayMonth.add({ months: 1 });
+	}
 </script>
 
 <svelte:head>
 	<title
-		>Admin - Shift Details {selectedShift
-			? `- ${selectedShift.schedule_name} @ ${new Date(selectedShift.start_time).toLocaleDateString()}`
-			: ''}</title
+		>Admin - {selectedShift 
+			? `Shift Details - ${selectedShift.schedule_name} @ ${new Date(selectedShift.start_time).toLocaleDateString()}` 
+			: 'Shifts Calendar View'}</title
 	>
 </svelte:head>
 
 <!-- Main content area for selected shift details. No SidebarPage wrapper. -->
 <div class="p-4 md:p-8">
-	{#if $allSlotsForDetailQuery.isLoading && shiftStartTimeFromUrl}
+	{#if shiftStartTimeFromUrl && $allSlotsForDetailQuery.isLoading}
 		<p>Loading shift details...</p>
 	{:else if selectedShift}
 		<div class="border rounded-lg shadow-sm">
@@ -180,18 +233,38 @@
 				</div>
 			</div>
 		</div>
-	{:else if $allSlotsForDetailQuery.isError}
+	{:else if shiftStartTimeFromUrl && $allSlotsForDetailQuery.isError}
 		<p class="text-destructive">
 			Error loading data to find shift: {$allSlotsForDetailQuery.error.message}
 		</p>
-	{:else if shiftStartTimeFromUrl}
+	{:else if shiftStartTimeFromUrl && !$allSlotsForDetailQuery.isLoading && !selectedShift}
 		<p>Shift with start time {shiftStartTimeFromUrl} not found.</p>
 	{:else}
-		<div class="text-center py-10">
-			<h2 class="text-xl font-medium text-muted-foreground">Shift Details</h2>
-			<p class="text-sm text-muted-foreground">
-				Select a shift from the sidebar to view its details here.
-			</p>
+		<div class="flex flex-col items-center">
+			<h1 class="text-2xl font-semibold mb-6">All Shift Slots Calendar</h1>
+			{#if $calendarMonthSlotsQuery.isLoading}
+				<div class="flex justify-center items-center h-64">
+					<Skeleton class="h-48 w-full max-w-md" />
+				</div>
+			{:else if $calendarMonthSlotsQuery.isError}
+				<p class="text-destructive">Error loading shifts for calendar: {$calendarMonthSlotsQuery.error.message}</p>
+			{:else}
+				<div class="flex items-center gap-4 mb-4">
+					<Button variant="outline" size="icon" onclick={prevMonth} aria-label="Previous month"><ChevronLeftIcon class="h-4 w-4" /></Button>
+					<h2 class="text-xl font-medium">
+						{currentDisplayMonth.toDate(getLocalTimeZone()).toLocaleString('default', { month: 'long', year: 'numeric' })}
+					</h2>
+					<Button variant="outline" size="icon" onclick={nextMonth} aria-label="Next month"><ChevronRightIcon class="h-4 w-4" /></Button>
+				</div>
+				<Calendar 
+					class="p-0 rounded-md border w-full max-w-3xl" 
+					type="multiple" 
+					value={shiftDatesForCalendarDisplay} 
+					bind:placeholder={currentDisplayMonth} 
+					weekdayFormat="long"
+					readonly
+				/>
+			{/if}
 		</div>
 	{/if}
 </div>
