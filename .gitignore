@@ -30,3 +30,5 @@ sms_outbox.log
 
 node_modules/
 night-owls.test.db
+test-results/.last-run.json
+night-owls.test.db
