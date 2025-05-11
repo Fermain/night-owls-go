@@ -11,6 +11,9 @@
 	import type { Schedule } from '$lib/components/schedules_table/columns'; // Import the shared Schedule type
 	import { CalendarDays, PlusCircle } from 'lucide-svelte'; // Added CalendarDays
 
+	// Import the new store
+	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
+
 	type AdminShiftSlot = {
 		schedule_id: number;
 		schedule_name: string;
@@ -111,6 +114,57 @@
 	}));
 
 	const upcomingShiftsForTemplate = $derived($upcomingSlotsLayoutQuery.data ?? []);
+
+	// Effect to manage selectedScheduleForForm store based on URL
+	$effect(() => {
+		const currentScheduleId = page.url.searchParams.get('scheduleId');
+		const currentScheduleInStore = $selectedScheduleForForm;
+
+		if (currentScheduleId) {
+			const scheduleIdNum = parseInt(currentScheduleId, 10);
+
+			// If the store already has this schedule, do nothing.
+			if (currentScheduleInStore && currentScheduleInStore.schedule_id === scheduleIdNum) {
+				return;
+			}
+
+			// Try to find it in the list already loaded by schedulesQuery
+			const existingSchedule = schedulesForTemplate.find(s => s.schedule_id === scheduleIdNum);
+			if (existingSchedule) {
+				selectedScheduleForForm.set(existingSchedule);
+			} else {
+				// If not in the list, fetch it individually
+				// Clear the store first to indicate loading for a new ID
+				selectedScheduleForForm.set(undefined); 
+				const fetchAndSetSchedule = async () => {
+					try {
+						const response = await fetch(`/api/admin/schedules/${scheduleIdNum}`);
+						if (!response.ok) {
+							throw new Error(`Failed to fetch schedule ${scheduleIdNum}: ${response.status}`);
+						}
+						const scheduleData: Schedule = await response.json();
+						// Check again if the URL still matches, to avoid race conditions if user navigates away quickly
+						if (page.url.searchParams.get('scheduleId') === currentScheduleId) {
+							selectedScheduleForForm.set(scheduleData);
+						} 
+					} catch (err) {
+						console.error('Error fetching schedule detail for store:', err);
+						toast.error(`Error loading schedule ${scheduleIdNum}: ${(err as Error).message}`);
+						// If fetch fails, and URL still points to this ID, ensure store is cleared.
+						if (page.url.searchParams.get('scheduleId') === currentScheduleId) {
+							selectedScheduleForForm.set(undefined);
+						}
+					}
+				};
+				fetchAndSetSchedule();
+			}
+		} else {
+			// No scheduleId in URL, clear the store if it's not already cleared
+			if (currentScheduleInStore) {
+				selectedScheduleForForm.set(undefined);
+			}
+		}
+	});
 
 	function formatShiftTitleCondensed(startTimeIso: string, endTimeIso: string): string {
 		if (!startTimeIso || !endTimeIso) return 'N/A';

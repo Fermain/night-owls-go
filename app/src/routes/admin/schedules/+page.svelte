@@ -1,133 +1,61 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
-	import type { Schedule } from '$lib/components/schedules_table/columns'; // Reusing Schedule type
-	import { columns as publicColumns } from '$lib/components/schedules_table/columns';
-	import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte';
-	import { page } from '$app/state'; // To read URL params
-	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte'; // Import existing form
+	// import { createQuery } from '@tanstack/svelte-query'; // No longer needed for adminSchedulesQuery here
+	import type { Schedule } from '$lib/components/schedules_table/columns'; 
+	// import { columns as publicColumns } from '$lib/components/schedules_table/columns'; // Not used for dashboard
+	// import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte'; // Not used for dashboard
+	import { page } from '$app/state'; 
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import ScheduleFormNew from '$lib/components/admin/schedules/ScheduleFormNew.svelte';
+	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js'; // For dashboard placeholders
 
-	type AdminSchedulesAPIResponse = Schedule[];
-	// Type for single schedule detail, assuming backend returns the same Schedule structure
-	type ScheduleDetailAPIResponse = Schedule;
-
-	// --- Query for the list of all schedules (for the table) ---
-	const fetchAdminSchedules = async (): Promise<AdminSchedulesAPIResponse> => {
-		const response = await fetch('/api/admin/schedules');
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`API request failed: ${response.status} ${response.statusText} - ${errorText}`
-			);
-		}
-		return response.json();
-	};
-
-	const adminSchedulesQuery = createQuery<
-		AdminSchedulesAPIResponse,
-		Error,
-		AdminSchedulesAPIResponse,
-		string[]
-	>({
-		queryKey: ['adminSchedules'],
-		queryFn: fetchAdminSchedules
-	});
-
-	let tableColumns = publicColumns;
-	let tableData: AdminSchedulesAPIResponse = $derived($adminSchedulesQuery.data ?? []);
-
-	// --- Logic for fetching and displaying a single selected schedule ---
-	let selectedScheduleId = $derived(page.url.searchParams.get('scheduleId'));
-	let mode = $derived(page.url.searchParams.get('mode')); // For ?mode=new
-
-	const fetchScheduleDetail = async (id: string): Promise<ScheduleDetailAPIResponse> => {
-		const response = await fetch(`/api/admin/schedules/${id}`);
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`API request failed for schedule ${id}: ${response.status} ${response.statusText} - ${errorText}`
-			);
-		}
-		return response.json();
-	};
-
-	const scheduleDetailQuery = $derived(
-		createQuery<
-			ScheduleDetailAPIResponse,
-			Error,
-			ScheduleDetailAPIResponse,
-			[string, string | null]
-		>({
-			queryKey: ['adminScheduleDetail', selectedScheduleId], // Reactive query key
-			queryFn: () => fetchScheduleDetail(selectedScheduleId!), // Assert non-null as it's enabled only when id is present
-			enabled: !!selectedScheduleId // Only run query if selectedScheduleId has a value
-		})
-	);
+	// Get the currently selected schedule from the store
+	let currentScheduleToEdit = $derived($selectedScheduleForForm);
 
 	function handleCreateNew() {
-		goto('/admin/schedules/new');
+		selectedScheduleForForm.set(undefined);
+		goto('/admin/schedules/new'); 
 	}
 </script>
 
 <svelte:head>
 	<title>
-		Admin - {selectedScheduleId ? 'Edit Schedule' : mode === 'new' ? 'New Schedule' : 'Schedules'}
+		Admin - {currentScheduleToEdit ? 'Edit Schedule' : page.url.pathname.endsWith('/new') ? 'New Schedule' : 'Schedules Dashboard'}
 	</title>
 </svelte:head>
 
 <div class="container mx-auto p-4">
-	{#if selectedScheduleId && $scheduleDetailQuery.data}
-		<!-- Displaying detail/form for an existing selected schedule -->
-		<ScheduleForm schedule={$scheduleDetailQuery.data} />
-	{:else if mode === 'new'}
-		<!-- This case will be handled by navigation to /admin/schedules/new, but kept for potential future use if form is embedded -->
-		<ScheduleForm />
-	{:else if selectedScheduleId}
-		<!-- Loading or error state for a selected schedule -->
-		{#if $scheduleDetailQuery.isLoading}
-			<p>Loading schedule details for ID: {selectedScheduleId}...</p>
-		{:else if $scheduleDetailQuery.isError}
-			<p class="text-red-500">
-				Error fetching schedule details: {$scheduleDetailQuery.error?.message}
-			</p>
-		{:else}
-			<p>No data for schedule ID: {selectedScheduleId}.</p>
-		{/if}
+	{#if currentScheduleToEdit}
+		<ScheduleFormNew schedule={currentScheduleToEdit} />
+	{:else if page.url.pathname.endsWith('/new')}
+		<ScheduleFormNew /> 
 	{:else}
-		<!-- Displaying the table of all schedules -->
-		<div class="flex justify-between items-center mb-4">
-			<h1 class="text-xl font-semibold">Manage Schedules</h1>
-			<Button onclick={handleCreateNew}>Create New Schedule</Button>
+		<!-- Schedules Dashboard View -->
+		<div class="p-4 md:p-8">
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-semibold">Schedules Dashboard</h1>
+				<Button onclick={handleCreateNew}>Create New Schedule</Button>
+			</div>
+			<p class="mb-6 text-muted-foreground">
+				Overview and management tools for schedules will be displayed here.
+			</p>
+			<div class="space-y-4">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{#each [1, 2, 3] as i (i)}
+						<div class="p-4 border rounded-lg bg-card">
+							<Skeleton class="h-6 w-3/4 mb-2" />
+							<Skeleton class="h-10 w-1/2 mb-4" />
+							<Skeleton class="h-4 w-full" />
+							<Skeleton class="h-4 w-5/6 mt-1" />
+						</div>
+					{/each}
+				</div>
+				<div class="p-4 border rounded-lg bg-card">
+					<Skeleton class="h-8 w-1/4 mb-4" />
+					<Skeleton class="h-48 w-full" />
+				</div>
+			</div>
 		</div>
-
-		{#if $adminSchedulesQuery.isLoading}
-			<p>Loading schedules...</p>
-		{:else if $adminSchedulesQuery.isError}
-			<p class="text-red-500">Error fetching schedules: {$adminSchedulesQuery.error?.message}</p>
-			{#if $adminSchedulesQuery.error?.message?.includes('Failed to decode request body')}
-				<p class="text-sm text-gray-600 mt-1">
-					This might indicate an issue with the request sent by the client or how the server expects
-					the data.
-				</p>
-			{/if}
-			{#if $adminSchedulesQuery.error?.message?.includes('Failed to create schedule') || $adminSchedulesQuery.error?.message?.includes('Failed to list schedules')}
-				<p class="text-sm text-gray-600 mt-1">
-					This often points to a server-side or database issue. Check server logs.
-				</p>
-			{/if}
-		{:else if $adminSchedulesQuery.data}
-			{#if tableData.length === 0}
-				<p>
-					No schedules found. <a href="/admin/schedules/new" class="text-blue-600 hover:underline"
-						>Create the first one!</a
-					>
-				</p>
-			{:else}
-				<SchedulesDataTable columns={tableColumns} data={tableData} />
-			{/if}
-		{:else}
-			<p>No schedule data available.</p>
-		{/if}
 	{/if}
 </div>
