@@ -29,7 +29,7 @@
 		// Define user data here or import from a store
 		name: 'owl',
 		phone: '+2700000000',
-		avatar: '/avatars/shadcn.jpg'
+		avatar: '' // Set to empty string to resolve 404 and type error
 	};
 
 	// const sidebar = useSidebar(); // Removed as sidebar variable was not used
