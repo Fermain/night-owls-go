@@ -1,13 +1,3 @@
-<script module lang="ts">
-	export type UserData = {
-		id: number;
-		phone: string;
-		name: string | null;
-		created_at: string;
-		role: 'admin' | 'owl' | 'guest';
-	};
-</script>
-
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
@@ -15,35 +5,23 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
 	import { toast } from 'svelte-sonner';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import { z } from 'zod';
 	import { TelInput } from 'svelte-tel-input';
 	import type { E164Number } from 'svelte-tel-input/types';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-	import * as Select from '$lib/components/ui/select';
+	import { createSaveUserMutation } from '$lib/queries/admin/users/saveUserMutation';
+	import { createDeleteUserMutation } from '$lib/queries/admin/users/deleteUserMutation';
+	import { userSchema, type UserFormValues, type UserData } from '$lib/schemas/user';
+	import UserDeleteConfirmDialog from '$lib/components/admin/dialogs/UserDeleteConfirmDialog.svelte';
+	import UserRoleChangeDialog from '$lib/components/admin/dialogs/UserRoleChangeDialog.svelte';
 
 	// Use $props() for Svelte 5 runes mode
 	let { user }: { user?: UserData } = $props();
-
-	// Define schema with Zod
-	const userSchema = z.object({
-		phone: z.string().min(1, 'Phone number is required'),
-		name: z.string().nullable(),
-		role: z.enum(['admin', 'owl', 'guest'], { message: 'Role must be admin, owl, or guest' })
-	});
-
-	type FormValues = {
-		phone: E164Number | '';
-		name: string | null;
-		role: 'admin' | 'owl' | 'guest';
-	};
 
 	// State for svelte-tel-input validity
 	let phoneInputValid = $state(true);
 
 	// Local Svelte state for form data, initialized with user prop data if available
-	let formData = $state<FormValues>({
+	let formData = $state<UserFormValues>({
 		phone: (user?.phone as E164Number) || '',
 		name: user?.name || null,
 		role: user?.role || 'guest'
@@ -56,112 +34,40 @@
 	};
 
 	let showRoleChangeDialog = $state(false);
-	let roleInDialog = $state(formData.role);
 
 	$effect(() => {
 		// When the user prop changes (e.g., selecting a different user to edit),
 		// reset roleInDialog to the new user's current role.
-		roleInDialog = formData.role;
+		formData.role = user?.role || 'guest';
 	});
 
 	function openRoleDialog() {
-		roleInDialog = formData.role; // Initialize dialog with current form role
 		showRoleChangeDialog = true;
 	}
 
-	function confirmRoleChange() {
-		formData.role = roleInDialog;
-		showRoleChangeDialog = false;
+	function handleRoleConfirm(newRole: 'admin' | 'owl' | 'guest') {
+		formData.role = newRole;
 	}
 
 	// State for Zod validation errors
-	let zodErrors = $state<Partial<Record<keyof FormValues, string>>>({});
+	let zodErrors = $state<Partial<Record<keyof UserFormValues, string>>>({});
 
 	// State for controlling delete confirmation dialog
 	let showDeleteConfirm = $state(false);
 
-	const queryClient = useQueryClient();
+	const mutation = createSaveUserMutation();
 
-	type MutationVariables = {
-		payload: { phone: E164Number; name: string | null; role: 'admin' | 'owl' | 'guest' };
-		userId?: number;
-	};
-
-	const mutation = createMutation<Response, Error, MutationVariables>({
-		mutationFn: async (vars) => {
-			const { payload, userId: currentUserIdToUse } = vars;
-			const currentIsEditMode = currentUserIdToUse !== undefined;
-
-			const url = currentIsEditMode ? `/api/admin/users/${currentUserIdToUse}` : '/api/admin/users';
-			const method = currentIsEditMode ? 'PUT' : 'POST';
-
-			const response = await fetch(url, {
-				method: method,
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(payload)
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({
-					message: `Failed to ${currentIsEditMode ? 'update' : 'create'} user`
-				}));
-				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-			}
-			return response;
-		},
-		onSuccess: async (_data, vars) => {
-			const { userId: mutatedUserId } = vars;
-			const currentIsEditMode = mutatedUserId !== undefined;
-			toast.success(`User ${currentIsEditMode ? 'updated' : 'created'} successfully!`);
-			await queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-			if (currentIsEditMode && mutatedUserId) {
-				await queryClient.invalidateQueries({ queryKey: ['adminUser', mutatedUserId] });
-			}
-			goto('/admin/users');
-		},
-		onError: (error) => {
-			toast.error(`Error: ${error.message}`);
-		}
-	});
-
-	const deleteUserMutation = createMutation<
-		Response, // Assuming server returns a success response (e.g. { message: "..." } or just 200/204)
-		Error,
-		number // Variable type is userId
-	>({
-		mutationFn: async (userIdToDelete) => {
-			const response = await fetch(`/api/admin/users/${userIdToDelete}`, {
-				method: 'DELETE'
-			});
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Failed to delete user' }));
-				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-			}
-			// For DELETE, response might be empty (204) or have a message (200)
-			// We don't strictly need to parse JSON if it might be empty
-			return response;
-		},
-		onSuccess: async () => {
-			toast.success('User deleted successfully!');
-			await queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-			goto('/admin/users'); // Navigate away from the potentially deleted user's form
-			showDeleteConfirm = false; // Close dialog on success
-		},
-		onError: (error) => {
-			toast.error(`Error deleting user: ${error.message}`);
-			showDeleteConfirm = false; // Close dialog on error too
-		}
+	const deleteUserMutation = createDeleteUserMutation(() => {
+		showDeleteConfirm = false;
 	});
 
 	function validateForm(): boolean {
 		const result = userSchema.safeParse(formData);
 		if (!result.success) {
-			const newErrors: Partial<Record<keyof FormValues, string>> = {};
+			const newErrors: Partial<Record<keyof UserFormValues, string>> = {};
 			for (const issue of result.error.issues) {
 				if (issue.path.length > 0) {
-					newErrors[issue.path[0] as keyof FormValues] = issue.message;
+					newErrors[issue.path[0] as keyof UserFormValues] = issue.message;
 				}
 			}
 			zodErrors = newErrors;
@@ -194,23 +100,15 @@
 			role: formData.role
 		};
 
-		const mutationVars: MutationVariables = {
+		$mutation.mutate({
 			payload: payloadForSubmit,
 			userId: currentUserIdFromProp
-		};
-
-		$mutation.mutate(mutationVars);
+		});
 	}
 
 	function handleDeleteClick() {
 		if (user?.id) {
 			showDeleteConfirm = true;
-		}
-	}
-
-	function confirmDelete() {
-		if (user?.id) {
-			$deleteUserMutation.mutate(user.id);
 		}
 	}
 </script>
@@ -313,66 +211,14 @@
 </div>
 
 {#if showDeleteConfirm}
-	<AlertDialog.Root open={showDeleteConfirm} onOpenChange={(open) => (showDeleteConfirm = open)}>
-		<AlertDialog.Content>
-			<AlertDialog.Header>
-				<AlertDialog.Title>Are you sure you want to delete this user?</AlertDialog.Title>
-				<AlertDialog.Description>
-					This action cannot be undone. This will permanently delete the user
-					{user?.name ? ` "${user.name}"` : ''}
-					{user?.phone ? `(${user.phone})` : ''}.
-				</AlertDialog.Description>
-			</AlertDialog.Header>
-			<AlertDialog.Footer>
-				<AlertDialog.Cancel disabled={$deleteUserMutation.isPending}>Cancel</AlertDialog.Cancel>
-				<AlertDialog.Action
-					onclick={confirmDelete}
-					disabled={$deleteUserMutation.isPending}
-					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-				>
-					{#if $deleteUserMutation.isPending}Deleting...{:else}Yes, delete user{/if}
-				</AlertDialog.Action>
-			</AlertDialog.Footer>
-		</AlertDialog.Content>
-	</AlertDialog.Root>
+	<UserDeleteConfirmDialog bind:open={showDeleteConfirm} {user} mutation={deleteUserMutation} />
 {/if}
 
 {#if showRoleChangeDialog}
-	<AlertDialog.Root
-		open={showRoleChangeDialog}
-		onOpenChange={(open) => (showRoleChangeDialog = open)}
-	>
-		<AlertDialog.Content>
-			<AlertDialog.Header>
-				<AlertDialog.Title>Change User Role</AlertDialog.Title>
-				<AlertDialog.Description>
-					Select the new role for {user?.name || 'this user'}.
-				</AlertDialog.Description>
-			</AlertDialog.Header>
-
-			<div class="py-4">
-				<Label for="dialog-role" class="block mb-2">New Role</Label>
-				<Select.Root type="single" bind:value={formData.role}>
-					<Select.Trigger class="w-full" id="dialog-role">Select a role</Select.Trigger>
-					<Select.Content>
-						<Select.Group>
-							<Select.GroupHeading>User Role</Select.GroupHeading>
-							<Select.Item value="guest" label="Guest">Guest</Select.Item>
-							<Select.Item value="owl" label="Owl">Owl</Select.Item>
-							<Select.Item value="admin" label="Admin">Admin</Select.Item>
-						</Select.Group>
-					</Select.Content>
-				</Select.Root>
-			</div>
-
-			<AlertDialog.Footer>
-				<AlertDialog.Cancel
-					onclick={() => {
-						roleInDialog = formData.role;
-					}}>Cancel</AlertDialog.Cancel
-				>
-				<AlertDialog.Action onclick={confirmRoleChange}>Confirm Change</AlertDialog.Action>
-			</AlertDialog.Footer>
-		</AlertDialog.Content>
-	</AlertDialog.Root>
+	<UserRoleChangeDialog
+		bind:open={showRoleChangeDialog}
+		{user}
+		bind:currentRole={formData.role}
+		onConfirm={handleRoleConfirm}
+	/>
 {/if}
