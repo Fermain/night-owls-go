@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import type { E164Number } from 'svelte-tel-input/types';
+import type { UserRole } from '$lib/types';
+
+// Define possible roles for Zod enum
+const userRoles: [UserRole, ...UserRole[]] = ['admin', 'owl', 'guest'];
 
 export const userSchema = z.object({
 	// Note: The form uses E164Number | '' for formData.phone,
@@ -8,7 +12,7 @@ export const userSchema = z.object({
 	// If direct E164Number validation is needed, the schema might need adjustment or a refined type.
 	phone: z.string().min(1, 'Phone number is required'), // Or a custom Zod type for E164Number if available
 	name: z.string().nullable(),
-	role: z.enum(['admin', 'owl', 'guest'], { message: 'Role must be admin, owl, or guest' })
+	role: z.enum(userRoles, { message: 'Role must be admin, owl, or guest' })
 });
 
 // This type can be inferred from the schema, but exporting it explicitly can be useful.
@@ -19,7 +23,7 @@ export type UserSchemaValues = z.infer<typeof userSchema>;
 export type UserFormValues = {
 	phone: E164Number | ''; // svelte-tel-input uses E164Number or empty string
 	name: string | null;
-	role: 'admin' | 'owl' | 'guest';
+	role: UserRole; // Use UserRole
 };
 
 // This type is used as $props for the UserForm and represents existing user data
@@ -28,5 +32,5 @@ export type UserData = {
 	phone: string; // Assuming phone is always a string for existing users
 	name: string | null;
 	created_at: string;
-	role: 'admin' | 'owl' | 'guest';
+	role: UserRole; // Use UserRole
 };

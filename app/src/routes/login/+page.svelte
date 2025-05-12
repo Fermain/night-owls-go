@@ -119,8 +119,11 @@
 				</Button>
 			</form>
 			<p class="text-center text-sm text-muted-foreground">
-				Didn't receive the code? <a href="#" class="underline hover:text-primary">Resend OTP</a> (not
-				implemented)
+				Didn't receive the code? 
+				<button type="button" class="underline hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-0 m-0 bg-transparent border-none cursor-pointer">
+					Resend OTP
+				</button> 
+				(not implemented)
 			</p>
 		</div>
 	</div>

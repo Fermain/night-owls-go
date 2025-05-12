@@ -1,7 +1,7 @@
 <script lang="ts">
 	import UserForm from '$lib/components/admin/users/UserForm.svelte';
-	import { selectedUserForForm, type UserData } from '$lib/stores/userEditingStore';
-	import { page } from '$app/state'; // For reading URL params
+	import { selectedUserForForm } from '$lib/stores/userEditingStore';
+	import type { UserData } from '$lib/schemas/user';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js'; // For dashboard placeholders
 
 	// currentUserForForm is derived from the store, which is synced with URL by the layout
@@ -10,13 +10,7 @@
 		currentUserForForm = value;
 	});
 
-	// No need for onDestroy(unsubscribe) with auto-unsubscription for stores in Svelte 5 components,
-	// but if selectedUserForForm were a raw Svelte store used directly in markup ($selectedUserForForm),
-	// then manual sub/unsub like this would be for reacting and setting local $state.
-	// Given currentUserForForm is $state, the subscription is to update this local reactive state.
-	// This pattern is fine.
 
-	let isDashboardView = $derived(page.url.searchParams.get('view') === 'dashboard');
 </script>
 
 {#if currentUserForForm}

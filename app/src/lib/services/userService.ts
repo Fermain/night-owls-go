@@ -1,5 +1,6 @@
 import { derived } from 'svelte/store';
-import { userSession, type UserSessionData } from '../stores/authStore';
+import { userSession } from '../stores/authStore';
+import type { UserSessionData } from '../types';
 
 // Derived store for just the authentication status
 export const isAuthenticated = derived(userSession, ($userSession) => $userSession.isAuthenticated);

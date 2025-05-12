@@ -2,33 +2,30 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
+	import type { UserRole } from '$lib/types';
 	import type { UserData } from '$lib/schemas/user';
-
-	type Role = 'admin' | 'owl' | 'guest';
 
 	let {
 		open = $bindable(false),
 		user,
-		currentRole = $bindable('guest' as Role),
-		onConfirm // Callback when confirm is clicked
+		currentRole = $bindable('guest' as UserRole),
+		onConfirm
 	} = $props<{
 		open?: boolean;
 		user: UserData | undefined | null;
-		currentRole?: Role;
-		onConfirm: (newRole: Role) => void;
+		currentRole?: UserRole;
+		onConfirm: (newRole: UserRole) => void;
 	}>();
 
-	const roleDisplayValues: Record<Role, string> = {
+	const roleDisplayValues: Record<UserRole, string> = {
 		admin: 'Admin',
 		owl: 'Owl',
 		guest: 'Guest'
 	};
 
-	// Internal state for the selection within the dialog
-	let selectedRoleInDialog: Role = $state(currentRole);
+	let selectedRoleInDialog: UserRole = $state(currentRole);
 
 	$effect(() => {
-		// Sync internal dialog state if the prop changes from outside
 		selectedRoleInDialog = currentRole;
 	});
 
@@ -38,7 +35,6 @@
 	}
 
 	function handleCancel() {
-		// Reset internal state to the original role before closing
 		selectedRoleInDialog = currentRole;
 		open = false;
 	}

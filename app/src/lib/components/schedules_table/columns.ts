@@ -1,45 +1,14 @@
-import type { ColumnDef } from '@tanstack/table-core';
-import { createRawSnippet } from 'svelte';
-import { renderSnippet, renderComponent } from '$lib/components/ui/data-table';
+import type { ColumnDef } from '@tanstack/svelte-table';
+import { Checkbox } from '$lib/components/ui/checkbox';
+import DataTableColumnHeader from '$lib/components/ui/data-table/data-table-column-header.svelte';
+import DataTableRowActions from './schedule-actions.svelte';
+import type { Schedule } from '$lib/types';
 import CronView from '$lib/components/cron/cron-view.svelte';
-import ScheduleActions from './schedule-actions.svelte';
-import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 
-// Define types for how Go's sql.NullString and sql.NullTime are serialized to JSON
-export type SQLNullString = {
-	String: string;
-	Valid: boolean;
-};
-
-export type SQLNullTime = {
-	Time: string; // Typically an ISO 8601 string from Go's JSON marshaller for time.Time
-	Valid: boolean;
-};
-
-// This type is used to define the shape of our data.
-// We are fetching this from the Go backend.
-// Why aren't we using a derived or centralised type?
-export type Schedule = {
-	schedule_id: number;
-	name: string;
-	cron_expr: string;
-	start_date?: string | null;
-	end_date?: string | null;
-	timezone?: string | null;
-};
-
-// Helper to format date strings from SQLNullTime or return 'N/A'
-// This seems over-engineered and I am sure it can be made more concise.
-// Also not the responsibility of this component to format dates.
-const formatDate = (dateString?: string | null): string => {
+const formatDateToLocaleString = (dateString?: string | null): string => {
 	if (!dateString) return 'N/A';
 	try {
-		// The date from Go might be a full timestamp, extract date part for display.
-		return new Date(dateString).toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit'
-		});
+		return new Date(dateString).toLocaleDateString();
 	} catch {
 		return 'Invalid Date';
 	}
@@ -49,103 +18,68 @@ export const columns: ColumnDef<Schedule>[] = [
 	{
 		id: 'select',
 		header: ({ table }) => {
-			const isAllPageRowsSelected = table.getIsAllPageRowsSelected();
-			const isSomePageRowsSelected = table.getIsSomePageRowsSelected();
-
-			return renderComponent(Checkbox, {
-				checked: isAllPageRowsSelected,
-				indeterminate: isSomePageRowsSelected && !isAllPageRowsSelected,
-				onCheckedChange: (checked: boolean) => {
-					table.toggleAllPageRowsSelected(checked);
-				},
-				'aria-label': 'Select all rows on current page'
+			return Checkbox({
+				checked: table.getIsAllPageRowsSelected()
+					? true
+					: table.getIsSomePageRowsSelected()
+					? 'indeterminate'
+					: false,
+				onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
+				'aria-label': 'Select all',
+				class: 'translate-y-[2px]'
 			});
 		},
 		cell: ({ row }) => {
-			return renderComponent(Checkbox, {
+			return Checkbox({
 				checked: row.getIsSelected(),
-				onCheckedChange: (checked: boolean) => {
-					row.toggleSelected(checked);
-				},
+				onCheckedChange: (value) => row.toggleSelected(!!value),
 				'aria-label': 'Select row',
-				disabled: !row.getCanSelect()
+				class: 'translate-y-[2px]'
 			});
 		},
 		enableSorting: false,
 		enableHiding: false,
-		size: 40
+		size: 50
+	},
+	{
+		accessorKey: 'schedule_id',
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'ID' }),
+		cell: (info) => info.getValue(),
+		size: 50
 	},
 	{
 		accessorKey: 'name',
-		header: 'Name',
-		cell: ({ row }) => {
-			const name = row.getValue('name') as string;
-			// Using createRawSnippet for simple text display; can be enhanced
-			const nameSnippet = createRawSnippet<[string]>((getName) => {
-				const val = getName();
-				return {
-					render: () => `<div>${val}</div>`
-				};
-			});
-			return renderSnippet(nameSnippet, name);
-		}
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'Name' }),
+		cell: (info) => info.getValue() as string
 	},
 	{
 		accessorKey: 'cron_expr',
-		header: 'Cron Expression',
-		cell: ({ row }) => {
-			const cronExpr = row.getValue('cron_expr') as string;
-			// Display raw CRON expression string
-			const cronSnippet = createRawSnippet<[string]>((getExpr) => {
-				const val = getExpr();
-				return {
-					render: () => `<pre>${val}</pre>`
-				};
-			});
-			return renderSnippet(cronSnippet, cronExpr);
-		}
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'CRON' }),
+		cell: (info) => info.getValue() as string
 	},
 	{
-		id: 'cron_visualization',
-		header: 'Schedule Visualization',
-		cell: ({ row }) => {
-			const cronExpr = row.original.cron_expr;
-			return renderComponent(CronView, { cronExpr: cronExpr });
-		},
-		enableSorting: false
+		accessorKey: 'is_active',
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'Active' }),
+		cell: (info) => (info.getValue() ? 'Yes' : 'No')
 	},
 	{
 		accessorKey: 'start_date',
-		header: 'Start Date',
-		cell: ({ row }) => {
-			const startDate = formatDate(row.getValue('start_date') as string | null | undefined);
-			const snippet = createRawSnippet<[string]>((getDate) => {
-				const val = getDate();
-				return { render: () => `<div>${val}</div>` };
-			});
-			return renderSnippet(snippet, startDate);
-		}
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'Start' }),
+		cell: (info) => formatDateToLocaleString(info.getValue() as string | null)
 	},
 	{
 		accessorKey: 'end_date',
-		header: 'End Date',
-		cell: ({ row }) => {
-			const endDate = formatDate(row.getValue('end_date') as string | null | undefined);
-			const snippet = createRawSnippet<[string]>((getDate) => {
-				const val = getDate();
-				return { render: () => `<div>${val}</div>` };
-			});
-			return renderSnippet(snippet, endDate);
-		}
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'End' }),
+		cell: (info) => formatDateToLocaleString(info.getValue() as string | null)
+	},
+	{
+		accessorKey: 'timezone',
+		header: ({ column }) => DataTableColumnHeader({ column, title: 'Timezone' }),
+		cell: (info) => (info.getValue() as string | null) || 'N/A'
 	},
 	{
 		id: 'actions',
-		header: 'Actions',
-		cell: ({ row }) => {
-			const schedule = row.original;
-			return renderComponent(ScheduleActions, { scheduleId: schedule.schedule_id });
-		},
-		enableSorting: false,
-		enableHiding: false
+		header: () => 'Actions',
+		cell: ({ row }) => DataTableRowActions({ scheduleId: row.original.schedule_id })
 	}
 ];

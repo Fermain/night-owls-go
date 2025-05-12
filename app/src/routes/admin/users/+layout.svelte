@@ -8,7 +8,8 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { selectedUserForForm, type UserData } from '$lib/stores/userEditingStore';
+	import { selectedUserForForm } from '$lib/stores/userEditingStore';
+	import type { UserData } from '$lib/schemas/user';
 
 	let searchTerm = $state('');
 

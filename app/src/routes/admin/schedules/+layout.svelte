@@ -8,7 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
 	import { formatDistanceToNow } from 'date-fns'; // Added for upcoming shifts
-	import type { Schedule } from '$lib/components/schedules_table/columns'; // Import the shared Schedule type
+	import type { Schedule } from '$lib/types'; // Corrected import
 	import { CalendarDays } from 'lucide-svelte'; // Added CalendarDays
 
 	// Import the new store

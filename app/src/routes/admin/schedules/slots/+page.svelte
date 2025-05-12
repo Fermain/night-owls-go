@@ -7,7 +7,7 @@
 	// import * as Table from '$lib/components/ui/table/index.js'; // Not currently used
 	import { toast } from 'svelte-sonner';
 	import { formatDistanceToNow } from 'date-fns';
-	import { page } from '$app/state'; // Changed from $app/state for consistency
+	import { page } from '$app/stores'; // Correct import source
 	// import * as Sidebar from '$lib/components/ui/sidebar/index.js'; // No longer directly used here for list rendering
 	// import SidebarPage from '$lib/components/sidebar-page.svelte'; // Removed
 	import { Button } from '$lib/components/ui/button'; // Assuming this is the correct path from other files
@@ -25,33 +25,33 @@
 	import * as Select from '$lib/components/ui/select'; // For User Select
 	// For form validation
 	import { authenticatedFetch } from '$lib/utils/api';
+	import type { AdminShiftSlot } from '$lib/types'; // Import AdminShiftSlot
+	import type { UserData } from '$lib/schemas/user'; // Import UserData for users list
 
 	// --- Types ---
-	type AdminShiftSlot = {
-		schedule_id: number;
-		schedule_name: string;
-		start_time: string; // ISO date string
-		end_time: string; // ISO date string
-		timezone?: string | null;
-		is_booked: boolean;
-		booking_id?: number | null;
-		user_name?: string | null;
-		user_phone?: string | null;
-	};
+	// type AdminShiftSlot = { // REMOVED
+	// 	schedule_id: number;
+	// 	schedule_name: string;
+	// 	start_time: string; // ISO date string
+	// 	end_time: string; // ISO date string
+	// 	timezone?: string | null;
+	// 	is_booked: boolean;
+	// 	booking_id?: number | null;
+	// 	user_name?: string | null;
+	// 	user_phone?: string | null;
+	// };
 
-	// User type for the dropdown
-	type User = {
-		id: number;
-		name: string | null;
-		phone: string;
-		role: string; // Added role for completeness, might not be used in form
-	};
+	// User type for the dropdown - REPLACED with UserData
+	// type User = { // REMOVED
+	// 	id: number;
+	// 	name: string | null;
+	// 	phone: string;
+	// 	role: string; 
+	// };
 
 	// --- State for selected shift ---
-	// This will be set by interaction with the sidebar (defined in the layout)
-	// For now, this page expects selectedShift to be populated (e.g. via URL param or store later)
 	let selectedShift = $state<AdminShiftSlot | null>(null);
-	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
+	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
 
 	// --- Booking Form State ---
 	let selectedUserIdForBooking = $state<string | undefined>(undefined); // Store the string value from select
@@ -184,7 +184,8 @@
 	): Promise<AdminShiftSlot[]> => {
 		const from = startOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
 		const to = endOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
-		const response = await fetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`);
+		// const response = await fetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`); // Should use authenticatedFetch
+		const response = await authenticatedFetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`);
 		if (!response.ok) {
 			throw new Error('Failed to fetch shift slots for calendar');
 		}
@@ -230,7 +231,7 @@
 			if (!response.ok) {
 				throw new Error('Failed to fetch users');
 			}
-			return response.json();
+			return response.json() as Promise<UserData[]>; // Ensure return type matches UserData[]
 		} catch (error) {
 			toast.error('Failed to load users');
 			console.error('Fetch users error:', error);
@@ -239,7 +240,7 @@
 	}
 	const usersQuery = $derived.by(() => {
 		const enabled = isBookingFormEnabled;
-		return createQuery<User[], Error>({
+		return createQuery<UserData[], Error>({
 			queryKey: ['allAdminUsersForBooking'],
 			queryFn: fetchUsers,
 			enabled: enabled

@@ -1,14 +1,8 @@
 import { persisted } from 'svelte-persisted-store';
+import type { UserSessionData } from '../types'; // Updated import path
 
 // Define the shape of our user session data
-export interface UserSessionData {
-	isAuthenticated: boolean;
-	id: string | null;
-	name: string | null;
-	phone: string | null; // E.g., the phone number used for login
-	role: 'admin' | 'owl' | 'guest' | null;
-	token: string | null;
-}
+// export interface UserSessionData { ... }
 
 // Define the initial state for an unauthenticated user
 const initialSession: UserSessionData = {

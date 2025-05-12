@@ -9,7 +9,7 @@
 	import { goto } from '$app/navigation';
 	import cronstrue from 'cronstrue';
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
-	import type { Schedule as ScheduleData } from '$lib/components/schedules_table/columns';
+	import type { Schedule as ScheduleData } from '$lib/types';
 	import CronView from '$lib/components/cron/cron-view.svelte';
 	import { scheduleZodSchema, type ZodSchemaValues } from '$lib/schemas/schedule';
 	import DeleteConfirmDialog from '../dialogs/DeleteConfirmDialog.svelte';
