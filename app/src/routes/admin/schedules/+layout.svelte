@@ -8,23 +8,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
 	import { formatDistanceToNow } from 'date-fns'; // Added for upcoming shifts
-	import type { Schedule } from '$lib/types'; // Corrected import
+	import type { Schedule, AdminShiftSlot } from '$lib/types'; // Corrected import
 	import { CalendarDays } from 'lucide-svelte'; // Added CalendarDays
 
 	// Import the new store
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
-
-	type AdminShiftSlot = {
-		schedule_id: number;
-		schedule_name: string;
-		start_time: string; // ISO date string
-		end_time: string; // ISO date string
-		timezone?: string | null;
-		is_booked: boolean;
-		booking_id?: number | null;
-		user_name?: string | null;
-		user_phone?: string | null;
-	};
 
 	let searchTerm = $state('');
 	let { children } = $props();
