@@ -9,8 +9,6 @@
 	selectedUserForForm.subscribe((value) => {
 		currentUserForForm = value;
 	});
-
-
 </script>
 
 {#if currentUserForForm}

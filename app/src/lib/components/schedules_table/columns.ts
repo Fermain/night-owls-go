@@ -1,5 +1,4 @@
 import type { ColumnDef, TableMeta, HeaderContext, CellContext } from '@tanstack/table-core';
-import { Checkbox } from '$lib/components/ui/checkbox';
 // import DataTableColumnHeader from '$lib/components/ui/data-table/data-table-column-header.svelte'; // MISSING
 // import DataTableRowActions from './schedule-actions.svelte'; // MISSING
 import type { Schedule } from '$lib/types';
@@ -13,7 +12,9 @@ const formatDateToLocaleString = (dateString?: string | null): string => {
 	}
 };
 
-interface ScheduleTableMeta extends TableMeta<Schedule> { /* custom meta if any */ }
+interface ScheduleTableMeta extends TableMeta<Schedule> {
+	/* custom meta if any */
+}
 
 export const columns: ColumnDef<Schedule>[] = [
 	{

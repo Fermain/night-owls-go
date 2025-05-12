@@ -25,7 +25,7 @@ export function createDeleteUserMutation(onSettled?: () => void) {
 			const contentType = response.headers.get('content-type');
 			if (contentType && contentType.indexOf('application/json') !== -1) {
 				try {
-					return await response.json() as DeleteUserResponse;
+					return (await response.json()) as DeleteUserResponse;
 				} catch (e) {
 					// Handle cases where response might be empty JSON but still valid (e.g. {} from a 200 OK)
 					return { message: 'User deleted successfully (empty JSON response)' };

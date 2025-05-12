@@ -1,9 +1,5 @@
 <script lang="ts">
-	import {
-		createQuery,
-		useQueryClient,
-		createMutation
-	} from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient, createMutation } from '@tanstack/svelte-query';
 	// import * as Table from '$lib/components/ui/table/index.js'; // Not currently used
 	import { toast } from 'svelte-sonner';
 	import { formatDistanceToNow } from 'date-fns';
@@ -46,7 +42,7 @@
 	// 	id: number;
 	// 	name: string | null;
 	// 	phone: string;
-	// 	role: string; 
+	// 	role: string;
 	// };
 
 	// --- State for selected shift ---
@@ -135,7 +131,9 @@
 			if (from) params.append('from', from.toISOString().split('T')[0]);
 			if (to) params.append('to', to.toISOString().split('T')[0]);
 
-			const response = await authenticatedFetch(`/api/admin/schedules/all-slots?${params.toString()}`);
+			const response = await authenticatedFetch(
+				`/api/admin/schedules/all-slots?${params.toString()}`
+			);
 			if (!response.ok) {
 				let errorMsg = `HTTP error ${response.status}`;
 				try {
@@ -185,7 +183,9 @@
 		const from = startOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
 		const to = endOfMonth(monthDate).toDate(getLocalTimeZone()).toISOString();
 		// const response = await fetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`); // Should use authenticatedFetch
-		const response = await authenticatedFetch(`/api/admin/schedules/all-slots?from=${from}&to=${to}`);
+		const response = await authenticatedFetch(
+			`/api/admin/schedules/all-slots?from=${from}&to=${to}`
+		);
 		if (!response.ok) {
 			throw new Error('Failed to fetch shift slots for calendar');
 		}

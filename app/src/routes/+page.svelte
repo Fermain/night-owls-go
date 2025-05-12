@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
 	import { createQuery } from '@tanstack/svelte-query';
 	// import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte'; // MISSING COMPONENT
 	// import { columns } from '$lib/components/schedules_table/columns'; // Columns are for the missing table
@@ -33,8 +32,9 @@
 	{:else if $query.isError}
 		<p class="text-red-500">Error fetching schedules: {$query.error?.message}</p>
 	{:else if $query.data && $query.data.length > 0}
-		<!-- <SchedulesDataTable {columns} data={data} /> --> <!-- Usage removed due to missing component -->
-		<p>Schedule data loaded, but table component is missing.</p> 
+		<!-- <SchedulesDataTable {columns} data={data} /> -->
+		<!-- Usage removed due to missing component -->
+		<p>Schedule data loaded, but table component is missing.</p>
 		<ul>
 			{#each data as schedule (schedule.schedule_id)}
 				<li>{schedule.name} - {schedule.cron_expr}</li>
