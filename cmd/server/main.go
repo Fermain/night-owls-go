@@ -124,8 +124,10 @@ func main() {
 	// --- Setup Cron Jobs ---
 	cronLoggerAdapter := &slogCronLogger{logger: logger.With("component", "cron")}
 	cronScheduler := cron.New(cron.WithLogger(cron.PrintfLogger(cronLoggerAdapter)))
-	_, err = cronScheduler.AddFunc("@every 1m", func() { // Process outbox every 1 minute
-		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background()) // Use background context for cron job
+	
+	// Process outbox every 1 minute
+	_, err = cronScheduler.AddFunc("@every 1m", func() {
+		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background())
 		if errors > 0 {
 			slog.Warn("Outbox dispatcher finished with errors", "processed_count", processed, "error_count", errors)
 		} else if processed > 0 {
@@ -136,8 +138,26 @@ func main() {
 		slog.Error("Failed to add outbox dispatcher job to cron", "error", err)
 		os.Exit(1)
 	}
+
+	// Materialize recurring assignments every hour
+	_, err = cronScheduler.AddFunc("@hourly", func() {
+		ctx := context.Background()
+		now := time.Now().UTC()
+		fromTime := now
+		toTime := now.AddDate(0, 0, 14) // Next 2 weeks
+		
+		err := recurringAssignmentService.MaterializeUpcomingBookings(ctx, scheduleService, fromTime, toTime)
+		if err != nil {
+			slog.Error("Failed to materialize recurring assignment bookings", "error", err)
+		}
+	})
+	if err != nil {
+		slog.Error("Failed to add recurring assignment materialization job to cron", "error", err)
+		os.Exit(1)
+	}
+
 	cronScheduler.Start()
-	slog.Info("Cron scheduler started for outbox processing.")
+	slog.Info("Cron scheduler started for outbox processing and recurring assignments.")
 
 	// --- Setup HTTP Router & Handlers ---
 	s := fuego.NewServer(
@@ -185,7 +205,7 @@ func main() {
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
-	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService)
+	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService, scheduleService)
 
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)

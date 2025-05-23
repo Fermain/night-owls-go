@@ -123,6 +123,25 @@
 		}
 	});
 
+	// Materialize bookings mutation
+	const materializeBookingsMutation = createMutation({
+		mutationFn: async () => {
+			const response = await authenticatedFetch('/api/admin/recurring-assignments?materialize=true', {
+				method: 'GET',
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to materialize bookings');
+			}
+			return response.json();
+		},
+		onSuccess: (data) => {
+			// Invalidate shift slots to show newly created bookings
+			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
+			console.log('Materialization completed:', data);
+		}
+	});
+
 	// Derived values
 	const users = $derived($usersQuery.data ?? []);
 	const schedules = $derived($schedulesQuery.data ?? []);
@@ -233,7 +252,7 @@
 <div class="p-6">
 	<div class="max-w-4xl mx-auto">
 		<!-- Header -->
-		<div class="flex items-center justify-between mb-6">
+		<div class="grid gap-4 mb-6">
 			<div>
 				<h1 class="text-2xl font-bold flex items-center gap-2">
 					<CalendarClockIcon class="h-6 w-6" />
@@ -243,10 +262,23 @@
 					Set up automatic shift assignments for regular volunteers
 				</p>
 			</div>
-			<Button onclick={() => (showCreateForm = true)} disabled={showCreateForm}>
-				<PlusIcon class="h-4 w-4 mr-2" />
-				New Recurring Assignment
-			</Button>
+			<div class="flex gap-2">
+				<Button 
+					variant="outline" 
+					onclick={() => $materializeBookingsMutation.mutate()}
+					disabled={$materializeBookingsMutation.isPending}
+				>
+					{#if $materializeBookingsMutation.isPending}
+						Materializing...
+					{:else}
+						Materialize Now
+					{/if}
+				</Button>
+				<Button onclick={() => (showCreateForm = true)} disabled={showCreateForm}>
+					<PlusIcon class="h-4 w-4 mr-2" />
+					New Recurring Assignment
+				</Button>
+			</div>
 		</div>
 
 		<!-- Create Form -->

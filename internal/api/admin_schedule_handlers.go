@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -122,9 +123,35 @@ func (h *AdminScheduleHandlers) AdminListSchedules(w http.ResponseWriter, r *htt
 
 // AdminGetSchedule handles GET /api/admin/schedules/{id}
 func (h *AdminScheduleHandlers) AdminGetSchedule(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminGetSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if scheduleIDStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "schedules" {
+			scheduleIDStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if scheduleIDStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					scheduleIDStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", scheduleIDStr)
+					break
+				}
+			}
+		}
+	}
+	
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid schedule ID format", h.logger, "schedule_id_str", scheduleIDStr, "error", err)
 		return
 	}
@@ -146,9 +173,35 @@ type AdminUpdateScheduleRequest AdminCreateScheduleRequest
 
 // AdminUpdateSchedule handles PUT /api/admin/schedules/{id}
 func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminUpdateSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if scheduleIDStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "schedules" {
+			scheduleIDStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if scheduleIDStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					scheduleIDStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", scheduleIDStr)
+					break
+				}
+			}
+		}
+	}
+	
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid schedule ID format", h.logger, "schedule_id_str", scheduleIDStr, "error", err)
 		return
 	}
@@ -218,9 +271,35 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 
 // AdminDeleteSchedule handles DELETE /api/admin/schedules/{id}
 func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminDeleteSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if scheduleIDStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "schedules" {
+			scheduleIDStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if scheduleIDStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					scheduleIDStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", scheduleIDStr)
+					break
+				}
+			}
+		}
+	}
+	
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid schedule ID format", h.logger, "schedule_id_str", scheduleIDStr, "error", err)
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -79,7 +80,31 @@ func (h *PushHandler) SubscribePush(w http.ResponseWriter, r *http.Request) {
 //   204: No Content
 //   500: Internal Server Error
 func (h *PushHandler) UnsubscribePush(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the endpoint parameter
 	endpoint := chi.URLParam(r, "endpoint")
+	h.Logger.InfoContext(r.Context(), "UnsubscribePush called", "endpoint_param", endpoint, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if endpoint == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 3 && pathParts[0] == "push" && pathParts[1] == "subscribe" {
+			endpoint = pathParts[2]
+			h.Logger.InfoContext(r.Context(), "Extracted endpoint from path manually", "endpoint_param", endpoint)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if endpoint == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "endpoint" && i < len(rctx.URLParams.Values) {
+					endpoint = rctx.URLParams.Values[i]
+					h.Logger.InfoContext(r.Context(), "Found endpoint in route context", "endpoint_param", endpoint)
+					break
+				}
+			}
+		}
+	}
 
 	userIDVal := r.Context().Value(UserIDKey) // Use UserIDKey from the api package (middleware.go)
 	userID, ok := userIDVal.(int64)
