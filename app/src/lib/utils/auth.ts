@@ -47,7 +47,7 @@ export function loginAsGuest() {
  */
 export function isAuthenticated(): boolean {
 	let authenticated = false;
-	userStore.subscribe(user => {
+	userStore.subscribe((user) => {
 		authenticated = user.isAuthenticated;
 	})();
 	return authenticated;
@@ -58,7 +58,7 @@ export function isAuthenticated(): boolean {
  */
 export function getCurrentUser(): UserSessionData | null {
 	let currentUser: UserSessionData | null = null;
-	userStore.subscribe(user => {
+	userStore.subscribe((user) => {
 		currentUser = user.isAuthenticated ? user : null;
 	})();
 	return currentUser;
@@ -81,4 +81,4 @@ export function isOwl(): boolean {
 }
 
 // Export the logout function for convenience
-export { logout }; 
+export { logout };

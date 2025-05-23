@@ -3,17 +3,20 @@
 ## 📊 Features Implemented
 
 ### User Metrics Dashboard
+
 - **Total Users**: System-wide user count
 - **Administrators**: Admin role users
-- **Night Owls**: Active volunteer users  
+- **Night Owls**: Active volunteer users
 - **Recent Signups**: Users registered in last 30 days
 
 ### Visualizations
+
 - **Role Distribution Chart**: Pie chart showing user role breakdown
 - **User Growth Chart**: Area chart displaying 6-month growth trend
 - **Recent Users List**: Latest registrations with avatars and role badges
 
 ### Enhanced Sidebar
+
 - **Current User Display**: Shows logged-in user with role badge
 - **User Search**: Real-time filtering in sidebar user list
 - **Bulk Actions**: Multi-user selection and operations
@@ -41,6 +44,7 @@
 ## 🔧 API Integration
 
 Uses centralized `UsersApiService` from `/lib/services/api/users.ts`:
+
 - `getAll()` - Fetch all users
 - `getById()` - Get specific user
 - `create()` - Create new user
@@ -69,4 +73,4 @@ Uses centralized `UsersApiService` from `/lib/services/api/users.ts`:
 - Advanced filtering by registration date/status
 - User export functionality
 - Role-based dashboard customization
-- User engagement metrics 
+- User engagement metrics

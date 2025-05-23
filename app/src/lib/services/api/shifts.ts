@@ -18,9 +18,7 @@ export class ShiftsApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to assign shift' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to assign shift' }));
 			throw new Error(errorData.message || `HTTP error ${response.status}`);
 		}
 		return response.json();
@@ -75,7 +73,7 @@ export class ShiftsApiService {
 
 		const url = `/api/admin/bookings${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 		const response = await authenticatedFetch(url);
-		
+
 		if (!response.ok) {
 			throw new Error(`Failed to fetch bookings: ${response.status}`);
 		}
@@ -97,4 +95,4 @@ export class ShiftsApiService {
 		}
 		return response.json();
 	}
-} 
+}

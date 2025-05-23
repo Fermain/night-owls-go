@@ -36,7 +36,7 @@ export function createSaveScheduleMutation(onSuccessCallback?: () => void) {
 				if (scheduleId) {
 					selectedScheduleForForm.set(undefined);
 				}
-				
+
 				// Use callback if provided, otherwise default navigation
 				if (onSuccessCallback) {
 					onSuccessCallback();

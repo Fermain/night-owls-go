@@ -6,12 +6,12 @@
 	import FillRateChart from './FillRateChart.svelte';
 	import ScheduleChart from './ScheduleChart.svelte';
 
-	let { 
-		isLoading, 
-		isError, 
-		error, 
-		metrics 
-	}: { 
+	let {
+		isLoading,
+		isError,
+		error,
+		metrics
+	}: {
 		isLoading: boolean;
 		isError: boolean;
 		error?: Error;
@@ -20,8 +20,8 @@
 			filledShifts: number;
 			availableShifts: number;
 			fillRate: number;
-			scheduleData: Array<{ schedule: string; total: number; filled: number; fillRate: number; }>;
-			fillRateData: Array<{ label: string; value: number; }>;
+			scheduleData: Array<{ schedule: string; total: number; filled: number; fillRate: number }>;
+			fillRateData: Array<{ label: string; value: number }>;
 		} | null;
 	} = $props();
 </script>
@@ -30,9 +30,7 @@
 	<div class="max-w-7xl mx-auto">
 		<div class="mb-6">
 			<h1 class="text-2xl font-semibold mb-2">Shifts Dashboard</h1>
-			<p class="text-muted-foreground">
-				Overview of all scheduled shifts and performance metrics
-			</p>
+			<p class="text-muted-foreground">Overview of all scheduled shifts and performance metrics</p>
 		</div>
 
 		{#if isLoading}
@@ -65,9 +63,7 @@
 			<div class="text-center py-12">
 				<CalendarIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 				<h2 class="text-xl font-semibold mb-2">No Shifts Found</h2>
-				<p class="text-muted-foreground">
-					No scheduled shifts found for the next 90 days.
-				</p>
+				<p class="text-muted-foreground">No scheduled shifts found for the next 90 days.</p>
 			</div>
 		{:else}
 			<!-- Dashboard Content -->
@@ -80,4 +76,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>

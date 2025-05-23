@@ -13,9 +13,11 @@ type Querier interface {
 	AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
+	CreateRecurringAssignment(ctx context.Context, arg CreateRecurringAssignmentParams) (RecurringAssignment, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -24,6 +26,8 @@ type Querier interface {
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
+	GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (RecurringAssignment, error)
+	GetRecurringAssignmentsByPattern(ctx context.Context, arg GetRecurringAssignmentsByPatternParams) ([]GetRecurringAssignmentsByPatternRow, error)
 	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
@@ -32,10 +36,13 @@ type Querier interface {
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
+	ListRecurringAssignments(ctx context.Context) ([]RecurringAssignment, error)
+	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
+	UpdateRecurringAssignment(ctx context.Context, arg UpdateRecurringAssignmentParams) (RecurringAssignment, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error

@@ -24,7 +24,7 @@ export class ReportsApiService {
 
 		const url = `/api/admin/reports${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 		const response = await authenticatedFetch(url);
-		
+
 		if (!response.ok) {
 			throw new Error(`Failed to fetch reports: ${response.status}`);
 		}
@@ -58,9 +58,7 @@ export class ReportsApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to create report' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to create report' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		return response.json();
@@ -82,9 +80,7 @@ export class ReportsApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to update report' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to update report' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		return response.json();
@@ -98,9 +94,7 @@ export class ReportsApiService {
 			method: 'DELETE'
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to delete report' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to delete report' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		// Handle both JSON response and empty response
@@ -132,4 +126,4 @@ export class ReportsApiService {
 		}
 		return response.json();
 	}
-} 
+}

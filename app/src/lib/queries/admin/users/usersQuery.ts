@@ -13,4 +13,4 @@ export function createUsersQuery(searchTerm?: string) {
 		gcTime: 1000 * 60 * 10, // 10 minutes
 		retry: 2
 	});
-} 
+}

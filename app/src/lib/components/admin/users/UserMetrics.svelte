@@ -19,9 +19,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.totalUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Registered users in the system
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Registered users in the system</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -33,9 +31,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.adminUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				System administrators
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">System administrators</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -47,9 +43,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.owlUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Active volunteers
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Active volunteers</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -61,9 +55,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.recentUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Last 30 days
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Last 30 days</p>
 		</Card.Content>
 	</Card.Root>
-</div> 
+</div>

@@ -18,4 +18,4 @@ export function createDashboardShiftsQuery(enabled: boolean = true) {
 		gcTime: 1000 * 60 * 10, // 10 minutes
 		retry: 2
 	});
-} 
+}

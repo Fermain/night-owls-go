@@ -112,6 +112,7 @@ func main() {
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
+	recurringAssignmentService := service.NewRecurringAssignmentService(querier, logger, cfg)
 
 	// Instantiate PushSender service
 	pushSenderService := service.NewPushSender(querier, cfg, logger)
@@ -184,6 +185,7 @@ func main() {
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
+	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService)
 
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
@@ -225,6 +227,13 @@ func main() {
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
+
+	// Admin Recurring Assignments
+	fuego.GetStd(admin, "/recurring-assignments", adminRecurringAssignmentAPIHandler.AdminListRecurringAssignments)
+	fuego.PostStd(admin, "/recurring-assignments", adminRecurringAssignmentAPIHandler.AdminCreateRecurringAssignment)
+	fuego.GetStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminGetRecurringAssignment)
+	fuego.PutStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminUpdateRecurringAssignment)
+	fuego.DeleteStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminDeleteRecurringAssignment)
 
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {

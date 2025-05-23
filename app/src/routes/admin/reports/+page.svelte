@@ -38,8 +38,8 @@
 			queryFn: async () => {
 				// This would use the real API: GET /api/admin/reports
 				// For now, simulate the data structure
-				await new Promise(resolve => setTimeout(resolve, 800));
-				
+				await new Promise((resolve) => setTimeout(resolve, 800));
+
 				const mockReports = [
 					{
 						report_id: 1,
@@ -66,18 +66,21 @@
 					{
 						report_id: 3,
 						booking_id: 125,
-						message: 'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
+						message:
+							'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
 						severity: 2,
 						created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
 						user_name: 'Mike Johnson',
 						user_phone: '+27555666777',
-						shift_start: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+						shift_start: new Date(
+							Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000
+						).toISOString(),
 						schedule_name: 'Tuesday Night Security'
 					}
 				];
 
 				// Apply filters
-				return mockReports.filter(report => {
+				return mockReports.filter((report) => {
 					if (severityFilter !== 'all' && report.severity.toString() !== severityFilter) {
 						return false;
 					}
@@ -103,28 +106,40 @@
 
 	function getSeverityIcon(severity: number) {
 		switch (severity) {
-			case 0: return InfoIcon;
-			case 1: return AlertTriangleIcon;
-			case 2: return ShieldAlertIcon;
-			default: return InfoIcon;
+			case 0:
+				return InfoIcon;
+			case 1:
+				return AlertTriangleIcon;
+			case 2:
+				return ShieldAlertIcon;
+			default:
+				return InfoIcon;
 		}
 	}
 
 	function getSeverityColor(severity: number) {
 		switch (severity) {
-			case 0: return 'text-blue-600 bg-blue-50 border-blue-200';
-			case 1: return 'text-orange-600 bg-orange-50 border-orange-200';
-			case 2: return 'text-red-600 bg-red-50 border-red-200';
-			default: return 'text-gray-600 bg-gray-50 border-gray-200';
+			case 0:
+				return 'text-blue-600 bg-blue-50 border-blue-200';
+			case 1:
+				return 'text-orange-600 bg-orange-50 border-orange-200';
+			case 2:
+				return 'text-red-600 bg-red-50 border-red-200';
+			default:
+				return 'text-gray-600 bg-gray-50 border-gray-200';
 		}
 	}
 
 	function getSeverityLabel(severity: number) {
 		switch (severity) {
-			case 0: return 'Info';
-			case 1: return 'Warning';
-			case 2: return 'Critical';
-			default: return 'Unknown';
+			case 0:
+				return 'Info';
+			case 1:
+				return 'Warning';
+			case 2:
+				return 'Critical';
+			default:
+				return 'Unknown';
 		}
 	}
 
@@ -132,7 +147,7 @@
 		const date = new Date(dateString);
 		const now = new Date();
 		const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-		
+
 		if (diffInHours < 1) return 'Just now';
 		if (diffInHours < 24) return `${diffInHours}h ago`;
 		if (diffInHours < 48) return 'Yesterday';
@@ -155,9 +170,9 @@
 		const reports = $reportsQuery.data ?? [];
 		return {
 			total: reports.length,
-			critical: reports.filter(r => r.severity === 2).length,
-			warning: reports.filter(r => r.severity === 1).length,
-			info: reports.filter(r => r.severity === 0).length
+			critical: reports.filter((r) => r.severity === 2).length,
+			warning: reports.filter((r) => r.severity === 1).length,
+			info: reports.filter((r) => r.severity === 0).length
 		};
 	});
 </script>
@@ -186,7 +201,7 @@
 					</div>
 				</div>
 			</Card.Root>
-			
+
 			<Card.Root class="p-4">
 				<div class="flex items-center gap-3">
 					<ShieldAlertIcon class="h-8 w-8 text-red-600" />
@@ -196,7 +211,7 @@
 					</div>
 				</div>
 			</Card.Root>
-			
+
 			<Card.Root class="p-4">
 				<div class="flex items-center gap-3">
 					<AlertTriangleIcon class="h-8 w-8 text-orange-600" />
@@ -206,7 +221,7 @@
 					</div>
 				</div>
 			</Card.Root>
-			
+
 			<Card.Root class="p-4">
 				<div class="flex items-center gap-3">
 					<InfoIcon class="h-8 w-8 text-blue-600" />
@@ -225,7 +240,8 @@
 					<Label>Severity</Label>
 					<Select.Root type="single" bind:value={severityFilter}>
 						<Select.Trigger class="w-40">
-							{severityOptions.find(opt => opt.value === severityFilter)?.label ?? 'Select severity'}
+							{severityOptions.find((opt) => opt.value === severityFilter)?.label ??
+								'Select severity'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each severityOptions as option (option.value)}
@@ -234,12 +250,12 @@
 						</Select.Content>
 					</Select.Root>
 				</div>
-				
+
 				<div class="space-y-2">
 					<Label>Time Period</Label>
 					<Select.Root type="single" bind:value={timeFilter}>
 						<Select.Trigger class="w-40">
-							{timeOptions.find(opt => opt.value === timeFilter)?.label ?? 'Select time'}
+							{timeOptions.find((opt) => opt.value === timeFilter)?.label ?? 'Select time'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each timeOptions as option (option.value)}
@@ -286,9 +302,7 @@
 					<div class="text-center">
 						<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 						<h3 class="text-lg font-semibold mb-2">No Reports Found</h3>
-						<p class="text-muted-foreground">
-							No shift reports match your current filters.
-						</p>
+						<p class="text-muted-foreground">No shift reports match your current filters.</p>
 					</div>
 				</Card.Root>
 			{:else}
@@ -300,7 +314,9 @@
 								{#snippet reportHeader()}
 									{@const SeverityIcon = getSeverityIcon(report.severity)}
 									<div class="flex items-center gap-3">
-										<SeverityIcon class="h-5 w-5 {getSeverityColor(report.severity).split(' ')[0]}" />
+										<SeverityIcon
+											class="h-5 w-5 {getSeverityColor(report.severity).split(' ')[0]}"
+										/>
 										<div>
 											<h3 class="font-semibold text-sm">Report #{report.report_id}</h3>
 											<p class="text-xs text-muted-foreground">
@@ -310,7 +326,11 @@
 									</div>
 								{/snippet}
 								{@render reportHeader()}
-								<div class="px-2 py-1 text-xs font-medium rounded-full border {getSeverityColor(report.severity)}">
+								<div
+									class="px-2 py-1 text-xs font-medium rounded-full border {getSeverityColor(
+										report.severity
+									)}"
+								>
 									{getSeverityLabel(report.severity)}
 								</div>
 							</div>
@@ -342,4 +362,4 @@
 			{/if}
 		</div>
 	</div>
-</div> 
+</div>

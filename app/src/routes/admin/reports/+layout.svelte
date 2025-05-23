@@ -19,8 +19,8 @@
 			queryFn: async () => {
 				// This would use the real API: GET /api/admin/reports
 				// For now, simulate the data structure
-				await new Promise(resolve => setTimeout(resolve, 800));
-				
+				await new Promise((resolve) => setTimeout(resolve, 800));
+
 				const mockReports = [
 					{
 						report_id: 1,
@@ -47,12 +47,15 @@
 					{
 						report_id: 3,
 						booking_id: 125,
-						message: 'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
+						message:
+							'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
 						severity: 2,
 						created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
 						user_name: 'Mike Johnson',
 						user_phone: '+27555666777',
-						shift_start: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+						shift_start: new Date(
+							Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000
+						).toISOString(),
 						schedule_name: 'Tuesday Night Security'
 					},
 					{
@@ -63,7 +66,9 @@
 						created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
 						user_name: 'Sarah Wilson',
 						user_phone: '+27444555666',
-						shift_start: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 - 1 * 60 * 60 * 1000).toISOString(),
+						shift_start: new Date(
+							Date.now() - 5 * 24 * 60 * 60 * 1000 - 1 * 60 * 60 * 1000
+						).toISOString(),
 						schedule_name: 'Monday Night Security'
 					}
 				];
@@ -75,19 +80,27 @@
 
 	function getSeverityIcon(severity: number) {
 		switch (severity) {
-			case 0: return InfoIcon;
-			case 1: return AlertTriangleIcon;
-			case 2: return ShieldAlertIcon;
-			default: return InfoIcon;
+			case 0:
+				return InfoIcon;
+			case 1:
+				return AlertTriangleIcon;
+			case 2:
+				return ShieldAlertIcon;
+			default:
+				return InfoIcon;
 		}
 	}
 
 	function getSeverityColor(severity: number) {
 		switch (severity) {
-			case 0: return 'text-blue-600';
-			case 1: return 'text-orange-600';
-			case 2: return 'text-red-600';
-			default: return 'text-gray-600';
+			case 0:
+				return 'text-blue-600';
+			case 1:
+				return 'text-orange-600';
+			case 2:
+				return 'text-red-600';
+			default:
+				return 'text-gray-600';
 		}
 	}
 
@@ -95,7 +108,7 @@
 		const date = new Date(dateString);
 		const now = new Date();
 		const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-		
+
 		if (diffInHours < 1) return 'Just now';
 		if (diffInHours < 24) return `${diffInHours}h ago`;
 		if (diffInHours < 48) return 'Yesterday';
@@ -106,11 +119,12 @@
 	const filteredReports = $derived.by(() => {
 		const reports = $reportsQuery.data ?? [];
 		if (!searchTerm) return reports;
-		
-		return reports.filter(report => 
-			report.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			report.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			report.schedule_name.toLowerCase().includes(searchTerm.toLowerCase())
+
+		return reports.filter(
+			(report) =>
+				report.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				report.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				report.schedule_name.toLowerCase().includes(searchTerm.toLowerCase())
 		);
 	});
 </script>
@@ -159,14 +173,14 @@
 									{@const SeverityIcon = getSeverityIcon(report.severity)}
 									<SeverityIcon class="h-4 w-4 {getSeverityColor(report.severity)}" />
 								{/snippet}
-								
+
 								<div class="flex items-start gap-2">
 									{@render reportIcon()}
 									<div class="flex-1 min-w-0">
 										<p class="text-sm font-medium line-clamp-2">{report.message}</p>
 									</div>
 								</div>
-								
+
 								<div class="space-y-1 text-xs text-muted-foreground">
 									<div class="flex items-center gap-1">
 										<UserIcon class="h-3 w-3" />
@@ -191,4 +205,4 @@
 
 <SidebarPage listContent={reportsListContent} title="Reports" bind:searchTerm>
 	{@render children()}
-</SidebarPage> 
+</SidebarPage>

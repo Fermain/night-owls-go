@@ -46,9 +46,9 @@
 			case 'all':
 				return users.length;
 			case 'admins':
-				return users.filter(user => user.role === 'admin').length;
+				return users.filter((user) => user.role === 'admin').length;
 			case 'owls':
-				return users.filter(user => user.role === 'owl' || !user.role).length;
+				return users.filter((user) => user.role === 'owl' || !user.role).length;
 			case 'active':
 				// For now, return all users. In future, filter by last activity
 				return users.length;
@@ -67,8 +67,8 @@
 		}) => {
 			// This would be implemented when the backend supports it
 			// For now, simulate API call
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
 			if (Math.random() > 0.1) {
 				return { success: true, id: Date.now(), sentCount: audienceSize };
 			} else {
@@ -117,9 +117,7 @@
 	<div class="max-w-2xl mx-auto">
 		<div class="mb-6">
 			<h1 class="text-2xl font-semibold mb-2">Send Broadcast</h1>
-			<p class="text-muted-foreground">
-				Compose and send a message to your users
-			</p>
+			<p class="text-muted-foreground">Compose and send a message to your users</p>
 		</div>
 
 		<!-- Send Broadcast Form -->
@@ -145,7 +143,8 @@
 					<Label>Audience</Label>
 					<Select.Root type="single" bind:value={selectedAudience}>
 						<Select.Trigger>
-							{audienceOptions.find(opt => opt.value === selectedAudience)?.label ?? 'Select audience'}
+							{audienceOptions.find((opt) => opt.value === selectedAudience)?.label ??
+								'Select audience'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each audienceOptions as option (option.value)}
@@ -165,18 +164,14 @@
 				<!-- Push Notifications -->
 				<div class="flex items-center space-x-2">
 					<Switch id="push" bind:checked={enablePushNotifications} />
-					<Label for="push" class="text-sm cursor-pointer">
-						Enable push notifications (SMS)
-					</Label>
+					<Label for="push" class="text-sm cursor-pointer">Enable push notifications (SMS)</Label>
 				</div>
 
 				<!-- Scheduling -->
 				<div class="space-y-2">
 					<div class="flex items-center space-x-2">
 						<Switch id="scheduled" bind:checked={isScheduled} />
-						<Label for="scheduled" class="text-sm cursor-pointer">
-							Schedule for later
-						</Label>
+						<Label for="scheduled" class="text-sm cursor-pointer">Schedule for later</Label>
 					</div>
 					{#if isScheduled}
 						<div class="space-y-2">
@@ -192,8 +187,8 @@
 				</div>
 
 				<!-- Send Button -->
-				<Button 
-					onclick={handleSendBroadcast} 
+				<Button
+					onclick={handleSendBroadcast}
 					disabled={$sendBroadcastMutation.isPending || !message.trim()}
 					class="w-full"
 					size="lg"
@@ -208,4 +203,4 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
-</div> 
+</div>

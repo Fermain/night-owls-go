@@ -12,15 +12,24 @@
 
 	function getUserInitials(name: string): string {
 		if (!name) return '?';
-		return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.slice(0, 2)
+			.join('')
+			.toUpperCase();
 	}
 
 	function getRoleColor(role: string) {
 		switch (role) {
-			case 'admin': return 'destructive';
-			case 'owl': return 'default';
-			case 'guest': return 'secondary';
-			default: return 'outline';
+			case 'admin':
+				return 'destructive';
+			case 'owl':
+				return 'default';
+			case 'guest':
+				return 'secondary';
+			default:
+				return 'outline';
 		}
 	}
 
@@ -42,14 +51,14 @@
 	</Card.Header>
 	<Card.Content>
 		{#if volunteers.length === 0}
-			<div class="text-center py-8 text-muted-foreground">
-				No volunteers with shifts yet
-			</div>
+			<div class="text-center py-8 text-muted-foreground">No volunteers with shifts yet</div>
 		{:else}
 			<div class="space-y-4">
 				{#each volunteers as volunteer, index (volunteer.userId)}
 					<div class="flex items-center gap-4">
-						<div class="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
+						<div
+							class="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium"
+						>
 							{getRankIcon(index)}
 						</div>
 						<Avatar.Root class="h-10 w-10">
@@ -78,8 +87,8 @@
 									{volunteer.shiftCount} shifts ({volunteer.percentage}% of total)
 								</p>
 								<div class="w-24 bg-secondary rounded-full h-2">
-									<div 
-										class="bg-primary h-2 rounded-full transition-all duration-300" 
+									<div
+										class="bg-primary h-2 rounded-full transition-all duration-300"
 										style="width: {Math.min(volunteer.percentage, 100)}%"
 									></div>
 								</div>
@@ -90,4 +99,4 @@
 			</div>
 		{/if}
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

@@ -18,13 +18,13 @@
 	</Card.Header>
 	<Card.Content>
 		<Chart.Container config={chartConfig} class="h-64">
-			<PieChart 
+			<PieChart
 				data={data.map((item, i) => ({
-					...item, 
+					...item,
 					fill: i === 0 ? 'var(--color-chart-1)' : 'var(--color-chart-2)'
 				}))}
 				innerRadius={60}
 			/>
 		</Chart.Container>
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

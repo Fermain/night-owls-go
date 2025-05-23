@@ -15,17 +15,18 @@
 	// Filter to only show users with shifts and limit to top 10
 	const chartData = $derived(
 		distribution
-			.filter(user => user.shiftCount > 0)
+			.filter((user) => user.shiftCount > 0)
 			.slice(0, 10)
-			.map(user => ({
-				userName: user.userName.length > 12 ? user.userName.substring(0, 12) + '...' : user.userName,
+			.map((user) => ({
+				userName:
+					user.userName.length > 12 ? user.userName.substring(0, 12) + '...' : user.userName,
 				shiftCount: user.shiftCount,
 				percentage: user.percentage,
 				fullName: user.userName
 			}))
 	);
 
-	const totalUsersWithShifts = $derived(distribution.filter(u => u.shiftCount > 0).length);
+	const totalUsersWithShifts = $derived(distribution.filter((u) => u.shiftCount > 0).length);
 </script>
 
 <Card.Root class="col-span-2">
@@ -40,17 +41,10 @@
 	</Card.Header>
 	<Card.Content>
 		{#if chartData.length === 0}
-			<div class="text-center py-12 text-muted-foreground">
-				No shift assignments to display
-			</div>
+			<div class="text-center py-12 text-muted-foreground">No shift assignments to display</div>
 		{:else}
 			<Chart.Container config={chartConfig} class="h-80">
-				<BarChart 
-					data={chartData} 
-					x="userName" 
-					y="shiftCount"
-					xScale={scaleBand().padding(0.2)}
-				/>
+				<BarChart data={chartData} x="userName" y="shiftCount" xScale={scaleBand().padding(0.2)} />
 			</Chart.Container>
 		{/if}
 	</Card.Content>
@@ -66,4 +60,4 @@
 			</div>
 		</div>
 	</Card.Footer>
-</Card.Root> 
+</Card.Root>

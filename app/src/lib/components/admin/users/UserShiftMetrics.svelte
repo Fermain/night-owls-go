@@ -11,19 +11,27 @@
 
 	function getBalanceColor(balance: string) {
 		switch (balance) {
-			case 'balanced': return 'default';
-			case 'uneven': return 'secondary';
-			case 'concentrated': return 'destructive';
-			default: return 'outline';
+			case 'balanced':
+				return 'default';
+			case 'uneven':
+				return 'secondary';
+			case 'concentrated':
+				return 'destructive';
+			default:
+				return 'outline';
 		}
 	}
 
 	function getBalanceLabel(balance: string) {
 		switch (balance) {
-			case 'balanced': return 'Well Balanced';
-			case 'uneven': return 'Slightly Uneven';
-			case 'concentrated': return 'Highly Concentrated';
-			default: return balance;
+			case 'balanced':
+				return 'Well Balanced';
+			case 'uneven':
+				return 'Slightly Uneven';
+			case 'concentrated':
+				return 'Highly Concentrated';
+			default:
+				return balance;
 		}
 	}
 </script>
@@ -37,9 +45,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.totalShifts}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Shifts currently assigned to volunteers
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Shifts currently assigned to volunteers</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -51,9 +57,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.averageShiftsPerUser}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Average shifts per registered user
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Average shifts per registered user</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -65,9 +69,7 @@
 		</Card.Header>
 		<Card.Content>
 			<div class="text-3xl font-bold">{metrics.usersWithShifts}</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Users with assigned shifts
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Users with assigned shifts</p>
 		</Card.Content>
 	</Card.Root>
 
@@ -83,9 +85,7 @@
 					{getBalanceLabel(metrics.workloadBalance)}
 				</Badge>
 			</div>
-			<p class="text-xs text-muted-foreground mt-1">
-				Distribution of shifts across volunteers
-			</p>
+			<p class="text-xs text-muted-foreground mt-1">Distribution of shifts across volunteers</p>
 		</Card.Content>
 	</Card.Root>
-</div> 
+</div>

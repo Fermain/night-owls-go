@@ -40,38 +40,38 @@ export interface UserShiftDistribution {
  */
 export function calculateUserMetrics(users: UserData[]): UserMetrics {
 	const totalUsers = users.length;
-	const adminUsers = users.filter(u => u.role === 'admin').length;
-	const owlUsers = users.filter(u => u.role === 'owl').length; 
-	const guestUsers = users.filter(u => u.role === 'guest').length;
+	const adminUsers = users.filter((u) => u.role === 'admin').length;
+	const owlUsers = users.filter((u) => u.role === 'owl').length;
+	const guestUsers = users.filter((u) => u.role === 'guest').length;
 
 	// Calculate recent users (registered in last 30 days)
 	const thirtyDaysAgo = new Date();
 	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-	const recentUsers = users.filter(u => {
+	const recentUsers = users.filter((u) => {
 		if (!u.created_at) return false;
 		const createdDate = new Date(u.created_at);
 		return createdDate >= thirtyDaysAgo;
 	}).length;
 
 	// For now, assume active users = users with recent activity (can be enhanced later)
-	const activeUsers = users.filter(u => u.role !== 'guest').length;
+	const activeUsers = users.filter((u) => u.role !== 'guest').length;
 
 	// Role distribution with percentages
 	const roleDistribution = [
-		{ 
-			role: 'Admin', 
-			count: adminUsers, 
-			percentage: totalUsers > 0 ? Math.round((adminUsers / totalUsers) * 100) : 0 
+		{
+			role: 'Admin',
+			count: adminUsers,
+			percentage: totalUsers > 0 ? Math.round((adminUsers / totalUsers) * 100) : 0
 		},
-		{ 
-			role: 'Owl', 
-			count: owlUsers, 
-			percentage: totalUsers > 0 ? Math.round((owlUsers / totalUsers) * 100) : 0 
+		{
+			role: 'Owl',
+			count: owlUsers,
+			percentage: totalUsers > 0 ? Math.round((owlUsers / totalUsers) * 100) : 0
 		},
-		{ 
-			role: 'Guest', 
-			count: guestUsers, 
-			percentage: totalUsers > 0 ? Math.round((guestUsers / totalUsers) * 100) : 0 
+		{
+			role: 'Guest',
+			count: guestUsers,
+			percentage: totalUsers > 0 ? Math.round((guestUsers / totalUsers) * 100) : 0
 		}
 	];
 
@@ -89,20 +89,23 @@ export function calculateUserMetrics(users: UserData[]): UserMetrics {
 /**
  * Calculate shift distribution metrics per user
  */
-export function calculateUserShiftMetrics(users: UserData[], shifts: AdminShiftSlot[]): UserShiftMetrics {
+export function calculateUserShiftMetrics(
+	users: UserData[],
+	shifts: AdminShiftSlot[]
+): UserShiftMetrics {
 	// Count shifts per user
 	const userShiftCounts = new Map<string, { user: UserData; count: number }>();
-	
+
 	// Initialize all users with 0 shifts (using name as key)
-	users.forEach(user => {
+	users.forEach((user) => {
 		const userName = user.name || 'Unnamed User';
 		userShiftCounts.set(userName, { user, count: 0 });
 	});
 
 	// Count actual shifts by matching user names
-	const totalShifts = shifts.filter(shift => shift.is_booked && shift.user_name).length;
-	
-	shifts.forEach(shift => {
+	const totalShifts = shifts.filter((shift) => shift.is_booked && shift.user_name).length;
+
+	shifts.forEach((shift) => {
 		if (shift.is_booked && shift.user_name) {
 			const current = userShiftCounts.get(shift.user_name);
 			if (current) {
@@ -123,14 +126,13 @@ export function calculateUserShiftMetrics(users: UserData[], shifts: AdminShiftS
 		.sort((a, b) => b.shiftCount - a.shiftCount);
 
 	// Calculate metrics
-	const usersWithShifts = shiftDistribution.filter(u => u.shiftCount > 0).length;
-	const usersWithoutShifts = shiftDistribution.filter(u => u.shiftCount === 0).length;
-	const averageShiftsPerUser = users.length > 0 ? Math.round(totalShifts / users.length * 10) / 10 : 0;
+	const usersWithShifts = shiftDistribution.filter((u) => u.shiftCount > 0).length;
+	const usersWithoutShifts = shiftDistribution.filter((u) => u.shiftCount === 0).length;
+	const averageShiftsPerUser =
+		users.length > 0 ? Math.round((totalShifts / users.length) * 10) / 10 : 0;
 
 	// Top volunteers (top 5 by shift count)
-	const topVolunteers = shiftDistribution
-		.filter(u => u.shiftCount > 0)
-		.slice(0, 5);
+	const topVolunteers = shiftDistribution.filter((u) => u.shiftCount > 0).slice(0, 5);
 
 	// Determine workload balance
 	let workloadBalance: 'balanced' | 'uneven' | 'concentrated' = 'balanced';
@@ -161,7 +163,7 @@ export function generateUserGrowthData(users: UserData[]): UserGrowthData[] {
 	// Group users by month for the last 6 months
 	const months = [];
 	const now = new Date();
-	
+
 	for (let i = 5; i >= 0; i--) {
 		const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
 		months.push({
@@ -174,7 +176,7 @@ export function generateUserGrowthData(users: UserData[]): UserGrowthData[] {
 		// Simulate growth data - in real app, you'd calculate from actual creation dates
 		const baseUsers = Math.max(10, users.length - (5 - index) * 5);
 		const newUsers = Math.floor(Math.random() * 10) + 1;
-		
+
 		return {
 			period: month.label,
 			total: baseUsers,
@@ -189,9 +191,9 @@ export function generateUserGrowthData(users: UserData[]): UserGrowthData[] {
 export function getRecentUsers(users: UserData[], days: number = 7): UserData[] {
 	const cutoffDate = new Date();
 	cutoffDate.setDate(cutoffDate.getDate() - days);
-	
+
 	return users
-		.filter(u => {
+		.filter((u) => {
 			if (!u.created_at) return false;
 			return new Date(u.created_at) >= cutoffDate;
 		})
@@ -206,8 +208,12 @@ export function getRecentUsers(users: UserData[], days: number = 7): UserData[] 
 /**
  * Search and filter users
  */
-export function filterUsers(users: UserData[], searchTerm: string, roleFilter?: string): UserData[] {
-	return users.filter(user => {
+export function filterUsers(
+	users: UserData[],
+	searchTerm: string,
+	roleFilter?: string
+): UserData[] {
+	return users.filter((user) => {
 		// Role filter
 		if (roleFilter && roleFilter !== 'all' && user.role !== roleFilter) {
 			return false;
@@ -225,4 +231,4 @@ export function filterUsers(users: UserData[], searchTerm: string, roleFilter?: 
 
 		return true;
 	});
-} 
+}

@@ -93,17 +93,21 @@
 
 	function getStatusColor(status: string) {
 		switch (status) {
-			case 'active': return 'default';
-			case 'upcoming': return 'secondary';
-			case 'expired': return 'destructive';
-			default: return 'outline';
+			case 'active':
+				return 'default';
+			case 'upcoming':
+				return 'secondary';
+			case 'expired':
+				return 'destructive';
+			default:
+				return 'outline';
 		}
 	}
 
 	function formatDateRange(schedule: Schedule): string {
 		const start = schedule.start_date ? format(new Date(schedule.start_date), 'MMM d, yyyy') : null;
 		const end = schedule.end_date ? format(new Date(schedule.end_date), 'MMM d, yyyy') : null;
-		
+
 		if (start && end) return `${start} - ${end}`;
 		if (start) return `From ${start}`;
 		if (end) return `Until ${end}`;
@@ -122,7 +126,6 @@
 			<h1 class="text-2xl font-bold">Schedule Settings</h1>
 			<!-- Existing Schedules List -->
 			<div class="space-y-4">
-
 				{#if $schedulesQuery.isLoading}
 					<!-- Loading Skeletons -->
 					<div class="space-y-3">
@@ -150,7 +153,12 @@
 					<div class="space-y-3">
 						{#each $schedulesQuery.data as schedule (schedule.schedule_id)}
 							{@const status = getScheduleStatus(schedule)}
-							<div class="p-4 border rounded-lg hover:bg-muted/50 transition-colors {currentSchedule?.schedule_id === schedule.schedule_id ? 'border-primary bg-primary/5' : ''}">
+							<div
+								class="p-4 border rounded-lg hover:bg-muted/50 transition-colors {currentSchedule?.schedule_id ===
+								schedule.schedule_id
+									? 'border-primary bg-primary/5'
+									: ''}"
+							>
 								<div class="flex items-center justify-between">
 									<div class="flex-1 space-y-2">
 										<div class="flex items-center gap-3">
@@ -161,18 +169,20 @@
 										</div>
 									</div>
 									<div class="flex items-center gap-2">
-										<Button 
-											variant="ghost" 
-											size="sm" 
+										<Button
+											variant="ghost"
+											size="sm"
 											onclick={() => handleEditSchedule(schedule)}
-											class={currentSchedule?.schedule_id === schedule.schedule_id ? 'bg-primary text-primary-foreground' : ''}
+											class={currentSchedule?.schedule_id === schedule.schedule_id
+												? 'bg-primary text-primary-foreground'
+												: ''}
 										>
 											<EditIcon class="h-4 w-4" />
 											{currentSchedule?.schedule_id === schedule.schedule_id ? 'Editing' : 'Edit'}
 										</Button>
-										<Button 
-											variant="ghost" 
-											size="sm" 
+										<Button
+											variant="ghost"
+											size="sm"
 											onclick={() => handleDeleteSchedule(schedule)}
 											class="text-destructive hover:text-destructive hover:bg-destructive/10"
 										>
@@ -205,11 +215,11 @@
 						{currentSchedule ? `Edit ${currentSchedule.name} Schedule` : 'Create New Schedule'}
 					</h3>
 				</div>
-				
-				<ScheduleForm 
-					schedule={currentSchedule} 
-					onSuccess={handleFormSuccess} 
-					onCancel={handleFormCancel} 
+
+				<ScheduleForm
+					schedule={currentSchedule}
+					onSuccess={handleFormSuccess}
+					onCancel={handleFormCancel}
 				/>
 			</div>
 		</div>
@@ -222,4 +232,4 @@
 	name={scheduleToDelete?.name ?? ''}
 	id={scheduleToDelete?.schedule_id ?? 0}
 	mutation={deleteScheduleMutation}
-/> 
+/>

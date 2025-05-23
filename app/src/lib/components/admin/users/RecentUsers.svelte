@@ -12,24 +12,36 @@
 
 	function getRoleIcon(role: string) {
 		switch (role) {
-			case 'admin': return ShieldIcon;
-			case 'owl': return StarIcon;
-			default: return UserIcon;
+			case 'admin':
+				return ShieldIcon;
+			case 'owl':
+				return StarIcon;
+			default:
+				return UserIcon;
 		}
 	}
 
 	function getRoleColor(role: string) {
 		switch (role) {
-			case 'admin': return 'destructive';
-			case 'owl': return 'default';
-			case 'guest': return 'secondary';
-			default: return 'outline';
+			case 'admin':
+				return 'destructive';
+			case 'owl':
+				return 'default';
+			case 'guest':
+				return 'secondary';
+			default:
+				return 'outline';
 		}
 	}
 
 	function getUserInitials(name: string | null | undefined): string {
 		if (!name) return '?';
-		return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.slice(0, 2)
+			.join('')
+			.toUpperCase();
 	}
 </script>
 
@@ -40,9 +52,7 @@
 	</Card.Header>
 	<Card.Content>
 		{#if users.length === 0}
-			<div class="text-center py-8 text-muted-foreground">
-				No recent registrations
-			</div>
+			<div class="text-center py-8 text-muted-foreground">No recent registrations</div>
 		{:else}
 			<div class="space-y-6">
 				{#each users as user (user.id)}
@@ -84,4 +94,4 @@
 			</div>
 		{/if}
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

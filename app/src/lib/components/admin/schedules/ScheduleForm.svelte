@@ -17,11 +17,11 @@
 	import { createDeleteScheduleMutation } from '$lib/queries/admin/schedules/deleteScheduleMutation';
 	import { parseYyyyMmDdToJsDate } from '$lib/utils/date';
 
-	let { 
+	let {
 		schedule,
 		onSuccess,
-		onCancel 
-	}: { 
+		onCancel
+	}: {
 		schedule?: ScheduleData | null;
 		onSuccess?: () => void;
 		onCancel?: () => void;
@@ -159,12 +159,7 @@
 	<form onsubmit={handleSubmit} id="scheduleFormInternal" class="space-y-6">
 		<div>
 			<Label for="name">Name</Label>
-			<Input
-				id="name"
-				type="text"
-				bind:value={formData.name}
-				disabled={$saveMutation.isPending}
-			/>
+			<Input id="name" type="text" bind:value={formData.name} disabled={$saveMutation.isPending} />
 			{#if zodErrors.name}<p class="text-sm text-destructive mt-1">
 					{zodErrors.name}
 				</p>{/if}
@@ -203,7 +198,7 @@
 				</p>{/if}
 		</div>
 	</form>
-	
+
 	<div class="flex justify-between pt-4 border-t">
 		<div>
 			{#if schedule?.schedule_id}

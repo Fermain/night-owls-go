@@ -12,7 +12,7 @@
 	// State
 	let selectedShift = $state<AdminShiftSlot | null>(null);
 	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
-	
+
 	// Schedule dialog state
 	let showScheduleDialog = $state(false);
 	let selectedScheduleForEdit = $state<Schedule | null>(null);
@@ -94,16 +94,13 @@
 				</div>
 			{:else}
 				<!-- Shift Booking Form Component -->
-				<ShiftBookingForm 
-					{selectedShift} 
-					onBookingSuccess={handleBookingSuccess}
-				/>
+				<ShiftBookingForm {selectedShift} onBookingSuccess={handleBookingSuccess} />
 			{/if}
 		</div>
 	</div>
 {:else}
 	<!-- Dashboard View using refactored component -->
-	<ShiftsDashboard 
+	<ShiftsDashboard
 		isLoading={$dashboardShiftsQuery.isLoading}
 		isError={$dashboardShiftsQuery.isError}
 		error={$dashboardShiftsQuery.error || undefined}

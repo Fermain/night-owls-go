@@ -13,13 +13,17 @@
 	} satisfies Chart.ChartConfig;
 
 	// Transform data for the pie chart
-	const chartData = $derived(metrics.roleDistribution.map(item => ({
-		role: item.role.toLowerCase(),
-		count: item.count,
-		percentage: item.percentage,
-		label: item.role,
-		fill: `var(--color-chart-${item.role === 'Admin' ? '1' : item.role === 'Owl' ? '2' : '3'})`
-	})).filter(item => item.count > 0));
+	const chartData = $derived(
+		metrics.roleDistribution
+			.map((item) => ({
+				role: item.role.toLowerCase(),
+				count: item.count,
+				percentage: item.percentage,
+				label: item.role,
+				fill: `var(--color-chart-${item.role === 'Admin' ? '1' : item.role === 'Owl' ? '2' : '3'})`
+			}))
+			.filter((item) => item.count > 0)
+	);
 </script>
 
 <Card.Root class="flex flex-col">
@@ -29,10 +33,7 @@
 	</Card.Header>
 	<Card.Content class="flex-1 pb-4">
 		<Chart.Container config={chartConfig} class="mx-auto aspect-square max-h-72">
-			<PieChart 
-				data={chartData} 
-				value="count"
-			/>
+			<PieChart data={chartData} value="count" />
 		</Chart.Container>
 	</Card.Content>
 	<Card.Footer class="flex-col gap-3 text-sm pt-4">
@@ -43,11 +44,17 @@
 			{#each metrics.roleDistribution as role}
 				{#if role.count > 0}
 					<span class="inline-flex items-center gap-2 mr-6 mb-2">
-						<div class="w-3 h-3 rounded-full {role.role === 'Admin' ? 'bg-chart-1' : role.role === 'Owl' ? 'bg-chart-2' : 'bg-chart-3'}"></div>
+						<div
+							class="w-3 h-3 rounded-full {role.role === 'Admin'
+								? 'bg-chart-1'
+								: role.role === 'Owl'
+									? 'bg-chart-2'
+									: 'bg-chart-3'}"
+						></div>
 						{role.role}: {role.count} ({role.percentage}%)
 					</span>
 				{/if}
 			{/each}
 		</div>
 	</Card.Footer>
-</Card.Root> 
+</Card.Root>

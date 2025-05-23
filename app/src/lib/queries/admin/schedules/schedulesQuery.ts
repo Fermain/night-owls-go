@@ -10,4 +10,4 @@ export function createSchedulesQuery() {
 		gcTime: 1000 * 60 * 10, // 10 minutes
 		retry: 2
 	});
-} 
+}

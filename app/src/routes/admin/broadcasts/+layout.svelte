@@ -23,7 +23,7 @@
 			queryKey: ['recentBroadcasts'],
 			queryFn: async () => {
 				// Simulate API call
-				await new Promise(resolve => setTimeout(resolve, 500));
+				await new Promise((resolve) => setTimeout(resolve, 500));
 				return [
 					{
 						id: 1,
@@ -58,7 +58,7 @@
 		const date = new Date(dateString);
 		const now = new Date();
 		const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-		
+
 		if (diffInHours < 1) return 'Just now';
 		if (diffInHours < 24) return `${diffInHours}h ago`;
 		if (diffInHours < 48) return 'Yesterday';
@@ -69,11 +69,13 @@
 	const filteredBroadcasts = $derived.by(() => {
 		const broadcasts = $recentBroadcastsQuery.data ?? [];
 		if (!searchTerm) return broadcasts;
-		
-		return broadcasts.filter(broadcast => 
-			broadcast.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(audienceOptions.find(opt => opt.value === broadcast.audience)?.label || '')
-				.toLowerCase().includes(searchTerm.toLowerCase())
+
+		return broadcasts.filter(
+			(broadcast) =>
+				broadcast.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				(audienceOptions.find((opt) => opt.value === broadcast.audience)?.label || '')
+					.toLowerCase()
+					.includes(searchTerm.toLowerCase())
 		);
 	});
 </script>
@@ -135,7 +137,8 @@
 									{/if}
 								</div>
 								<div class="text-xs text-muted-foreground">
-									{audienceOptions.find(opt => opt.value === broadcast.audience)?.label ?? 'Unknown'}
+									{audienceOptions.find((opt) => opt.value === broadcast.audience)?.label ??
+										'Unknown'}
 								</div>
 							</div>
 						</div>
@@ -148,4 +151,4 @@
 
 <SidebarPage listContent={broadcastsListContent} title="Broadcasts" bind:searchTerm>
 	{@render children()}
-</SidebarPage> 
+</SidebarPage>

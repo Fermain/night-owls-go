@@ -44,6 +44,19 @@ type PushSubscription struct {
 	CreatedAt sql.NullTime   `json:"created_at"`
 }
 
+type RecurringAssignment struct {
+	RecurringAssignmentID int64          `json:"recurring_assignment_id"`
+	UserID                int64          `json:"user_id"`
+	BuddyName             sql.NullString `json:"buddy_name"`
+	DayOfWeek             int64          `json:"day_of_week"`
+	ScheduleID            int64          `json:"schedule_id"`
+	TimeSlot              string         `json:"time_slot"`
+	Description           sql.NullString `json:"description"`
+	IsActive              bool           `json:"is_active"`
+	CreatedAt             sql.NullTime   `json:"created_at"`
+	UpdatedAt             sql.NullTime   `json:"updated_at"`
+}
+
 type Report struct {
 	ReportID  int64          `json:"report_id"`
 	BookingID int64          `json:"booking_id"`

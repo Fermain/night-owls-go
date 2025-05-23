@@ -97,17 +97,14 @@ export class SchedulesApiService {
 	/**
 	 * Get all shift slots across schedules with optional date filtering
 	 */
-	static async getAllSlots(params?: {
-		from?: string;
-		to?: string;
-	}): Promise<AdminShiftSlot[]> {
+	static async getAllSlots(params?: { from?: string; to?: string }): Promise<AdminShiftSlot[]> {
 		const searchParams = new URLSearchParams();
 		if (params?.from) searchParams.append('from', params.from);
 		if (params?.to) searchParams.append('to', params.to);
 
 		const url = `/api/admin/schedules/all-slots${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 		const response = await authenticatedFetch(url);
-		
+
 		if (!response.ok) {
 			let errorMsg = `HTTP error ${response.status}`;
 			try {
@@ -120,4 +117,4 @@ export class SchedulesApiService {
 		}
 		return response.json();
 	}
-} 
+}

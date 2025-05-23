@@ -19,9 +19,7 @@ async function fetchShiftDetails(shiftStartTime: string): Promise<AdminShiftSlot
 	});
 
 	// Find the exact shift by start time
-	const matchingShift = shifts.find(
-		(shift) => shift.start_time === shiftStartTime
-	);
+	const matchingShift = shifts.find((shift) => shift.start_time === shiftStartTime);
 
 	return matchingShift || null;
 }
@@ -37,4 +35,4 @@ export function createShiftDetailsQuery(shiftStartTime: string | null) {
 		staleTime: 1000 * 60 * 2, // 2 minutes
 		retry: 1
 	});
-} 
+}

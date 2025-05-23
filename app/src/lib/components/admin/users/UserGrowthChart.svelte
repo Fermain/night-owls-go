@@ -29,12 +29,7 @@
 	</Card.Header>
 	<Card.Content>
 		<Chart.Container config={chartConfig} class="h-72">
-			<AreaChart 
-				data={data} 
-				x="period" 
-				y="total"
-				xScale={scaleBand().padding(0.1)}
-			/>
+			<AreaChart {data} x="period" y="total" xScale={scaleBand().padding(0.1)} />
 		</Chart.Container>
 	</Card.Content>
 	<Card.Footer class="pt-4">
@@ -50,4 +45,4 @@
 			</div>
 		</div>
 	</Card.Footer>
-</Card.Root> 
+</Card.Root>

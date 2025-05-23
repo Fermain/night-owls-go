@@ -9,6 +9,7 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -16,26 +17,35 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { AdminShiftSlot } from '$lib/types';
 	import ScheduleEditDialog from '$lib/components/admin/dialogs/ScheduleEditDialog.svelte';
-	import { formatTimeSlot, formatRelativeTime, normalizeDateRange } from '$lib/utils/dateFormatting';
+	import {
+		formatTimeSlot,
+		formatRelativeTime,
+		normalizeDateRange
+	} from '$lib/utils/dateFormatting';
 	import { SchedulesApiService } from '$lib/services/api';
 
-	let searchTerm = $state('');
-
-	// Filters state
+	// Filters state - active by default with both selected
 	let dateRangeStart = $state<string | null>(null);
 	let dateRangeEnd = $state<string | null>(null);
-	let showOnlyAvailable = $state(false);
-	let showOnlyFilled = $state(false);
+	let showFilled = $state(true);
+	let showUnfilled = $state(true);
 
 	// Settings dialog state
 	let showSettingsDialog = $state(false);
 
-	// Define navigation items for the shifts section (only dashboard now)
+	// Define navigation items for the shifts section
 	const shiftsNavItems = [
 		{
-			title: 'Calendar Dashboard',
+			title: 'Dashboard',
 			url: '/admin/shifts',
-			icon: LayoutDashboardIcon
+			icon: LayoutDashboardIcon,
+			description: 'Calendar view'
+		},
+		{
+			title: 'Recurring',
+			url: '/admin/shifts/recurring',
+			icon: CalendarClockIcon,
+			description: 'Recurring assignments'
 		}
 	];
 
@@ -57,7 +67,7 @@
 		const { from: fromDate, to: toDate } = normalizeDateRange(dateRangeStart, dateRangeEnd, 30);
 
 		return createQuery<AdminShiftSlot[], Error>({
-			queryKey: ['adminShiftSlots', fromDate, toDate, showOnlyAvailable, showOnlyFilled],
+			queryKey: ['adminShiftSlots', fromDate, toDate, showFilled, showUnfilled],
 			queryFn: () => fetchShiftSlots(fromDate, toDate),
 			staleTime: 1000 * 60 * 5
 		});
@@ -67,9 +77,9 @@
 	const filteredShifts = $derived.by(() => {
 		const shifts = $shiftsQuery.data ?? [];
 		return shifts.filter((shift) => {
-			if (showOnlyAvailable && shift.is_booked) return false;
-			if (showOnlyFilled && !shift.is_booked) return false;
-			return true;
+			if (showFilled && shift.is_booked) return true;
+			if (showUnfilled && !shift.is_booked) return true;
+			return false;
 		});
 	});
 
@@ -101,8 +111,8 @@
 	function clearFilters() {
 		dateRangeStart = null;
 		dateRangeEnd = null;
-		showOnlyAvailable = false;
-		showOnlyFilled = false;
+		showFilled = true;
+		showUnfilled = true;
 	}
 
 	function openSettingsDialog() {
@@ -118,23 +128,29 @@
 		{#each shiftsNavItems as item (item.title)}
 			<a
 				href={item.url}
-				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={item.url === '/admin/shifts' && $page.url.pathname === '/admin/shifts' && !shiftStartTimeFromUrl}
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-3 whitespace-nowrap border-b p-4 text-sm leading-tight"
+				class:active={item.url === '/admin/shifts' &&
+					$page.url.pathname === '/admin/shifts' &&
+					!shiftStartTimeFromUrl}
 			>
-				{#if item.icon}
-					<item.icon class="h-4 w-4" />
-				{/if}
-				<span>{item.title}</span>
+				<item.icon class="h-4 w-4 shrink-0" />
+				<div class="flex flex-col">
+					<span class="font-medium">{item.title}</span>
+					<span class="text-xs text-muted-foreground">{item.description}</span>
+				</div>
 			</a>
 		{/each}
-		
+
 		<!-- Settings Button -->
 		<button
 			onclick={openSettingsDialog}
-			class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight text-left"
+			class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-3 whitespace-nowrap border-b p-4 text-sm leading-tight text-left"
 		>
-			<SettingsIcon class="h-4 w-4" />
-			<span>Schedule Settings</span>
+			<SettingsIcon class="h-4 w-4 shrink-0" />
+			<div class="flex flex-col">
+				<span class="font-medium">Settings</span>
+				<span class="text-xs text-muted-foreground">Manage schedules</span>
+			</div>
 		</button>
 
 		<!-- Filters Section -->
@@ -146,12 +162,12 @@
 
 			<div class="space-y-3">
 				<div class="flex items-center space-x-2">
-					<Switch id="available-only" bind:checked={showOnlyAvailable} />
-					<Label for="available-only" class="text-sm cursor-pointer">Available only</Label>
+					<Switch id="filled-filter" bind:checked={showFilled} />
+					<Label for="filled-filter" class="text-sm cursor-pointer">Filled</Label>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Switch id="filled-only" bind:checked={showOnlyFilled} />
-					<Label for="filled-only" class="text-sm cursor-pointer">Filled only</Label>
+					<Switch id="unfilled-filter" bind:checked={showUnfilled} />
+					<Label for="unfilled-filter" class="text-sm cursor-pointer">Unfilled</Label>
 				</div>
 			</div>
 
@@ -165,10 +181,10 @@
 				/>
 			</div>
 
-			{#if dateRangeStart || dateRangeEnd || showOnlyAvailable || showOnlyFilled}
+			{#if dateRangeStart || dateRangeEnd || !showFilled || !showUnfilled}
 				<Button variant="outline" size="sm" onclick={clearFilters} class="w-full">
 					<FilterIcon class="h-4 w-4 mr-2" />
-					Clear Filters
+					Reset Filters
 				</Button>
 			{/if}
 		</div>
@@ -203,22 +219,26 @@
 					{#each upcomingShifts as shift (shift.schedule_id + '-' + shift.start_time)}
 						<button
 							class="w-full p-3 mb-2 text-left rounded-lg border transition-colors hover:bg-accent
-								{shiftStartTimeFromUrl === shift.start_time 
-									? 'border-primary bg-primary/10' 
-									: shift.is_booked 
-										? 'border-green-200 bg-green-50 hover:bg-green-100' 
-										: 'border-orange-200 bg-orange-50 hover:bg-orange-100'}"
+								{shiftStartTimeFromUrl === shift.start_time
+								? 'border-primary bg-primary/10'
+								: shift.is_booked
+									? 'border-green-200 bg-green-50 hover:bg-green-100'
+									: 'border-orange-200 bg-orange-50 hover:bg-orange-100'}"
 							onclick={() => selectShift(shift)}
 						>
 							<div class="space-y-1">
 								<div class="flex items-center justify-between">
 									<h3 class="font-medium text-sm truncate">{shift.schedule_name}</h3>
 									{#if shift.is_booked}
-										<span class="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+										<span
+											class="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full"
+										>
 											Filled
 										</span>
 									{:else}
-										<span class="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
+										<span
+											class="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full"
+										>
 											Available
 										</span>
 									{/if}
@@ -243,14 +263,14 @@
 	</div>
 {/snippet}
 
-<SidebarPage listContent={shiftsListContent} bind:searchTerm>
+<SidebarPage listContent={shiftsListContent}>
 	{@render children()}
 </SidebarPage>
 
 <!-- Schedule Settings Dialog -->
-<ScheduleEditDialog 
+<ScheduleEditDialog
 	bind:open={showSettingsDialog}
 	mode="create"
-	onCancel={() => showSettingsDialog = false}
-	onSuccess={() => showSettingsDialog = false}
+	onCancel={() => (showSettingsDialog = false)}
+	onSuccess={() => (showSettingsDialog = false)}
 />

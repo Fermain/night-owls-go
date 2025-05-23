@@ -16,4 +16,4 @@ export const ApiServices = {
 	users: UsersApiService,
 	shifts: ShiftsApiService,
 	reports: ReportsApiService
-} as const; 
+} as const;

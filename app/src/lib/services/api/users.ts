@@ -41,9 +41,7 @@ export class UsersApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to create user' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to create user' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		return response.json();
@@ -69,9 +67,7 @@ export class UsersApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to update user' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to update user' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		return response.json();
@@ -85,9 +81,7 @@ export class UsersApiService {
 			method: 'DELETE'
 		});
 		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to delete user' }));
+			const errorData = await response.json().catch(() => ({ message: 'Failed to delete user' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		// Handle both JSON response and empty response
@@ -101,10 +95,7 @@ export class UsersApiService {
 	/**
 	 * Update user role
 	 */
-	static async updateRole(
-		userId: number,
-		role: string
-	): Promise<{ message: string }> {
+	static async updateRole(userId: number, role: string): Promise<{ message: string }> {
 		const response = await authenticatedFetch(`/api/admin/users/${userId}/role`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -136,4 +127,4 @@ export class UsersApiService {
 		}
 		return response.json();
 	}
-} 
+}

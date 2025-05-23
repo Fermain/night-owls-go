@@ -4,12 +4,16 @@
 	import { BarChart } from 'layerchart';
 	import { scaleBand } from 'd3-scale';
 
-	let { data }: { data: Array<{ 
-		schedule: string; 
-		total: number; 
-		filled: number; 
-		fillRate: number; 
-	}> } = $props();
+	let {
+		data
+	}: {
+		data: Array<{
+			schedule: string;
+			total: number;
+			filled: number;
+			fillRate: number;
+		}>;
+	} = $props();
 
 	const chartConfig = {
 		total: { label: 'Total Shifts', color: 'var(--color-chart-1)' }
@@ -23,12 +27,7 @@
 	</Card.Header>
 	<Card.Content>
 		<Chart.Container config={chartConfig} class="h-64">
-			<BarChart 
-				data={data} 
-				x="schedule" 
-				y="total"
-				xScale={scaleBand().padding(0.25)}
-			/>
+			<BarChart {data} x="schedule" y="total" xScale={scaleBand().padding(0.25)} />
 		</Chart.Container>
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

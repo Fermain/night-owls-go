@@ -1,3 +1,3 @@
 // Shift Queries
 export { createDashboardShiftsQuery } from './dashboardShiftsQuery';
-export { createShiftDetailsQuery } from './shiftDetailsQuery'; 
+export { createShiftDetailsQuery } from './shiftDetailsQuery';

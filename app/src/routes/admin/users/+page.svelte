@@ -28,7 +28,7 @@
 	{/key}
 {:else}
 	<!-- Users Dashboard with Shift Data -->
-	<UsersDashboard 
+	<UsersDashboard
 		{isLoading}
 		{isError}
 		{error}

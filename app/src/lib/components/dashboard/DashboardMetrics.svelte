@@ -5,12 +5,16 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 
-	let { metrics }: { metrics: {
-		totalShifts: number;
-		filledShifts: number;
-		availableShifts: number;
-		fillRate: number;
-	} } = $props();
+	let {
+		metrics
+	}: {
+		metrics: {
+			totalShifts: number;
+			filledShifts: number;
+			availableShifts: number;
+			fillRate: number;
+		};
+	} = $props();
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -53,4 +57,4 @@
 			<TrendingUpIcon class="h-8 w-8 text-blue-600" />
 		</div>
 	</Card.Root>
-</div> 
+</div>

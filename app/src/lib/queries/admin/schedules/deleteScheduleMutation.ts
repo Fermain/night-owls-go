@@ -11,7 +11,10 @@ interface DeleteResponse {
 	message?: string;
 }
 
-export function createDeleteScheduleMutation(onFinally?: () => void, onSuccessCallback?: () => void) {
+export function createDeleteScheduleMutation(
+	onFinally?: () => void,
+	onSuccessCallback?: () => void
+) {
 	const queryClient = useQueryClient();
 	return createMutation<DeleteResponse, Error, number>({
 		mutationFn: async (id) => {
@@ -22,7 +25,7 @@ export function createDeleteScheduleMutation(onFinally?: () => void, onSuccessCa
 			await queryClient.invalidateQueries({ queryKey: ['adminSchedules'] });
 			await queryClient.invalidateQueries({ queryKey: ['adminSchedulesForLayout'] });
 			selectedScheduleForForm.set(undefined);
-			
+
 			// Use callback if provided, otherwise default navigation
 			if (onSuccessCallback) {
 				onSuccessCallback();

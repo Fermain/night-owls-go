@@ -45,7 +45,7 @@ export function formatRelativeTime(timeIso: string): string {
 }
 
 /**
- * Format shift time for reports/displays 
+ * Format shift time for reports/displays
  */
 export function formatShiftTime(dateString: string): string {
 	try {
@@ -94,4 +94,4 @@ export function normalizeDateRange(
 
 	// Default fallback
 	return createDateRange(defaultDays);
-} 
+}

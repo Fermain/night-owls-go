@@ -13,29 +13,41 @@
 	import { userStore, logout } from '$lib/stores/authStore';
 
 	const sidebar = useSidebar();
-	
+
 	// Get current user from auth store
 	const currentUser = $derived($userStore);
 
 	function getUserInitials(name: string | null | undefined): string {
 		if (!name) return '?';
-		return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.slice(0, 2)
+			.join('')
+			.toUpperCase();
 	}
 
 	function getRoleLabel(role: string | null) {
 		switch (role) {
-			case 'admin': return 'Administrator';
-			case 'owl': return 'Night Owl';
-			case 'guest': return 'Guest';
-			default: return 'User';
+			case 'admin':
+				return 'Administrator';
+			case 'owl':
+				return 'Night Owl';
+			case 'guest':
+				return 'Guest';
+			default:
+				return 'User';
 		}
 	}
 
 	function getRoleIcon(role: string | null) {
 		switch (role) {
-			case 'admin': return ShieldIcon;
-			case 'owl': return StarIcon;
-			default: return UserIcon;
+			case 'admin':
+				return ShieldIcon;
+			case 'owl':
+				return StarIcon;
+			default:
+				return UserIcon;
 		}
 	}
 
@@ -44,11 +56,15 @@
 	}
 
 	// Fallback user data if not authenticated
-	const displayUser = $derived(currentUser?.isAuthenticated ? currentUser : {
-		name: 'Guest User',
-		phone: 'Not logged in',
-		role: 'guest'
-	});
+	const displayUser = $derived(
+		currentUser?.isAuthenticated
+			? currentUser
+			: {
+					name: 'Guest User',
+					phone: 'Not logged in',
+					role: 'guest'
+				}
+	);
 </script>
 
 <Sidebar.Menu>
@@ -105,7 +121,7 @@
 					</div>
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
-				
+
 				{#if currentUser?.isAuthenticated}
 					<DropdownMenu.Group>
 						<DropdownMenu.Item class="cursor-pointer">
@@ -118,15 +134,18 @@
 						</DropdownMenu.Item>
 					</DropdownMenu.Group>
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item 
-						class="cursor-pointer text-destructive focus:text-destructive" 
+					<DropdownMenu.Item
+						class="cursor-pointer text-destructive focus:text-destructive"
 						onclick={handleLogout}
 					>
 						<LogOut class="mr-2 h-4 w-4" />
 						Log out
 					</DropdownMenu.Item>
 				{:else}
-					<DropdownMenu.Item class="cursor-pointer" onclick={() => window.location.href = '/login'}>
+					<DropdownMenu.Item
+						class="cursor-pointer"
+						onclick={() => (window.location.href = '/login')}
+					>
 						<UserIcon class="mr-2 h-4 w-4" />
 						Sign In
 					</DropdownMenu.Item>

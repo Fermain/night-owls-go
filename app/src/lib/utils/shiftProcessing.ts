@@ -116,4 +116,4 @@ export function calculateDashboardMetrics(shifts: AdminShiftSlot[]): DashboardMe
 			{ label: 'Available', value: availableShifts }
 		]
 	};
-} 
+}

@@ -10,20 +10,20 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import type { UserData } from '$lib/schemas/user';
 	import type { AdminShiftSlot } from '$lib/types';
-	import { 
-		calculateUserMetrics, 
-		generateUserGrowthData, 
+	import {
+		calculateUserMetrics,
+		generateUserGrowthData,
 		getRecentUsers,
 		calculateUserShiftMetrics
 	} from '$lib/utils/userProcessing';
 
-	let { 
-		isLoading, 
-		isError, 
-		error, 
+	let {
+		isLoading,
+		isError,
+		error,
 		users,
 		shifts
-	}: { 
+	}: {
 		isLoading: boolean;
 		isError: boolean;
 		error?: Error;
@@ -106,7 +106,7 @@
 					<p class="text-muted-foreground mb-8">
 						No users have been registered yet. Create the first user to get started.
 					</p>
-					<a 
+					<a
 						href="/admin/users/new"
 						class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 py-2"
 					>
@@ -135,7 +135,7 @@
 				<div class="xl:col-span-4">
 					<RecentUsers users={recentUsers} />
 				</div>
-				
+
 				<!-- Bottom row: Shift distribution components -->
 				{#if shiftMetrics}
 					<div class="xl:col-span-8">
@@ -153,4 +153,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>
