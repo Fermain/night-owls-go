@@ -12,10 +12,6 @@ const formatDateToLocaleString = (dateString?: string | null): string => {
 	}
 };
 
-interface ScheduleTableMeta extends TableMeta<Schedule> {
-	/* custom meta if any */
-}
-
 export const columns: ColumnDef<Schedule>[] = [
 	{
 		id: 'select',

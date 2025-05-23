@@ -39,7 +39,7 @@
 			<Separator orientation="vertical" class="h-6" />
 			<Breadcrumb.Root>
 				<Breadcrumb.List>
-					{#each breadcrumbs as crumb, i}
+					{#each breadcrumbs as crumb, i (crumb.href)}
 						<Breadcrumb.Item class="hidden md:block">
 							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
 						</Breadcrumb.Item>

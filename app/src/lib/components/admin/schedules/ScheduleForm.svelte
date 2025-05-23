@@ -61,7 +61,7 @@
 		formData.start_date_str = dates.start;
 		formData.end_date_str = dates.end;
 		if (zodErrors.start_date || zodErrors.end_date) {
-			const { start_date, end_date, ...rest } = zodErrors;
+			const { start_date: _start_date, end_date: _end_date, ...rest } = zodErrors;
 			zodErrors = rest;
 		}
 	}
