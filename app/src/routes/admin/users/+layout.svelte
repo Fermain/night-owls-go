@@ -118,14 +118,14 @@
 
 	function toggleSelectAll() {
 		if (!$usersQuery.data) return;
-		
-		const allUserIds = $usersQuery.data.map(u => u.id);
-		const allSelected = allUserIds.every(id => selectedUserIds.has(id));
-		
+
+		const allUserIds = $usersQuery.data.map((u) => u.id);
+		const allSelected = allUserIds.every((id) => selectedUserIds.has(id));
+
 		if (allSelected) {
 			selectedUserIds.clear();
 		} else {
-			allUserIds.forEach(id => selectedUserIds.add(id));
+			allUserIds.forEach((id) => selectedUserIds.add(id));
 		}
 		// Trigger reactivity
 		selectedUserIds = new Set(selectedUserIds);
@@ -143,17 +143,18 @@
 
 	// Computed values for bulk actions
 	const selectedUsers = $derived(
-		$usersQuery.data?.filter(user => selectedUserIds.has(user.id)) || []
+		$usersQuery.data?.filter((user) => selectedUserIds.has(user.id)) || []
 	);
 
 	const allUsersSelected = $derived(
-		Boolean($usersQuery.data?.length && $usersQuery.data?.length > 0 && 
-		$usersQuery.data.every(user => selectedUserIds.has(user.id)))
+		Boolean(
+			$usersQuery.data?.length &&
+				$usersQuery.data?.length > 0 &&
+				$usersQuery.data.every((user) => selectedUserIds.has(user.id))
+		)
 	);
 
-	const someUsersSelected = $derived(
-		selectedUserIds.size > 0 && !allUsersSelected
-	);
+	const someUsersSelected = $derived(selectedUserIds.size > 0 && !allUsersSelected);
 
 	let { children } = $props();
 </script>
@@ -161,7 +162,7 @@
 {#snippet userListContent()}
 	<div class="flex flex-col h-full">
 		{#if bulkMode}
-			<BulkActionsToolbar 
+			<BulkActionsToolbar
 				{selectedUsers}
 				allUsers={$usersQuery.data || []}
 				{onExitBulkMode}
@@ -188,13 +189,8 @@
 		<!-- Bulk Mode Toggle -->
 		<div class="p-3 border-b">
 			<div class="flex items-center space-x-2">
-				<Switch
-					id="bulk-mode"
-					bind:checked={bulkMode}
-				/>
-				<Label for="bulk-mode" class="text-sm font-medium cursor-pointer">
-					Bulk Actions
-				</Label>
+				<Switch id="bulk-mode" bind:checked={bulkMode} />
+				<Label for="bulk-mode" class="text-sm font-medium cursor-pointer">Bulk Actions</Label>
 			</div>
 		</div>
 
@@ -236,7 +232,12 @@
 			{:else if $usersQuery.data && $usersQuery.data.length > 0}
 				{#each $usersQuery.data as user (user.id)}
 					<div
-						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedUserIdInStore === user.id && !bulkMode ? 'active' : ''} {bulkMode && selectedUserIds.has(user.id) ? 'bg-primary/10 border-primary/20' : ''}"
+						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedUserIdInStore ===
+							user.id && !bulkMode
+							? 'active'
+							: ''} {bulkMode && selectedUserIds.has(user.id)
+							? 'bg-primary/10 border-primary/20'
+							: ''}"
 					>
 						{#if bulkMode}
 							<label class="flex items-center gap-2 cursor-pointer w-full">
@@ -294,4 +295,3 @@
 <SidebarPage listContent={userListContent} title="Users" bind:searchTerm>
 	{@render children()}
 </SidebarPage>
-

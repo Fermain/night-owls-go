@@ -61,21 +61,21 @@
 		<div class="flex flex-col gap-4 p-6 md:p-10">
 			<div class="flex justify-center gap-2 md:justify-start">
 				<a href="/" class="flex items-center gap-2 font-medium">
-					<div class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+					<div
+						class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md"
+					>
 						<ShieldIcon class="size-4" />
 					</div>
 					Community Watch
 				</a>
 			</div>
-			
+
 			<div class="flex flex-1 items-center justify-center">
 				<div class="w-full max-w-xs">
 					<div class="flex flex-col gap-6">
 						<!-- Header -->
 						<div class="flex flex-col gap-2 text-center">
-							<h1 class="text-2xl font-semibold tracking-tight">
-								Join the Community Watch
-							</h1>
+							<h1 class="text-2xl font-semibold tracking-tight">Join the Community Watch</h1>
 							<p class="text-sm text-muted-foreground">
 								Help keep our neighborhood safe. Create your account to get started.
 							</p>
@@ -94,7 +94,7 @@
 									required
 								/>
 							</div>
-							
+
 							<div class="flex flex-col gap-2">
 								<Label for="phone">Phone Number</Label>
 								<Input
@@ -105,18 +105,18 @@
 									disabled={isLoading}
 									required
 								/>
-								<p class="text-xs text-muted-foreground">
-									We'll send you a verification code
-								</p>
+								<p class="text-xs text-muted-foreground">We'll send you a verification code</p>
 							</div>
 
-							<Button 
-								type="submit" 
-								class="w-full" 
+							<Button
+								type="submit"
+								class="w-full"
 								disabled={isLoading || !phoneNumber.trim() || !name.trim()}
 							>
 								{#if isLoading}
-									<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+									<div
+										class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+									></div>
 									Creating account...
 								{:else}
 									Create account
@@ -127,7 +127,7 @@
 						<!-- Footer -->
 						<div class="text-center text-sm text-muted-foreground">
 							<p>
-								Already have an account? 
+								Already have an account?
 								<a href="/login" class="underline underline-offset-4 hover:text-primary">
 									Sign in
 								</a>
@@ -135,9 +135,7 @@
 						</div>
 
 						<div class="text-center text-xs text-muted-foreground">
-							<p>
-								By creating an account, you agree to our terms of service and privacy policy.
-							</p>
+							<p>By creating an account, you agree to our terms of service and privacy policy.</p>
 						</div>
 					</div>
 				</div>
@@ -152,8 +150,8 @@
 					<ShieldIcon class="mx-auto mb-6 h-16 w-16 text-primary" />
 					<h2 class="mb-4 text-2xl font-bold">Stronger Together</h2>
 					<p class="text-muted-foreground">
-						Join your neighbors in keeping our community safe. Coordinate patrols, 
-						share important updates, and build lasting connections.
+						Join your neighbors in keeping our community safe. Coordinate patrols, share important
+						updates, and build lasting connections.
 					</p>
 				</div>
 			</div>
@@ -162,8 +160,10 @@
 {:else}
 	<div class="flex items-center justify-center min-h-screen bg-background p-4">
 		<div class="text-center">
-			<div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto"></div>
+			<div
+				class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto"
+			></div>
 			<p class="text-muted-foreground">Redirecting...</p>
 		</div>
 	</div>
-{/if} 
+{/if}

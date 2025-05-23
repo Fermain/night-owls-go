@@ -12,7 +12,7 @@ export class DatabaseHelper {
 				`sqlite3 "${this.dbPath}" "SELECT payload FROM outbox WHERE recipient = '${phone}' AND message_type = 'OTP_VERIFICATION' ORDER BY outbox_id DESC LIMIT 1;"`,
 				{ encoding: 'utf8' }
 			);
-			
+
 			if (!result.trim()) {
 				return null;
 			}
@@ -35,20 +35,23 @@ export class DatabaseHelper {
 				`sqlite3 "${this.dbPath}" "SELECT outbox_id, payload, status FROM outbox WHERE recipient = '${phone}' AND message_type = 'OTP_VERIFICATION' ORDER BY outbox_id DESC;"`,
 				{ encoding: 'utf8' }
 			);
-			
+
 			if (!result.trim()) {
 				return [];
 			}
 
-			return result.trim().split('\n').map(line => {
-				const [outboxId, payload, status] = line.split('|');
-				const parsedPayload = JSON.parse(payload);
-				return {
-					outboxId: parseInt(outboxId),
-					otp: parsedPayload.otp,
-					status
-				};
-			});
+			return result
+				.trim()
+				.split('\n')
+				.map((line) => {
+					const [outboxId, payload, status] = line.split('|');
+					const parsedPayload = JSON.parse(payload);
+					return {
+						outboxId: parseInt(outboxId),
+						otp: parsedPayload.otp,
+						status
+					};
+				});
 		} catch (error) {
 			console.error('Failed to get all OTPs from database:', error);
 			return [];
@@ -61,16 +64,14 @@ export class DatabaseHelper {
 	cleanupTestUser(phone: string): void {
 		try {
 			// Clean up outbox entries
-			execSync(
-				`sqlite3 "${this.dbPath}" "DELETE FROM outbox WHERE recipient = '${phone}';"`,
-				{ encoding: 'utf8' }
-			);
-			
+			execSync(`sqlite3 "${this.dbPath}" "DELETE FROM outbox WHERE recipient = '${phone}';"`, {
+				encoding: 'utf8'
+			});
+
 			// Clean up user and related data
-			execSync(
-				`sqlite3 "${this.dbPath}" "DELETE FROM users WHERE phone = '${phone}';"`,
-				{ encoding: 'utf8' }
-			);
+			execSync(`sqlite3 "${this.dbPath}" "DELETE FROM users WHERE phone = '${phone}';"`, {
+				encoding: 'utf8'
+			});
 
 			// Clean up any bookings for this user (if user_id foreign key exists)
 			execSync(
@@ -101,13 +102,15 @@ export class DatabaseHelper {
 	/**
 	 * Get user details by phone
 	 */
-	getUserByPhone(phone: string): { id: number; phone: string; name: string | null; role: string } | null {
+	getUserByPhone(
+		phone: string
+	): { id: number; phone: string; name: string | null; role: string } | null {
 		try {
 			const result = execSync(
 				`sqlite3 "${this.dbPath}" "SELECT user_id, phone, name, role FROM users WHERE phone = '${phone}' LIMIT 1;"`,
 				{ encoding: 'utf8' }
 			);
-			
+
 			if (!result.trim()) {
 				return null;
 			}
@@ -128,17 +131,20 @@ export class DatabaseHelper {
 	/**
 	 * Force trigger outbox processing (useful when OTP is stuck in pending)
 	 */
-	async waitForOutboxProcessing(phone: string, maxWaitTimeMs: number = 20000): Promise<string | null> {
+	async waitForOutboxProcessing(
+		phone: string,
+		maxWaitTimeMs: number = 20000
+	): Promise<string | null> {
 		const startTime = Date.now();
 		let otp: string | null = null;
 
-		while (!otp && (Date.now() - startTime) < maxWaitTimeMs) {
+		while (!otp && Date.now() - startTime < maxWaitTimeMs) {
 			// Wait a bit
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+
 			// Check for OTP
 			otp = this.getLatestOTP(phone);
-			
+
 			if (!otp) {
 				// Check if there are any pending items that might need processing
 				try {
@@ -146,10 +152,12 @@ export class DatabaseHelper {
 						`sqlite3 "${this.dbPath}" "SELECT COUNT(*) FROM outbox WHERE recipient = '${phone}' AND status = 'pending';"`,
 						{ encoding: 'utf8' }
 					);
-					
+
 					const pendingCount = parseInt(pendingResult.trim());
 					if (pendingCount > 0) {
-						console.log(`Waiting for ${pendingCount} pending outbox items to be processed for ${phone}`);
+						console.log(
+							`Waiting for ${pendingCount} pending outbox items to be processed for ${phone}`
+						);
 					}
 				} catch (error) {
 					console.error('Failed to check pending outbox items:', error);
@@ -158,6 +166,34 @@ export class DatabaseHelper {
 		}
 
 		return otp;
+	}
+
+	/**
+	 * Update user role by user ID
+	 */
+	updateUserRole(userId: number, role: string): void {
+		try {
+			execSync(
+				`sqlite3 "${this.dbPath}" "UPDATE users SET role = '${role}' WHERE user_id = ${userId};"`,
+				{ encoding: 'utf8' }
+			);
+		} catch (error) {
+			console.error('Failed to update user role:', error);
+		}
+	}
+
+	/**
+	 * Create a user directly in the database
+	 */
+	createUser(phone: string, name: string, role: string): void {
+		try {
+			execSync(
+				`sqlite3 "${this.dbPath}" "INSERT INTO users (phone, name, role) VALUES ('${phone}', '${name}', '${role}');"`,
+				{ encoding: 'utf8' }
+			);
+		} catch (error) {
+			console.error('Failed to create user:', error);
+		}
 	}
 }
 
@@ -182,14 +218,14 @@ export class AuthTestHelper {
 export const TEST_CONFIG = {
 	// Maximum time to wait for OTP generation
 	MAX_OTP_WAIT_TIME: 30000,
-	
+
 	// Time between OTP check attempts
 	OTP_CHECK_INTERVAL: 2000,
-	
+
 	// Default test timeout for auth operations
 	AUTH_TIMEOUT: 15000,
-	
+
 	// Default test phone and name
 	DEFAULT_TEST_PHONE: '+1555000E2E',
 	DEFAULT_TEST_NAME: 'E2E Test User'
-} as const; 
+} as const;

@@ -95,8 +95,8 @@
 					{step === 'register' ? 'Welcome to Community Watch' : 'Enter verification code'}
 				</h1>
 				<p class="text-sm text-muted-foreground">
-					{step === 'register' 
-						? 'Enter your phone number to get started' 
+					{step === 'register'
+						? 'Enter your phone number to get started'
 						: `We sent a verification code to ${phoneNumber}`}
 				</p>
 			</div>
@@ -114,7 +114,7 @@
 							disabled={isLoading}
 						/>
 					</div>
-					
+
 					<div class="flex flex-col gap-2">
 						<Label for="phone">Phone Number</Label>
 						<Input
@@ -129,7 +129,9 @@
 
 					<Button type="submit" class="w-full" disabled={isLoading || !phoneNumber.trim()}>
 						{#if isLoading}
-							<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+							<div
+								class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+							></div>
 							Sending code...
 						{:else}
 							Send verification code
@@ -160,9 +162,15 @@
 						</InputOTP.Root>
 					</div>
 
-					<Button type="submit" class="w-full" disabled={isLoading || otpValue.length !== OTP_LENGTH}>
+					<Button
+						type="submit"
+						class="w-full"
+						disabled={isLoading || otpValue.length !== OTP_LENGTH}
+					>
 						{#if isLoading}
-							<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+							<div
+								class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+							></div>
 							Verifying...
 						{:else}
 							Verify & Continue
@@ -189,9 +197,7 @@
 						Didn't receive the code? Check the <code class="font-mono">sms_outbox.log</code> file
 					</p>
 				{:else}
-					<p>
-						By continuing, you agree to our terms of service
-					</p>
+					<p>By continuing, you agree to our terms of service</p>
 				{/if}
 			</div>
 		</div>
@@ -199,7 +205,9 @@
 {:else}
 	<div class="flex items-center justify-center min-h-screen bg-background p-4">
 		<div class="text-center">
-			<div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto"></div>
+			<div
+				class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto"
+			></div>
 			<p class="text-muted-foreground">Redirecting...</p>
 		</div>
 	</div>

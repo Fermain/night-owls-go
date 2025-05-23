@@ -66,7 +66,9 @@
 			to: toDate.toISOString()
 		});
 
-		const response = await authenticatedFetch(`/api/admin/schedules/all-slots?${params.toString()}`);
+		const response = await authenticatedFetch(
+			`/api/admin/schedules/all-slots?${params.toString()}`
+		);
 		if (!response.ok) {
 			let errorMsg = `HTTP error ${response.status}`;
 			try {
