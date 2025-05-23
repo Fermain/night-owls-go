@@ -43,13 +43,15 @@
 				month: 'short',
 				hour: '2-digit',
 				minute: '2-digit',
-				hour12: false
+				hour12: false,
+				timeZone: 'UTC'
 			});
 			
 			const endFormatted = endDate.toLocaleTimeString('en-ZA', {
 				hour: '2-digit',
 				minute: '2-digit',
-				hour12: false
+				hour12: false,
+				timeZone: 'UTC'
 			});
 			
 			return `${startFormatted} - ${endFormatted}`;
