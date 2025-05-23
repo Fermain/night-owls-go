@@ -19,21 +19,37 @@ const initialSession: UserSessionData = {
 // The second parameter is the initial value.
 export const userSession = persisted<UserSessionData>('user-session', initialSession);
 
-// Helper function to log in a user (for dummy flow)
-export function fakeLogin(phone: string, token: string) {
+// Export alias for consistency across components
+export const userStore = userSession;
+
+// Helper function to log in a user
+export function login(userData: Partial<UserSessionData>) {
 	userSession.set({
 		isAuthenticated: true,
-		id: 'dummy-user-id-123', // Dummy user ID
-		name: 'Dummy User', // Dummy name
-		phone: phone, // Phone used for login
-		role: 'admin', // Dummy role
-		token: token // Fake token
+		id: userData.id || null,
+		name: userData.name || null,
+		phone: userData.phone || null,
+		role: userData.role || null,
+		token: userData.token || null
+	});
+}
+
+// Helper function for fake login (backward compatibility)
+export function fakeLogin(phone: string, token: string) {
+	login({
+		id: 'dummy-user-id-123',
+		name: 'Admin User',
+		phone: phone,
+		role: 'admin',
+		token: token
 	});
 }
 
 // Helper function to log out a user
 export function logout() {
 	userSession.set(initialSession);
-	// Optionally, also explicitly remove the token from localStorage if it was set outside the store
-	// localStorage.removeItem('your-separate-token-key'); // If you had one
+	// Navigate to login page
+	if (typeof window !== 'undefined') {
+		window.location.href = '/login';
+	}
 }
