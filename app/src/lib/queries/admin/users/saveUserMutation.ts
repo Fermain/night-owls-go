@@ -30,8 +30,16 @@ export function createSaveUserMutation() {
 			const { payload, userId } = vars;
 			const isEditMode = userId !== undefined;
 
+			console.log('saveUserMutation - Variables:', vars);
+			console.log('saveUserMutation - userId:', userId);
+			console.log('saveUserMutation - isEditMode:', isEditMode);
+
 			const url = isEditMode ? `/api/admin/users/${userId}` : '/api/admin/users';
 			const method = isEditMode ? 'PUT' : 'POST';
+
+			console.log('saveUserMutation - URL:', url);
+			console.log('saveUserMutation - Method:', method);
+			console.log('saveUserMutation - Payload:', payload);
 
 			const response = await authenticatedFetch(url, {
 				method: method,

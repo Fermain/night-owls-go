@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -22,9 +23,9 @@ type createUserRequest struct {
 }
 
 type updateUserRequest struct {
-	Phone string  `json:"phone"`
-	Name  string  `json:"name"`
-	Role  *string `json:"role,omitempty"` // Optional role, assuming we'll add update role logic later
+	Phone string `json:"phone"`
+	Name  string `json:"name"`
+	Role  string `json:"role"` // Make role required since frontend always sends it
 }
 
 // UserAPIResponse defines the structure for user data sent to the frontend.
@@ -110,9 +111,22 @@ func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [get]
 func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminGetUser called", "id_param", idStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+	
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "error", err)
 		return
 	}
@@ -239,12 +253,44 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [put]
 func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminUpdateUser called", "id_param", idStr, "url", r.URL.Path)
+	
+	// Alternative method 1: Parse from URL path directly
+	if idStr == "" {
+		// Extract ID from path manually: /api/admin/users/{id}
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		h.logger.InfoContext(r.Context(), "URL path parts", "parts", pathParts)
+		
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if idStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			h.logger.InfoContext(r.Context(), "Chi route context", "url_params", rctx.URLParams)
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					idStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
+					break
+				}
+			}
+		}
+	}
+	
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "error", err)
 		return
 	}
+	
+	h.logger.InfoContext(r.Context(), "Parsed user ID successfully", "user_id", id)
 
 	var req updateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -284,7 +330,12 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Validate role if provided
-	if req.Role != nil && !isValidRole(*req.Role) {
+	if req.Role == "" {
+		RespondWithError(w, http.StatusBadRequest, "Role is required", h.logger)
+		return
+	}
+	
+	if !isValidRole(req.Role) {
 		RespondWithError(w, http.StatusBadRequest, "Invalid role specified. Must be one of: admin, owl, guest", h.logger)
 		return
 	}
@@ -294,19 +345,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		UserID: id,
 		Phone:  sql.NullString{String: req.Phone, Valid: req.Phone != ""}, // Assume phone is always provided from frontend form
 		Name:   sql.NullString{String: req.Name, Valid: req.Name != ""},   // Will be null if name is empty string
-	}
-
-	if req.Role != nil {
-		updateParams.Role = sql.NullString{String: *req.Role, Valid: true}
-	} else {
-		// If role is not in the request, we don't want to change it.
-		// sqlc.narg('role') in the query handles this by coalescing to the existing value if we pass a non-Valid NullString or if the field is omitted.
-		// However, to be explicit and align with how sqlc generates nullable fields,
-		// we can pass a NullString that is not Valid if the role is not meant to be updated.
-		// Given COALESCE(sqlc.narg('role'), role), if req.Role is nil,
-		// generated Go code for UpdateUserParams will have Role as a sql.NullString.
-		// If we don't set it, its zero value has Valid=false, which sqlc treats as NULL for sqlc.narg.
-		// So, not explicitly setting updateParams.Role when req.Role is nil is correct.
+		Role:   sql.NullString{String: req.Role, Valid: true},             // Role is always provided
 	}
 
 	// Perform the update
@@ -349,9 +388,22 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [delete]
 func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminDeleteUser called", "id_param", idStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+	
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "error", err)
 		return
 	}

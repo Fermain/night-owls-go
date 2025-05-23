@@ -88,6 +88,8 @@
 		}
 
 		const currentUserIdFromProp = user?.id;
+		console.log('UserForm handleSubmit - User object:', user);
+		console.log('UserForm handleSubmit - User ID from prop:', currentUserIdFromProp);
 
 		if (formData.phone === '' || !phoneInputValid) {
 			toast.error('Phone number is invalid or empty.');
@@ -99,6 +101,9 @@
 			name: formData.name?.trim() === '' ? null : formData.name,
 			role: formData.role
 		};
+
+		console.log('UserForm handleSubmit - Payload:', payloadForSubmit);
+		console.log('UserForm handleSubmit - UserId for mutation:', currentUserIdFromProp);
 
 		$mutation.mutate({
 			payload: payloadForSubmit,
