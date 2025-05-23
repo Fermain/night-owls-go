@@ -37,10 +37,14 @@ func NewBookingHandler(bookingService *service.BookingService, logger *slog.Logg
 
 // CreateBookingRequest is the expected JSON for POST /bookings.
 type CreateBookingRequest struct {
-	ScheduleID int64     `json:"schedule_id"`
-	StartTime  time.Time `json:"start_time"` // Expected in RFC3339 format e.g. "2025-05-10T18:00:00Z"
-	BuddyPhone string    `json:"buddy_phone,omitempty"`
-	BuddyName  string    `json:"buddy_name,omitempty"`
+	// Schedule ID for the booking
+	ScheduleID int64 `json:"schedule_id" example:"42" validate:"required"`
+	// Start time for the shift (RFC3339 format)
+	StartTime time.Time `json:"start_time" example:"2025-05-10T18:00:00Z" validate:"required"`
+	// Optional buddy's phone number
+	BuddyPhone string `json:"buddy_phone,omitempty" example:"+1234567890"`
+	// Optional buddy's name
+	BuddyName string `json:"buddy_name,omitempty" example:"Bob"`
 }
 
 // CreateBookingHandler handles POST /bookings
@@ -115,7 +119,8 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 
 // MarkAttendanceRequest is the expected JSON for PATCH /bookings/{id}/attendance
 type MarkAttendanceRequest struct {
-	Attended bool `json:"attended"`
+	// Whether the volunteer attended
+	Attended bool `json:"attended" example:"true" validate:"required"`
 }
 
 // MarkAttendanceHandler handles PATCH /bookings/{id}/attendance
@@ -124,7 +129,7 @@ type MarkAttendanceRequest struct {
 // @Tags bookings
 // @Accept json
 // @Produce json
-// @Param id path int true "Booking ID"
+// @Param id path int true "Booking ID" example(101)
 // @Param request body MarkAttendanceRequest true "Attendance status"
 // @Success 200 {object} BookingResponse "Attendance marked successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request format"

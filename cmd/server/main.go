@@ -23,17 +23,17 @@ import (
 	"night-owls-go/internal/outbox"
 	"night-owls-go/internal/service"
 
-	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3" // Blank import for DSN-based migration driver registration
-	_ "github.com/golang-migrate/migrate/v4/source/file"      // Driver for reading migration files from disk
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/robfig/cron/v3"
 	httpSwagger "github.com/swaggo/http-swagger"
+
 	// Import the generated swagger docs when available
 	// _ "night-owls-go/docs"
+	"github.com/go-fuego/fuego"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // @title Community Watch Shift Scheduler API
@@ -135,27 +135,25 @@ func main() {
 	slog.Info("Cron scheduler started for outbox processing.")
 
 	// --- Setup HTTP Router & Handlers ---
-	router := chi.NewRouter()
-	router.Use(chiMiddleware.RequestID)
-	router.Use(chiMiddleware.RealIP)
-	// Using slog for logging HTTP requests via middleware
-	router.Use(func(next http.Handler) http.Handler {
+	s := fuego.NewServer(
+		fuego.WithAddr(":" + cfg.ServerPort),
+	)
+
+	// Global middlewares
+	fuego.Use(s, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			wrapper := chiMiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			wrapper := w // fuego does not have chi's WrapResponseWriter, so use w directly
 			next.ServeHTTP(wrapper, r)
 			slog.Info("HTTP request",
 				"method", r.Method,
 				"path", r.URL.Path,
-				"status", wrapper.Status(),
+				// No status or bytes_written without wrapper, unless custom ResponseWriter is implemented
 				"latency_ms", time.Since(start).Milliseconds(),
-				"bytes_written", wrapper.BytesWritten(),
 				"remote_addr", r.RemoteAddr,
-				"request_id", chiMiddleware.GetReqID(r.Context()),
 			)
 		})
 	})
-	router.Use(chiMiddleware.Recoverer) // Recovers from panics and returns a 500
 
 	// Initialize handlers
 	authAPIHandler := api.NewAuthHandler(userService, logger)
@@ -167,96 +165,81 @@ func main() {
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 
 	// Public routes
-	router.Post("/auth/register", authAPIHandler.RegisterHandler)
-	router.Post("/auth/verify", authAPIHandler.VerifyHandler)
-	router.Get("/schedules", scheduleAPIHandler.ListSchedulesHandler)             // Optional, as per guide
-	router.Get("/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
-	router.Get("/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
-	router.Post("/api/ping", api.PingHandler(logger)) // New Ping endpoint
+	fuego.PostStd(s, "/auth/register", authAPIHandler.RegisterHandler)
+	fuego.PostStd(s, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
+	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
+	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
 
 	// Protected routes (require auth)
-	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger)) // Apply AuthMiddleware
+	protected := fuego.Group(s, "")
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
+	fuego.PatchStd(protected, "/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
+	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
+	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
 
-		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
-		r.Patch("/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
-		// r.Delete("/bookings/{id}", bookingAPIHandler.CancelBookingHandler) // Optional
+	// Admin routes
+	admin := fuego.Group(s, "/api/admin")
+	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
 
-		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
-		// r.Get("/reports", reportAPIHandler.ListReportsHandler) // Optional
+	// Admin Schedules
+	fuego.GetStd(admin, "/schedules", adminScheduleAPIHandler.AdminListSchedules)
+	fuego.PostStd(admin, "/schedules", adminScheduleAPIHandler.AdminCreateSchedule)
+	fuego.GetStd(admin, "/schedules/all-slots", adminScheduleAPIHandler.AdminListAllShiftSlots)
+	fuego.GetStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminGetSchedule)
+	fuego.PutStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)
+	fuego.DeleteStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)
+	fuego.DeleteStd(admin, "/schedules", adminScheduleAPIHandler.AdminBulkDeleteSchedules)
 
-		// Push notification routes (protected)
-		r.Post("/push/subscribe", pushAPIHandler.SubscribePush)
-		r.Delete("/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
-	})
+	// Admin Users
+	fuego.GetStd(admin, "/users", adminUserAPIHandler.AdminListUsers)
+	fuego.PostStd(admin, "/users", adminUserAPIHandler.AdminCreateUser)
+	fuego.GetStd(admin, "/users/{id}", adminUserAPIHandler.AdminGetUser)
+	fuego.PutStd(admin, "/users/{id}", adminUserAPIHandler.AdminUpdateUser)
+	fuego.DeleteStd(admin, "/users/{id}", adminUserAPIHandler.AdminDeleteUser)
 
-	// Admin routes (currently unprotected for development of CRUD views)
-	router.Route("/api/admin", func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
-
-		// Admin Schedules routes
-		router.Route("/api/admin/schedules", func(r chi.Router) {
-			r.Get("/", adminScheduleAPIHandler.AdminListSchedules)          // GET /api/admin/schedules
-			r.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)         // POST /api/admin/schedules
-			r.Get("/all-slots", adminScheduleAPIHandler.AdminListAllShiftSlots) // GET /api/admin/schedules/all-slots
-			r.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)          // GET /api/admin/schedules/{id}
-			r.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)        // PUT /api/admin/schedules/{id}
-			r.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)    // DELETE /api/admin/schedules/{id}
-			r.Delete("/", adminScheduleAPIHandler.AdminBulkDeleteSchedules) // DELETE /api/admin/schedules
-		})
-
-		// Admin Users routes
-		router.Route("/api/admin/users", func(r chi.Router) {
-			r.Get("/", adminUserAPIHandler.AdminListUsers)           // GET /api/admin/users
-			r.Post("/", adminUserAPIHandler.AdminCreateUser)          // POST /api/admin/users
-			r.Get("/{id}", adminUserAPIHandler.AdminGetUser)          // GET /api/admin/users/{id}
-			r.Put("/{id}", adminUserAPIHandler.AdminUpdateUser)        // PUT /api/admin/users/{id}
-			r.Delete("/{id}", adminUserAPIHandler.AdminDeleteUser)    // DELETE /api/admin/users/{id}
-		})
-
-		// New Admin Bookings routes
-		router.Route("/api/admin/bookings", func(r chi.Router) {
-			r.Post("/assign", adminBookingAPIHandler.AssignUserToShiftHandler) // POST /api/admin/bookings/assign
-		})
-
-		// Add other admin routes here
-	})
+	// Admin Bookings
+	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
 
 	// Swagger documentation
-	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"), // The URL pointing to API definition
+	fuego.GetStd(s, "/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	// --- Serve Static Assets & SPA ---
-	// Get the absolute path to the static directory (app/build)
+	// Static file serving
 	staticPath, err := filepath.Abs(cfg.StaticDir)
 	if err != nil {
-		slog.Error("Failed to get absolute path for static directory", "path", cfg.StaticDir, "error", err)
+		logger.Error("Failed to get absolute path for static directory", "path", cfg.StaticDir, "error", err)
 		os.Exit(1)
 	}
-	slog.Info("Serving static files from", "path", staticPath)
+	logger.Info("Serving static files from", "path", staticPath)
 
-	// The NotFound handler will now attempt to serve static files first.
-	// If a specific file is not found at the requested path, it serves index.html for SPA routing.
-	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		// Construct the path to the potential file in the static directory.
-		// r.URL.Path is already relative to the server root.
+	// Serve index.html for the root path
+	fuego.GetStd(s, "/", func(w http.ResponseWriter, r *http.Request) {
+		indexPage := filepath.Join(staticPath, "index.html")
+		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
+			logger.Error("SPA index.html not found", "path", indexPage)
+			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPage)
+	})
+
+	// Serve static files and fallback to index.html for SPA routes
+	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
 		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
-
-		// Check if the requested path corresponds to an existing file (and not a directory).
 		stat, err := os.Stat(requestedFilePath)
 		if err == nil && !stat.IsDir() {
-			// If the file exists, serve it.
 			http.ServeFile(w, r, requestedFilePath)
 			return
 		}
-
-		// If the file doesn't exist (or it's a directory), serve the main index.html
-		// This allows SPA client-side routing to take over.
 		indexPage := filepath.Join(staticPath, "index.html")
-		// Log if index.html itself is missing, which would be a critical build/config error.
 		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
-			slog.ErrorContext(r.Context(), "SPA index.html not found", "path", indexPage)
+			logger.Error("SPA index.html not found", "path", indexPage)
 			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
 			return
 		}
@@ -270,7 +253,7 @@ func main() {
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.ServerPort,
-		Handler: router,
+		Handler: s.Mux,
 		ReadTimeout: 5 * time.Second, 
         WriteTimeout: 10 * time.Second,
         IdleTimeout:  120 * time.Second,

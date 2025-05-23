@@ -21,7 +21,8 @@
 
 	const OTP_LENGTH = 6;
 
-	async function handleLoginSubmit() {
+	async function handleLoginSubmit(event: SubmitEvent) {
+		event.preventDefault();
 		if (phoneNumber.trim() === '' || otpValue.length !== OTP_LENGTH) {
 			toast.error('Please enter a valid phone number and complete OTP.');
 			return;
@@ -51,7 +52,7 @@
 				<p class="text-muted-foreground">We've sent a one-time password to your phone.</p>
 			</div>
 
-			<form on:submit|preventDefault={handleLoginSubmit} class="space-y-6">
+			<form onsubmit={handleLoginSubmit} class="space-y-6">
 				<div>
 					<Label for="phone">Phone Number</Label>
 					<Input
