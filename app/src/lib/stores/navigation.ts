@@ -25,7 +25,7 @@ const navMain: NavItem[] = [
 	},
 	{
 		title: 'Shifts',
-		url: '/admin/schedules/slots',
+		url: '/admin/shifts',
 		icon: ListChecks
 	},
 	{
