@@ -3,6 +3,7 @@
 	import UsersDashboard from '$lib/components/admin/users/UsersDashboard.svelte';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
 	import { createUsersQuery } from '$lib/queries/admin/users/usersQuery';
+	import { createDashboardShiftsQuery } from '$lib/queries/admin/shifts/dashboardShiftsQuery';
 	import type { UserData } from '$lib/schemas/user';
 
 	// currentUserForForm is derived from the store, which is synced with URL by the layout
@@ -11,8 +12,14 @@
 		currentUserForForm = value;
 	});
 
-	// Create users query for dashboard
+	// Create queries for dashboard
 	const usersQuery = $derived(createUsersQuery());
+	const shiftsQuery = $derived(createDashboardShiftsQuery());
+
+	// Combined loading and error states
+	const isLoading = $derived($usersQuery.isLoading || $shiftsQuery.isLoading);
+	const isError = $derived($usersQuery.isError || $shiftsQuery.isError);
+	const error = $derived($usersQuery.error || $shiftsQuery.error || undefined);
 </script>
 
 {#if currentUserForForm}
@@ -20,11 +27,12 @@
 		<UserForm user={currentUserForForm} />
 	{/key}
 {:else}
-	<!-- Users Dashboard -->
+	<!-- Users Dashboard with Shift Data -->
 	<UsersDashboard 
-		isLoading={$usersQuery.isLoading}
-		isError={$usersQuery.isError}
-		error={$usersQuery.error || undefined}
+		{isLoading}
+		{isError}
+		{error}
 		users={$usersQuery.data}
+		shifts={$shiftsQuery.data}
 	/>
 {/if}

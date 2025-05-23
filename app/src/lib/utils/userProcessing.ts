@@ -1,4 +1,5 @@
 import type { UserData } from '$lib/schemas/user';
+import type { AdminShiftSlot } from '$lib/types';
 
 export interface UserMetrics {
 	totalUsers: number;
@@ -14,6 +15,24 @@ export interface UserGrowthData {
 	period: string;
 	total: number;
 	new: number;
+}
+
+export interface UserShiftMetrics {
+	totalShifts: number;
+	averageShiftsPerUser: number;
+	usersWithShifts: number;
+	usersWithoutShifts: number;
+	shiftDistribution: UserShiftDistribution[];
+	topVolunteers: UserShiftDistribution[];
+	workloadBalance: 'balanced' | 'uneven' | 'concentrated';
+}
+
+export interface UserShiftDistribution {
+	userId: number;
+	userName: string;
+	userRole: string;
+	shiftCount: number;
+	percentage: number;
 }
 
 /**
@@ -64,6 +83,74 @@ export function calculateUserMetrics(users: UserData[]): UserMetrics {
 		recentUsers,
 		activeUsers,
 		roleDistribution
+	};
+}
+
+/**
+ * Calculate shift distribution metrics per user
+ */
+export function calculateUserShiftMetrics(users: UserData[], shifts: AdminShiftSlot[]): UserShiftMetrics {
+	// Count shifts per user
+	const userShiftCounts = new Map<string, { user: UserData; count: number }>();
+	
+	// Initialize all users with 0 shifts (using name as key)
+	users.forEach(user => {
+		const userName = user.name || 'Unnamed User';
+		userShiftCounts.set(userName, { user, count: 0 });
+	});
+
+	// Count actual shifts by matching user names
+	const totalShifts = shifts.filter(shift => shift.is_booked && shift.user_name).length;
+	
+	shifts.forEach(shift => {
+		if (shift.is_booked && shift.user_name) {
+			const current = userShiftCounts.get(shift.user_name);
+			if (current) {
+				current.count += 1;
+			}
+		}
+	});
+
+	// Convert to distribution array
+	const shiftDistribution: UserShiftDistribution[] = Array.from(userShiftCounts.values())
+		.map(({ user, count }) => ({
+			userId: user.id,
+			userName: user.name || 'Unnamed User',
+			userRole: user.role,
+			shiftCount: count,
+			percentage: totalShifts > 0 ? Math.round((count / totalShifts) * 100) : 0
+		}))
+		.sort((a, b) => b.shiftCount - a.shiftCount);
+
+	// Calculate metrics
+	const usersWithShifts = shiftDistribution.filter(u => u.shiftCount > 0).length;
+	const usersWithoutShifts = shiftDistribution.filter(u => u.shiftCount === 0).length;
+	const averageShiftsPerUser = users.length > 0 ? Math.round(totalShifts / users.length * 10) / 10 : 0;
+
+	// Top volunteers (top 5 by shift count)
+	const topVolunteers = shiftDistribution
+		.filter(u => u.shiftCount > 0)
+		.slice(0, 5);
+
+	// Determine workload balance
+	let workloadBalance: 'balanced' | 'uneven' | 'concentrated' = 'balanced';
+	if (topVolunteers.length > 0) {
+		const topUserPercentage = topVolunteers[0]?.percentage || 0;
+		if (topUserPercentage > 40) {
+			workloadBalance = 'concentrated';
+		} else if (topUserPercentage > 25) {
+			workloadBalance = 'uneven';
+		}
+	}
+
+	return {
+		totalShifts,
+		averageShiftsPerUser,
+		usersWithShifts,
+		usersWithoutShifts,
+		shiftDistribution,
+		topVolunteers,
+		workloadBalance
 	};
 }
 

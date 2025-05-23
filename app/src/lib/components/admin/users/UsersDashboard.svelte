@@ -4,30 +4,42 @@
 	import UserRoleChart from './UserRoleChart.svelte';
 	import UserGrowthChart from './UserGrowthChart.svelte';
 	import RecentUsers from './RecentUsers.svelte';
+	import UserShiftMetrics from './UserShiftMetrics.svelte';
+	import TopVolunteers from './TopVolunteers.svelte';
+	import ShiftDistributionChart from './ShiftDistributionChart.svelte';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import type { UserData } from '$lib/schemas/user';
+	import type { AdminShiftSlot } from '$lib/types';
 	import { 
 		calculateUserMetrics, 
 		generateUserGrowthData, 
-		getRecentUsers 
+		getRecentUsers,
+		calculateUserShiftMetrics
 	} from '$lib/utils/userProcessing';
 
 	let { 
 		isLoading, 
 		isError, 
 		error, 
-		users 
+		users,
+		shifts
 	}: { 
 		isLoading: boolean;
 		isError: boolean;
 		error?: Error;
 		users?: UserData[];
+		shifts?: AdminShiftSlot[];
 	} = $props();
 
 	// Calculate metrics and data for charts
 	const userMetrics = $derived.by(() => {
 		if (!users || users.length === 0) return null;
 		return calculateUserMetrics(users);
+	});
+
+	const shiftMetrics = $derived.by(() => {
+		if (!users || !shifts) return null;
+		return calculateUserShiftMetrics(users, shifts);
 	});
 
 	const growthData = $derived.by(() => {
@@ -46,7 +58,7 @@
 		<div class="mb-8">
 			<h1 class="text-3xl font-semibold mb-3">Users Dashboard</h1>
 			<p class="text-muted-foreground text-lg">
-				Overview of user registrations, roles, and activity
+				Overview of user registrations, roles, and shift distribution
 			</p>
 		</div>
 
@@ -61,8 +73,18 @@
 					</div>
 				{/each}
 			</div>
+			<!-- Shift metrics skeleton -->
+			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+				{#each Array(4) as _, i (i)}
+					<div class="p-6 border rounded-lg">
+						<Skeleton class="h-4 w-24 mb-2" />
+						<Skeleton class="h-8 w-16 mb-1" />
+						<Skeleton class="h-3 w-20" />
+					</div>
+				{/each}
+			</div>
 			<div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
-				{#each Array(3) as _, i (i)}
+				{#each Array(4) as _, i (i)}
 					<div class="p-6 border rounded-lg">
 						<Skeleton class="h-6 w-32 mb-4" />
 						<Skeleton class="h-64 w-full" />
@@ -93,14 +115,36 @@
 				</div>
 			</div>
 		{:else if userMetrics}
-			<!-- Dashboard Content -->
+			<!-- User Registration Metrics -->
 			<UserMetrics metrics={userMetrics} />
 
-			<!-- Charts Grid with better spacing -->
-			<div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
-				<UserRoleChart metrics={userMetrics} />
-				<UserGrowthChart data={growthData} />
-				<RecentUsers users={recentUsers} />
+			<!-- Shift Distribution Metrics -->
+			{#if shiftMetrics}
+				<UserShiftMetrics metrics={shiftMetrics} />
+			{/if}
+
+			<!-- Charts Grid with enhanced layout -->
+			<div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+				<!-- Top row: Role chart and Growth chart -->
+				<div class="xl:col-span-4">
+					<UserRoleChart metrics={userMetrics} />
+				</div>
+				<div class="xl:col-span-4">
+					<UserGrowthChart data={growthData} />
+				</div>
+				<div class="xl:col-span-4">
+					<RecentUsers users={recentUsers} />
+				</div>
+				
+				<!-- Bottom row: Shift distribution components -->
+				{#if shiftMetrics}
+					<div class="xl:col-span-8">
+						<ShiftDistributionChart distribution={shiftMetrics.shiftDistribution} />
+					</div>
+					<div class="xl:col-span-4">
+						<TopVolunteers volunteers={shiftMetrics.topVolunteers} />
+					</div>
+				{/if}
 			</div>
 		{:else}
 			<!-- Fallback for unexpected states -->
