@@ -2,7 +2,7 @@ import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import type { E164Number } from 'svelte-tel-input/types';
-import { authenticatedFetch } from '$lib/utils/api';
+import { UsersApiService } from '$lib/services/api';
 
 interface UserPayload {
 	phone: E164Number;
@@ -34,30 +34,20 @@ export function createSaveUserMutation() {
 			console.log('saveUserMutation - userId:', userId);
 			console.log('saveUserMutation - isEditMode:', isEditMode);
 
-			const url = isEditMode ? `/api/admin/users/${userId}` : '/api/admin/users';
-			const method = isEditMode ? 'PUT' : 'POST';
+			// Convert E164Number to string
+			const apiPayload = {
+				name: payload.name || '',
+				phone: payload.phone.toString(),
+				role: payload.role
+			};
 
-			console.log('saveUserMutation - URL:', url);
-			console.log('saveUserMutation - Method:', method);
-			console.log('saveUserMutation - Payload:', payload);
+			console.log('saveUserMutation - API Payload:', apiPayload);
 
-			const response = await authenticatedFetch(url, {
-				method: method,
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(payload)
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({
-					message: `Failed to ${isEditMode ? 'update' : 'create'} user`
-				}));
-				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+			if (isEditMode && userId) {
+				return await UsersApiService.update(userId, apiPayload);
+			} else {
+				return await UsersApiService.create(apiPayload);
 			}
-			// It's good practice to return the parsed JSON response
-			// even if not strictly used by all onSuccess handlers immediately.
-			return response.json() as Promise<UserResponse>;
 		},
 		onSuccess: async (_data, vars) => {
 			const { userId } = vars;

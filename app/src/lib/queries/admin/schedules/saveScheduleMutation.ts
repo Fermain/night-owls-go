@@ -2,7 +2,7 @@ import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
-import { authenticatedFetch } from '$lib/utils/api';
+import { SchedulesApiService } from '$lib/services/api';
 
 // Define more specific types if possible
 interface SchedulePayload {
@@ -23,20 +23,11 @@ export function createSaveScheduleMutation(onSuccessCallback?: () => void) {
 	return createMutation<ScheduleResponse, Error, { payload: SchedulePayload; scheduleId?: number }>(
 		{
 			mutationFn: async ({ payload, scheduleId }) => {
-				const url = scheduleId ? `/api/admin/schedules/${scheduleId}` : '/api/admin/schedules';
-				const method = scheduleId ? 'PUT' : 'POST';
-				const response = await authenticatedFetch(url, {
-					method,
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(payload)
-				});
-				if (!response.ok) {
-					const errorData = await response
-						.json()
-						.catch(() => ({ message: `Failed to ${scheduleId ? 'update' : 'create'} schedule` }));
-					throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+				if (scheduleId) {
+					return await SchedulesApiService.update(scheduleId, payload);
+				} else {
+					return await SchedulesApiService.create(payload);
 				}
-				return response.json() as Promise<ScheduleResponse>;
 			},
 			onSuccess: async (_data, { scheduleId }) => {
 				toast.success(`Schedule ${scheduleId ? 'updated' : 'created'} successfully!`);

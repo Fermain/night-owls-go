@@ -18,6 +18,8 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { AdminShiftSlot } from '$lib/types';
 	import ScheduleEditDialog from '$lib/components/admin/dialogs/ScheduleEditDialog.svelte';
+	import { formatTimeSlot, formatRelativeTime, normalizeDateRange } from '$lib/utils/dateFormatting';
+	import { SchedulesApiService } from '$lib/services/api';
 
 	let searchTerm = $state('');
 
@@ -42,66 +44,10 @@
 	// Get selected shift from URL
 	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
 
-	// Utility Functions
-	function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
-		if (!startTimeIso || !endTimeIso) return 'N/A';
-		try {
-			const startDate = new Date(startTimeIso);
-			const endDate = new Date(endTimeIso);
-
-			const startFormatted = startDate.toLocaleString('en-ZA', {
-				weekday: 'short',
-				day: 'numeric',
-				month: 'short',
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false,
-				timeZone: 'UTC'
-			});
-
-			const endFormatted = endDate.toLocaleTimeString('en-ZA', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false,
-				timeZone: 'UTC'
-			});
-
-			return `${startFormatted} - ${endFormatted}`;
-		} catch {
-			return 'Invalid Date Range';
-		}
-	}
-
-	function formatRelativeTime(timeIso: string): string {
-		if (!timeIso) return 'N/A';
-		try {
-			return formatDistanceToNow(new Date(timeIso), { addSuffix: true });
-		} catch {
-			return 'Invalid Date';
-		}
-	}
-
-	// Data Fetching
+	// Data Fetching using API service
 	async function fetchShiftSlots(from?: string, to?: string) {
 		try {
-			const params = new URLSearchParams();
-			if (from) params.append('from', from);
-			if (to) params.append('to', to);
-
-			const response = await authenticatedFetch(
-				`/api/admin/schedules/all-slots?${params.toString()}`
-			);
-			if (!response.ok) {
-				let errorMsg = `HTTP error ${response.status}`;
-				try {
-					const errorData = await response.json();
-					errorMsg = errorData.message || errorData.error || errorMsg;
-				} catch {
-					/* ignore */
-				}
-				throw new Error(errorMsg);
-			}
-			return response.json() as Promise<AdminShiftSlot[]>;
+			return await SchedulesApiService.getAllSlots({ from, to });
 		} catch (error) {
 			console.error('Error fetching shift slots:', error);
 			throw error;
@@ -110,27 +56,7 @@
 
 	// Main query for shift slots with filtering
 	const shiftsQuery = $derived.by(() => {
-		let fromDate: string | undefined;
-		let toDate: string | undefined;
-
-		if (dateRangeStart && dateRangeEnd) {
-			fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
-			toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
-
-			// Safety check to prevent invalid ranges
-			if (new Date(fromDate) > new Date(toDate)) {
-				const now = new Date();
-				const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-				fromDate = now.toISOString();
-				toDate = futureDate.toISOString();
-			}
-		} else {
-			// Default to next 30 days if no range selected
-			const now = new Date();
-			const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-			fromDate = now.toISOString();
-			toDate = futureDate.toISOString();
-		}
+		const { from: fromDate, to: toDate } = normalizeDateRange(dateRangeStart, dateRangeEnd, 30);
 
 		return createQuery<AdminShiftSlot[], Error>({
 			queryKey: ['adminShiftSlots', fromDate, toDate, showOnlyAvailable, showOnlyFilled],
