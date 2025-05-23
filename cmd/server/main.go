@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -221,6 +222,31 @@ func main() {
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
+
+	// Explicit Swagger routes (must be before SPA fallback)
+	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {
+		handler := httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+			httpSwagger.Layout(httpSwagger.BaseLayout),
+			httpSwagger.PersistAuthorization(true),
+		)
+		handler.ServeHTTP(w, r)
+	})
+	fuego.GetStd(s, "/swagger/", func(w http.ResponseWriter, r *http.Request) {
+		handler := httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+			httpSwagger.Layout(httpSwagger.BaseLayout),
+			httpSwagger.PersistAuthorization(true),
+		)
+		handler.ServeHTTP(w, r)
+	})
+	fuego.GetStd(s, "/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		// Generate OpenAPI spec and serve it
+		spec := s.Engine.OutputOpenAPISpec()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(spec)
+	})
 
 	// --- Serve Static Assets & SPA ---
 	// Static file serving
