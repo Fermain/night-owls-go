@@ -43,7 +43,7 @@
 		try {
 			const startDate = new Date(startTimeIso);
 			const endDate = new Date(endTimeIso);
-			
+
 			const startFormatted = startDate.toLocaleString('en-ZA', {
 				weekday: 'short',
 				day: 'numeric',
@@ -53,14 +53,14 @@
 				hour12: false,
 				timeZone: 'UTC'
 			});
-			
+
 			const endFormatted = endDate.toLocaleTimeString('en-ZA', {
 				hour: '2-digit',
 				minute: '2-digit',
 				hour12: false,
 				timeZone: 'UTC'
 			});
-			
+
 			return `${startFormatted} - ${endFormatted}`;
 		} catch {
 			return 'Invalid Date Range';
@@ -111,7 +111,7 @@
 		if (dateRangeStart && dateRangeEnd) {
 			fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
 			toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
-			
+
 			// Safety check to prevent invalid ranges
 			if (new Date(fromDate) > new Date(toDate)) {
 				const now = new Date();
@@ -155,7 +155,7 @@
 			})
 			.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 			.slice(0, 20); // Limit to 20 items for sidebar
-		
+
 		return upcoming;
 	});
 
