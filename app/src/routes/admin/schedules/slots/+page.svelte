@@ -128,8 +128,8 @@
 		let isLoadingSlots = true;
 		try {
 			const params = new URLSearchParams();
-			if (from) params.append('from', from.toISOString().split('T')[0]);
-			if (to) params.append('to', to.toISOString().split('T')[0]);
+			if (from) params.append('from', from.toISOString());
+			if (to) params.append('to', to.toISOString());
 
 			const response = await authenticatedFetch(
 				`/api/admin/schedules/all-slots?${params.toString()}`
