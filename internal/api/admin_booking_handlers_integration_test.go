@@ -108,17 +108,30 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 		sqlBytes, err := os.ReadFile(migrationFile)
 		require.NoError(t, err, fmt.Sprintf("Failed to read migration file: %s", migrationFile))
 		
-		queries := strings.Split(string(sqlBytes), ";\n") // Split by semicolon and newline
-		for _, query := range queries {
-			trimmedQuery := strings.TrimSpace(query)
-			if trimmedQuery == "" || strings.HasPrefix(trimmedQuery, "--") {
-				continue
-			}
-			_, err = dbConn.Exec(trimmedQuery)
-			require.NoError(t, err, fmt.Sprintf("Failed to execute migration query from %s: %s", migrationFile, trimmedQuery))
-		}
+		// Execute the entire migration file as one statement instead of splitting
+		// This handles inline comments properly
+        sqlContent := strings.TrimSpace(string(sqlBytes))
+        if sqlContent == "" {
+            continue
+        }
+        _, err = dbConn.Exec(sqlContent)
+        if err != nil {
+            // If executing as one statement fails, try splitting by semicolon followed by newline
+            queries := strings.Split(sqlContent, ";\n")
+            for i, query := range queries {
+                trimmedQuery := strings.TrimSpace(query)
+                if trimmedQuery == "" || strings.HasPrefix(trimmedQuery, "--") {
+                    continue
+                }
+                // Add semicolon back if it was the last statement and doesn't end with one
+                if i == len(queries)-1 && !strings.HasSuffix(trimmedQuery, ";") {
+                    trimmedQuery += ";"
+                }
+                _, err = dbConn.Exec(trimmedQuery)
+                require.NoError(t, err, fmt.Sprintf("Failed to execute migration query from %s: %s", migrationFile, trimmedQuery))
+            }
+        }
 	}
-	logger.Info("Manually applied ALL migrations for admin test DB.")
 
 	err = dbConn.Ping()
 	require.NoError(t, err, "Admin app's DB connection failed after manual migrations")
@@ -329,3 +342,101 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 // - Assigning to invalid shift time
 // - Assigning to already booked slot
 // - Invalid request payload
+
+// parseSQLStatements parses SQL content and splits it into individual statements,
+// handling comments and multi-line statements correctly.
+func parseSQLStatements(sqlContent string) []string {
+	var statements []string
+	var currentStatement strings.Builder
+	inSingleLineComment := false
+	inMultiLineComment := false
+	inString := false
+	var stringDelimiter rune
+	
+	lines := strings.Split(sqlContent, "\n")
+	
+	for _, line := range lines {
+		originalLine := line
+		line = strings.TrimSpace(line)
+		
+		// Skip migration directives
+		if strings.HasPrefix(strings.TrimSpace(line), "-- +migrate") {
+			continue
+		}
+		
+		// Handle single-line comments that start the line
+		if strings.HasPrefix(strings.TrimSpace(line), "--") && !inString && !inMultiLineComment {
+			// Skip this line entirely
+			continue
+		}
+		
+		for i, char := range line {
+			if inSingleLineComment {
+				// Single line comments end at line end, will be reset below
+				break
+			} else if inMultiLineComment {
+				if char == '*' && i+1 < len(line) && rune(line[i+1]) == '/' {
+					inMultiLineComment = false
+					// Skip the '/' as well
+					continue
+				}
+				continue
+			} else if inString {
+				currentStatement.WriteRune(char)
+				if char == stringDelimiter {
+					// Check if it's escaped
+					if i == 0 || rune(line[i-1]) != '\\' {
+						inString = false
+					}
+				}
+			} else {
+				// Not in comment or string
+				switch char {
+				case '\'', '"':
+					inString = true
+					stringDelimiter = char
+					currentStatement.WriteRune(char)
+				case '/':
+					if i+1 < len(line) && rune(line[i+1]) == '*' {
+						inMultiLineComment = true
+						// Skip the '*' as well
+						continue
+					} else {
+						currentStatement.WriteRune(char)
+					}
+				case '-':
+					if i+1 < len(line) && rune(line[i+1]) == '-' {
+						inSingleLineComment = true
+						break // Skip rest of line
+					} else {
+						currentStatement.WriteRune(char)
+					}
+				case ';':
+					// End of statement
+					stmt := strings.TrimSpace(currentStatement.String())
+					if stmt != "" {
+						statements = append(statements, stmt)
+					}
+					currentStatement.Reset()
+				default:
+					currentStatement.WriteRune(char)
+				}
+			}
+		}
+		
+		// Reset single-line comment flag at end of line
+		inSingleLineComment = false
+		
+		// Add newline to preserve formatting (except for comment lines)
+		if !strings.HasPrefix(strings.TrimSpace(originalLine), "--") {
+			currentStatement.WriteRune('\n')
+		}
+	}
+	
+	// Handle final statement if no trailing semicolon
+	if finalStmt := strings.TrimSpace(currentStatement.String()); finalStmt != "" {
+		statements = append(statements, finalStmt)
+	}
+	
+	return statements
+}

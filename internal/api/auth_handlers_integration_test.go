@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -78,41 +79,45 @@ func newTestApp(t *testing.T) *testApp {
 	require.NoError(t, err, "Failed to open in-memory DB for app")
 
 	// Manually apply migrations by reading SQL files
-	migrationFiles := []string{
-		"../db/migrations/000001_init_schema.up.sql",
-		"../db/migrations/000002_seed_schedules.up.sql",
-	}
+	_, currentFilePath, _, ok := runtime.Caller(0)
+	require.True(t, ok, "Failed to get current file path")
+	currentDir := filepath.Dir(currentFilePath)
+	migrationsDir := filepath.Join(currentDir, "..", "db", "migrations")
+
+	migrationFiles, err := filepath.Glob(filepath.Join(migrationsDir, "*.up.sql"))
+	require.NoError(t, err, "Failed to glob migration files")
+	require.NotEmpty(t, migrationFiles, "No migration files found")
+	
+	// CRITICAL: Sort migration files to ensure correct order
+	sort.Strings(migrationFiles)
+
+	// Apply migrations in a transaction for safety
+	tx, err := dbConn.Begin()
+	require.NoError(t, err, "Failed to begin migration transaction")
+	defer tx.Rollback()
+
 	for _, migrationFile := range migrationFiles {
-		// Construct path relative to this test file's directory (internal/api)
-		// This assumes the test CWD is the package directory.
-		// For robustness, one might determine project root and build absolute path.
-		// For simplicity, using direct relative path.
-		// Path needs to be from `auth_handlers_integration_test.go` to the migration files.
-		// If test file is in `internal/api`, and migrations in `internal/db/migrations`,
-		// then path is `../db/migrations/filename.sql`.
-
-		// Let's get the directory of the current test file to make relative paths more robust.
-		_, currentFilePath, _, ok := runtime.Caller(0)
-        require.True(t, ok, "Failed to get current file path")
-        currentDir := filepath.Dir(currentFilePath)
-
-		absMigrationPath := filepath.Join(currentDir, migrationFile) 
-		sqlBytes, err := os.ReadFile(absMigrationPath)
-		require.NoError(t, err, fmt.Sprintf("Failed to read migration file: %s (abs: %s)", migrationFile, absMigrationPath))
+		sqlBytes, err := os.ReadFile(migrationFile)
+		require.NoError(t, err, fmt.Sprintf("Failed to read migration file: %s", migrationFile))
 		
-		// Split SQL statements if the file contains multiple (SQLite often processes one by one)
-        // For these simple .up.sql files, they are usually fine to execute as a whole if no GO batch separators
-        // or we can split by ";\n"
-        queries := strings.Split(string(sqlBytes), ";\n")
-        for _, query := range queries {
-            trimmedQuery := strings.TrimSpace(query)
-            if trimmedQuery == "" {
-                continue
-            }
-		    _, err = dbConn.Exec(trimmedQuery)
-		    require.NoError(t, err, fmt.Sprintf("Failed to execute migration query from %s: %s", migrationFile, trimmedQuery))
-        }
+		// Robust SQL parsing - handle comments and multi-line statements
+		sqlContent := string(sqlBytes)
+		queries := parseSQLStatements(sqlContent)
+		
+		for i, query := range queries {
+			trimmedQuery := strings.TrimSpace(query)
+			if trimmedQuery == "" {
+				continue
+			}
+			
+			_, err = tx.Exec(trimmedQuery)
+			require.NoError(t, err, fmt.Sprintf("Failed to execute migration query %d from %s: %s\nQuery: %s", i, migrationFile, err, trimmedQuery))
+		}
+		logger.Info("Applied migration", "file", filepath.Base(migrationFile))
 	}
+	
+	err = tx.Commit()
+	require.NoError(t, err, "Failed to commit migration transaction")
 	logger.Info("Manually applied migrations for test DB.")
 
     err = dbConn.Ping() // Verify connection is still good
