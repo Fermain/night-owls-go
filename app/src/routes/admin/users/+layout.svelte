@@ -191,7 +191,6 @@
 				<Switch
 					id="bulk-mode"
 					bind:checked={bulkMode}
-					onCheckedChange={toggleBulkMode}
 				/>
 				<Label for="bulk-mode" class="text-sm font-medium cursor-pointer">
 					Bulk Actions
@@ -237,10 +236,7 @@
 			{:else if $usersQuery.data && $usersQuery.data.length > 0}
 				{#each $usersQuery.data as user (user.id)}
 					<div
-						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0"
-						class:active={currentSelectedUserIdInStore === user.id && !bulkMode}
-						class:bg-primary/10={bulkMode && selectedUserIds.has(user.id)}
-						class:border-primary/20={bulkMode && selectedUserIds.has(user.id)}
+						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedUserIdInStore === user.id && !bulkMode ? 'active' : ''} {bulkMode && selectedUserIds.has(user.id) ? 'bg-primary/10 border-primary/20' : ''}"
 					>
 						{#if bulkMode}
 							<label class="flex items-center gap-2 cursor-pointer w-full">

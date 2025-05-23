@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Trash2Icon, XIcon, CheckIcon } from 'lucide-svelte';
+	import { Trash2Icon, XIcon } from 'lucide-svelte';
 	import { createBulkDeleteUsersMutation } from '$lib/queries/admin/users/bulkDeleteUsersMutation';
 	import type { UserData } from '$lib/schemas/user';
 
@@ -52,57 +52,24 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="bg-primary text-primary-foreground px-4 py-3 border-b border-border">
-	<div class="flex items-center justify-between">
-		<div class="flex items-center gap-3">
-			<span class="inline-flex items-center rounded-md bg-primary-foreground text-primary px-2 py-1 text-xs font-medium">
-				{selectedCount} of {totalCount} selected
-			</span>
-			
-			{#if hasSelection}
-				<span class="text-sm opacity-90">
-					{selectedCount} user{selectedCount === 1 ? '' : 's'} selected
-				</span>
-			{:else}
-				<span class="text-sm opacity-90">
-					Select users to perform bulk actions
-				</span>
-			{/if}
-		</div>
+<div class="bg-primary text-primary-foreground border-b border-border">
 
-		<div class="flex items-center gap-2">
-			{#if hasSelection}
+	<!-- Action buttons - stacked for narrow spaces -->
+	<div class="space-y-2">
+		{#if hasSelection}
+			<div class="flex flex-col gap-1">
 				<Button
 					variant="destructive"
 					size="sm"
 					onclick={handleBulkDelete}
 					disabled={$bulkDeleteMutation.isPending}
-					class="bg-destructive hover:bg-destructive/90"
+					class="w-full rounded-none"
 				>
-					<Trash2Icon class="w-4 h-4 mr-2" />
+					<Trash2Icon class="w-3 h-3 mr-1" />
 					Delete {selectedCount} user{selectedCount === 1 ? '' : 's'}
 				</Button>
-
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={onClearSelection}
-					class="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
-				>
-					Clear Selection
-				</Button>
-			{/if}
-
-			<Button
-				variant="ghost"
-				size="sm"
-				onclick={onExitBulkMode}
-				class="text-primary-foreground hover:bg-primary-foreground/10"
-			>
-				<XIcon class="w-4 h-4 mr-2" />
-				Exit Bulk Mode
-			</Button>
-		</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
