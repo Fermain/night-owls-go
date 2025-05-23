@@ -83,6 +83,10 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	// 2. Calculate shift_end
 	shiftEndTime := startTime.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
 
+	// Ensure times are stored in UTC for consistency with availability lookup
+	utcStartTime := startTime.UTC()
+	utcEndTime := shiftEndTime.UTC()
+
 	// 3. Handle buddy logic
 	var buddyUserID sql.NullInt64
 	actualBuddyName := buddyName // Use provided buddyName by default
@@ -109,8 +113,8 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	bookingParams := db.CreateBookingParams{
 		UserID:      userID,
 		ScheduleID:  scheduleID,
-		ShiftStart:  startTime,
-		ShiftEnd:    shiftEndTime,
+		ShiftStart:  utcStartTime,
+		ShiftEnd:    utcEndTime,
 		BuddyUserID: buddyUserID,
 		BuddyName:   actualBuddyName,
 	}

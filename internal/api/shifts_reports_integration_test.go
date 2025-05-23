@@ -158,13 +158,17 @@ func TestShiftsAvailable_FilteringAndLimits(t *testing.T) {
 	var slotsNov []service.AvailableShiftSlot
 	err := json.Unmarshal(rr.Body.Bytes(), &slotsNov)
 	require.NoError(t, err)
-	// Expect 6 slots: Nov 4 (00,02), Nov 9 (00,02), Nov 10 (00,02)
-	assert.Len(t, slotsNov, 6, "Expected 6 slots for Nov 4-10 range (Mon Nov 4 @ 00,02; Sat Nov 9 @ 00,02; Sun Nov 10 @ 00,02)")
+	// Expect 6 slots: Nov 4 (02:00 only, since 00:00 is before query window), Nov 9 (00,02), Nov 10 (00,02), and Nov 11 at 00:00
+	// Nov 4 00:00 Johannesburg = Nov 3 22:00 UTC, which is before the query window
+	assert.Len(t, slotsNov, 6, "Expected 6 slots for Nov 4-10 range (Nov 4 @ 02:00; Sat Nov 9 @ 00,02; Sun Nov 10 @ 00,02; Nov 11 @ 00:00)")
 	if len(slotsNov) >= 2 { // Check first two if at least two exist
 		assert.Equal(t, int64(1), slotsNov[0].ScheduleID) // Summer Schedule ID
-		assert.Equal(t, "2024-11-04T00:00:00Z", slotsNov[0].StartTime.Format(time.RFC3339))
+		// Schedules use Africa/Johannesburg timezone (UTC+2), so times are in +02:00 format
+		// First slot: Nov 4 at 02:00 Johannesburg (since 00:00 is outside query window)
+		assert.Equal(t, "2024-11-04T02:00:00+02:00", slotsNov[0].StartTime.Format(time.RFC3339))
 		assert.Equal(t, int64(1), slotsNov[1].ScheduleID)
-		assert.Equal(t, "2024-11-04T02:00:00Z", slotsNov[1].StartTime.Format(time.RFC3339))
+		// Second slot: Nov 9 at 00:00 Johannesburg
+		assert.Equal(t, "2024-11-09T00:00:00+02:00", slotsNov[1].StartTime.Format(time.RFC3339))
 	}
 
 	// Test Case 2: Query with limit
