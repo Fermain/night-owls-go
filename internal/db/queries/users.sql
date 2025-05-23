@@ -27,6 +27,10 @@ ORDER BY name;
 DELETE FROM users
 WHERE user_id = ?;
 
+-- name: AdminBulkDeleteUsers :exec
+DELETE FROM users
+WHERE user_id IN (sqlc.slice('user_ids'));
+
 -- name: UpdateUser :one
 UPDATE users
 SET

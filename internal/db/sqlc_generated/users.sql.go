@@ -8,7 +8,28 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
+
+const adminBulkDeleteUsers = `-- name: AdminBulkDeleteUsers :exec
+DELETE FROM users
+WHERE user_id IN (/*SLICE:user_ids*/?)
+`
+
+func (q *Queries) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error {
+	query := adminBulkDeleteUsers
+	var queryParams []interface{}
+	if len(userIds) > 0 {
+		for _, v := range userIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:user_ids*/?", strings.Repeat(",?", len(userIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:user_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (

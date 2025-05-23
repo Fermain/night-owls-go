@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -377,6 +378,52 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"}, h.logger)
+}
+
+// AdminBulkDeleteUsers handles requests to bulk delete users.
+// @Summary Bulk delete users (Admin)
+// @Description Delete multiple users by their IDs. Requires admin authentication.
+// @Tags admin/users
+// @Accept json
+// @Produce json
+// @Param request body object{user_ids=[]int64} true "List of user IDs to delete"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} ErrorResponse "Invalid request or no user IDs provided"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/admin/users/bulk-delete [post]
+func (h *AdminUserHandler) AdminBulkDeleteUsers(w http.ResponseWriter, r *http.Request) {
+	type BulkDeleteRequest struct {
+		UserIDs []int64 `json:"user_ids"`
+	}
+	var req BulkDeleteRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err)
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		RespondWithError(w, http.StatusBadRequest, "No user IDs provided for deletion", h.logger)
+		return
+	}
+
+	// Optional: Add a reasonable limit to prevent deletion of too many users at once
+	if len(req.UserIDs) > 100 {
+		RespondWithError(w, http.StatusBadRequest, "Too many users selected for bulk deletion (max 100)", h.logger)
+		return
+	}
+
+	err := h.db.AdminBulkDeleteUsers(r.Context(), req.UserIDs)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Error bulk deleting users", "error", err, "user_ids", req.UserIDs)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete users", h.logger)
+		return
+	}
+
+	h.logger.InfoContext(r.Context(), "Successfully bulk deleted users", "count", len(req.UserIDs), "user_ids", req.UserIDs)
+	RespondWithJSON(w, http.StatusOK, map[string]string{
+		"message": fmt.Sprintf("Successfully deleted %d users", len(req.UserIDs)),
+	}, h.logger)
 }
 
 // Helper function to validate role
