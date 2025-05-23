@@ -29,7 +29,8 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	// Import the generated swagger docs when available
-	// _ "night-owls-go/docs"
+	_ "night-owls-go/docs/swagger"
+
 	"github.com/go-fuego/fuego"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -137,6 +138,23 @@ func main() {
 	// --- Setup HTTP Router & Handlers ---
 	s := fuego.NewServer(
 		fuego.WithAddr(":" + cfg.ServerPort),
+		fuego.WithEngineOptions(
+			fuego.WithOpenAPIConfig(fuego.OpenAPIConfig{
+				UIHandler: func(specURL string) http.Handler {
+					return httpSwagger.Handler(
+						httpSwagger.URL(specURL),
+						httpSwagger.Layout(httpSwagger.BaseLayout),
+						httpSwagger.PersistAuthorization(true),
+					)
+				},
+				SwaggerURL:       "/swagger",
+				SpecURL:          "/swagger/doc.json",
+				JSONFilePath:     "openapi.json",
+				Disabled:         false,
+				DisableSwaggerUI: false,
+				DisableMessages:  false,
+			}),
+		),
 	)
 
 	// Global middlewares
@@ -203,11 +221,6 @@ func main() {
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
-
-	// Swagger documentation
-	fuego.GetStd(s, "/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
 
 	// --- Serve Static Assets & SPA ---
 	// Static file serving
