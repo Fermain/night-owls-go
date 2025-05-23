@@ -78,6 +78,15 @@ func (m *MockBookingQuerier) CreateReport(ctx context.Context, arg db.CreateRepo
 func (m *MockBookingQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockBookingQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) { panic("not implemented") }
 func (m *MockBookingQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) { panic("not implemented") }
+func (m *MockBookingQuerier) AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error { panic("not implemented") }
+func (m *MockBookingQuerier) DeleteSchedule(ctx context.Context, scheduleID int64) error { panic("not implemented") }
+func (m *MockBookingQuerier) DeleteSubscription(ctx context.Context, arg db.DeleteSubscriptionParams) error { panic("not implemented") }
+func (m *MockBookingQuerier) DeleteUser(ctx context.Context, userID int64) error { panic("not implemented") }
+func (m *MockBookingQuerier) GetSubscriptionsByUser(ctx context.Context, userID int64) ([]db.GetSubscriptionsByUserRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListUsers(ctx context.Context, searchTerm interface{}) ([]db.User, error) { panic("not implemented") }
+func (m *MockBookingQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) { panic("not implemented") }
+func (m *MockBookingQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) { panic("not implemented") }
+func (m *MockBookingQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error { panic("not implemented") }
 
 
 // Re-define newTestLogger and newTestConfig as they are not in a shared test utility package.

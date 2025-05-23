@@ -3,7 +3,6 @@ package service_test
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"io"
 	"log/slog"
 	"testing"
@@ -22,9 +21,6 @@ type MockReportQuerier struct {
 
 func (m *MockReportQuerier) GetBookingByID(ctx context.Context, bookingID int64) (db.Booking, error) {
 	args := m.Called(ctx, bookingID)
-	if args.Error(1) != nil && errors.Is(args.Error(1), sql.ErrNoRows) {
-        return db.Booking{}, args.Error(1) 
-    }
 	return args.Get(0).(db.Booking), args.Error(1)
 }
 
@@ -33,24 +29,44 @@ func (m *MockReportQuerier) CreateReport(ctx context.Context, arg db.CreateRepor
 	return args.Get(0).(db.Report), args.Error(1)
 }
 
-// Stubs for other Querier methods
+func (m *MockReportQuerier) GetReportByBookingID(ctx context.Context, bookingID int64) (db.Report, error) {
+	args := m.Called(ctx, bookingID)
+	return args.Get(0).(db.Report), args.Error(1)
+}
+
+func (m *MockReportQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) {
+	args := m.Called(ctx, userID)
+	get0 := args.Get(0)
+	if get0 == nil {
+		return nil, args.Error(1)
+	}
+	return get0.([]db.Report), args.Error(1)
+}
+
+// Stub methods for other Querier interface methods not used by ReportService
 func (m *MockReportQuerier) CreateUser(ctx context.Context, arg db.CreateUserParams) (db.User, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetUserByPhone(ctx context.Context, phone string) (db.User, error) { panic("not implemented") }
 func (m *MockReportQuerier) CreateOutboxItem(ctx context.Context, arg db.CreateOutboxItemParams) (db.Outbox, error) { panic("not implemented") }
 func (m *MockReportQuerier) CreateBooking(ctx context.Context, arg db.CreateBookingParams) (db.Booking, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetPendingOutboxItems(ctx context.Context, limit int64) ([]db.Outbox, error) { panic("not implemented") }
-func (m *MockReportQuerier) GetReportByBookingID(ctx context.Context, bookingID int64) (db.Report, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetScheduleByID(ctx context.Context, scheduleID int64) (db.Schedule, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetUserByID(ctx context.Context, userID int64) (db.User, error) { panic("not implemented") }
 func (m *MockReportQuerier) ListActiveSchedules(ctx context.Context, arg db.ListActiveSchedulesParams) ([]db.Schedule, error) { panic("not implemented") }
 func (m *MockReportQuerier) ListBookingsByUserID(ctx context.Context, userID int64) ([]db.Booking, error) { panic("not implemented") }
-func (m *MockReportQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) { panic("not implemented") }
 func (m *MockReportQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) { panic("not implemented") }
 func (m *MockReportQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.UpdateOutboxItemStatusParams) (db.Outbox, error) { panic("not implemented") }
 func (m *MockReportQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockReportQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) { panic("not implemented") }
 func (m *MockReportQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) { panic("not implemented") }
-
+func (m *MockReportQuerier) AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error { panic("not implemented") }
+func (m *MockReportQuerier) DeleteSchedule(ctx context.Context, scheduleID int64) error { panic("not implemented") }
+func (m *MockReportQuerier) DeleteSubscription(ctx context.Context, arg db.DeleteSubscriptionParams) error { panic("not implemented") }
+func (m *MockReportQuerier) DeleteUser(ctx context.Context, userID int64) error { panic("not implemented") }
+func (m *MockReportQuerier) GetSubscriptionsByUser(ctx context.Context, userID int64) ([]db.GetSubscriptionsByUserRow, error) { panic("not implemented") }
+func (m *MockReportQuerier) ListUsers(ctx context.Context, searchTerm interface{}) ([]db.User, error) { panic("not implemented") }
+func (m *MockReportQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) { panic("not implemented") }
+func (m *MockReportQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) { panic("not implemented") }
+func (m *MockReportQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error { panic("not implemented") }
 
 func newReportTestLogger() *slog.Logger { 
 	return slog.New(slog.NewTextHandler(io.Discard, nil))

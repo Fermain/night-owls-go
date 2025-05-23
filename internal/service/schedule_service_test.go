@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
 
@@ -41,26 +42,34 @@ func (m *MockScheduleQuerier) GetBookingByScheduleAndStartTime(ctx context.Conte
 
 // Stubs for other Querier methods to satisfy a more general (but unused here) Querier interface if we were to try and make this a full mock.
 // For this specific test file, these are not strictly necessary as ScheduleService only uses the two above.
-func (m *MockScheduleQuerier) CreateUser(ctx context.Context, arg db.CreateUserParams) (db.User, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetUserByPhone(ctx context.Context, phone string) (db.User, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) CreateOutboxItem(ctx context.Context, arg db.CreateOutboxItemParams) (db.Outbox, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) CreateBooking(ctx context.Context, arg db.CreateBookingParams) (db.Booking, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetBookingByID(ctx context.Context, bookingID int64) (db.Booking, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetPendingOutboxItems(ctx context.Context, limit int64) ([]db.Outbox, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetReportByBookingID(ctx context.Context, bookingID int64) (db.Report, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetScheduleByID(ctx context.Context, scheduleID int64) (db.Schedule, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) GetUserByID(ctx context.Context, userID int64) (db.User, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) ListBookingsByUserID(ctx context.Context, userID int64) ([]db.Booking, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.UpdateOutboxItemStatusParams) (db.Outbox, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) { panic("not implemented by MockScheduleQuerier") }
-func (m *MockScheduleQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented by MockScheduleQuerier") }
+func (m *MockScheduleQuerier) CreateUser(ctx context.Context, arg db.CreateUserParams) (db.User, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetUserByPhone(ctx context.Context, phone string) (db.User, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) CreateOutboxItem(ctx context.Context, arg db.CreateOutboxItemParams) (db.Outbox, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) CreateBooking(ctx context.Context, arg db.CreateBookingParams) (db.Booking, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetBookingByID(ctx context.Context, bookingID int64) (db.Booking, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetPendingOutboxItems(ctx context.Context, limit int64) ([]db.Outbox, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetReportByBookingID(ctx context.Context, bookingID int64) (db.Report, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetScheduleByID(ctx context.Context, scheduleID int64) (db.Schedule, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetUserByID(ctx context.Context, userID int64) (db.User, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListBookingsByUserID(ctx context.Context, userID int64) ([]db.Booking, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.UpdateOutboxItemStatusParams) (db.Outbox, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) { 
 	args := m.Called(ctx)
 	return args.Get(0).([]db.Schedule), args.Error(1)
 }
-
+func (m *MockScheduleQuerier) AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) DeleteSchedule(ctx context.Context, scheduleID int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) DeleteSubscription(ctx context.Context, arg db.DeleteSubscriptionParams) error { panic("not implemented") }
+func (m *MockScheduleQuerier) DeleteUser(ctx context.Context, userID int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) GetSubscriptionsByUser(ctx context.Context, userID int64) ([]db.GetSubscriptionsByUserRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListUsers(ctx context.Context, searchTerm interface{}) ([]db.User, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error { panic("not implemented") }
 
 // Re-define newTestLogger and newTestConfig if they are not in a shared test utility package.
 // For now, assuming they are not, so re-defining for this test file.
@@ -71,7 +80,8 @@ func newScheduleTestLogger() *slog.Logger { // Renamed to avoid conflict if in s
 func TestScheduleService_GetUpcomingAvailableSlots_NoSchedules(t *testing.T) {
 	mockQuerier := new(MockScheduleQuerier)
 	testLogger := newScheduleTestLogger()
-	scheduleService := service.NewScheduleService(mockQuerier, testLogger)
+	cfg := &config.Config{}
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
 
 	mockQuerier.On("ListAllSchedules", mock.Anything).Return([]db.Schedule{}, nil).Once()
 
@@ -85,7 +95,8 @@ func TestScheduleService_GetUpcomingAvailableSlots_NoSchedules(t *testing.T) {
 func TestScheduleService_GetUpcomingAvailableSlots_SingleScheduleNoBookings(t *testing.T) {
 	mockQuerier := new(MockScheduleQuerier)
 	testLogger := newScheduleTestLogger()
-	scheduleService := service.NewScheduleService(mockQuerier, testLogger)
+	cfg := &config.Config{}
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
 
 	now := time.Now()
 	// Schedule active today, runs every hour at :00
@@ -132,7 +143,8 @@ func TestScheduleService_GetUpcomingAvailableSlots_SingleScheduleNoBookings(t *t
 func TestScheduleService_GetUpcomingAvailableSlots_WithBookedSlot(t *testing.T) {
 	mockQuerier := new(MockScheduleQuerier)
 	testLogger := newScheduleTestLogger()
-	scheduleService := service.NewScheduleService(mockQuerier, testLogger)
+	cfg := &config.Config{}
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
 
 	now := time.Now()
 	schedule1 := db.Schedule{
@@ -183,4 +195,49 @@ func TestScheduleService_GetUpcomingAvailableSlots_WithBookedSlot(t *testing.T) 
 // - Limit parameter working correctly
 // - Error from ListActiveSchedules
 // - Error from GetBookingByScheduleAndStartTime (other than sql.ErrNoRows)
-// - Cron expression parsing error (though service might treat as internal error for existing schedule) 
+// - Cron expression parsing error (though service might treat as internal error for existing schedule)
+
+func TestScheduleService_ListActiveSchedules_Success(t *testing.T) {
+	mockQuerier := new(MockScheduleQuerier)
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := &config.Config{} // Add empty config
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
+
+	mockQuerier.On("ListAllSchedules", mock.Anything).Return([]db.Schedule{}, nil).Once()
+
+	schedules, err := scheduleService.ListAllSchedules(context.Background())
+
+	assert.NoError(t, err)
+	assert.Empty(t, schedules)
+	mockQuerier.AssertExpectations(t)
+}
+
+func TestScheduleService_ListActiveSchedules_DBError(t *testing.T) {
+	mockQuerier := new(MockScheduleQuerier)
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := &config.Config{} // Add empty config
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
+
+	mockQuerier.On("ListAllSchedules", mock.Anything).Return([]db.Schedule{}, errors.New("database error")).Once()
+
+	schedules, err := scheduleService.ListAllSchedules(context.Background())
+
+	assert.Error(t, err)
+	assert.Empty(t, schedules)
+	mockQuerier.AssertExpectations(t)
+}
+
+func TestScheduleService_ListAvailableShifts_Success(t *testing.T) {
+	mockQuerier := new(MockScheduleQuerier)
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := &config.Config{DefaultShiftDuration: 2 * time.Hour} // Add config with DefaultShiftDuration
+	scheduleService := service.NewScheduleService(mockQuerier, testLogger, cfg)
+
+	mockQuerier.On("ListAllSchedules", mock.Anything).Return([]db.Schedule{}, nil).Once()
+
+	slots, err := scheduleService.GetUpcomingAvailableSlots(context.Background(), nil, nil, nil)
+
+	assert.NoError(t, err)
+	assert.Empty(t, slots)
+	mockQuerier.AssertExpectations(t)
+} 

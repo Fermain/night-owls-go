@@ -143,9 +143,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 
 	// Register all relevant handlers, including admin
 	authAPIHandler := api.NewAuthHandler(userService, logger)
-	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
-	reportAPIHandler := api.NewReportHandler(reportService, logger)
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
@@ -243,7 +241,7 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 	defer app.DB.Close()
 
 	adminUser, adminToken := app.createTestUserAndLogin(t, "+15550001001", "Test Admin", "admin")
-	require.Equal(t, "admin", adminUser.Role.String)
+	require.Equal(t, "admin", adminUser.Role)
 
 	targetUserParams := db.CreateUserParams{
 		Phone: "+15550001002",

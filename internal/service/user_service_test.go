@@ -111,6 +111,42 @@ func (m *MockQuerier) ListAllSchedules(ctx context.Context) ([]db.Schedule, erro
 	args := m.Called(ctx)
 	return args.Get(0).([]db.Schedule), args.Error(1)
 }
+func (m *MockQuerier) AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error {
+	args := m.Called(ctx, scheduleIds)
+	return args.Error(0)
+}
+func (m *MockQuerier) DeleteSchedule(ctx context.Context, scheduleID int64) error {
+	args := m.Called(ctx, scheduleID)
+	return args.Error(0)
+}
+func (m *MockQuerier) DeleteSubscription(ctx context.Context, arg db.DeleteSubscriptionParams) error {
+	args := m.Called(ctx, arg)
+	return args.Error(0)
+}
+func (m *MockQuerier) DeleteUser(ctx context.Context, userID int64) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+func (m *MockQuerier) GetSubscriptionsByUser(ctx context.Context, userID int64) ([]db.GetSubscriptionsByUserRow, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]db.GetSubscriptionsByUserRow), args.Error(1)
+}
+func (m *MockQuerier) ListUsers(ctx context.Context, searchTerm interface{}) ([]db.User, error) {
+	args := m.Called(ctx, searchTerm)
+	return args.Get(0).([]db.User), args.Error(1)
+}
+func (m *MockQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).(db.Schedule), args.Error(1)
+}
+func (m *MockQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).(db.User), args.Error(1)
+}
+func (m *MockQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error {
+	args := m.Called(ctx, arg)
+	return args.Error(0)
+}
 
 // Helper to create a test logger that discards output
 func newTestLogger() *slog.Logger {

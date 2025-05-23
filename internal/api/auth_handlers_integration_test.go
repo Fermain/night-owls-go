@@ -30,22 +30,10 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/robfig/cron/v3"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock" // For MockMessageSender
+	"github.com/stretchr/testify/assert" // For MockMessageSender
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite" // Pure Go SQLite driver for database/sql
 )
-
-// MockMessageSender for integration tests (local to this package test)
-type MockMessageSender struct {
-	mock.Mock
-}
-
-func (m *MockMessageSender) Send(recipient, messageType, payload string) error {
-	args := m.Called(recipient, messageType, payload)
-	return args.Error(0)
-}
-
 
 // testApp holds all components needed for integration testing the API.
 type testApp struct {
@@ -59,7 +47,6 @@ type testApp struct {
 	BookingService  *service.BookingService
 	ReportService   *service.ReportService
 	OutboxService   *outbox.DispatcherService
-	mockSMSSender *MockMessageSender // Use local mock
 	Cron          *cron.Cron
 }
 
@@ -133,13 +120,12 @@ func newTestApp(t *testing.T) *testApp {
 
 	querier := db.New(dbConn)
 	otpStore := auth.NewInMemoryOTPStore()
-    mockSender := new(MockMessageSender) 
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxService := outbox.NewDispatcherService(querier, mockSender, nil, logger, cfg)
+	outboxService := outbox.NewDispatcherService(querier, nil, nil, logger, cfg)
 
 	cronScheduler := cron.New()
 
@@ -173,7 +159,6 @@ func newTestApp(t *testing.T) *testApp {
 		BookingService:  bookingService,
 		ReportService:   reportService,
 		OutboxService:   outboxService,
-		mockSMSSender: mockSender,
 		Cron: cronScheduler,
 	}
 }
