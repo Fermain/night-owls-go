@@ -87,9 +87,9 @@
 			const response = await authenticatedFetch('/api/admin/recurring-assignments', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
+					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(data),
+				body: JSON.stringify(data)
 			});
 			if (!response.ok) {
 				const errorData = await response.json();
@@ -110,7 +110,7 @@
 	const deleteRecurringAssignmentMutation = createMutation({
 		mutationFn: async (id: number) => {
 			const response = await authenticatedFetch(`/api/admin/recurring-assignments/${id}`, {
-				method: 'DELETE',
+				method: 'DELETE'
 			});
 			if (!response.ok) {
 				const errorData = await response.json();
@@ -126,9 +126,12 @@
 	// Materialize bookings mutation
 	const materializeBookingsMutation = createMutation({
 		mutationFn: async () => {
-			const response = await authenticatedFetch('/api/admin/recurring-assignments?materialize=true', {
-				method: 'GET',
-			});
+			const response = await authenticatedFetch(
+				'/api/admin/recurring-assignments?materialize=true',
+				{
+					method: 'GET'
+				}
+			);
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(errorData.error || 'Failed to materialize bookings');
@@ -263,8 +266,8 @@
 				</p>
 			</div>
 			<div class="flex gap-2">
-				<Button 
-					variant="outline" 
+				<Button
+					variant="outline"
 					onclick={() => $materializeBookingsMutation.mutate()}
 					disabled={$materializeBookingsMutation.isPending}
 				>
@@ -461,14 +464,17 @@
 					</div>
 				{:else if $recurringAssignmentsQuery.isError}
 					<div class="text-center py-8">
-						<p class="text-destructive">Error loading recurring assignments: {$recurringAssignmentsQuery.error.message}</p>
+						<p class="text-destructive">
+							Error loading recurring assignments: {$recurringAssignmentsQuery.error.message}
+						</p>
 					</div>
 				{:else if recurringAssignments.length === 0}
 					<div class="text-center py-8">
 						<CalendarClockIcon class="h-12 w-12 mx-auto text-muted-foreground mb-4" />
 						<p class="text-muted-foreground">No recurring assignments configured</p>
 						<p class="text-sm text-muted-foreground">
-							Found {dayOptions.length} unique days and {timeSlotOptions.length} time slots available for recurring assignments
+							Found {dayOptions.length} unique days and {timeSlotOptions.length} time slots available
+							for recurring assignments
 						</p>
 					</div>
 				{:else}
@@ -478,12 +484,16 @@
 							<div class="border rounded-lg p-4 flex items-center justify-between">
 								<div>
 									<div class="font-medium">
-										{users.find(u => u.id === assignment.user_id)?.name || users.find(u => u.id === assignment.user_id)?.phone || 'Unknown User'}
+										{users.find((u) => u.id === assignment.user_id)?.name ||
+											users.find((u) => u.id === assignment.user_id)?.phone ||
+											'Unknown User'}
 									</div>
 									<div class="text-sm text-muted-foreground">
-										{dayOptions.find(d => d.value === assignment.day_of_week.toString())?.label || 'Unknown Day'} •
+										{dayOptions.find((d) => d.value === assignment.day_of_week.toString())?.label ||
+											'Unknown Day'} •
 										{assignment.time_slot} •
-										{schedules.find(s => s.schedule_id === assignment.schedule_id)?.name || 'Unknown Schedule'}
+										{schedules.find((s) => s.schedule_id === assignment.schedule_id)?.name ||
+											'Unknown Schedule'}
 									</div>
 									{#if assignment.buddy_name && assignment.buddy_name.Valid && assignment.buddy_name.String}
 										<div class="text-sm text-muted-foreground">

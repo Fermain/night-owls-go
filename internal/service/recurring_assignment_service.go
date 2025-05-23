@@ -12,6 +12,12 @@ import (
 	db "night-owls-go/internal/db/sqlc_generated"
 )
 
+// Error constants for recurring assignment operations
+var (
+	ErrRecurringAssignmentNotFound      = errors.New("recurring assignment not found")
+	ErrRecurringAssignmentInternalError = errors.New("internal error in recurring assignment service")
+)
+
 // RecurringAssignmentService handles logic related to recurring shift assignments.
 type RecurringAssignmentService struct {
 	querier db.Querier
@@ -35,10 +41,10 @@ func (s *RecurringAssignmentService) CreateRecurringAssignment(ctx context.Conte
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "User not found for recurring assignment", "user_id", params.UserID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to validate user for recurring assignment", "user_id", params.UserID, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	// Validate the schedule exists
@@ -46,16 +52,16 @@ func (s *RecurringAssignmentService) CreateRecurringAssignment(ctx context.Conte
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "Schedule not found for recurring assignment", "schedule_id", params.ScheduleID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to validate schedule for recurring assignment", "schedule_id", params.ScheduleID, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	assignment, err := s.querier.CreateRecurringAssignment(ctx, params)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create recurring assignment", "params", params, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	s.logger.InfoContext(ctx, "Recurring assignment created", "assignment_id", assignment.RecurringAssignmentID, "user_id", assignment.UserID)
@@ -68,10 +74,10 @@ func (s *RecurringAssignmentService) GetRecurringAssignmentByID(ctx context.Cont
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "Recurring assignment not found", "assignment_id", assignmentID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to get recurring assignment by ID", "assignment_id", assignmentID, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 	return assignment, nil
 }
@@ -81,7 +87,7 @@ func (s *RecurringAssignmentService) ListRecurringAssignments(ctx context.Contex
 	assignments, err := s.querier.ListRecurringAssignments(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list recurring assignments", "error", err)
-		return nil, ErrInternalServer
+		return nil, ErrRecurringAssignmentInternalError
 	}
 	return assignments, nil
 }
@@ -91,7 +97,7 @@ func (s *RecurringAssignmentService) ListRecurringAssignmentsByUserID(ctx contex
 	assignments, err := s.querier.ListRecurringAssignmentsByUserID(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list recurring assignments by user ID", "user_id", userID, "error", err)
-		return nil, ErrInternalServer
+		return nil, ErrRecurringAssignmentInternalError
 	}
 	return assignments, nil
 }
@@ -103,10 +109,10 @@ func (s *RecurringAssignmentService) UpdateRecurringAssignment(ctx context.Conte
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "User not found for recurring assignment update", "user_id", params.UserID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to validate user for recurring assignment update", "user_id", params.UserID, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	// Validate the schedule exists
@@ -114,20 +120,20 @@ func (s *RecurringAssignmentService) UpdateRecurringAssignment(ctx context.Conte
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "Schedule not found for recurring assignment update", "schedule_id", params.ScheduleID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to validate schedule for recurring assignment update", "schedule_id", params.ScheduleID, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	assignment, err := s.querier.UpdateRecurringAssignment(ctx, params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "Recurring assignment not found for update", "assignment_id", params.RecurringAssignmentID)
-			return db.RecurringAssignment{}, ErrNotFound
+			return db.RecurringAssignment{}, ErrRecurringAssignmentNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to update recurring assignment", "params", params, "error", err)
-		return db.RecurringAssignment{}, ErrInternalServer
+		return db.RecurringAssignment{}, ErrRecurringAssignmentInternalError
 	}
 
 	s.logger.InfoContext(ctx, "Recurring assignment updated", "assignment_id", assignment.RecurringAssignmentID)
@@ -139,7 +145,7 @@ func (s *RecurringAssignmentService) DeleteRecurringAssignment(ctx context.Conte
 	err := s.querier.DeleteRecurringAssignment(ctx, assignmentID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete recurring assignment", "assignment_id", assignmentID, "error", err)
-		return ErrInternalServer
+		return ErrRecurringAssignmentInternalError
 	}
 
 	s.logger.InfoContext(ctx, "Recurring assignment deleted", "assignment_id", assignmentID)
@@ -155,7 +161,7 @@ func (s *RecurringAssignmentService) GetRecurringAssignmentsByPattern(ctx contex
 	})
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get recurring assignments by pattern", "day_of_week", dayOfWeek, "schedule_id", scheduleID, "time_slot", timeSlot, "error", err)
-		return nil, ErrInternalServer
+		return nil, ErrRecurringAssignmentInternalError
 	}
 	return assignments, nil
 }
