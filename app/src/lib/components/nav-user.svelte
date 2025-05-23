@@ -1,19 +1,43 @@
 <script lang="ts">
-	import BadgeCheck from '@lucide/svelte/icons/badge-check';
-	import Bell from '@lucide/svelte/icons/bell';
+	import UserIcon from '@lucide/svelte/icons/user';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import StarIcon from '@lucide/svelte/icons/star';
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
-	import CreditCard from '@lucide/svelte/icons/credit-card';
 	import LogOut from '@lucide/svelte/icons/log-out';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 
-	let { user }: { user: { name: string; phone: string; avatar: string } } = $props();
-
 	const sidebar = useSidebar();
+	
+	// For now, use a fallback user - this can be connected to real auth later
+	const currentUser = {
+		name: 'Admin User',
+		phone: '+27000000000',
+		role: 'admin'
+	};
+
+	function getUserInitials(name: string | null | undefined): string {
+		if (!name) return '?';
+		return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+	}
+
+	function getRoleLabel(role: string) {
+		switch (role) {
+			case 'admin': return 'Administrator';
+			case 'owl': return 'Night Owl';
+			case 'guest': return 'Guest';
+			default: return role;
+		}
+	}
+
+	function handleLogout() {
+		// For now, just navigate to login
+		window.location.href = '/login';
+	}
 </script>
 
 <Sidebar.Menu>
@@ -27,12 +51,13 @@
 						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
 					>
 						<Avatar.Root class="h-8 w-8 rounded-lg">
-							<Avatar.Image src={user.avatar} alt={user.name} />
-							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
+							<Avatar.Fallback class="rounded-lg text-xs">
+								{getUserInitials(currentUser.name)}
+							</Avatar.Fallback>
 						</Avatar.Root>
 						<div class="grid flex-1 text-left text-sm leading-tight">
-							<span class="truncate font-semibold">{user.name}</span>
-							<span class="truncate text-xs">{user.phone}</span>
+							<span class="truncate font-semibold">{currentUser.name || 'Unnamed User'}</span>
+							<span class="truncate text-xs">{currentUser.phone}</span>
 						</div>
 						<ChevronsUpDown class="ml-auto size-4" />
 					</Sidebar.MenuButton>
@@ -47,40 +72,41 @@
 				<DropdownMenu.Label class="p-0 font-normal">
 					<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 						<Avatar.Root class="h-8 w-8 rounded-lg">
-							<Avatar.Image src={user.avatar} alt={user.name} />
-							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
+							<Avatar.Fallback class="rounded-lg text-xs">
+								{getUserInitials(currentUser.name)}
+							</Avatar.Fallback>
 						</Avatar.Root>
 						<div class="grid flex-1 text-left text-sm leading-tight">
-							<span class="truncate font-semibold">{user.name}</span>
-							<span class="truncate text-xs">{user.phone}</span>
+							<span class="truncate font-semibold">{currentUser.name || 'Unnamed User'}</span>
+							<div class="flex items-center gap-1 mt-1">
+								<span class="text-xs text-muted-foreground">
+									{#if currentUser.role === 'admin'}
+										<ShieldIcon class="h-3 w-3 inline mr-1" />
+									{:else if currentUser.role === 'owl'}
+										<StarIcon class="h-3 w-3 inline mr-1" />
+									{:else}
+										<UserIcon class="h-3 w-3 inline mr-1" />
+									{/if}
+									{getRoleLabel(currentUser.role)}
+								</span>
+							</div>
 						</div>
 					</div>
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item>
-						<Sparkles />
-						Upgrade to Pro
+					<DropdownMenu.Item class="cursor-pointer">
+						<UserIcon class="mr-2 h-4 w-4" />
+						My Profile
+					</DropdownMenu.Item>
+					<DropdownMenu.Item class="cursor-pointer">
+						<SettingsIcon class="mr-2 h-4 w-4" />
+						Settings
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Group>
-					<DropdownMenu.Item>
-						<BadgeCheck />
-						Account
-					</DropdownMenu.Item>
-					<DropdownMenu.Item>
-						<CreditCard />
-						Billing
-					</DropdownMenu.Item>
-					<DropdownMenu.Item>
-						<Bell />
-						Notifications
-					</DropdownMenu.Item>
-				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
-				<DropdownMenu.Item>
-					<LogOut />
+				<DropdownMenu.Item class="cursor-pointer text-destructive focus:text-destructive" onclick={handleLogout}>
+					<LogOut class="mr-2 h-4 w-4" />
 					Log out
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>

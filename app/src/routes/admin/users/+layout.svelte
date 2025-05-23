@@ -15,8 +15,9 @@
 	import { goto } from '$app/navigation';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
 	import type { UserData } from '$lib/schemas/user';
-	import { authenticatedFetch } from '$lib/utils/api';
 	import BulkActionsToolbar from '$lib/components/admin/users/BulkActionsToolbar.svelte';
+	import { UsersApiService } from '$lib/services/api';
+	import { filterUsers } from '$lib/utils/userProcessing';
 
 	let searchTerm = $state('');
 
@@ -34,26 +35,22 @@
 		// "Create User" is now a separate button at the bottom
 	];
 
-	// Function to fetch users
-	const fetchUsers = async (currentSearchTerm: string) => {
-		let url = '/api/admin/users';
-		if (currentSearchTerm) {
-			url += `?search=${encodeURIComponent(currentSearchTerm)}`;
-		}
-		const response = await authenticatedFetch(url);
-		if (!response.ok) {
-			throw new Error('Failed to fetch users');
-		}
-		return response.json() as Promise<UserData[]>;
-	};
-
-	// Create a query for users
+	// Create a query for users using our API service
 	const usersQuery = $derived(
 		createQuery<UserData[], Error, UserData[], [string, string]>({
 			queryKey: ['adminUsers', searchTerm],
-			queryFn: () => fetchUsers(searchTerm)
+			queryFn: () => UsersApiService.getAll(),
+			staleTime: 1000 * 60 * 5, // 5 minutes
+			gcTime: 1000 * 60 * 10, // 10 minutes
+			retry: 2
 		})
 	);
+
+	// Filtered users for display in sidebar
+	const filteredUsers = $derived.by(() => {
+		const users = $usersQuery.data ?? [];
+		return filterUsers(users, searchTerm);
+	});
 
 	// Handle selecting a user from the dynamic list
 	const selectUserForEditing = (user: UserData) => {
@@ -175,9 +172,7 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={page.url.pathname === '/admin/users' &&
-					page.url.searchParams.get('view') === 'dashboard' &&
-					!currentSelectedUserIdInStore}
+				class:active={page.url.pathname === '/admin/users' && !currentSelectedUserIdInStore}
 			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
@@ -195,7 +190,7 @@
 		</div>
 
 		<!-- Select All (in bulk mode) -->
-		{#if bulkMode && $usersQuery.data && $usersQuery.data.length > 0}
+		{#if bulkMode && filteredUsers && filteredUsers.length > 0}
 			<div class="p-3 border-b bg-muted/50">
 				<div class="space-y-2">
 					<label class="flex items-center gap-2 cursor-pointer">
@@ -214,7 +209,7 @@
 					</label>
 					{#if selectedUserIds.size > 0}
 						<div class="text-xs text-muted-foreground pl-6">
-							{selectedUserIds.size} of {$usersQuery.data.length} selected
+							{selectedUserIds.size} of {filteredUsers.length} selected
 						</div>
 					{/if}
 				</div>
@@ -229,8 +224,8 @@
 				<div class="p-4 text-sm text-destructive">
 					Error loading users: {$usersQuery.error.message}
 				</div>
-			{:else if $usersQuery.data && $usersQuery.data.length > 0}
-				{#each $usersQuery.data as user (user.id)}
+			{:else if filteredUsers && filteredUsers.length > 0}
+				{#each filteredUsers as user (user.id)}
 					<div
 						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedUserIdInStore ===
 							user.id && !bulkMode
@@ -273,8 +268,10 @@
 						{/if}
 					</div>
 				{/each}
-			{:else if $usersQuery.data && $usersQuery.data.length === 0}
-				<div class="p-4 text-sm text-muted-foreground">No users found.</div>
+			{:else if $usersQuery.data}
+				<div class="p-4 text-sm text-muted-foreground">
+					{searchTerm ? `No users found matching "${searchTerm}".` : 'No users found.'}
+				</div>
 			{/if}
 		</div>
 

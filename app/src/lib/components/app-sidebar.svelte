@@ -23,14 +23,6 @@
 		searchTerm?: string;
 	} = $props();
 
-	// Placeholder user data, ideally this would come from another store or context
-	const user = {
-		// Define user data here or import from a store
-		name: 'owl',
-		phone: '+2700000000',
-		avatar: '' // Set to empty string to resolve 404 and type error
-	};
-
 	// const sidebar = useSidebar(); // Removed as sidebar variable was not used
 </script>
 
@@ -90,7 +82,7 @@
 		</Sidebar.Content>
 		<Sidebar.Footer>
 			<!-- // This will be a persistant svelte store -->
-			<NavUser {user} />
+			<NavUser />
 		</Sidebar.Footer>
 	</Sidebar.Root>
 
