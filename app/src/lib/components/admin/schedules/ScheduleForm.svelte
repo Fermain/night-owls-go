@@ -17,7 +17,15 @@
 	import { createDeleteScheduleMutation } from '$lib/queries/admin/schedules/deleteScheduleMutation';
 	import { parseYyyyMmDdToJsDate } from '$lib/utils/date';
 
-	let { schedule }: { schedule?: ScheduleData } = $props();
+	let { 
+		schedule,
+		onSuccess,
+		onCancel 
+	}: { 
+		schedule?: ScheduleData;
+		onSuccess?: () => void;
+		onCancel?: () => void;
+	} = $props();
 
 	type FormInputValues = {
 		name: string;
@@ -51,11 +59,28 @@
 		zodErrors = {};
 	});
 
-	const saveMutation = createSaveScheduleMutation();
-
-	const deleteMutation = createDeleteScheduleMutation(() => {
-		showDeleteConfirm = false;
+	const saveMutation = createSaveScheduleMutation(() => {
+		if (onSuccess) {
+			onSuccess();
+		} else {
+			selectedScheduleForForm.set(undefined);
+			goto('/admin/schedules');
+		}
 	});
+
+	const deleteMutation = createDeleteScheduleMutation(
+		() => {
+			showDeleteConfirm = false;
+		},
+		() => {
+			if (onSuccess) {
+				onSuccess();
+			} else {
+				selectedScheduleForForm.set(undefined);
+				goto('/admin/schedules');
+			}
+		}
+	);
 
 	function handleDateStringsChange(dates: { start: string | null; end: string | null }) {
 		formData.start_date_str = dates.start;
@@ -109,8 +134,12 @@
 	}
 
 	function handleCancel() {
-		selectedScheduleForForm.set(undefined);
-		goto('/admin/schedules');
+		if (onCancel) {
+			onCancel();
+		} else {
+			selectedScheduleForForm.set(undefined);
+			goto('/admin/schedules');
+		}
 	}
 
 	const humanizedCron = $derived(cronstrue.toString(schedule?.cron_expr ?? ''));

@@ -18,7 +18,7 @@ interface ScheduleResponse {
 	schedule_id?: number;
 }
 
-export function createSaveScheduleMutation() {
+export function createSaveScheduleMutation(onSuccessCallback?: () => void) {
 	const queryClient = useQueryClient();
 	return createMutation<ScheduleResponse, Error, { payload: SchedulePayload; scheduleId?: number }>(
 		{
@@ -45,7 +45,13 @@ export function createSaveScheduleMutation() {
 				if (scheduleId) {
 					selectedScheduleForForm.set(undefined);
 				}
-				goto('/admin/schedules');
+				
+				// Use callback if provided, otherwise default navigation
+				if (onSuccessCallback) {
+					onSuccessCallback();
+				} else {
+					goto('/admin/schedules');
+				}
 			},
 			onError: (error) => {
 				toast.error(`Save Error: ${error.message}`);

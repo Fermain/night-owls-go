@@ -15,7 +15,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import * as Select from '$lib/components/ui/select';
 	import { authenticatedFetch } from '$lib/utils/api';
-	import type { AdminShiftSlot } from '$lib/types';
+	import type { AdminShiftSlot, Schedule } from '$lib/types';
 	import type { UserData } from '$lib/schemas/user';
 	import { Label } from '$lib/components/ui/label';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -30,6 +30,12 @@
 	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
 	let selectedUserIdForBooking = $state<string | undefined>(undefined);
 	let bookingFormError = $state<string | null>(null);
+	
+	// Schedule dialog state
+	let showScheduleDialog = $state(false);
+	let selectedScheduleForEdit = $state<Schedule | null>(null);
+	let scheduleDialogMode = $state<'create' | 'edit'>('create');
+
 	const queryClient = useQueryClient();
 	let currentDisplayMonth = $state(today(getLocalTimeZone()));
 	let isBookingFormEnabled = $derived(!!selectedShift && !selectedShift.is_booked);
@@ -232,6 +238,20 @@
 		});
 	});
 
+	// Fetch schedules for management section
+	const schedulesQuery = $derived(
+		createQuery<Schedule[], Error>({
+			queryKey: ['adminSchedulesForShifts'],
+			queryFn: async () => {
+				const response = await authenticatedFetch('/api/admin/schedules');
+				if (!response.ok) {
+					throw new Error('Failed to fetch schedules');
+				}
+				return response.json();
+			}
+		})
+	);
+
 	// Chart configurations
 	const chartConfig = {
 		filled: { label: 'Filled', color: 'var(--color-chart-1)' },
@@ -338,6 +358,24 @@
 			start_time: selectedShift.start_time,
 			user_id: userIdToBook
 		});
+	}
+
+	// Schedule management functions
+	function openCreateScheduleDialog() {
+		selectedScheduleForEdit = null;
+		scheduleDialogMode = 'create';
+		showScheduleDialog = true;
+	}
+
+	function openEditScheduleDialog(schedule: Schedule) {
+		selectedScheduleForEdit = schedule;
+		scheduleDialogMode = 'edit';
+		showScheduleDialog = true;
+	}
+
+	function closeScheduleDialog() {
+		showScheduleDialog = false;
+		selectedScheduleForEdit = null;
 	}
 
 	// Effects

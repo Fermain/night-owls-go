@@ -1,6 +1,5 @@
 import { readable } from 'svelte/store';
 import Inbox from '@lucide/svelte/icons/inbox';
-import CalendarRange from '@lucide/svelte/icons/calendar-range';
 import ChartCandlestick from '@lucide/svelte/icons/chart-candlestick';
 import Users from '@lucide/svelte/icons/users';
 import Send from '@lucide/svelte/icons/send';
@@ -19,19 +18,9 @@ const navMain: NavItem[] = [
 		icon: Inbox
 	},
 	{
-		title: 'Schedules',
-		url: '/admin/schedules',
-		icon: CalendarRange
-	},
-	{
 		title: 'Shifts',
 		url: '/admin/shifts',
 		icon: ListChecks
-	},
-	{
-		title: 'Statistics',
-		url: '#',
-		icon: ChartCandlestick
 	},
 	{
 		title: 'Users',

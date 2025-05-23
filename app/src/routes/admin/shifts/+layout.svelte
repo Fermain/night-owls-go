@@ -6,6 +6,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -16,6 +17,7 @@
 	import { formatDistanceToNow } from 'date-fns';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { AdminShiftSlot } from '$lib/types';
+	import ScheduleEditDialog from '$lib/components/admin/dialogs/ScheduleEditDialog.svelte';
 
 	let searchTerm = $state('');
 
@@ -25,7 +27,10 @@
 	let showOnlyAvailable = $state(false);
 	let showOnlyFilled = $state(false);
 
-	// Define navigation items for the shifts section
+	// Settings dialog state
+	let showSettingsDialog = $state(false);
+
+	// Define navigation items for the shifts section (only dashboard now)
 	const shiftsNavItems = [
 		{
 			title: 'Calendar Dashboard',
@@ -176,8 +181,8 @@
 		showOnlyFilled = false;
 	}
 
-	function goToDashboard() {
-		goto('/admin/shifts');
+	function openSettingsDialog() {
+		showSettingsDialog = true;
 	}
 
 	let { children } = $props();
@@ -185,16 +190,12 @@
 
 {#snippet shiftsListContent()}
 	<div class="flex flex-col h-full">
-		<!-- Top navigation (Dashboard) -->
+		<!-- Top navigation -->
 		{#each shiftsNavItems as item (item.title)}
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={$page.url.pathname === '/admin/shifts' && !shiftStartTimeFromUrl}
-				onclick={(event) => {
-					event.preventDefault();
-					goToDashboard();
-				}}
+				class:active={item.url === '/admin/shifts' && $page.url.pathname === '/admin/shifts' && !shiftStartTimeFromUrl}
 			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
@@ -202,6 +203,15 @@
 				<span>{item.title}</span>
 			</a>
 		{/each}
+		
+		<!-- Settings Button -->
+		<button
+			onclick={openSettingsDialog}
+			class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight text-left"
+		>
+			<SettingsIcon class="h-4 w-4" />
+			<span>Schedule Settings</span>
+		</button>
 
 		<!-- Filters Section -->
 		<div class="p-3 border-b space-y-3">
@@ -304,3 +314,9 @@
 <SidebarPage listContent={shiftsListContent} bind:searchTerm>
 	{@render children()}
 </SidebarPage>
+
+<!-- Schedule Settings Dialog -->
+<ScheduleEditDialog 
+	bind:open={showSettingsDialog}
+	mode="create"
+/>
