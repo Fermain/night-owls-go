@@ -22,7 +22,7 @@
 		onSuccess,
 		onCancel 
 	}: { 
-		schedule?: ScheduleData;
+		schedule?: ScheduleData | null;
 		onSuccess?: () => void;
 		onCancel?: () => void;
 	} = $props();
@@ -134,105 +134,105 @@
 	}
 
 	function handleCancel() {
+		selectedScheduleForForm.set(undefined);
 		if (onCancel) {
 			onCancel();
 		} else {
-			selectedScheduleForForm.set(undefined);
 			goto('/admin/schedules');
 		}
 	}
 
-	const humanizedCron = $derived(cronstrue.toString(schedule?.cron_expr ?? ''));
+	const humanizedCron = $derived.by(() => {
+		const cronExpr = schedule?.cron_expr || formData.cron_expr;
+		if (!cronExpr || cronExpr.trim() === '') {
+			return null;
+		}
+		try {
+			return cronstrue.toString(cronExpr);
+		} catch (error) {
+			return null;
+		}
+	});
 </script>
 
-<div class="container mx-auto p-4">
-	<div class="w-full p-6 shadow-md rounded-lg border bg-card text-card-foreground">
-		<div class="mb-4">
-			<h2 class="text-2xl font-semibold tracking-tight">
-				{schedule?.schedule_id ? 'Edit Schedule' : 'Create New Schedule'}
-			</h2>
+<div class="space-y-6">
+	<form onsubmit={handleSubmit} id="scheduleFormInternal" class="space-y-6">
+		<div>
+			<Label for="name">Name</Label>
+			<Input
+				id="name"
+				type="text"
+				bind:value={formData.name}
+				disabled={$saveMutation.isPending}
+			/>
+			{#if zodErrors.name}<p class="text-sm text-destructive mt-1">
+					{zodErrors.name}
+				</p>{/if}
 		</div>
-		<div class="space-y-6">
-			<form onsubmit={handleSubmit} id="scheduleFormInternal" class="space-y-6">
-				<div>
-					<Label for="name">Name</Label>
-					<Input
-						id="name"
-						type="text"
-						bind:value={formData.name}
-						disabled={$saveMutation.isPending}
-					/>
-					{#if zodErrors.name}<p class="text-sm text-destructive mt-1">
-							{zodErrors.name}
-						</p>{/if}
+		<div>
+			<Label for="cron_expr">CRON Expression</Label>
+			<Input
+				id="cron_expr"
+				type="text"
+				bind:value={formData.cron_expr}
+				disabled={$saveMutation.isPending}
+			/>
+			{#if zodErrors.cron_expr}<p class="text-sm text-destructive mt-1">
+					{zodErrors.cron_expr}
+				</p>
+			{/if}
+			{#if !zodErrors.cron_expr && formData.cron_expr && humanizedCron}
+				<div class="mt-2">
+					<CronView cronExpr={formData.cron_expr} />
 				</div>
-				<div>
-					<Label for="cron_expr">CRON Expression</Label>
-					<Input
-						id="cron_expr"
-						type="text"
-						bind:value={formData.cron_expr}
-						disabled={$saveMutation.isPending}
-					/>
-					{#if zodErrors.cron_expr}<p class="text-sm text-destructive mt-1">
-							{zodErrors.cron_expr}
-						</p>
-					{:else if humanizedCron}<p class="text-sm text-muted-foreground mt-1">
-							Interprets as: {humanizedCron}
-						</p>{/if}
-					{#if !zodErrors.cron_expr && formData.cron_expr && humanizedCron}
-						<div class="mt-2">
-							<CronView cronExpr={formData.cron_expr} />
-						</div>
-					{/if}
-				</div>
-				<div>
-					<Label for="date_range_picker_trigger_id">Date Range (Optional)</Label>
-					<DateRangePicker
-						initialStartDate={formData.start_date_str}
-						initialEndDate={formData.end_date_str}
-						change={handleDateStringsChange}
-						placeholderText="Pick start and end dates"
-					/>
-					{#if zodErrors.start_date}<p class="text-sm text-destructive mt-1">
-							Start Date: {zodErrors.start_date}
-						</p>{/if}
-					{#if zodErrors.end_date}<p class="text-sm text-destructive mt-1">
-							End Date: {zodErrors.end_date}
-						</p>{/if}
-				</div>
-			</form>
+			{/if}
 		</div>
-		<div class="flex justify-between mt-6 pt-4 border-t">
-			<div>
-				{#if schedule?.schedule_id}
-					<Button
-						type="button"
-						variant="destructive"
-						onclick={handleDeleteClick}
-						disabled={$deleteMutation.isPending || $saveMutation.isPending}
-					>
-						{#if $deleteMutation.isPending}Deleting...{:else}Delete{/if}
-					</Button>
-				{/if}
-			</div>
-			<div class="flex gap-2">
+		<div>
+			<Label for="date_range_picker_trigger_id">Date Range (Optional)</Label>
+			<DateRangePicker
+				initialStartDate={formData.start_date_str}
+				initialEndDate={formData.end_date_str}
+				change={handleDateStringsChange}
+				placeholderText="Pick start and end dates"
+			/>
+			{#if zodErrors.start_date}<p class="text-sm text-destructive mt-1">
+					Start Date: {zodErrors.start_date}
+				</p>{/if}
+			{#if zodErrors.end_date}<p class="text-sm text-destructive mt-1">
+					End Date: {zodErrors.end_date}
+				</p>{/if}
+		</div>
+	</form>
+	
+	<div class="flex justify-between pt-4 border-t">
+		<div>
+			{#if schedule?.schedule_id}
 				<Button
-					variant="outline"
-					onclick={handleCancel}
-					disabled={$saveMutation.isPending || $deleteMutation.isPending}>Cancel</Button
+					type="button"
+					variant="destructive"
+					onclick={handleDeleteClick}
+					disabled={$deleteMutation.isPending || $saveMutation.isPending}
 				>
-				<Button
-					type="submit"
-					form="scheduleFormInternal"
-					disabled={$saveMutation.isPending || $deleteMutation.isPending}
-				>
-					{#if $saveMutation.isPending}<Loader2Icon class="animate-spin mr-2 h-4 w-4" />Saving...
-					{:else}<CalendarPlusIcon class="mr-2 h-4 w-4" />{schedule?.schedule_id
-							? 'Update'
-							: 'Create'} Schedule{/if}
+					{#if $deleteMutation.isPending}Deleting...{:else}Delete{/if}
 				</Button>
-			</div>
+			{/if}
+		</div>
+		<div class="flex gap-2">
+			<Button
+				variant="outline"
+				onclick={handleCancel}
+				disabled={$saveMutation.isPending || $deleteMutation.isPending}>Cancel</Button
+			>
+			<Button
+				type="submit"
+				form="scheduleFormInternal"
+				disabled={$saveMutation.isPending || $deleteMutation.isPending}
+			>
+				{#if $saveMutation.isPending}<Loader2Icon class="animate-spin mr-2 h-4 w-4" />Saving...
+				{:else}<CalendarPlusIcon class="mr-2 h-4 w-4" />{schedule?.schedule_id
+						? 'Update'
+						: 'Create'} Schedule{/if}
+			</Button>
 		</div>
 	</div>
 </div>

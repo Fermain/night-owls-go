@@ -9,8 +9,6 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import ClockIcon from '@lucide/svelte/icons/clock';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import XIcon from '@lucide/svelte/icons/x';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -205,16 +203,24 @@
 					{#each upcomingShifts as shift (shift.schedule_id + '-' + shift.start_time)}
 						<button
 							class="w-full p-3 mb-2 text-left rounded-lg border transition-colors hover:bg-accent
-								{shiftStartTimeFromUrl === shift.start_time ? 'border-primary bg-primary/5' : 'border-border'}"
+								{shiftStartTimeFromUrl === shift.start_time 
+									? 'border-primary bg-primary/10' 
+									: shift.is_booked 
+										? 'border-green-200 bg-green-50 hover:bg-green-100' 
+										: 'border-orange-200 bg-orange-50 hover:bg-orange-100'}"
 							onclick={() => selectShift(shift)}
 						>
 							<div class="space-y-1">
 								<div class="flex items-center justify-between">
 									<h3 class="font-medium text-sm truncate">{shift.schedule_name}</h3>
 									{#if shift.is_booked}
-										<CheckIcon class="h-4 w-4 text-green-600" />
+										<span class="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+											Filled
+										</span>
 									{:else}
-										<XIcon class="h-4 w-4 text-orange-600" />
+										<span class="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
+											Available
+										</span>
 									{/if}
 								</div>
 								<p class="text-xs text-muted-foreground">
@@ -224,7 +230,7 @@
 									{formatRelativeTime(shift.start_time)}
 								</p>
 								{#if shift.is_booked && shift.user_name}
-									<p class="text-xs text-green-700">
+									<p class="text-xs text-green-700 font-medium">
 										Assigned to: {shift.user_name}
 									</p>
 								{/if}
@@ -245,4 +251,6 @@
 <ScheduleEditDialog 
 	bind:open={showSettingsDialog}
 	mode="create"
+	onCancel={() => showSettingsDialog = false}
+	onSuccess={() => showSettingsDialog = false}
 />
