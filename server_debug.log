@@ -1,0 +1,13 @@
+{"time":"2025-05-23T12:05:21.485978+02:00","level":"INFO","msg":"Configuration loaded successfully"}
+{"time":"2025-05-23T12:05:21.486219+02:00","level":"INFO","msg":"Development mode status","dev_mode":true}
+{"time":"2025-05-23T12:05:21.487271+02:00","level":"INFO","msg":"Successfully connected to the database","path":"./night-owls.test.db"}
+{"time":"2025-05-23T12:05:21.487314+02:00","level":"INFO","msg":"Preparing to run migrations using DSN","dsn":"sqlite3://./night-owls.test.db"}
+{"time":"2025-05-23T12:05:21.487666+02:00","level":"INFO","msg":"Running database migrations..."}
+{"time":"2025-05-23T12:05:21.487807+02:00","level":"INFO","msg":"No new migrations to apply."}
+{"time":"2025-05-23T12:05:21.487911+02:00","level":"INFO","msg":"Migration instance (DSN-based) closed successfully."}
+{"time":"2025-05-23T12:05:21.487971+02:00","level":"INFO","msg":"Cron scheduler started for outbox processing."}
+{"time":"2025-05-23T12:05:21.488488+02:00","level":"INFO","msg":"AuthHandler created with config","dev_mode":true,"server_port":"8080"}
+{"time":"2025-05-23T12:05:21.490066+02:00","level":"INFO","msg":"Serving static files from","path":"/Users/oliver/Repos/night-owls-go/app/build"}
+{"time":"2025-05-23T12:05:21.491354+02:00","level":"INFO","msg":"Community Watch Backend Starting HTTP server...","port":"8080"}
+{"time":"2025-05-23T12:05:21.491742+02:00","level":"ERROR","msg":"HTTP server ListenAndServe error","error":"listen tcp :8080: bind: address already in use"}
+exit status 1

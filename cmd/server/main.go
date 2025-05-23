@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -82,6 +83,7 @@ func main() {
 	slog.SetDefault(logger)          // Set as global default
 
 	slog.Info("Configuration loaded successfully")
+	slog.Info("Development mode status", "dev_mode", cfg.DevMode)
 
 	dbConn, err := sql.Open("sqlite3", cfg.DatabasePath)
 	if err != nil {
@@ -175,7 +177,7 @@ func main() {
 	})
 
 	// Initialize handlers
-	authAPIHandler := api.NewAuthHandler(userService, logger)
+	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
@@ -184,8 +186,8 @@ func main() {
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 
 	// Public routes
-	fuego.PostStd(s, "/auth/register", authAPIHandler.RegisterHandler)
-	fuego.PostStd(s, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
+	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
 	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
@@ -270,6 +272,12 @@ func main() {
 
 	// Serve static files and fallback to index.html for SPA routes
 	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
+		// Don't serve SPA for API requests - let them 404 if not found
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+		
 		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
 		stat, err := os.Stat(requestedFilePath)
 		if err == nil && !stat.IsDir() {

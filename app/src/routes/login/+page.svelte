@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { Label } from '$lib/components/ui/label';
-	import { Input } from '$lib/components/ui/input'; // For phone number input
-	import * as InputOTP from '$lib/components/ui/input-otp'; // Use namespaced import
+	import { Input } from '$lib/components/ui/input';
+	import * as InputOTP from '$lib/components/ui/input-otp';
 	import { Button } from '$lib/components/ui/button';
-	import { fakeLogin } from '$lib/stores/authStore';
+	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
-	import { isAuthenticated, currentUser } from '$lib/services/userService'; // Import from userService
+	import { isAuthenticated, currentUser } from '$lib/services/userService';
 
 	$effect(() => {
 		if ($isAuthenticated) {
@@ -15,125 +16,191 @@
 		}
 	});
 
-	let phoneNumber = $state('');
-	let otpValue = $state(''); // This will be bound to InputOTP.Root
+	// Get URL parameters for pre-filling form
+	const urlPhone = $page.url.searchParams.get('phone');
+	const urlName = $page.url.searchParams.get('name');
+
+	// State management
+	let step = $state<'register' | 'verify'>(urlPhone ? 'verify' : 'register');
+	let phoneNumber = $state(urlPhone || '');
+	let name = $state(urlName || '');
+	let otpValue = $state('');
 	let isLoading = $state(false);
 
 	const OTP_LENGTH = 6;
 
-	async function handleLoginSubmit(event: SubmitEvent) {
+	// Step 1: Submit phone number and name to register/request OTP
+	async function handleRegistration(event: SubmitEvent) {
 		event.preventDefault();
-		if (phoneNumber.trim() === '' || otpValue.length !== OTP_LENGTH) {
-			toast.error('Please enter a valid phone number and complete OTP.');
+		if (!phoneNumber.trim()) {
+			toast.error('Please enter a valid phone number.');
 			return;
 		}
+
 		isLoading = true;
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-		const fakeToken = `fake-jwt-token-for-${phoneNumber.replace(/\D/g, '')}-${Date.now()}`;
-		fakeLogin(phoneNumber, fakeToken);
-		// isLoading = false; // fakeLogin will update isAuthenticated, triggering the $effect to redirect
-		// toast.success('Logged in successfully!'); // Toast is now handled by the $effect or can be shown before redirect
-		// goto('/admin'); // Redirection is handled by the $effect
+		try {
+			await authService.register({
+				phone: phoneNumber,
+				name: name.trim() || undefined
+			});
+
+			toast.success('OTP sent! Check sms_outbox.log for the code.');
+			step = 'verify';
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Registration failed');
+			console.error('Registration error:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Step 2: Verify OTP and get JWT token
+	async function handleVerification(event: SubmitEvent) {
+		event.preventDefault();
+		if (otpValue.length !== OTP_LENGTH) {
+			toast.error('Please enter the complete OTP.');
+			return;
+		}
+
+		isLoading = true;
+		try {
+			await authService.login(phoneNumber, name, otpValue);
+			toast.success('Login successful!');
+			goto('/admin', { replaceState: true });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Verification failed');
+			otpValue = ''; // Clear OTP on error
+			console.error('Verification error:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	function goBackToRegistration() {
+		step = 'register';
+		otpValue = '';
 	}
 </script>
 
 <svelte:head>
-	<title>Login - OTP</title>
+	<title>Login - Community Watch</title>
 </svelte:head>
 
-<!-- Only render the form if not authenticated, to avoid flash of content before redirect -->
 {#if !$isAuthenticated}
-	<div class="flex items-center justify-center min-h-screen bg-background p-4">
-		<div
-			class="w-full max-w-md p-8 space-y-6 bg-card text-card-foreground rounded-lg shadow-md border"
-		>
-			<div class="text-center">
-				<h1 class="text-3xl font-bold">Enter OTP</h1>
-				<p class="text-muted-foreground">We've sent a one-time password to your phone.</p>
+	<div class="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+		<div class="flex w-full max-w-sm flex-col gap-6">
+			<!-- Header -->
+			<div class="flex flex-col gap-2 text-center">
+				<h1 class="text-2xl font-semibold tracking-tight">
+					{step === 'register' ? 'Welcome to Community Watch' : 'Enter verification code'}
+				</h1>
+				<p class="text-sm text-muted-foreground">
+					{step === 'register' 
+						? 'Enter your phone number to get started' 
+						: `We sent a verification code to ${phoneNumber}`}
+				</p>
 			</div>
 
-			<form onsubmit={handleLoginSubmit} class="space-y-6">
-				<div>
-					<Label for="phone">Phone Number</Label>
-					<Input
-						id="phone"
-						type="tel"
-						placeholder="+1234567890"
-						bind:value={phoneNumber}
-						disabled={isLoading}
-						required
-					/>
-				</div>
+			<!-- Registration Form -->
+			{#if step === 'register'}
+				<form onsubmit={handleRegistration} class="flex flex-col gap-4">
+					<div class="flex flex-col gap-2">
+						<Label for="name">Name (optional)</Label>
+						<Input
+							id="name"
+							type="text"
+							placeholder="Your name"
+							bind:value={name}
+							disabled={isLoading}
+						/>
+					</div>
+					
+					<div class="flex flex-col gap-2">
+						<Label for="phone">Phone Number</Label>
+						<Input
+							id="phone"
+							type="tel"
+							placeholder="+1234567890"
+							bind:value={phoneNumber}
+							disabled={isLoading}
+							required
+						/>
+					</div>
 
-				<div>
-					<Label>One-Time Password</Label>
-					<!-- Removed for="otp" as id is on Root -->
-					<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading}>
-						{#snippet children({ cells })}
-							<InputOTP.Group>
-								{#each cells.slice(0, 3) as cell, i (i)}
-									<InputOTP.Slot {cell} />
-								{/each}
-							</InputOTP.Group>
-							{#if OTP_LENGTH > 3}
+					<Button type="submit" class="w-full" disabled={isLoading || !phoneNumber.trim()}>
+						{#if isLoading}
+							<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+							Sending code...
+						{:else}
+							Send verification code
+						{/if}
+					</Button>
+				</form>
+			{/if}
+
+			<!-- Verification Form -->
+			{#if step === 'verify'}
+				<form onsubmit={handleVerification} class="flex flex-col gap-4">
+					<div class="flex flex-col gap-2">
+						<Label>Verification Code</Label>
+						<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading}>
+							{#snippet children({ cells })}
+								<InputOTP.Group class="justify-center">
+									{#each cells.slice(0, 3) as cell, i (i)}
+										<InputOTP.Slot {cell} />
+									{/each}
+								</InputOTP.Group>
 								<InputOTP.Separator />
-								<InputOTP.Group>
+								<InputOTP.Group class="justify-center">
 									{#each cells.slice(3, OTP_LENGTH) as cell, i (i)}
 										<InputOTP.Slot {cell} />
 									{/each}
 								</InputOTP.Group>
-							{/if}
-						{/snippet}
-					</InputOTP.Root>
-				</div>
+							{/snippet}
+						</InputOTP.Root>
+					</div>
 
-				<Button
-					type="submit"
-					class="w-full"
-					disabled={isLoading || otpValue.length !== OTP_LENGTH || phoneNumber.trim() === ''}
-				>
-					{#if isLoading}
-						<svg
-							class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
+					<Button type="submit" class="w-full" disabled={isLoading || otpValue.length !== OTP_LENGTH}>
+						{#if isLoading}
+							<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+							Verifying...
+						{:else}
+							Verify & Continue
+						{/if}
+					</Button>
+
+					<div class="text-center">
+						<button
+							type="button"
+							class="text-sm text-muted-foreground underline-offset-4 hover:underline"
+							onclick={goBackToRegistration}
+							disabled={isLoading}
 						>
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-							></path>
-						</svg>
-						Verifying...
-					{:else}
-						Verify & Login
-					{/if}
-				</Button>
-			</form>
-			<p class="text-center text-sm text-muted-foreground">
-				Didn't receive the code?
-				<button
-					type="button"
-					class="underline hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-0 m-0 bg-transparent border-none cursor-pointer"
-				>
-					Resend OTP
-				</button>
-				(not implemented)
-			</p>
+							Wrong phone number? Go back
+						</button>
+					</div>
+				</form>
+			{/if}
+
+			<!-- Help text -->
+			<div class="text-center text-xs text-muted-foreground">
+				{#if step === 'verify'}
+					<p>
+						Didn't receive the code? Check the <code class="font-mono">sms_outbox.log</code> file
+					</p>
+				{:else}
+					<p>
+						By continuing, you agree to our terms of service
+					</p>
+				{/if}
+			</div>
 		</div>
 	</div>
 {:else}
-	<!-- Optional: Show a loading message or minimal content while redirecting -->
 	<div class="flex items-center justify-center min-h-screen bg-background p-4">
-		<p>Loading...</p>
+		<div class="text-center">
+			<div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto"></div>
+			<p class="text-muted-foreground">Redirecting...</p>
+		</div>
 	</div>
 {/if}

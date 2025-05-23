@@ -63,7 +63,7 @@ func (s *DispatcherService) ProcessPendingOutboxMessages(ctx context.Context) (p
 		var dispatchErr error
 
 		switch item.MessageType { // Assuming MessageType acts as the channel ("sms", "push")
-		case "sms":
+		case "sms", "OTP_VERIFICATION":
 			if s.smsSender != nil {
 				dispatchErr = s.smsSender.Send(item.Recipient, item.MessageType, item.Payload.String)
 			} else {

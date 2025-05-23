@@ -155,7 +155,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register all relevant handlers, including admin
-	authAPIHandler := api.NewAuthHandler(userService, logger)
+	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)

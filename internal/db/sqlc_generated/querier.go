@@ -21,6 +21,8 @@ type Querier interface {
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
+	// Limit to prevent processing too many at once
+	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
 	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
@@ -32,7 +34,6 @@ type Querier interface {
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
-	// Limit to prevent processing too many at once
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)

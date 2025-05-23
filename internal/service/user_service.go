@@ -20,7 +20,7 @@ var (
 )
 
 // JWTGenerator defines a function that generates a JWT token
-type JWTGenerator func(userID int64, phone string, secret string, expiryHours int) (string, error)
+type JWTGenerator func(userID int64, phone string, role string, secret string, expiryHours int) (string, error)
 
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
@@ -58,16 +58,21 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// User does not exist, create new user
+			// For development, make all new users admin by default
+			// In production, you'd want more sophisticated role assignment logic
+			defaultRole := "admin" // For development - all users are admin
+
 			createUserParams := db.CreateUserParams{
 				Phone: phone,
 				Name:  name, // sql.NullString handles optional name
+				Role:  defaultRole, // Pass role as interface{} (string)
 			}
 			user, err = s.querier.CreateUser(ctx, createUserParams)
 			if err != nil {
 				s.logger.ErrorContext(ctx, "Failed to create user", "phone", phone, "error", err)
 				return ErrInternalServer
 			}
-			s.logger.InfoContext(ctx, "New user created", "phone", phone, "user_id", user.UserID)
+			s.logger.InfoContext(ctx, "New user created", "phone", phone, "user_id", user.UserID, "role", defaultRole)
 		} else {
 			s.logger.ErrorContext(ctx, "Failed to get user by phone", "phone", phone, "error", err)
 			return ErrInternalServer
@@ -126,7 +131,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	// Generate JWT (e.g., valid for 24 hours)
 	// The expiration duration could also come from config.
-	tokenString, err := s.jwtGenerator(user.UserID, user.Phone, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
+	tokenString, err := s.jwtGenerator(user.UserID, user.Phone, user.Role, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT", "phone", phone, "user_id", user.UserID, "error", err)
 		return "", ErrInternalServer

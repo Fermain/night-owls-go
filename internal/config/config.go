@@ -24,6 +24,9 @@ type Config struct {
 	OutboxBatchSize    int
 	OutboxMaxRetries   int
 
+	// Development mode - enables dev features like OTP in responses
+	DevMode            bool
+
 	// PWA / WebPush specific
 	VAPIDPublic  string
 	VAPIDPrivate string
@@ -49,6 +52,9 @@ func LoadConfig() (*Config, error) {
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
 		OutboxBatchSize:    10,    // Default 10 messages per batch
 		OutboxMaxRetries:   3,     // Default 3 retries
+
+		// Development mode - enables dev features like OTP in responses
+		DevMode:            false,
 
 		// PWA / WebPush defaults
 		VAPIDSubject: "mailto:admin@example.com", // Default VAPID subject
@@ -107,6 +113,13 @@ func LoadConfig() (*Config, error) {
 	if val := os.Getenv("OUTBOX_MAX_RETRIES"); val != "" {
 		if intVal, err := strconv.Atoi(val); err == nil && intVal >= 0 { // Max retries can be 0
 			cfg.OutboxMaxRetries = intVal
+		}
+	}
+
+	// Load development mode
+	if val := os.Getenv("DEV_MODE"); val != "" {
+		if devMode, err := strconv.ParseBool(val); err == nil {
+			cfg.DevMode = devMode
 		}
 	}
 

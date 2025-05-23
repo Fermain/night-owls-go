@@ -40,6 +40,11 @@ func (m *MockQuerier) CreateOutboxItem(ctx context.Context, arg db.CreateOutboxI
 	return args.Get(0).(db.Outbox), args.Error(1)
 }
 
+func (m *MockQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).([]db.Outbox), args.Error(1)
+}
+
 // Implement other Querier methods as needed for future tests, returning nil/error or using mock.Anything
 // For now, these are the ones used by UserService. To satisfy the interface for general use, we'd add all.
 // To keep this focused for UserService, we only implement what's directly used by the service under test.
@@ -224,8 +229,8 @@ func (s *MockOTPStore) ForceExpireOTP(identifier string) {
 }
 
 // mockGenerateJWT always returns an error for testing
-func mockGenerateJWT(userID int64, phone string, secret string, expiryHours int) (string, error) {
-	return "", errors.New("forced JWT generation error")
+func mockGenerateJWT(userID int64, phone string, role string, secret string, expiryHours int) (string, error) {
+	return "", errors.New("JWT generation failed")
 }
 
 func TestUserService_RegisterOrLoginUser_NewUser(t *testing.T) {
@@ -418,7 +423,7 @@ func TestUserService_VerifyOTP_JWTGenerationError(t *testing.T) {
 	userService := service.NewUserService(mockQuerier, otpStore, cfg, testLogger)
 	
 	// Inject a custom JWT generator that always fails
-	userService.SetJWTGenerator(func(userID int64, phone string, secret string, expiryHours int) (string, error) {
+	userService.SetJWTGenerator(func(userID int64, phone string, role string, secret string, expiryHours int) (string, error) {
 		return "", errors.New("forced JWT generation error")
 	})
 

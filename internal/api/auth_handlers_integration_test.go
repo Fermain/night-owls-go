@@ -137,7 +137,7 @@ func newTestApp(t *testing.T) *testApp {
 	router := chi.NewRouter()
 	router.Use(chiMiddleware.Recoverer) 
 
-	authAPIHandler := api.NewAuthHandler(userService, logger)
+	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)

@@ -10,6 +10,7 @@
 	import { formatDistanceToNow } from 'date-fns'; // Added for upcoming shifts
 	import type { Schedule, AdminShiftSlot } from '$lib/types'; // Corrected import
 	import { CalendarDays } from 'lucide-svelte'; // Added CalendarDays
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	// Import the new store
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
@@ -17,39 +18,14 @@
 	let searchTerm = $state('');
 	let { children } = $props();
 
-	const fetchSchedules = async (): Promise<Schedule[]> => {
-		const response = await fetch('/api/admin/schedules');
+	// Function to fetch schedules
+	async function fetchSchedules() {
+		const response = await authenticatedFetch('/api/admin/schedules');
 		if (!response.ok) {
-			let errorText = response.statusText;
-			try {
-				const errorData = await response.text(); // Try to get text for more detailed error
-				console.error(
-					'Failed to fetch schedules. Status:',
-					response.status,
-					'Response:',
-					errorData
-				);
-				errorText = errorData || errorText;
-			} catch (e) {
-				console.error(
-					'Failed to fetch schedules and could not parse error response body. Status:',
-					response.status
-				);
-			}
-			toast.error(`Failed to fetch schedules: ${response.status} ${errorText}`);
-			throw new Error(`Failed to fetch schedules: ${response.status} ${errorText}`);
+			throw new Error('Failed to fetch schedules');
 		}
-		// Check content type before parsing
-		const contentType = response.headers.get('content-type');
-		if (contentType && contentType.indexOf('application/json') !== -1) {
-			return response.json();
-		} else {
-			const responseText = await response.text();
-			console.error('Schedules response was not JSON. Received:', responseText);
-			toast.error('Received non-JSON response for schedules.');
-			throw new Error('Schedules response was not JSON.');
-		}
-	};
+		return response.json();
+	}
 
 	const schedulesQuery = $derived(
 		createQuery<Schedule[], Error, Schedule[], QueryKey>({
@@ -90,7 +66,7 @@
 			to: toDate.toISOString()
 		});
 
-		const response = await fetch(`/api/admin/schedules/all-slots?${params.toString()}`);
+		const response = await authenticatedFetch(`/api/admin/schedules/all-slots?${params.toString()}`);
 		if (!response.ok) {
 			let errorMsg = `HTTP error ${response.status}`;
 			try {
@@ -143,7 +119,7 @@
 				selectedScheduleForForm.set(undefined);
 				const fetchAndSetSchedule = async () => {
 					try {
-						const response = await fetch(`/api/admin/schedules/${scheduleIdNum}`);
+						const response = await authenticatedFetch(`/api/admin/schedules/${scheduleIdNum}`);
 						if (!response.ok) {
 							throw new Error(`Failed to fetch schedule ${scheduleIdNum}: ${response.status}`);
 						}

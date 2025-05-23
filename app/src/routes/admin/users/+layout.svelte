@@ -10,6 +10,7 @@
 	import { goto } from '$app/navigation';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
 	import type { UserData } from '$lib/schemas/user';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	let searchTerm = $state('');
 
@@ -29,7 +30,7 @@
 		if (currentSearchTerm) {
 			url += `?search=${encodeURIComponent(currentSearchTerm)}`;
 		}
-		const response = await fetch(url);
+		const response = await authenticatedFetch(url);
 		if (!response.ok) {
 			throw new Error('Failed to fetch users');
 		}

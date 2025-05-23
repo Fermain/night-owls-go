@@ -42,6 +42,7 @@ export type Schedule = {
 	timezone: string | null; // From schema, was SQLNullString
 	start_date: string | null; // From schema, originally SQLNullTime, now string to match form/api
 	end_date: string | null; // From schema, originally SQLNullTime, now string to match form/api
+	duration_minutes: number; // Duration of shifts in minutes
 	is_active: boolean;
 	created_at: string;
 	updated_at: string;

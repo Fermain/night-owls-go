@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -8,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"night-owls-go/internal/config"
+	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
 
 	"github.com/nyaruka/phonenumbers"
@@ -19,13 +22,18 @@ var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 type AuthHandler struct {
 	userService *service.UserService
 	logger      *slog.Logger
+	config      *config.Config
+	querier     db.Querier
 }
 
 // NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(userService *service.UserService, logger *slog.Logger) *AuthHandler {
+func NewAuthHandler(userService *service.UserService, logger *slog.Logger, cfg *config.Config, querier db.Querier) *AuthHandler {
+	logger.Info("AuthHandler created with config", "dev_mode", cfg.DevMode, "server_port", cfg.ServerPort)
 	return &AuthHandler{
 		userService: userService,
 		logger:      logger.With("handler", "AuthHandler"),
+		config:      cfg,
+		querier:     querier,
 	}
 }
 
@@ -38,6 +46,8 @@ type RegisterRequest struct {
 // RegisterResponse is the JSON response from POST /auth/register.
 type RegisterResponse struct {
 	Message string `json:"message"`
+	// Development only - include OTP for easier testing
+	DevOTP string `json:"dev_otp,omitempty"`
 }
 
 // VerifyRequest is the expected JSON for POST /auth/verify.
@@ -63,6 +73,8 @@ type VerifyResponse struct {
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /auth/register [post]
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	h.logger.InfoContext(r.Context(), "RegisterHandler called with dev_mode", "dev_mode", h.config.DevMode)
+	
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
@@ -100,7 +112,24 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, RegisterResponse{Message: "OTP sent to sms_outbox.log"}, h.logger)
+	response := RegisterResponse{Message: "OTP sent to sms_outbox.log"}
+
+	// In development mode, include the OTP in the response for easier testing
+	if h.config.DevMode {
+		response.Message = "OTP sent to sms_outbox.log (DEV MODE ACTIVE)"
+		h.logger.InfoContext(r.Context(), "Development mode enabled, attempting to retrieve OTP", "phone", phoneE164)
+		// Get the latest OTP for this phone number from the outbox
+		if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
+			h.logger.InfoContext(r.Context(), "Found OTP for development response", "phone", phoneE164, "otp", otp)
+			response.DevOTP = otp
+		} else {
+			h.logger.WarnContext(r.Context(), "No OTP found for development response", "phone", phoneE164)
+		}
+	} else {
+		h.logger.InfoContext(r.Context(), "Development mode disabled")
+	}
+
+	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
 
 // VerifyHandler handles POST /auth/verify
@@ -151,4 +180,37 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithJSON(w, http.StatusOK, VerifyResponse{Token: token}, h.logger)
+}
+
+func (h *AuthHandler) getLatestOTPFromOutbox(ctx context.Context, phoneE164 string) string {
+	// For development mode, get recent outbox items for this specific recipient
+	items, err := h.querier.GetRecentOutboxItemsByRecipient(ctx, db.GetRecentOutboxItemsByRecipientParams{
+		Recipient: phoneE164,
+		Limit:     5,
+	})
+	if err != nil {
+		h.logger.WarnContext(ctx, "Failed to get outbox items for dev OTP", "error", err)
+		return ""
+	}
+
+	h.logger.InfoContext(ctx, "Retrieved outbox items for OTP lookup", "phone", phoneE164, "count", len(items))
+
+	// Find the latest OTP for this phone number
+	for _, item := range items {
+		h.logger.InfoContext(ctx, "Examining outbox item", "outbox_id", item.OutboxID, "message_type", item.MessageType, "status", item.Status)
+		if item.MessageType == "OTP_VERIFICATION" && item.Payload.Valid {
+			// Parse the JSON payload to extract the OTP
+			var payload struct {
+				OTP string `json:"otp"`
+			}
+			if err := json.Unmarshal([]byte(item.Payload.String), &payload); err == nil {
+				h.logger.InfoContext(ctx, "Successfully extracted OTP from outbox", "phone", phoneE164, "otp", payload.OTP)
+				return payload.OTP
+			} else {
+				h.logger.WarnContext(ctx, "Failed to parse OTP payload", "error", err, "payload", item.Payload.String)
+			}
+		}
+	}
+
+	return ""
 } 

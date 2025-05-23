@@ -7,11 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"night-owls-go/internal/api"
 	"night-owls-go/internal/auth"
+	"night-owls-go/internal/config"
 
+	"io"
+
+	"log/slog"
+
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -72,7 +79,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	// Test 4: Generate an expired token and try to use it
 	userID := int64(999)
 	phoneNumber := "+14155550000"
-	expiredToken, err := auth.GenerateJWT(userID, phoneNumber, app.Config.JWTSecret, -24) // Negative hours for expired token
+	expiredToken, err := auth.GenerateJWT(userID, phoneNumber, "guest", app.Config.JWTSecret, -24) // Negative hours for expired token
 	require.NoError(t, err)
 	
 	rr = app.makeRequest(t, "POST", "/bookings", bytes.NewBuffer(bookingReqBody), expiredToken)
@@ -98,4 +105,230 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	rr = app.makeRequest(t, "PATCH", "/bookings/"+bookingIDStr+"/attendance", 
 		bytes.NewBuffer(attendanceReqBody), token)
 	assert.Equal(t, http.StatusOK, rr.Code, "Marking attendance on own booking with valid token should succeed")
+}
+
+func TestAuthMiddleware_ValidToken(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:          "test-secret-key-for-valid-token",
+		JWTExpirationHours: 24,
+	}
+	
+	// Create a valid token
+	userID := int64(123)
+	phone := "+1234567890"
+	token, err := auth.GenerateJWT(userID, phone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+	require.NoError(t, err)
+	
+	// Create test handler that requires auth
+	router := chi.NewRouter()
+	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+		contextUserID := r.Context().Value(api.UserIDKey).(int64)
+		assert.Equal(t, userID, contextUserID)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+	})
+	
+	// Test request with valid token
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+	
+	router.ServeHTTP(rr, req)
+	
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "success", rr.Body.String())
+}
+
+func TestAuthMiddleware_ExpiredToken(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:          "test-secret-key-for-expired-token",
+		JWTExpirationHours: 24,
+	}
+	
+	// Create an expired token by generating one with negative expiration
+	// Note: We can't easily create an expired token with the current GenerateJWT function
+	// This test would need a modified function or we test with a very short expiration
+	// For now, let's test with a short expiration and wait
+	shortCfg := &config.Config{
+		JWTSecret:          cfg.JWTSecret,
+		JWTExpirationHours: 1, // 1 hour, we'll test validation after artificial time passage
+	}
+	
+	token, err := auth.GenerateJWT(123, "+1234567890", "guest", shortCfg.JWTSecret, -1) // Negative hours to force expiration
+	require.NoError(t, err)
+	
+	router := chi.NewRouter()
+	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+		t.Error("Handler should not be called with expired token")
+	})
+	
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+	
+	router.ServeHTTP(rr, req)
+	
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestAuthMiddleware_MalformedToken(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "test-secret"}
+	
+	tests := []struct {
+		name        string
+		authHeader  string
+		expectCode  int
+	}{
+		{
+			name:       "missing bearer prefix",
+			authHeader: "invalid-token-format",
+			expectCode: http.StatusUnauthorized,
+		},
+		{
+			name:       "invalid jwt format",
+			authHeader: "Bearer not.a.valid.jwt.token",
+			expectCode: http.StatusUnauthorized,
+		},
+		{
+			name:       "empty token",
+			authHeader: "Bearer ",
+			expectCode: http.StatusUnauthorized,
+		},
+		{
+			name:       "wrong secret signature",
+			authHeader: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjMsInBob25lIjoiKzEyMzQ1Njc4OTAiLCJleHAiOjk5OTk5OTk5OTl9.wrong-signature",
+			expectCode: http.StatusUnauthorized,
+		},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			router := chi.NewRouter()
+			router.Use(api.AuthMiddleware(cfg, testLogger()))
+			router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+				t.Errorf("Handler should not be called with malformed token: %s", tt.name)
+			})
+			
+			req := httptest.NewRequest("GET", "/protected", nil)
+			req.Header.Set("Authorization", tt.authHeader)
+			rr := httptest.NewRecorder()
+			
+			router.ServeHTTP(rr, req)
+			
+			assert.Equal(t, tt.expectCode, rr.Code, "Test case: %s", tt.name)
+		})
+	}
+}
+
+func TestAuthMiddleware_MissingAuthHeader(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "test-secret"}
+	
+	router := chi.NewRouter()
+	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+		t.Error("Handler should not be called without auth header")
+	})
+	
+	req := httptest.NewRequest("GET", "/protected", nil)
+	// No Authorization header set
+	rr := httptest.NewRecorder()
+	
+	router.ServeHTTP(rr, req)
+	
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestAuthMiddleware_ContextValues(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:          "test-secret-context",
+		JWTExpirationHours: 24,
+	}
+	
+	expectedUserID := int64(456)
+	expectedPhone := "+9876543210"
+	
+	token, err := auth.GenerateJWT(expectedUserID, expectedPhone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+	require.NoError(t, err)
+	
+	router := chi.NewRouter()
+	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+		// Verify context values are set correctly
+		userID, ok := r.Context().Value(api.UserIDKey).(int64)
+		assert.True(t, ok, "UserID should be int64")
+		assert.Equal(t, expectedUserID, userID)
+		
+		phone, ok := r.Context().Value(api.UserPhoneKey).(string)
+		assert.True(t, ok, "Phone should be string")
+		assert.Equal(t, expectedPhone, phone)
+		
+		w.WriteHeader(http.StatusOK)
+	})
+	
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+	
+	router.ServeHTTP(rr, req)
+	
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+// Test concurrent requests with different tokens
+func TestAuthMiddleware_ConcurrentRequests(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:          "test-secret-concurrent",
+		JWTExpirationHours: 24,
+	}
+	
+	// Create tokens for different users
+	tokens := make([]string, 3)
+	for i := 0; i < 3; i++ {
+		userID := int64(i + 1)
+		phone := fmt.Sprintf("+123456789%d", i)
+		token, err := auth.GenerateJWT(userID, phone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+		require.NoError(t, err)
+		tokens[i] = token
+	}
+	
+	router := chi.NewRouter()
+	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(api.UserIDKey).(int64)
+		w.Write([]byte(fmt.Sprintf("user-%d", userID)))
+	})
+	
+	// Test concurrent requests
+	results := make(chan string, 3)
+	for i, token := range tokens {
+		go func(i int, token string) {
+			req := httptest.NewRequest("GET", "/protected", nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			rr := httptest.NewRecorder()
+			
+			router.ServeHTTP(rr, req)
+			
+			assert.Equal(t, http.StatusOK, rr.Code)
+			results <- rr.Body.String()
+		}(i, token)
+	}
+	
+	// Collect results
+	responseCount := make(map[string]int)
+	for i := 0; i < 3; i++ {
+		result := <-results
+		responseCount[result]++
+	}
+	
+	// Verify each user got their own response
+	assert.Equal(t, 1, responseCount["user-1"])
+	assert.Equal(t, 1, responseCount["user-2"])
+	assert.Equal(t, 1, responseCount["user-3"])
+}
+
+// Helper function to create a test logger
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
 } 
