@@ -74,37 +74,35 @@ go build -o cmd/seed/seed cmd/seed/main.go
 - **Iris Guest** - `+27821234575` - Guest user
 - **Jack Visitor** - `+27821234576` - Visitor user
 
-### Schedules (3 additional + 2 from migrations)
-
-#### Development Schedules
-1. **Daily Evening Patrol** - `0 18 * * *` (Every day at 6 PM, 2 hours)
-2. **Weekend Morning Watch** - `0 6,10 * * 6,0` (Sat/Sun at 6 AM & 10 AM, 4 hours)
-3. **Weekday Lunch Security** - `0 12 * * 1-5` (Mon-Fri at noon, 1 hour)
+### Schedules (2 total)
 
 #### From Migrations
-4. **Summer Patrol (Nov-Apr)** - Already seeded via migration
-5. **Winter Patrol (May-Oct)** - Already seeded via migration
+1. **Old schedule** - `0 0 * * *` (Every day at midnight, 2 hours) - Has existing bookings and reports
+2. **New schedule** - `0 0 * * *` (Every day at midnight, 2 hours) - Fresh start for new assignments
 
 ### Recurring Assignments (7 total)
 
 | User | Schedule | Day | Time Slot | Buddy/Description |
 |------|----------|-----|-----------|-------------------|
-| Charlie | Weekend Morning Watch | Saturday | 06:00-10:00 | Diana Scout |
-| Diana | Weekend Morning Watch | Sunday | 10:00-14:00 | Charlie Volunteer |
-| Eve | Daily Evening Patrol | Monday | 18:00-20:00 | Monday evening patrol |
-| Eve | Daily Evening Patrol | Wednesday | 18:00-20:00 | Wednesday evening patrol |
-| Frank | Weekday Lunch Security | Tuesday | 12:00-13:00 | Tuesday lunch security |
-| Frank | Weekday Lunch Security | Thursday | 12:00-13:00 | Thursday lunch security |
-| Grace | Summer Patrol (Nov-Apr) | Saturday | 00:00-02:00 | Henry Security |
+| Charlie | Old schedule | Monday | 00:00-02:00 | Diana Scout |
+| Diana | Old schedule | Tuesday | 00:00-02:00 | Charlie Volunteer |
+| Eve | Old schedule | Wednesday | 00:00-02:00 | Wednesday midnight shift |
+| Eve | Old schedule | Thursday | 00:00-02:00 | Thursday midnight shift |
+| Frank | Old schedule | Friday | 00:00-02:00 | Friday midnight shift |
+| Frank | Old schedule | Saturday | 00:00-02:00 | Saturday midnight shift |
+| Grace | Old schedule | Sunday | 00:00-02:00 | Henry Security |
 
-### Sample Bookings (4 historical)
+### Sample Bookings (7 historical)
 
 | User | Schedule | Date/Time | Buddy | Attended |
 |------|----------|-----------|-------|----------|
-| Charlie | Daily Evening Patrol | 2024-11-25 18:00 | Diana Scout | ✅ |
-| Diana | Weekend Morning Watch | 2024-11-24 06:00 | Charlie Volunteer | ✅ |
-| Eve | Daily Evening Patrol | 2024-11-26 18:00 | - | ❌ |
-| Frank | Weekday Lunch Security | 2024-11-26 12:00 | - | ✅ |
+| Charlie | Old schedule | 2024-11-25 00:00 | Diana Scout | ✅ |
+| Diana | Old schedule | 2024-11-26 00:00 | Charlie Volunteer | ✅ |
+| Eve | Old schedule | 2024-11-27 00:00 | - | ❌ |
+| Eve | Old schedule | 2024-11-28 00:00 | - | ✅ |
+| Frank | Old schedule | 2024-11-29 00:00 | - | ✅ |
+| Frank | Old schedule | 2024-11-30 00:00 | - | ❌ |
+| Grace | Old schedule | 2024-12-01 00:00 | Henry Security | ✅ |
 
 ## Development Workflow
 
@@ -175,11 +173,11 @@ Users: []UserSeed{
 ```go
 Schedules: []ScheduleSeed{
     {
-        Name:            "My New Schedule",
-        CronExpr:        "0 14 * * 2,4", // Tue/Thu at 2 PM
+        Name:            "Evening Patrol",
+        CronExpr:        "0 20 * * *", // Every day at 8 PM
         StartDate:       "2024-01-01",
         EndDate:         "2024-12-31", 
-        DurationMinutes: 90,
+        DurationMinutes: 120,
         Timezone:        "Africa/Johannesburg",
     },
     // ... existing schedules
@@ -191,11 +189,11 @@ Schedules: []ScheduleSeed{
 RecurringAssignments: []RecurringAssignmentSeed{
     {
         UserPhone:    "+27821234577", // Must match existing user
-        ScheduleName: "My New Schedule", // Must match existing schedule
-        DayOfWeek:    2, // Tuesday (0=Sunday, 6=Saturday)
-        TimeSlot:     "14:00-15:30",
+        ScheduleName: "Evening Patrol", // Must match existing schedule
+        DayOfWeek:    1, // Monday (0=Sunday, 6=Saturday)
+        TimeSlot:     "20:00-22:00",
         BuddyName:    "Partner Name",
-        Description:  "Tuesday afternoon shift",
+        Description:  "Monday evening shift",
     },
     // ... existing assignments
 },
@@ -206,8 +204,8 @@ RecurringAssignments: []RecurringAssignmentSeed{
 Bookings: []BookingSeed{
     {
         UserPhone:    "+27821234577",
-        ScheduleName: "My New Schedule",
-        ShiftStart:   "2024-12-03T14:00:00Z", // Must be valid RFC3339
+        ScheduleName: "Evening Patrol",
+        ShiftStart:   "2024-12-03T20:00:00Z", // Must be valid RFC3339
         BuddyName:    "Partner Name",
         Attended:     true,
     },

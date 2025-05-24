@@ -8,7 +8,80 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
+
+const adminListReportsWithContext = `-- name: AdminListReportsWithContext :many
+SELECT 
+    r.report_id,
+    r.booking_id,
+    r.severity,
+    r.message,
+    r.created_at,
+    b.user_id,
+    COALESCE(u.name, '') as user_name,
+    u.phone as user_phone,
+    b.schedule_id,
+    s.name as schedule_name,
+    b.shift_start,
+    b.shift_end
+FROM reports r
+JOIN bookings b ON r.booking_id = b.booking_id
+JOIN users u ON b.user_id = u.user_id
+JOIN schedules s ON b.schedule_id = s.schedule_id
+ORDER BY r.created_at DESC
+`
+
+type AdminListReportsWithContextRow struct {
+	ReportID     int64          `json:"report_id"`
+	BookingID    int64          `json:"booking_id"`
+	Severity     int64          `json:"severity"`
+	Message      sql.NullString `json:"message"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UserID       int64          `json:"user_id"`
+	UserName     string         `json:"user_name"`
+	UserPhone    string         `json:"user_phone"`
+	ScheduleID   int64          `json:"schedule_id"`
+	ScheduleName string         `json:"schedule_name"`
+	ShiftStart   time.Time      `json:"shift_start"`
+	ShiftEnd     time.Time      `json:"shift_end"`
+}
+
+func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error) {
+	rows, err := q.db.QueryContext(ctx, adminListReportsWithContext)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminListReportsWithContextRow{}
+	for rows.Next() {
+		var i AdminListReportsWithContextRow
+		if err := rows.Scan(
+			&i.ReportID,
+			&i.BookingID,
+			&i.Severity,
+			&i.Message,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.UserName,
+			&i.UserPhone,
+			&i.ScheduleID,
+			&i.ScheduleName,
+			&i.ShiftStart,
+			&i.ShiftEnd,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const createReport = `-- name: CreateReport :one
 INSERT INTO reports (

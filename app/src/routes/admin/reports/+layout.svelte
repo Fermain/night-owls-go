@@ -8,72 +8,30 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	let searchTerm = $state('');
 	let { children } = $props();
 
-	// Fetch shift reports (simulated for now since API exists)
+	// Fetch shift reports from the real API
 	const reportsQuery = $derived(
 		createQuery({
-			queryKey: ['shiftReportsForLayout'],
+			queryKey: ['adminReportsForLayout'],
 			queryFn: async () => {
-				// This would use the real API: GET /api/admin/reports
-				// For now, simulate the data structure
-				await new Promise((resolve) => setTimeout(resolve, 800));
-
-				const mockReports = [
-					{
-						report_id: 1,
-						booking_id: 123,
-						message: 'Visitor seemed intoxicated and was asked to leave. No incidents.',
-						severity: 1,
-						created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-						user_name: 'John Doe',
-						user_phone: '+27123456789',
-						shift_start: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-						schedule_name: 'Friday Night Security'
-					},
-					{
-						report_id: 2,
-						booking_id: 124,
-						message: 'All quiet during shift. Routine patrol completed.',
-						severity: 0,
-						created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-						user_name: 'Jane Smith',
-						user_phone: '+27987654321',
-						shift_start: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-						schedule_name: 'Thursday Night Security'
-					},
-					{
-						report_id: 3,
-						booking_id: 125,
-						message:
-							'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
-						severity: 2,
-						created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-						user_name: 'Mike Johnson',
-						user_phone: '+27555666777',
-						shift_start: new Date(
-							Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000
-						).toISOString(),
-						schedule_name: 'Tuesday Night Security'
-					},
-					{
-						report_id: 4,
-						booking_id: 126,
-						message: 'Minor equipment malfunction in security booth. Reported to maintenance.',
-						severity: 1,
-						created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-						user_name: 'Sarah Wilson',
-						user_phone: '+27444555666',
-						shift_start: new Date(
-							Date.now() - 5 * 24 * 60 * 60 * 1000 - 1 * 60 * 60 * 1000
-						).toISOString(),
-						schedule_name: 'Monday Night Security'
-					}
-				];
-
-				return mockReports;
+				const response = await authenticatedFetch('/api/admin/reports');
+				if (!response.ok) {
+					throw new Error(`Failed to fetch reports: ${response.status}`);
+				}
+				const data = await response.json();
+				return data as Array<{
+					report_id: number;
+					severity: number;
+					created_at: string;
+					message: string;
+					user_name: string;
+					schedule_name: string;
+					[key: string]: any;
+				}>;
 			}
 		})
 	);

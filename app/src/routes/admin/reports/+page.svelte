@@ -11,10 +11,12 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	// Filter state
 	let severityFilter = $state<string>('all');
 	let timeFilter = $state<string>('all');
+	let scheduleFilter = $state<string>('all');
 
 	// Filter options
 	const severityOptions = [
@@ -31,57 +33,35 @@
 		{ value: 'month', label: 'This Month' }
 	];
 
-	// Fetch shift reports (simulated for now since API exists)
+	const scheduleOptions = [
+		{ value: 'all', label: 'All Schedules' },
+		{ value: 'Old schedule', label: 'Old schedule' },
+		{ value: 'New schedule', label: 'New schedule' }
+	];
+
+	// Fetch shift reports from the real API
 	const reportsQuery = $derived(
 		createQuery({
-			queryKey: ['shiftReports', severityFilter, timeFilter],
+			queryKey: ['adminReports', severityFilter, timeFilter, scheduleFilter],
 			queryFn: async () => {
-				// This would use the real API: GET /api/admin/reports
-				// For now, simulate the data structure
-				await new Promise((resolve) => setTimeout(resolve, 800));
+				const response = await authenticatedFetch('/api/admin/reports');
+				if (!response.ok) {
+					throw new Error(`Failed to fetch reports: ${response.status}`);
+				}
+				const reports = await response.json() as Array<{
+					report_id: number;
+					severity: number;
+					created_at: string;
+					schedule_name: string;
+					[key: string]: any;
+				}>;
 
-				const mockReports = [
-					{
-						report_id: 1,
-						booking_id: 123,
-						message: 'Visitor seemed intoxicated and was asked to leave. No incidents.',
-						severity: 1,
-						created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-						user_name: 'John Doe',
-						user_phone: '+27123456789',
-						shift_start: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-						schedule_name: 'Friday Night Security'
-					},
-					{
-						report_id: 2,
-						booking_id: 124,
-						message: 'All quiet during shift. Routine patrol completed.',
-						severity: 0,
-						created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-						user_name: 'Jane Smith',
-						user_phone: '+27987654321',
-						shift_start: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-						schedule_name: 'Thursday Night Security'
-					},
-					{
-						report_id: 3,
-						booking_id: 125,
-						message:
-							'Attempted break-in at rear entrance. Police called and responded. Suspect fled.',
-						severity: 2,
-						created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-						user_name: 'Mike Johnson',
-						user_phone: '+27555666777',
-						shift_start: new Date(
-							Date.now() - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000
-						).toISOString(),
-						schedule_name: 'Tuesday Night Security'
-					}
-				];
-
-				// Apply filters
-				return mockReports.filter((report) => {
+				// Apply client-side filters for now
+				return reports.filter((report) => {
 					if (severityFilter !== 'all' && report.severity.toString() !== severityFilter) {
+						return false;
+					}
+					if (scheduleFilter !== 'all' && report.schedule_name !== scheduleFilter) {
 						return false;
 					}
 					if (timeFilter !== 'all') {
@@ -259,6 +239,20 @@
 						</Select.Trigger>
 						<Select.Content>
 							{#each timeOptions as option (option.value)}
+								<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				<div class="space-y-2">
+					<Label>Schedule</Label>
+					<Select.Root type="single" bind:value={scheduleFilter}>
+						<Select.Trigger class="w-40">
+							{scheduleOptions.find((opt) => opt.value === scheduleFilter)?.label ?? 'Select schedule'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each scheduleOptions as option (option.value)}
 								<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
 							{/each}
 						</Select.Content>

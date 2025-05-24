@@ -364,93 +364,68 @@ func getSeedData() SeedData {
 func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData {
 	users := generateUsers(userCount)
 	
-	schedules := []ScheduleSeed{
-		// Development schedules with more frequent shifts for testing
-		{
-			Name:            "Daily Evening Patrol",
-			CronExpr:        "0 18 * * *", // Every day at 6 PM
-			StartDate:       "2024-01-01",
-			EndDate:         "2024-12-31",
-			DurationMinutes: 120,
-			Timezone:        "Africa/Johannesburg",
-		},
-		{
-			Name:            "Weekend Morning Watch",
-			CronExpr:        "0 6,10 * * 6,0", // Sat/Sun at 6 AM and 10 AM
-			StartDate:       "2024-01-01",
-			EndDate:         "2024-12-31",
-			DurationMinutes: 240, // 4 hours
-			Timezone:        "Africa/Johannesburg",
-		},
-		{
-			Name:            "Weekday Lunch Security",
-			CronExpr:        "0 12 * * 1-5", // Mon-Fri at noon
-			StartDate:       "2024-01-01",
-			EndDate:         "2024-12-31",
-			DurationMinutes: 60,
-			Timezone:        "Africa/Johannesburg",
-		},
-	}
+	// No additional schedules - rely only on migration schedules
+	schedules := []ScheduleSeed{}
 	
 	recurringAssignments := []RecurringAssignmentSeed{
-		// Charlie on weekend mornings (if user exists)
+		// Charlie on Old schedule
 		{
 			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Weekend Morning Watch",
-			DayOfWeek:    6, // Saturday
-			TimeSlot:     "06:00-10:00",
+			ScheduleName: "Old schedule",
+			DayOfWeek:    1, // Monday
+			TimeSlot:     "00:00-02:00",
 			BuddyName:    "Diana Scout",
-			Description:  "Regular Saturday morning patrol",
+			Description:  "Monday midnight shift",
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Weekend Morning Watch", 
-			DayOfWeek:    0, // Sunday
-			TimeSlot:     "10:00-14:00",
-			BuddyName:    "Charlie Volunteer",
-			Description:  "Sunday morning community watch",
-		},
-
-		// Eve on daily evening patrol (if user exists)
-		{
-			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Daily Evening Patrol",
-			DayOfWeek:    1, // Monday
-			TimeSlot:     "18:00-20:00",
-			Description:  "Monday evening patrol",
-		},
-		{
-			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Daily Evening Patrol",
-			DayOfWeek:    3, // Wednesday
-			TimeSlot:     "18:00-20:00",
-			Description:  "Wednesday evening patrol",
-		},
-
-		// Frank on weekday lunch (if user exists)
-		{
-			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Weekday Lunch Security",
+			ScheduleName: "Old schedule", 
 			DayOfWeek:    2, // Tuesday
-			TimeSlot:     "12:00-13:00",
-			Description:  "Tuesday lunch security",
+			TimeSlot:     "00:00-02:00",
+			BuddyName:    "Charlie Volunteer",
+			Description:  "Tuesday midnight shift",
+		},
+
+		// Eve on Old schedule
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Old schedule",
+			DayOfWeek:    3, // Wednesday
+			TimeSlot:     "00:00-02:00",
+			Description:  "Wednesday midnight shift",
+		},
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Old schedule",
+			DayOfWeek:    4, // Thursday
+			TimeSlot:     "00:00-02:00",
+			Description:  "Thursday midnight shift",
+		},
+
+		// Frank on Old schedule
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Old schedule",
+			DayOfWeek:    5, // Friday
+			TimeSlot:     "00:00-02:00",
+			Description:  "Friday midnight shift",
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Weekday Lunch Security",
-			DayOfWeek:    4, // Thursday
-			TimeSlot:     "12:00-13:00",
-			Description:  "Thursday lunch security",
-		},
-
-		// Grace on summer patrol (from migration, if user exists)
-		{
-			UserPhone:    "+27821234573", // Grace
-			ScheduleName: "Summer Patrol (Nov-Apr)",
+			ScheduleName: "Old schedule",
 			DayOfWeek:    6, // Saturday
 			TimeSlot:     "00:00-02:00",
+			Description:  "Saturday midnight shift",
+		},
+
+		// Grace on Old schedule
+		{
+			UserPhone:    "+27821234573", // Grace
+			ScheduleName: "Old schedule",
+			DayOfWeek:    0, // Sunday
+			TimeSlot:     "00:00-02:00",
 			BuddyName:    "Henry Security",
-			Description:  "Summer Saturday night patrol",
+			Description:  "Sunday midnight shift",
 		},
 	}
 	
@@ -468,31 +443,50 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 	}
 	
 	historicalBookings := []BookingSeed{
-		// Some historical bookings for testing
+		// Historical bookings for Old schedule with some reports
 		{
 			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Daily Evening Patrol",
-			ShiftStart:   "2024-11-25T18:00:00Z", // Recent Monday
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-25T00:00:00Z", // Recent Monday
 			BuddyName:    "Diana Scout",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Weekend Morning Watch",
-			ShiftStart:   "2024-11-24T06:00:00Z", // Recent Sunday
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-26T00:00:00Z", // Recent Tuesday
 			BuddyName:    "Charlie Volunteer",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Daily Evening Patrol",
-			ShiftStart:   "2024-11-26T18:00:00Z", // Recent Tuesday
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-27T00:00:00Z", // Recent Wednesday
 			Attended:     false, // Missed shift
 		},
 		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-28T00:00:00Z", // Recent Thursday
+			Attended:     true,
+		},
+		{
 			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Weekday Lunch Security",
-			ShiftStart:   "2024-11-26T12:00:00Z", // Recent Tuesday
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-29T00:00:00Z", // Recent Friday
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-30T00:00:00Z", // Recent Saturday
+			Attended:     false, // Missed shift
+		},
+		{
+			UserPhone:    "+27821234573", // Grace
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-12-01T00:00:00Z", // Recent Sunday
+			BuddyName:    "Henry Security",
 			Attended:     true,
 		},
 	}
@@ -617,29 +611,40 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 		futureDate := now.AddDate(0, 0, i)
 		weekday := int(futureDate.Weekday())
 		
-		// Add some evening patrol bookings
+		// Add Old schedule bookings (continue existing pattern)
 		if weekday >= 1 && weekday <= 5 { // Monday to Friday
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    "+27821234571", // Eve Patrol
-				ScheduleName: "Daily Evening Patrol",
-				ShiftStart:   futureDate.Format("2006-01-02") + "T18:00:00Z",
+				ScheduleName: "Old schedule",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
 				BuddyName:    "",
 				Attended:     false, // Future bookings default to not attended
 			})
 		}
 		
-		// Add weekend morning watches
+		// Add weekend Old schedule bookings
 		if weekday == 6 || weekday == 0 { // Saturday or Sunday
-			userPhone := "+27821234569" // Charlie
+			userPhone := "+27821234572" // Frank
 			if weekday == 0 { // Sunday
-				userPhone = "+27821234570" // Diana
+				userPhone = "+27821234573" // Grace
 			}
 			
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    userPhone,
-				ScheduleName: "Weekend Morning Watch",
-				ShiftStart:   futureDate.Format("2006-01-02") + "T06:00:00Z",
-				BuddyName:    "Auto-generated buddy",
+				ScheduleName: "Old schedule",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
+				BuddyName:    "Henry Security",
+				Attended:     false,
+			})
+		}
+		
+		// Occasionally add New schedule bookings (for variety)
+		if i%7 == 0 { // Every 7th day
+			futureBookings = append(futureBookings, BookingSeed{
+				UserPhone:    "+27821234574", // Henry Security
+				ScheduleName: "New schedule",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
+				BuddyName:    "",
 				Attended:     false,
 			})
 		}
