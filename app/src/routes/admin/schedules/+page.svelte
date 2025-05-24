@@ -6,11 +6,22 @@
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte';
+	import SchedulesDashboard from '$lib/components/admin/schedules/SchedulesDashboard.svelte';
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js'; // For dashboard placeholders
+	import { createSchedulesQuery } from '$lib/queries/admin/schedules/schedulesQuery';
+	import { createDashboardShiftsQuery } from '$lib/queries/admin/shifts/dashboardShiftsQuery';
 
 	// Get the currently selected schedule from the store
 	let currentScheduleToEdit = $derived($selectedScheduleForForm);
+
+	// Create queries for dashboard data
+	const schedulesQuery = $derived(createSchedulesQuery());
+	const shiftsQuery = $derived(createDashboardShiftsQuery());
+
+	// Combined loading and error states for dashboard
+	const isLoading = $derived($schedulesQuery.isLoading || $shiftsQuery.isLoading);
+	const isError = $derived($schedulesQuery.isError || $shiftsQuery.isError);
+	const error = $derived($schedulesQuery.error || $shiftsQuery.error || undefined);
 
 	function handleCreateNew() {
 		selectedScheduleForForm.set(undefined);
@@ -35,30 +46,12 @@
 		<ScheduleForm />
 	{:else}
 		<!-- Schedules Dashboard View -->
-		<div class="p-4 md:p-8">
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-semibold">Schedules Dashboard</h1>
-				<Button onclick={handleCreateNew}>Create New Schedule</Button>
-			</div>
-			<p class="mb-6 text-muted-foreground">
-				Overview and management tools for schedules will be displayed here.
-			</p>
-			<div class="space-y-4">
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{#each [1, 2, 3] as i (i)}
-						<div class="p-4 border rounded-lg bg-card">
-							<Skeleton class="h-6 w-3/4 mb-2" />
-							<Skeleton class="h-10 w-1/2 mb-4" />
-							<Skeleton class="h-4 w-full" />
-							<Skeleton class="h-4 w-5/6 mt-1" />
-						</div>
-					{/each}
-				</div>
-				<div class="p-4 border rounded-lg bg-card">
-					<Skeleton class="h-8 w-1/4 mb-4" />
-					<Skeleton class="h-48 w-full" />
-				</div>
-			</div>
-		</div>
+		<SchedulesDashboard
+			{isLoading}
+			{isError}
+			{error}
+			schedules={$schedulesQuery.data}
+			shifts={$shiftsQuery.data}
+		/>
 	{/if}
 </div>
