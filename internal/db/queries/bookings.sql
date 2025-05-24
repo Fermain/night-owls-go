@@ -29,6 +29,23 @@ SELECT * FROM bookings
 WHERE user_id = ?
 ORDER BY shift_start DESC;
 
+-- name: ListBookingsByUserIDWithSchedule :many
+SELECT 
+    b.booking_id,
+    b.user_id,
+    b.schedule_id,
+    b.shift_start,
+    b.shift_end,
+    b.buddy_user_id,
+    b.buddy_name,
+    b.attended,
+    b.created_at,
+    s.name as schedule_name
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.schedule_id
+WHERE b.user_id = ?
+ORDER BY b.shift_start DESC;
+
 -- name: UpdateBookingAttendance :one
 UPDATE bookings
 SET attended = ?

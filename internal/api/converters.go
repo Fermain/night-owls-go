@@ -115,4 +115,39 @@ func ToBookingResponses(bookings []db.Booking) []BookingResponse {
 		responses[i] = ToBookingResponse(booking)
 	}
 	return responses
+}
+
+// ToBookingWithScheduleResponse converts a ListBookingsByUserIDWithScheduleRow to an API-friendly response
+func ToBookingWithScheduleResponse(booking db.ListBookingsByUserIDWithScheduleRow) BookingWithScheduleResponse {
+	var buddyUserID *int64
+	if booking.BuddyUserID.Valid {
+		value := booking.BuddyUserID.Int64
+		buddyUserID = &value
+	}
+
+	var buddyName string
+	if booking.BuddyName.Valid {
+		buddyName = booking.BuddyName.String
+	}
+
+	// Handle CreatedAt
+	var createdAt time.Time
+	if booking.CreatedAt.Valid {
+		createdAt = booking.CreatedAt.Time
+	} else {
+		createdAt = time.Now() // Fallback, though this shouldn't happen
+	}
+
+	return BookingWithScheduleResponse{
+		BookingID:    booking.BookingID,
+		UserID:       booking.UserID,
+		ScheduleID:   booking.ScheduleID,
+		ScheduleName: booking.ScheduleName,
+		ShiftStart:   booking.ShiftStart,
+		ShiftEnd:     booking.ShiftEnd,
+		BuddyUserID:  buddyUserID,
+		BuddyName:    buddyName,
+		Attended:     booking.Attended,
+		CreatedAt:    createdAt,
+	}
 } 

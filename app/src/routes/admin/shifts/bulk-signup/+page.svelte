@@ -122,7 +122,11 @@
 			return results;
 		},
 		onSuccess: (results) => {
-			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
+			// Invalidate all adminShiftSlots queries regardless of date parameters
+			queryClient.invalidateQueries({ 
+				queryKey: ['adminShiftSlots'],
+				exact: false // This allows matching queries with additional parameters
+			});
 			const successCount = results.filter((r) => r.success).length;
 			const errorCount = results.filter((r) => !r.success).length;
 
@@ -220,7 +224,11 @@
 		}
 
 		const assignments = Array.from(selectedShifts).map((shiftKey) => {
-			const [scheduleId, startTime] = shiftKey.split('-', 2);
+			// Split only on the first hyphen to preserve the full timestamp
+			const firstHyphenIndex = shiftKey.indexOf('-');
+			const scheduleId = shiftKey.substring(0, firstHyphenIndex);
+			const startTime = shiftKey.substring(firstHyphenIndex + 1);
+			
 			return {
 				scheduleId: parseInt(scheduleId),
 				startTime: startTime

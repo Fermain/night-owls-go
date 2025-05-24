@@ -20,6 +20,20 @@ type BookingResponse struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// BookingWithScheduleResponse includes schedule name for admin views
+type BookingWithScheduleResponse struct {
+	BookingID    int64     `json:"booking_id"`
+	UserID       int64     `json:"user_id"`
+	ScheduleID   int64     `json:"schedule_id"`
+	ScheduleName string    `json:"schedule_name"`
+	ShiftStart   time.Time `json:"shift_start"`
+	ShiftEnd     time.Time `json:"shift_end"`
+	BuddyUserID  *int64    `json:"buddy_user_id,omitempty"`
+	BuddyName    string    `json:"buddy_name,omitempty"`
+	Attended     bool      `json:"attended"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 // ReportResponse represents a report in the API
 type ReportResponse struct {
 	ReportID     int64     `json:"report_id"`

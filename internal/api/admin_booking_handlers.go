@@ -100,7 +100,7 @@ func (h *AdminBookingHandler) AssignUserToShiftHandler(w http.ResponseWriter, r 
 // @Tags admin-bookings
 // @Produce json
 // @Param userId path int true "User ID" example(42)
-// @Success 200 {array} BookingResponse "List of bookings for the user"
+// @Success 200 {array} BookingWithScheduleResponse "List of bookings for the user with schedule names"
 // @Failure 400 {object} ErrorResponse "Invalid user ID"
 // @Failure 401 {object} ErrorResponse "Unauthorized - admin authentication required"
 // @Failure 403 {object} ErrorResponse "Forbidden - user does not have admin privileges"
@@ -128,9 +128,9 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 	}
 
 	// Convert to API response format
-	bookingResponses := make([]BookingResponse, len(bookings))
+	bookingResponses := make([]BookingWithScheduleResponse, len(bookings))
 	for i, booking := range bookings {
-		bookingResponses[i] = ToBookingResponse(booking)
+		bookingResponses[i] = ToBookingWithScheduleResponse(booking)
 	}
 
 	RespondWithJSON(w, http.StatusOK, bookingResponses, h.logger)

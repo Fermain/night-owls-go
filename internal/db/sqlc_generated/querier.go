@@ -36,6 +36,7 @@ type Querier interface {
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
+	ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error)
 	ListRecurringAssignments(ctx context.Context) ([]RecurringAssignment, error)
 	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)

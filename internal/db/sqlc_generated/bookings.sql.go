@@ -151,6 +151,71 @@ func (q *Queries) ListBookingsByUserID(ctx context.Context, userID int64) ([]Boo
 	return items, nil
 }
 
+const listBookingsByUserIDWithSchedule = `-- name: ListBookingsByUserIDWithSchedule :many
+SELECT 
+    b.booking_id,
+    b.user_id,
+    b.schedule_id,
+    b.shift_start,
+    b.shift_end,
+    b.buddy_user_id,
+    b.buddy_name,
+    b.attended,
+    b.created_at,
+    s.name as schedule_name
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.schedule_id
+WHERE b.user_id = ?
+ORDER BY b.shift_start DESC
+`
+
+type ListBookingsByUserIDWithScheduleRow struct {
+	BookingID    int64          `json:"booking_id"`
+	UserID       int64          `json:"user_id"`
+	ScheduleID   int64          `json:"schedule_id"`
+	ShiftStart   time.Time      `json:"shift_start"`
+	ShiftEnd     time.Time      `json:"shift_end"`
+	BuddyUserID  sql.NullInt64  `json:"buddy_user_id"`
+	BuddyName    sql.NullString `json:"buddy_name"`
+	Attended     bool           `json:"attended"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	ScheduleName string         `json:"schedule_name"`
+}
+
+func (q *Queries) ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error) {
+	rows, err := q.db.QueryContext(ctx, listBookingsByUserIDWithSchedule, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListBookingsByUserIDWithScheduleRow{}
+	for rows.Next() {
+		var i ListBookingsByUserIDWithScheduleRow
+		if err := rows.Scan(
+			&i.BookingID,
+			&i.UserID,
+			&i.ScheduleID,
+			&i.ShiftStart,
+			&i.ShiftEnd,
+			&i.BuddyUserID,
+			&i.BuddyName,
+			&i.Attended,
+			&i.CreatedAt,
+			&i.ScheduleName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateBookingAttendance = `-- name: UpdateBookingAttendance :one
 UPDATE bookings
 SET attended = ?
