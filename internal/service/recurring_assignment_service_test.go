@@ -174,7 +174,7 @@ func TestCreateRecurringAssignment(t *testing.T) {
 	t.Run("duplicate assignment", func(t *testing.T) {
 		params := db.CreateRecurringAssignmentParams{
 			UserID:     user.UserID,
-			DayOfWeek:  6,
+			DayOfWeek:  0, // Sunday (different from successful creation test)
 			ScheduleID: schedule.ScheduleID,
 			TimeSlot:   "18:00-20:00",
 		}
@@ -185,7 +185,7 @@ func TestCreateRecurringAssignment(t *testing.T) {
 
 		// Try to create duplicate
 		_, err = service.CreateRecurringAssignment(ctx, params)
-		assert.Error(t, err) // Should fail due to UNIQUE constraint
+		assert.ErrorIs(t, err, ErrRecurringAssignmentConflict) // Should fail due to UNIQUE constraint
 	})
 }
 
