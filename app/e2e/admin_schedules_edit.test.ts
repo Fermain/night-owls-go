@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { loginAsAdmin } from './test-utils';
 
 test.describe('Admin Schedule Editing', () => {
 	const scheduleListName = 'Test Schedule E2E';
@@ -6,6 +7,7 @@ test.describe('Admin Schedule Editing', () => {
 	const editedSuffix = ' - Edited by Playwright';
 
 	test.beforeEach(async ({ page }) => {
+		await loginAsAdmin(page);
 		// Navigate to the admin schedules list
 		await page.goto('/admin/schedules');
 

@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './test-utils';
 
 test.describe('Admin Schedules Slots Page', () => {
 	test('should allow selecting and re-selecting a date range in DateRangePicker', async ({
 		page
 	}) => {
+		await loginAsAdmin(page);
 		await page.goto('/admin/schedules/slots');
 
 		// The DateRangePicker trigger button

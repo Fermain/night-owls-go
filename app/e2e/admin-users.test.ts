@@ -1,8 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const ADMIN_PHONE = '+1234567890';
-const OTP = '123456'; // Dev mode OTP
+import { loginAsAdmin } from './test-utils';
 
 // Test data constants
 const TEST_USERS = {
@@ -14,19 +11,6 @@ const TEST_USERS = {
 };
 
 const USER_ROLES = ['guest', 'owl', 'supervisor', 'admin'];
-
-async function loginAsAdmin(page: Page) {
-	await page.goto('/login');
-	await page.fill('input[name="phone"]', ADMIN_PHONE);
-	await page.click('button[type="submit"]');
-
-	// Enter OTP
-	await page.fill('input[name="otp"]', OTP);
-	await page.click('button[type="submit"]');
-
-	// Wait for redirect to dashboard
-	await expect(page).toHaveURL('/');
-}
 
 async function navigateToUsers(page: Page) {
 	await page.goto('/admin/users');

@@ -1,8 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const ADMIN_PHONE = '+1234567890';
-const OTP = '123456'; // Dev mode OTP
+import { loginAsAdmin } from './test-utils';
 
 // Test data constants
 const TEST_USERS = {
@@ -18,19 +15,6 @@ const TEST_SCHEDULES = {
 	WEEKEND_SPECIAL: { name: 'Weekend Special', cron: '0 12 * * 6,0' },
 	NIGHT_SHIFT: { name: 'Night Shift', cron: '0 22 * * *' }
 };
-
-async function loginAsAdmin(page: Page) {
-	await page.goto('/login');
-	await page.fill('input[name="phone"]', ADMIN_PHONE);
-	await page.click('button[type="submit"]');
-
-	// Enter OTP
-	await page.fill('input[name="otp"]', OTP);
-	await page.click('button[type="submit"]');
-
-	// Wait for redirect to dashboard
-	await expect(page).toHaveURL('/');
-}
 
 async function navigateToShifts(page: Page) {
 	await page.goto('/admin/shifts');
@@ -318,8 +302,7 @@ test.describe('Admin Shifts Management - Filtering and Search', () => {
 		// Open schedule filter
 		await page.click('button:has-text("Schedule"), select[name="schedule"]');
 		await page.click(
-			`option:has-text("${TEST_SCHEDULES.MORNING_PATROL.name}"), div:has-text("${TEST_SCHEDULES.MORNING_PATROL.name}")`
-		);
+			`option:has-text("${TEST_SCHEDULES.MORNING_PATROL.name}"), div:has-text("${TEST_SCHEDULES.MORNING_PATROL.name}")`		);
 
 		// Should show only shifts for selected schedule
 		await expect(page.locator(`text=${TEST_SCHEDULES.MORNING_PATROL.name}`)).toBeVisible();
@@ -687,3 +670,4 @@ test.describe('Admin Shifts Management - Performance', () => {
 		expect(filterTime).toBeLessThan(2000); // 2 seconds
 	});
 });
+
