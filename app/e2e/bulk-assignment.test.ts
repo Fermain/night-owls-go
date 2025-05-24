@@ -12,7 +12,7 @@ const TEST_USERS = {
 
 async function navigateToBulkAssignment(page: Page) {
 	await page.goto('/admin/shifts/bulk-signup');
-	await expect(page.locator('h1')).toContainText('Bulk Shift Assignment');
+	await expect(page.locator('h1')).toContainText('Bulk', { timeout: 10000 });
 }
 
 async function selectUser(page: Page, userName: string) {

@@ -48,7 +48,7 @@ const INVALID_CRON_CASES = [
 
 async function navigateToSchedules(page: Page) {
 	await page.goto('/admin/schedules');
-	await expect(page.locator('h1, h2')).toContainText('Schedules');
+	await expect(page.locator('h1, h2').first()).toContainText('Schedules');
 }
 
 async function createSchedule(
@@ -59,14 +59,14 @@ async function createSchedule(
 	duration?: number,
 	timezone?: string
 ) {
-	await page.click('button:has-text("Create New Schedule"), a:has-text("Create New Schedule")');
+	await page.click('button:has-text("New Schedule")');
 
 	// Wait for form to be visible
 	await expect(page.locator('form')).toBeVisible();
 
 	// Fill basic fields
-	await page.fill('input[name="name"]', name);
-	await page.fill('input[name="cronExpr"]', cronExpr);
+	await page.fill('input#name', name);
+	await page.fill('input#cron_expr', cronExpr);
 
 	// Fill optional fields if provided
 	if (description) {
@@ -82,7 +82,7 @@ async function createSchedule(
 	}
 
 	// Submit form
-	await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
+	await page.click('button[type="submit"]');
 
 	// Verify success
 	await expect(page.locator('.toast')).toContainText('successfully');

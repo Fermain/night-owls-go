@@ -23,8 +23,8 @@ async function navigateToShifts(page: Page) {
 
 async function createTestUser(page: Page, name: string, phone: string, role: string = 'owl') {
 	await page.goto('/admin/users/new');
-	await page.fill('input[name="name"]', name);
-	await page.fill('input[name="phone"]', phone);
+	await page.fill('input#name', name);
+	await page.fill('input[type="tel"]', phone);
 	await page.selectOption('select[name="role"]', role);
 	await page.click('button[type="submit"]');
 	await expect(page.locator('.toast')).toContainText('successfully');
@@ -32,8 +32,8 @@ async function createTestUser(page: Page, name: string, phone: string, role: str
 
 async function createTestSchedule(page: Page, name: string, cronExpr: string) {
 	await page.goto('/admin/schedules/new');
-	await page.fill('input[name="name"]', name);
-	await page.fill('input[name="cronExpr"]', cronExpr);
+	await page.fill('input#name', name);
+	await page.fill('input#cron_expr', cronExpr);
 	await page.click('button[type="submit"]');
 	await expect(page.locator('.toast')).toContainText('successfully');
 }

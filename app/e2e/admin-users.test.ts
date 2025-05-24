@@ -24,8 +24,8 @@ async function createUser(page: Page, name: string, phone: string, role: string 
 	await expect(page.locator('form')).toBeVisible();
 
 	// Fill form
-	await page.fill('input[name="name"]', name);
-	await page.fill('input[name="phone"]', phone);
+	await page.fill('input#name', name);
+	await page.fill('input[type="tel"]', phone);
 	await page.selectOption('select[name="role"]', role);
 
 	// Submit form

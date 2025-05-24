@@ -91,15 +91,22 @@
 			numberOfMonths={2}
 			minValue={new CalendarDate(1900, 1, 1)}
 			onValueChange={(v) => {
+				console.log('DateRangePicker onValueChange:', v);
 				if (v?.start && v.end && v.start.compare(v.end) <= 0) {
 					popoverOpen = false;
 					if (change) {
 						const startStr = formatCalendarDateToYyyyMmDd(v.start);
 						const endStr = formatCalendarDateToYyyyMmDd(v.end);
+						console.log('DateRangePicker formatted:', { startStr, endStr, initialStartDate, initialEndDate });
 						if (startStr !== initialStartDate || endStr !== initialEndDate) {
+							console.log('DateRangePicker calling change callback');
 							change({ start: startStr, end: endStr });
+						} else {
+							console.log('DateRangePicker skipping change - same as initial dates');
 						}
 					}
+				} else {
+					console.log('DateRangePicker: invalid range or missing dates');
 				}
 				// Add handling for partial selection or clearing if needed in the future
 				// else if (v?.start && !v.end) { /* partial selection */ }

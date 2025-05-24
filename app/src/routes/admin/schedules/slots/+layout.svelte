@@ -143,25 +143,47 @@
 		});
 	});
 
-	// Upcoming shifts (next 7 days) for sidebar
+	// Upcoming shifts - respect user's date range selection
 	const upcomingShifts = $derived.by(() => {
 		const now = new Date();
-		const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+		
+		// Use the user's selected date range, or fall back to next 7 days
+		let startFilter = now;
+		let endFilter = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+		
+		if (dateRangeStart && dateRangeEnd) {
+			const userStartDate = new Date(dateRangeStart + 'T00:00:00Z');
+			const userEndDate = new Date(dateRangeEnd + 'T23:59:59Z');
+			
+			// Only show future shifts, but within the user's selected range
+			startFilter = userStartDate > now ? userStartDate : now;
+			endFilter = userEndDate;
+			
+			console.log('Date range filter:', {
+				userSelected: { start: dateRangeStart, end: dateRangeEnd },
+				actualFilter: { start: startFilter.toISOString(), end: endFilter.toISOString() },
+				totalShifts: filteredShifts.length
+			});
+		}
+		
 		const upcoming = filteredShifts
 			.filter((shift) => {
 				const shiftDate = new Date(shift.start_time);
-				return shiftDate >= now && shiftDate <= nextWeek;
+				return shiftDate >= startFilter && shiftDate <= endFilter;
 			})
 			.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 			.slice(0, 20); // Limit to 20 items for sidebar
 
+		console.log('Upcoming shifts filtered:', upcoming.length, 'from', filteredShifts.length, 'total');
 		return upcoming;
 	});
 
 	// Event Handlers
 	function handleDateRangeChange(range: { start: string | null; end: string | null }) {
+		console.log('Date range changed:', range);
 		dateRangeStart = range.start;
 		dateRangeEnd = range.end;
+		console.log('Date range state updated:', { dateRangeStart, dateRangeEnd });
 	}
 
 	function selectShift(shift: AdminShiftSlot) {
@@ -244,7 +266,13 @@
 				<ClockIcon class="h-4 w-4" />
 				<span class="text-sm font-medium">Upcoming Shifts</span>
 			</div>
-			<p class="text-xs text-muted-foreground">Next 7 days</p>
+			<p class="text-xs text-muted-foreground">
+				{#if dateRangeStart && dateRangeEnd}
+					{dateRangeStart} to {dateRangeEnd}
+				{:else}
+					Next 7 days
+				{/if}
+			</p>
 		</div>
 
 		<!-- Upcoming Shifts List -->
