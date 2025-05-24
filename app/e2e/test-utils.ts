@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { expect, type Page } from '@playwright/test';
 
 export class DatabaseHelper {
 	private dbPath = '../night-owls.test.db';
@@ -229,3 +230,58 @@ export const TEST_CONFIG = {
 	DEFAULT_TEST_PHONE: '+1555000E2E',
 	DEFAULT_TEST_NAME: 'E2E Test User'
 } as const;
+
+// Shared authentication configuration for e2e tests
+export const AUTH_CONFIG = {
+	ADMIN_PHONE: '+27821234567', // Alice Admin from seeded data
+	OTP: '123456' // Dev mode OTP
+} as const;
+
+/**
+ * Simple admin login using dev mode authentication endpoint
+ * This bypasses OTP entirely for reliable e2e testing
+ */
+export async function loginAsAdmin(page: Page): Promise<void> {
+	// First navigate to the app to establish a proper origin for localStorage
+	await page.goto('/');
+	
+	// Call the dev login endpoint directly
+	const response = await page.request.post('/api/auth/dev-login', {
+		data: {
+			phone: AUTH_CONFIG.ADMIN_PHONE
+		}
+	});
+
+	if (!response.ok()) {
+		throw new Error(`Dev login failed: ${response.status()} ${await response.text()}`);
+	}
+
+	const result = await response.json();
+	const token = result.token;
+
+	if (!token) {
+		throw new Error('No token received from dev login endpoint');
+	}
+
+	// Set the authentication token in browser storage (now that we have a proper origin)
+	await page.evaluate((data) => {
+		const userSessionData = {
+			isAuthenticated: true,
+			id: data.user.id.toString(), // Convert to string as expected by UserSessionData
+			name: data.user.name,
+			phone: data.user.phone,
+			role: data.user.role, // 'admin' | 'owl' | 'guest'
+			token: data.token
+		};
+		localStorage.setItem('user-session', JSON.stringify(userSessionData));
+	}, result);
+
+	// Navigate to admin area to verify login worked
+	await page.goto('/admin');
+	
+	// Wait for the page to load and verify we're authenticated
+	await page.waitForLoadState('networkidle');
+	
+	// Verify we didn't get redirected to login
+	expect(page.url()).toContain('/admin');
+}

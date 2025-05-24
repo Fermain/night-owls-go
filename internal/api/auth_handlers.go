@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
@@ -59,6 +60,22 @@ type VerifyRequest struct {
 // VerifyResponse is the JSON response from POST /auth/verify.
 type VerifyResponse struct {
 	Token string `json:"token"`
+}
+
+// DevLoginRequest is the expected JSON for POST /auth/dev-login (dev mode only).
+type DevLoginRequest struct {
+	Phone string `json:"phone"`
+}
+
+// DevLoginResponse is the JSON response from POST /auth/dev-login (dev mode only).
+type DevLoginResponse struct {
+	Token string `json:"token"`
+	User  struct {
+		ID    int64  `json:"id"`
+		Phone string `json:"phone"`
+		Name  string `json:"name"`
+		Role  string `json:"role"`
+	} `json:"user"`
 }
 
 // RegisterHandler handles POST /auth/register
@@ -213,4 +230,86 @@ func (h *AuthHandler) getLatestOTPFromOutbox(ctx context.Context, phoneE164 stri
 	}
 
 	return ""
+}
+
+// DevLoginHandler handles POST /auth/dev-login (development mode only)
+// @Summary Development-only direct login endpoint
+// @Description Bypasses OTP and directly generates JWT token for testing (DEV MODE ONLY)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body DevLoginRequest true "Phone number for dev login"
+// @Success 200 {object} DevLoginResponse "JWT token generated successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request or dev mode disabled"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /auth/dev-login [post]
+func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Only allow in development mode
+	if !h.config.DevMode {
+		RespondWithError(w, http.StatusForbidden, "Development login endpoint is only available in dev mode", h.logger)
+		return
+	}
+
+	var req DevLoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	if req.Phone == "" {
+		RespondWithError(w, http.StatusBadRequest, "Phone number is required", h.logger)
+		return
+	}
+
+	// Parse the phone number to E.164 format
+	parsedNum, err := phonenumbers.Parse(req.Phone, "")
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid phone number format", h.logger, "error", err.Error())
+		return
+	}
+	if !phonenumbers.IsValidNumber(parsedNum) {
+		RespondWithError(w, http.StatusBadRequest, "Invalid phone number", h.logger)
+		return
+	}
+	phoneE164 := phonenumbers.Format(parsedNum, phonenumbers.E164)
+
+	h.logger.InfoContext(r.Context(), "Dev login attempt", "phone", phoneE164)
+
+	// Get user details from database
+	user, err := h.querier.GetUserByPhone(r.Context(), phoneE164)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			RespondWithError(w, http.StatusNotFound, "User not found", h.logger, "phone", phoneE164)
+			return
+		}
+		RespondWithError(w, http.StatusInternalServerError, "Failed to get user", h.logger, "error", err.Error())
+		return
+	}
+
+	// Generate JWT token directly using the auth package
+	token, err := auth.GenerateJWT(user.UserID, user.Phone, user.Role, h.config.JWTSecret, h.config.JWTExpirationHours)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to generate token", h.logger, "error", err.Error())
+		return
+	}
+
+	response := DevLoginResponse{
+		Token: token,
+		User: struct {
+			ID    int64  `json:"id"`
+			Phone string `json:"phone"`
+			Name  string `json:"name"`
+			Role  string `json:"role"`
+		}{
+			ID:    user.UserID,
+			Phone: user.Phone,
+			Name:  user.Name.String,
+			Role:  user.Role,
+		},
+	}
+
+	h.logger.InfoContext(r.Context(), "Dev login successful", "phone", phoneE164, "user_id", user.UserID, "role", user.Role)
+	RespondWithJSON(w, http.StatusOK, response, h.logger)
 } 

@@ -210,6 +210,13 @@ func main() {
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
+	
+	// Development-only auth endpoints
+	if cfg.DevMode {
+		fuego.PostStd(s, "/api/auth/dev-login", authAPIHandler.DevLoginHandler)
+		slog.Info("Development mode: dev-login endpoint enabled")
+	}
+	
 	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)

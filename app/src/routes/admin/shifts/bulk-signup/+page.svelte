@@ -60,36 +60,45 @@
 	});
 
 	// Fetch shift slots with date range
-	const shiftsQuery = $derived.by(() => {
-		let fromDate: string | undefined;
-		let toDate: string | undefined;
+	const shiftsQuery = createQuery<AdminShiftSlot[], Error>({
+		queryKey: ['adminShiftSlots', 'bulk-assignment'],
+		queryFn: async () => {
+			// Calculate date range on each query
+			let fromDate: string;
+			let toDate: string;
 
-		if (dateRangeStart && dateRangeEnd) {
-			fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
-			toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
-		} else {
-			// Default to next 30 days
-			const now = new Date();
-			const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-			fromDate = now.toISOString();
-			toDate = futureDate.toISOString();
-		}
+			if (dateRangeStart) {
+				fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
+				console.log('Using selected start date:', dateRangeStart, '→', fromDate);
+			} else {
+				fromDate = new Date().toISOString();
+				console.log('Using default start date (now):', fromDate);
+			}
 
-		return createQuery<AdminShiftSlot[], Error>({
-			queryKey: ['adminShiftSlots', fromDate, toDate],
-			queryFn: async () => {
-				const params = new URLSearchParams();
-				if (fromDate) params.append('from', fromDate);
-				if (toDate) params.append('to', toDate);
+			if (dateRangeEnd) {
+				toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
+				console.log('Using selected end date:', dateRangeEnd, '→', toDate);
+			} else {
+				const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+				toDate = futureDate.toISOString();
+				console.log('Using default end date (30 days):', toDate);
+			}
 
-				const response = await authenticatedFetch(
-					`/api/admin/schedules/all-slots?${params.toString()}`
-				);
-				if (!response.ok) throw new Error('Failed to fetch shifts');
-				return response.json();
-			},
-			staleTime: 1000 * 60 * 5
-		});
+			const params = new URLSearchParams();
+			params.append('from', fromDate);
+			params.append('to', toDate);
+
+			console.log('Fetching shifts with URL:', `/api/admin/schedules/all-slots?${params.toString()}`);
+
+			const response = await authenticatedFetch(
+				`/api/admin/schedules/all-slots?${params.toString()}`
+			);
+			if (!response.ok) throw new Error('Failed to fetch shifts');
+			const data = await response.json();
+			console.log('Received shifts data:', data.length, 'shifts');
+			return data;
+		},
+		staleTime: 1000 * 60 * 5
 	});
 
 	// Bulk assignment mutation
@@ -145,7 +154,7 @@
 
 	// Derived values
 	const users = $derived($usersQuery.data ?? []);
-	const shifts = $derived($shiftsQuery.data ?? []);
+	const shifts = $derived(($shiftsQuery.data ?? []) as AdminShiftSlot[]);
 	const selectedUser = $derived(users.find((u) => u.id.toString() === selectedUserId));
 
 	// Filtered and grouped shifts
@@ -239,6 +248,7 @@
 	}
 
 	function handleDateRangeChange(range: { start: string | null; end: string | null }) {
+		console.log('Date range changed:', range);
 		dateRangeStart = range.start;
 		dateRangeEnd = range.end;
 
@@ -246,6 +256,9 @@
 		if (patternMode && selectedPattern) {
 			selectAllMatchingShifts();
 		}
+
+		// Force query refetch with new date range
+		$shiftsQuery.refetch();
 	}
 
 	function clearSelection() {
@@ -444,12 +457,14 @@
 
 					<div class="space-y-2">
 						<Label class="text-sm font-medium">Date Range</Label>
-						<DateRangePicker
-							initialStartDate={dateRangeStart}
-							initialEndDate={dateRangeEnd}
-							change={handleDateRangeChange}
-							placeholderText="Next 30 days"
-						/>
+						<div data-testid="date-range-picker">
+							<DateRangePicker
+								initialStartDate={dateRangeStart}
+								initialEndDate={dateRangeEnd}
+								change={handleDateRangeChange}
+								placeholderText="Next 30 days"
+							/>
+						</div>
 					</div>
 
 					<div class="flex items-center space-x-2">
@@ -533,7 +548,7 @@
 						<p class="text-sm text-muted-foreground">Try adjusting your date range or filters</p>
 					</div>
 				{:else}
-					<div class="space-y-6">
+					<div class="space-y-6" data-testid="shifts-list">
 						{#each groupedShifts as { date, displayDate, shifts } (date)}
 							<div class="border rounded-lg p-4">
 								<div class="flex items-center justify-between mb-4">
@@ -627,8 +642,7 @@
 																weekday: 'short'
 															})}
 															{#if isPatternMatch}
-																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge
-																>
+																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge>
 															{/if}
 														</div>
 													{/if}
