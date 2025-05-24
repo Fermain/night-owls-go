@@ -134,11 +134,16 @@
 
 	// Separate past and upcoming bookings
 	const { pastBookings, upcomingBookings } = $derived.by(() => {
-		if (!userBookingsQuery?.$data) {
+		if (!userBookingsQuery) {
 			return { pastBookings: [], upcomingBookings: [] };
 		}
 
-		const bookings = userBookingsQuery.$data;
+		const queryData = $userBookingsQuery;
+		if (!queryData || !queryData.data) {
+			return { pastBookings: [], upcomingBookings: [] };
+		}
+
+		const bookings = queryData.data;
 		const now = new Date();
 
 		const past = bookings.filter((booking: BookingResponse) =>
@@ -161,6 +166,20 @@
 		);
 
 		return { pastBookings: past, upcomingBookings: upcoming };
+	});
+
+	// Helper to safely access query properties
+	const queryState = $derived.by(() => {
+		if (!userBookingsQuery) {
+			return { isLoading: false, isError: false, error: null, data: null };
+		}
+		const query = $userBookingsQuery;
+		return {
+			isLoading: query?.isLoading || false,
+			isError: query?.isError || false,
+			error: query?.error,
+			data: query?.data || null
+		};
 	});
 
 	function formatShiftDate(dateString: string): string {
@@ -279,13 +298,13 @@
 			Booked Shifts
 		</h2>
 
-		{#if userBookingsQuery?.$isLoading}
+		{#if queryState.isLoading}
 			<div class="text-sm text-muted-foreground">Loading bookings...</div>
-		{:else if userBookingsQuery?.$isError}
+		{:else if queryState.isError}
 			<div class="text-sm text-destructive">
-				Error loading bookings: {userBookingsQuery.$error.message}
+				Error loading bookings: {queryState.error?.message || 'Unknown error'}
 			</div>
-		{:else if !userBookingsQuery?.$data || userBookingsQuery.$data.length === 0}
+		{:else if !queryState.data || queryState.data.length === 0}
 			<div class="text-sm text-muted-foreground">No bookings found for this user.</div>
 		{:else}
 			<div class="space-y-6">
@@ -386,7 +405,7 @@
 				<div class="bg-gray-50 rounded-lg p-4">
 					<div class="text-sm text-muted-foreground">
 						<strong>Total bookings:</strong>
-						{userBookingsQuery.$data.length}
+						{queryState.data?.length || 0}
 						| <strong>Upcoming:</strong>
 						{upcomingBookings.length}
 						| <strong>Past:</strong>

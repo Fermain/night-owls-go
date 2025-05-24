@@ -22,10 +22,7 @@
 	let showDeleteConfirmDialog = $state(false);
 
 	// Mutations
-	const bulkDeleteMutation = createBulkDeleteUsersMutation(() => {
-		showDeleteConfirmDialog = false;
-		onExitBulkMode();
-	});
+	const bulkDeleteMutation = createBulkDeleteUsersMutation();
 
 	// Computed
 	const selectedCount = $derived(selectedUsers.length);
@@ -39,7 +36,12 @@
 
 	function confirmBulkDelete() {
 		const userIds = selectedUsers.map((user) => user.id);
-		$bulkDeleteMutation.mutate(userIds);
+		$bulkDeleteMutation.mutate(userIds, {
+			onSuccess: () => {
+				showDeleteConfirmDialog = false;
+				onExitBulkMode();
+			}
+		});
 	}
 
 	// Keyboard shortcuts

@@ -561,6 +561,8 @@
 													: shift.is_booked
 														? 'border-muted bg-muted/50'
 														: 'border-border hover:bg-accent'}"
+											role="button"
+											tabindex={shift.is_booked ? -1 : 0}
 											onclick={() => {
 												if (shift.is_booked) return;
 												if (patternMode) {
@@ -569,6 +571,19 @@
 													toggleShift(shiftKey);
 												}
 											}}
+											onkeydown={(event) => {
+												if (shift.is_booked) return;
+												if (event.key === 'Enter' || event.key === ' ') {
+													event.preventDefault();
+													if (patternMode) {
+														selectPattern(shift);
+													} else {
+														toggleShift(shiftKey);
+													}
+												}
+											}}
+											aria-label={`${patternMode ? 'Select pattern for' : 'Toggle selection of'} ${shift.schedule_name} shift on ${formatTimeSlot(shift.start_time, shift.end_time)}`}
+											aria-pressed={isSelected}
 										>
 											<div class="flex items-start gap-3">
 												{#if !shift.is_booked}
