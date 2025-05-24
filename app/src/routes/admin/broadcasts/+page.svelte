@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createMutation, createQuery } from '@tanstack/svelte-query';
+	import { createMutation, createQuery, createQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -9,6 +9,8 @@
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { UserData } from '$lib/schemas/user';
+	import { createBroadcast } from '$lib/queries/admin/broadcasts';
+	import type { CreateBroadcastData } from '$lib/schemas/broadcast';
 
 	// Form state
 	let message = $state('');
@@ -16,6 +18,8 @@
 	let enablePushNotifications = $state(false);
 	let isScheduled = $state(false);
 	let scheduledDateTime = $state('');
+
+	const queryClient = createQueryClient();
 
 	// Broadcast types
 	const audienceOptions = [
@@ -59,30 +63,19 @@
 
 	// Send broadcast mutation
 	const sendBroadcastMutation = createMutation({
-		mutationFn: async (broadcastData: {
-			message: string;
-			audience: string;
-			pushEnabled: boolean;
-			scheduledAt?: string;
-		}) => {
-			// This would be implemented when the backend supports it
-			// For now, simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			if (Math.random() > 0.1) {
-				return { success: true, id: Date.now(), sentCount: audienceSize };
-			} else {
-				throw new Error('Failed to send broadcast');
-			}
+		mutationFn: async (broadcastData: CreateBroadcastData) => {
+			return await createBroadcast(broadcastData);
 		},
 		onSuccess: (result) => {
-			toast.success(`Broadcast sent successfully to ${result.sentCount} users!`);
+			toast.success(`Broadcast sent successfully to ${result.recipient_count} users!`);
 			// Reset form
 			message = '';
 			selectedAudience = 'all';
 			enablePushNotifications = false;
 			isScheduled = false;
 			scheduledDateTime = '';
+			// Invalidate broadcasts list to refresh sidebar
+			queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
 		},
 		onError: (error: Error) => {
 			toast.error(`Failed to send broadcast: ${error.message}`);
@@ -100,12 +93,14 @@
 			return;
 		}
 
-		$sendBroadcastMutation.mutate({
+		const data: CreateBroadcastData = {
 			message: message.trim(),
-			audience: selectedAudience,
-			pushEnabled: enablePushNotifications,
-			scheduledAt: isScheduled ? scheduledDateTime : undefined
-		});
+			audience: selectedAudience as 'all' | 'admins' | 'owls' | 'active',
+			push_enabled: enablePushNotifications,
+			scheduled_at: isScheduled ? scheduledDateTime : undefined
+		};
+
+		$sendBroadcastMutation.mutate(data);
 	}
 </script>
 

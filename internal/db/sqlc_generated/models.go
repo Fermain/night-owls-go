@@ -21,6 +21,21 @@ type Booking struct {
 	CreatedAt   sql.NullTime   `json:"created_at"`
 }
 
+type Broadcast struct {
+	BroadcastID    int64         `json:"broadcast_id"`
+	Message        string        `json:"message"`
+	Audience       string        `json:"audience"`
+	SenderUserID   int64         `json:"sender_user_id"`
+	PushEnabled    bool          `json:"push_enabled"`
+	ScheduledAt    sql.NullTime  `json:"scheduled_at"`
+	SentAt         sql.NullTime  `json:"sent_at"`
+	Status         string        `json:"status"`
+	RecipientCount sql.NullInt64 `json:"recipient_count"`
+	SentCount      sql.NullInt64 `json:"sent_count"`
+	FailedCount    sql.NullInt64 `json:"failed_count"`
+	CreatedAt      sql.NullTime  `json:"created_at"`
+}
+
 type Outbox struct {
 	OutboxID    int64          `json:"outbox_id"`
 	MessageType string         `json:"message_type"`

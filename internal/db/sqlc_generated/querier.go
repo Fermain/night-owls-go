@@ -13,6 +13,7 @@ type Querier interface {
 	AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error
 	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
+	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateRecurringAssignment(ctx context.Context, arg CreateRecurringAssignmentParams) (RecurringAssignment, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
@@ -24,6 +25,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, userID int64) error
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
+	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
@@ -38,11 +40,15 @@ type Querier interface {
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
 	ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error)
+	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
+	ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcastsWithSenderRow, error)
+	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListRecurringAssignments(ctx context.Context) ([]RecurringAssignment, error)
 	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
 	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
+	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateRecurringAssignment(ctx context.Context, arg UpdateRecurringAssignmentParams) (RecurringAssignment, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)

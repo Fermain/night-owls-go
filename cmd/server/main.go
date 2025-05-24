@@ -207,6 +207,7 @@ func main() {
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService, scheduleService)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
+	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
@@ -267,6 +268,11 @@ func main() {
 	// Admin Reports
 	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)
 	fuego.GetStd(admin, "/reports/{id}", adminReportAPIHandler.AdminGetReportHandler)
+
+	// Admin Broadcasts
+	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
+	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
+	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
 
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {

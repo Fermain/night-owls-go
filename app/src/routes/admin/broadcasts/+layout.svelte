@@ -5,6 +5,8 @@
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import { getBroadcasts } from '$lib/queries/admin/broadcasts';
+	import type { BroadcastData } from '$lib/schemas/broadcast';
 
 	let searchTerm = $state('');
 	let { children } = $props();
@@ -17,40 +19,11 @@
 		{ value: 'active', label: 'Active Users (last 30 days)' }
 	];
 
-	// Recent broadcasts query (simulated for now)
+	// Recent broadcasts query
 	const recentBroadcastsQuery = $derived(
-		createQuery({
-			queryKey: ['recentBroadcasts'],
-			queryFn: async () => {
-				// Simulate API call
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				return [
-					{
-						id: 1,
-						message: 'Welcome to Night Owls! Thank you for volunteering.',
-						audience: 'all',
-						sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-						sentCount: 156,
-						pushEnabled: true
-					},
-					{
-						id: 2,
-						message: 'Reminder: Please confirm your shifts for next week.',
-						audience: 'owls',
-						sentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-						sentCount: 98,
-						pushEnabled: false
-					},
-					{
-						id: 3,
-						message: 'System maintenance scheduled for this weekend. No action required.',
-						audience: 'all',
-						sentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-						sentCount: 156,
-						pushEnabled: false
-					}
-				];
-			}
+		createQuery<BroadcastData[], Error>({
+			queryKey: ['broadcasts'],
+			queryFn: getBroadcasts
 		})
 	);
 
@@ -117,7 +90,7 @@
 				</div>
 			{:else}
 				<div class="p-2">
-					{#each filteredBroadcasts as broadcast (broadcast.id)}
+					{#each filteredBroadcasts as broadcast (broadcast.broadcast_id)}
 						<div class="border rounded-lg p-3 mb-2 hover:bg-accent transition-colors">
 							<div class="space-y-2">
 								<p class="text-sm font-medium line-clamp-2">{broadcast.message}</p>
@@ -125,20 +98,34 @@
 									<div class="flex items-center gap-2">
 										<span class="flex items-center gap-1">
 											<UsersIcon class="h-3 w-3" />
-											{broadcast.sentCount}
+											{broadcast.recipient_count}
 										</span>
 										<span class="flex items-center gap-1">
 											<ClockIcon class="h-3 w-3" />
-											{formatRelativeTime(broadcast.sentAt)}
+											{formatRelativeTime(broadcast.created_at)}
 										</span>
 									</div>
-									{#if broadcast.pushEnabled}
+									{#if broadcast.push_enabled}
 										<span class="text-blue-600 font-medium">SMS</span>
 									{/if}
 								</div>
 								<div class="text-xs text-muted-foreground">
 									{audienceOptions.find((opt) => opt.value === broadcast.audience)?.label ??
 										'Unknown'}
+								</div>
+								<div class="text-xs">
+									<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+										{broadcast.status === 'sent' ? 'bg-green-100 text-green-800' :
+										broadcast.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+										broadcast.status === 'sending' ? 'bg-blue-100 text-blue-800' :
+										'bg-red-100 text-red-800'}">
+										{broadcast.status}
+									</span>
+									{#if broadcast.status === 'sent' && broadcast.sent_count !== broadcast.recipient_count}
+										<span class="ml-2 text-orange-600 text-xs">
+											{broadcast.sent_count}/{broadcast.recipient_count} delivered
+										</span>
+									{/if}
 								</div>
 							</div>
 						</div>
