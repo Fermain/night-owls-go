@@ -20,11 +20,38 @@
 
 	let searchTerm = $state('');
 
-	// Filters state
-	let dateRangeStart = $state<string | null>(null);
-	let dateRangeEnd = $state<string | null>(null);
+	// Initialize filters state with next 7 days by default
+	const now = new Date();
+	const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+	
+	let dateRangeStart = $state<string | null>(now.toISOString().split('T')[0]);
+	let dateRangeEnd = $state<string | null>(nextWeek.toISOString().split('T')[0]);
 	let showOnlyAvailable = $state(false);
 	let showOnlyFilled = $state(false);
+
+	// Debounced date range for API calls to prevent excessive requests
+	let debouncedDateRangeStart = $state<string | null>(null);
+	let debouncedDateRangeEnd = $state<string | null>(null);
+	let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Update debounced values after a delay
+	$effect(() => {
+		if (debounceTimeout) {
+			clearTimeout(debounceTimeout);
+		}
+		
+		debounceTimeout = setTimeout(() => {
+			debouncedDateRangeStart = dateRangeStart;
+			debouncedDateRangeEnd = dateRangeEnd;
+			console.log('Debounced date range updated:', { debouncedDateRangeStart, debouncedDateRangeEnd });
+		}, 500); // 500ms debounce
+		
+		return () => {
+			if (debounceTimeout) {
+				clearTimeout(debounceTimeout);
+			}
+		};
+	});
 
 	// Define navigation items for the shifts section
 	const shiftsNavItems = [
@@ -114,16 +141,10 @@
 			// Safety check to prevent invalid ranges
 			if (new Date(fromDate) > new Date(toDate)) {
 				const now = new Date();
-				const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+				const futureDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 				fromDate = now.toISOString();
 				toDate = futureDate.toISOString();
 			}
-		} else {
-			// Default to next 30 days if no range selected
-			const now = new Date();
-			const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-			fromDate = now.toISOString();
-			toDate = futureDate.toISOString();
 		}
 
 		return createQuery<AdminShiftSlot[], Error>({
@@ -147,24 +168,19 @@
 	const upcomingShifts = $derived.by(() => {
 		const now = new Date();
 		
-		// Use the user's selected date range, or fall back to next 7 days
-		let startFilter = now;
-		let endFilter = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+		// Use the user's selected date range
+		const userStartDate = new Date(dateRangeStart + 'T00:00:00Z');
+		const userEndDate = new Date(dateRangeEnd + 'T23:59:59Z');
 		
-		if (dateRangeStart && dateRangeEnd) {
-			const userStartDate = new Date(dateRangeStart + 'T00:00:00Z');
-			const userEndDate = new Date(dateRangeEnd + 'T23:59:59Z');
-			
-			// Only show future shifts, but within the user's selected range
-			startFilter = userStartDate > now ? userStartDate : now;
-			endFilter = userEndDate;
-			
-			console.log('Date range filter:', {
-				userSelected: { start: dateRangeStart, end: dateRangeEnd },
-				actualFilter: { start: startFilter.toISOString(), end: endFilter.toISOString() },
-				totalShifts: filteredShifts.length
-			});
-		}
+		// Only show future shifts, but within the user's selected range
+		const startFilter = userStartDate > now ? userStartDate : now;
+		const endFilter = userEndDate;
+		
+		console.log('Date range filter:', {
+			userSelected: { start: dateRangeStart, end: dateRangeEnd },
+			actualFilter: { start: startFilter.toISOString(), end: endFilter.toISOString() },
+			totalShifts: filteredShifts.length
+		});
 		
 		const upcoming = filteredShifts
 			.filter((shift) => {
@@ -186,13 +202,28 @@
 		console.log('Date range state updated:', { dateRangeStart, dateRangeEnd });
 	}
 
+	// Check if any filters are applied (different from defaults)
+	const hasActiveFilters = $derived.by(() => {
+		// Check if date range is different from default (next 7 days)
+		const defaultNow = new Date();
+		const defaultNextWeek = new Date(defaultNow.getTime() + 7 * 24 * 60 * 60 * 1000);
+		const defaultStart = defaultNow.toISOString().split('T')[0];
+		const defaultEnd = defaultNextWeek.toISOString().split('T')[0];
+		
+		const dateRangeChanged = dateRangeStart !== defaultStart || dateRangeEnd !== defaultEnd;
+		
+		return dateRangeChanged || showOnlyAvailable || showOnlyFilled;
+	});
+
 	function selectShift(shift: AdminShiftSlot) {
 		goto(`/admin/schedules/slots?shiftStartTime=${encodeURIComponent(shift.start_time)}`);
 	}
 
 	function clearFilters() {
-		dateRangeStart = null;
-		dateRangeEnd = null;
+		const now = new Date();
+		const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+		dateRangeStart = now.toISOString().split('T')[0];
+		dateRangeEnd = nextWeek.toISOString().split('T')[0];
 		showOnlyAvailable = false;
 		showOnlyFilled = false;
 	}
@@ -252,7 +283,7 @@
 				/>
 			</div>
 
-			{#if dateRangeStart || dateRangeEnd || showOnlyAvailable || showOnlyFilled}
+			{#if hasActiveFilters}
 				<Button variant="outline" size="sm" onclick={clearFilters} class="w-full">
 					<FilterIcon class="h-4 w-4 mr-2" />
 					Clear Filters
@@ -267,11 +298,7 @@
 				<span class="text-sm font-medium">Upcoming Shifts</span>
 			</div>
 			<p class="text-xs text-muted-foreground">
-				{#if dateRangeStart && dateRangeEnd}
-					{dateRangeStart} to {dateRangeEnd}
-				{:else}
-					Next 7 days
-				{/if}
+				{dateRangeStart} to {dateRangeEnd}
 			</p>
 		</div>
 

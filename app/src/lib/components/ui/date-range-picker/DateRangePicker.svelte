@@ -97,20 +97,13 @@
 					if (change) {
 						const startStr = formatCalendarDateToYyyyMmDd(v.start);
 						const endStr = formatCalendarDateToYyyyMmDd(v.end);
-						console.log('DateRangePicker formatted:', { startStr, endStr, initialStartDate, initialEndDate });
-						if (startStr !== initialStartDate || endStr !== initialEndDate) {
-							console.log('DateRangePicker calling change callback');
-							change({ start: startStr, end: endStr });
-						} else {
-							console.log('DateRangePicker skipping change - same as initial dates');
-						}
+						console.log('DateRangePicker calling change callback with:', { startStr, endStr });
+						// Always call change when we have a complete valid range
+						change({ start: startStr, end: endStr });
 					}
 				} else {
 					console.log('DateRangePicker: invalid range or missing dates');
 				}
-				// Add handling for partial selection or clearing if needed in the future
-				// else if (v?.start && !v.end) { /* partial selection */ }
-				// else if (!v?.start && !v.end && currentRange) { /* cleared */ }
 			}}
 		/>
 	</Popover.Content>
