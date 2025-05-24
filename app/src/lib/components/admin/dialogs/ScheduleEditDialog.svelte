@@ -1,22 +1,18 @@
 <script lang="ts">
 	import * as Sheet from '$lib/components/ui/sheet';
-	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte';
 	import type { Schedule } from '$lib/types';
-	import XIcon from '@lucide/svelte/icons/x';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import EditIcon from '@lucide/svelte/icons/edit-3';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import ClockIcon from '@lucide/svelte/icons/clock';
-	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import { createSchedulesQuery } from '$lib/queries/admin/schedules/schedulesQuery';
 	import { createDeleteScheduleMutation } from '$lib/queries/admin/schedules/deleteScheduleMutation';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
-	import { formatDistanceToNow, format } from 'date-fns';
+	import { format } from 'date-fns';
 	import { useQueryClient } from '@tanstack/svelte-query';
 
 	let {

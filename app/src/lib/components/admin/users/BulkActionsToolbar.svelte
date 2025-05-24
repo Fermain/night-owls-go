@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Trash2Icon, XIcon } from 'lucide-svelte';
+	import { Trash2Icon } from 'lucide-svelte';
 	import { createBulkDeleteUsersMutation } from '$lib/queries/admin/users/bulkDeleteUsersMutation';
 	import type { UserData } from '$lib/schemas/user';
 

@@ -8,8 +8,6 @@
 	import PlusIcon from '@lucide/svelte/icons/plus-circle';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import ShieldUserIcon from '@lucide/svelte/icons/shield-user';
-	import CheckSquareIcon from '@lucide/svelte/icons/check-square';
-	import SquareIcon from '@lucide/svelte/icons/square';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';

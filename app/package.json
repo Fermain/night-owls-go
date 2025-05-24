@@ -13,6 +13,7 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"lint:fix": "eslint --fix .",
+		"lint:unused": "eslint --fix . --ext .ts,.js,.svelte --rule 'unused-imports/no-unused-imports: error'",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",

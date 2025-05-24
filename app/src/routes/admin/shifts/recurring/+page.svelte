@@ -12,7 +12,6 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
-	import { Badge } from '$lib/components/ui/badge';
 	import {
 		CheckIcon,
 		ChevronsUpDownIcon,

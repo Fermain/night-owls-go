@@ -1,6 +1,5 @@
 import { readable } from 'svelte/store';
 import Inbox from '@lucide/svelte/icons/inbox';
-import ChartCandlestick from '@lucide/svelte/icons/chart-candlestick';
 import Users from '@lucide/svelte/icons/users';
 import Send from '@lucide/svelte/icons/send';
 import ListChecks from '@lucide/svelte/icons/list-checks';

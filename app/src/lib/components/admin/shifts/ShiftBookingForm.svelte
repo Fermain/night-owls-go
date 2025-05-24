@@ -16,7 +16,6 @@
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import { formatTimeSlot, formatRelativeTime } from '$lib/utils/dateFormatting';
-	import { format } from 'date-fns';
 	import type { AdminShiftSlot } from '$lib/types';
 	import type { UserData } from '$lib/schemas/user';
 	import { authenticatedFetch } from '$lib/utils/api';

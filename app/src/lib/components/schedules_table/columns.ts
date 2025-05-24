@@ -1,4 +1,4 @@
-import type { ColumnDef, TableMeta, HeaderContext, CellContext } from '@tanstack/table-core';
+import type { ColumnDef, HeaderContext, CellContext } from '@tanstack/table-core';
 // import DataTableColumnHeader from '$lib/components/ui/data-table/data-table-column-header.svelte'; // MISSING
 // import DataTableRowActions from './schedule-actions.svelte'; // MISSING
 import type { Schedule } from '$lib/types';

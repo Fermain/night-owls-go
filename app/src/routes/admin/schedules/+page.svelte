@@ -4,7 +4,6 @@
 	// import SchedulesDataTable from '$lib/components/schedules_table/schedules-data-table.svelte'; // Not used for dashboard
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import ScheduleForm from '$lib/components/admin/schedules/ScheduleForm.svelte';
 	import SchedulesDashboard from '$lib/components/admin/schedules/SchedulesDashboard.svelte';
 	import { selectedScheduleForForm } from '$lib/stores/scheduleEditingStore';

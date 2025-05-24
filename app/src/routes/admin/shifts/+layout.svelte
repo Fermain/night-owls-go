@@ -9,13 +9,10 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import ClockIcon from '@lucide/svelte/icons/clock';
-	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { formatDistanceToNow } from 'date-fns';
-	import { authenticatedFetch } from '$lib/utils/api';
 	import type { AdminShiftSlot } from '$lib/types';
 	import ScheduleEditDialog from '$lib/components/admin/dialogs/ScheduleEditDialog.svelte';
 	import {

@@ -4,7 +4,6 @@
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
-	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import type { UserMetrics } from '$lib/utils/userProcessing';
 
 	let { metrics }: { metrics: UserMetrics } = $props();

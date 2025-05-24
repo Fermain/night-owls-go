@@ -10,7 +10,6 @@
 	} from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import * as Select from '$lib/components/ui/select';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Badge } from '$lib/components/ui/badge';
@@ -19,10 +18,8 @@
 		CheckIcon,
 		ChevronsUpDownIcon,
 		CalendarDaysIcon,
-		PlusIcon,
 		UsersIcon,
-		ClockIcon,
-		MapPinIcon
+		ClockIcon
 	} from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';

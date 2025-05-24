@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { Button } from '$lib/components/ui/button';
-	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { isAuthenticated } from '$lib/services/userService';
 	import { goto } from '$app/navigation';
 	import type { Schedule } from '$lib/types';
 	import ShieldIcon from 'lucide-svelte/icons/shield';
