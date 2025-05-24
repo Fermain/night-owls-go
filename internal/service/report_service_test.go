@@ -67,6 +67,15 @@ func (m *MockReportQuerier) ListUsers(ctx context.Context, searchTerm interface{
 func (m *MockReportQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockReportQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) { panic("not implemented") }
 func (m *MockReportQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error { panic("not implemented") }
+func (m *MockReportQuerier) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error { panic("not implemented") }
+func (m *MockReportQuerier) CreateRecurringAssignment(ctx context.Context, arg db.CreateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockReportQuerier) DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error { panic("not implemented") }
+func (m *MockReportQuerier) GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockReportQuerier) GetRecurringAssignmentsByPattern(ctx context.Context, arg db.GetRecurringAssignmentsByPatternParams) ([]db.GetRecurringAssignmentsByPatternRow, error) { panic("not implemented") }
+func (m *MockReportQuerier) ListRecurringAssignments(ctx context.Context) ([]db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockReportQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockReportQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockReportQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) { panic("not implemented") }
 
 func newReportTestLogger() *slog.Logger { 
 	return slog.New(slog.NewTextHandler(io.Discard, nil))

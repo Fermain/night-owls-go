@@ -156,7 +156,7 @@ func TestCreateRecurringAssignment(t *testing.T) {
 		}
 
 		_, err := service.CreateRecurringAssignment(ctx, params)
-		assert.ErrorIs(t, err, ErrRecurringAssignmentNotFound)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("schedule not found", func(t *testing.T) {
@@ -168,7 +168,7 @@ func TestCreateRecurringAssignment(t *testing.T) {
 		}
 
 		_, err := service.CreateRecurringAssignment(ctx, params)
-		assert.ErrorIs(t, err, ErrRecurringAssignmentNotFound)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("duplicate assignment", func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestGetRecurringAssignmentByID(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		_, err := service.GetRecurringAssignmentByID(ctx, 99999)
-		assert.ErrorIs(t, err, ErrRecurringAssignmentNotFound)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 }
 
@@ -478,7 +478,7 @@ func TestUpdateRecurringAssignment(t *testing.T) {
 		}
 
 		_, err := service.UpdateRecurringAssignment(ctx, params)
-		assert.ErrorIs(t, err, ErrRecurringAssignmentNotFound)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 }
 

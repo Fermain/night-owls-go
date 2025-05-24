@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -40,15 +39,9 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger) func(next http.Hand
 			tokenString := parts[1]
 			claims, err := auth.ValidateJWT(tokenString, cfg.JWTSecret)
 			if err != nil {
-				log := logger.With("token", tokenString) // Avoid logging full token in prod if too sensitive
-				if errors.Is(err, auth.ErrInvalidToken) {
-					RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", log)
-				} else if errors.Is(err, auth.ErrTokenMissing) { // Should be caught by earlier check, but good to handle
-					RespondWithError(w, http.StatusUnauthorized, "Token missing", log)
-				} else {
-					log.Error("Token validation error", "error", err)
-					RespondWithError(w, http.StatusInternalServerError, "Could not process token", log)
-				}
+				// All JWT validation errors should be treated as 401 Unauthorized
+				// This includes malformed tokens, expired tokens, wrong signatures, etc.
+				RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", logger)
 				return
 			}
 

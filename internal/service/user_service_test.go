@@ -152,6 +152,38 @@ func (m *MockQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubsc
 	args := m.Called(ctx, arg)
 	return args.Error(0)
 }
+func (m *MockQuerier) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error {
+	args := m.Called(ctx, userIds)
+	return args.Error(0)
+}
+func (m *MockQuerier) CreateRecurringAssignment(ctx context.Context, arg db.CreateRecurringAssignmentParams) (db.RecurringAssignment, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).(db.RecurringAssignment), args.Error(1)
+}
+func (m *MockQuerier) DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error {
+	args := m.Called(ctx, recurringAssignmentID)
+	return args.Error(0)
+}
+func (m *MockQuerier) GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (db.RecurringAssignment, error) {
+	args := m.Called(ctx, recurringAssignmentID)
+	return args.Get(0).(db.RecurringAssignment), args.Error(1)
+}
+func (m *MockQuerier) GetRecurringAssignmentsByPattern(ctx context.Context, arg db.GetRecurringAssignmentsByPatternParams) ([]db.GetRecurringAssignmentsByPatternRow, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).([]db.GetRecurringAssignmentsByPatternRow), args.Error(1)
+}
+func (m *MockQuerier) ListRecurringAssignments(ctx context.Context) ([]db.RecurringAssignment, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]db.RecurringAssignment), args.Error(1)
+}
+func (m *MockQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]db.RecurringAssignment), args.Error(1)
+}
+func (m *MockQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) {
+	args := m.Called(ctx, arg)
+	return args.Get(0).(db.RecurringAssignment), args.Error(1)
+}
 
 // Helper to create a test logger that discards output
 func newTestLogger() *slog.Logger {

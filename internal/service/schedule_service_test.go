@@ -70,6 +70,15 @@ func (m *MockScheduleQuerier) ListUsers(ctx context.Context, searchTerm interfac
 func (m *MockScheduleQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error { panic("not implemented") }
+func (m *MockScheduleQuerier) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) CreateRecurringAssignment(ctx context.Context, arg db.CreateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetRecurringAssignmentsByPattern(ctx context.Context, arg db.GetRecurringAssignmentsByPatternParams) ([]db.GetRecurringAssignmentsByPatternRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListRecurringAssignments(ctx context.Context) ([]db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) { panic("not implemented") }
 
 // Re-define newTestLogger and newTestConfig if they are not in a shared test utility package.
 // For now, assuming they are not, so re-defining for this test file.

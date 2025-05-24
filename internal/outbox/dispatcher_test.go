@@ -57,6 +57,15 @@ func (m *MockOutboxQuerier) ListUsers(ctx context.Context, searchTerm interface{
 func (m *MockOutboxQuerier) UpdateSchedule(ctx context.Context, arg db.UpdateScheduleParams) (db.Schedule, error) {panic("not impl")}
 func (m *MockOutboxQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (db.User, error) {panic("not impl")}
 func (m *MockOutboxQuerier) UpsertSubscription(ctx context.Context, arg db.UpsertSubscriptionParams) error {panic("not impl")}
+func (m *MockOutboxQuerier) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error {panic("not impl")}
+func (m *MockOutboxQuerier) CreateRecurringAssignment(ctx context.Context, arg db.CreateRecurringAssignmentParams) (db.RecurringAssignment, error) {panic("not impl")}
+func (m *MockOutboxQuerier) DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error {panic("not impl")}
+func (m *MockOutboxQuerier) GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (db.RecurringAssignment, error) {panic("not impl")}
+func (m *MockOutboxQuerier) GetRecurringAssignmentsByPattern(ctx context.Context, arg db.GetRecurringAssignmentsByPatternParams) ([]db.GetRecurringAssignmentsByPatternRow, error) {panic("not impl")}
+func (m *MockOutboxQuerier) ListRecurringAssignments(ctx context.Context) ([]db.RecurringAssignment, error) {panic("not impl")}
+func (m *MockOutboxQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) {panic("not impl")}
+func (m *MockOutboxQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) {panic("not impl")}
+func (m *MockOutboxQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) {panic("not impl")}
 
 // MockMessageSender is a mock implementation of the MessageSender interface.
 type MockMessageSender struct {
