@@ -1,0 +1,833 @@
+{
+  "exported_at": "2025-05-24T13:48:25.123369Z",
+  "version": "1.0",
+  "database": "Night Owls Go",
+  "data": {
+    "Users": [
+      {
+        "Name": "Alice Admin",
+        "Phone": "+27821234567",
+        "Role": "admin"
+      },
+      {
+        "Name": "Bob Manager",
+        "Phone": "+27821234568",
+        "Role": "admin"
+      },
+      {
+        "Name": "Charlie Volunteer",
+        "Phone": "+27821234569",
+        "Role": "owl"
+      },
+      {
+        "Name": "Diana Scout",
+        "Phone": "+27821234570",
+        "Role": "owl"
+      },
+      {
+        "Name": "Eve Patrol",
+        "Phone": "+27821234571",
+        "Role": "owl"
+      },
+      {
+        "Name": "Frank Guard",
+        "Phone": "+27821234572",
+        "Role": "owl"
+      },
+      {
+        "Name": "Grace Watch",
+        "Phone": "+27821234573",
+        "Role": "owl"
+      },
+      {
+        "Name": "Henry Security",
+        "Phone": "+27821234574",
+        "Role": "owl"
+      },
+      {
+        "Name": "Iris Guest",
+        "Phone": "+27821234575",
+        "Role": "guest"
+      },
+      {
+        "Name": "Jack Visitor",
+        "Phone": "+27821234576",
+        "Role": "guest"
+      },
+      {
+        "Name": "Leo Owl",
+        "Phone": "+27821234577",
+        "Role": "owl"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234578",
+        "Role": "owl"
+      },
+      {
+        "Name": "Aria Guest",
+        "Phone": "+27821234579",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234580",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sam Owl",
+        "Phone": "+27821234581",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234582",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sage Guest",
+        "Phone": "+27821234583",
+        "Role": "guest"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234584",
+        "Role": "owl"
+      },
+      {
+        "Name": "Finn Owl",
+        "Phone": "+27821234585",
+        "Role": "owl"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234586",
+        "Role": "owl"
+      },
+      {
+        "Name": "Maya Guest",
+        "Phone": "+27821234587",
+        "Role": "guest"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234588",
+        "Role": "owl"
+      },
+      {
+        "Name": "Max Owl",
+        "Phone": "+27821234589",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234590",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nora Guest",
+        "Phone": "+27821234591",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234592",
+        "Role": "owl"
+      },
+      {
+        "Name": "Alex Owl",
+        "Phone": "+27821234593",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234594",
+        "Role": "owl"
+      },
+      {
+        "Name": "Vale Guest",
+        "Phone": "+27821234595",
+        "Role": "guest"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234596",
+        "Role": "owl"
+      },
+      {
+        "Name": "Leo Owl",
+        "Phone": "+27821234597",
+        "Role": "owl"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234598",
+        "Role": "owl"
+      },
+      {
+        "Name": "Aria Guest",
+        "Phone": "+27821234599",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234600",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sam Owl",
+        "Phone": "+27821234601",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234602",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sage Guest",
+        "Phone": "+27821234603",
+        "Role": "guest"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234604",
+        "Role": "owl"
+      },
+      {
+        "Name": "Finn Owl",
+        "Phone": "+27821234605",
+        "Role": "owl"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234606",
+        "Role": "owl"
+      },
+      {
+        "Name": "Maya Guest",
+        "Phone": "+27821234607",
+        "Role": "guest"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234608",
+        "Role": "owl"
+      },
+      {
+        "Name": "Max Owl",
+        "Phone": "+27821234609",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234610",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nora Guest",
+        "Phone": "+27821234611",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234612",
+        "Role": "owl"
+      },
+      {
+        "Name": "Alex Owl",
+        "Phone": "+27821234613",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234614",
+        "Role": "owl"
+      },
+      {
+        "Name": "Vale Guest",
+        "Phone": "+27821234615",
+        "Role": "guest"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234616",
+        "Role": "owl"
+      },
+      {
+        "Name": "Leo Owl",
+        "Phone": "+27821234617",
+        "Role": "owl"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234618",
+        "Role": "owl"
+      },
+      {
+        "Name": "Aria Guest",
+        "Phone": "+27821234619",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234620",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sam Owl",
+        "Phone": "+27821234621",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234622",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sage Guest",
+        "Phone": "+27821234623",
+        "Role": "guest"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234624",
+        "Role": "owl"
+      },
+      {
+        "Name": "Finn Owl",
+        "Phone": "+27821234625",
+        "Role": "owl"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234626",
+        "Role": "owl"
+      },
+      {
+        "Name": "Maya Guest",
+        "Phone": "+27821234627",
+        "Role": "guest"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234628",
+        "Role": "owl"
+      },
+      {
+        "Name": "Max Owl",
+        "Phone": "+27821234629",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234630",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nora Guest",
+        "Phone": "+27821234631",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234632",
+        "Role": "owl"
+      },
+      {
+        "Name": "Alex Owl",
+        "Phone": "+27821234633",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234634",
+        "Role": "owl"
+      },
+      {
+        "Name": "Vale Guest",
+        "Phone": "+27821234635",
+        "Role": "guest"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234636",
+        "Role": "owl"
+      },
+      {
+        "Name": "Leo Owl",
+        "Phone": "+27821234637",
+        "Role": "owl"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234638",
+        "Role": "owl"
+      },
+      {
+        "Name": "Aria Guest",
+        "Phone": "+27821234639",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234640",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sam Owl",
+        "Phone": "+27821234641",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234642",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sage Guest",
+        "Phone": "+27821234643",
+        "Role": "guest"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234644",
+        "Role": "owl"
+      },
+      {
+        "Name": "Finn Owl",
+        "Phone": "+27821234645",
+        "Role": "owl"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234646",
+        "Role": "owl"
+      },
+      {
+        "Name": "Maya Guest",
+        "Phone": "+27821234647",
+        "Role": "guest"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234648",
+        "Role": "owl"
+      },
+      {
+        "Name": "Max Owl",
+        "Phone": "+27821234649",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234650",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nora Guest",
+        "Phone": "+27821234651",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234652",
+        "Role": "owl"
+      },
+      {
+        "Name": "Alex Owl",
+        "Phone": "+27821234653",
+        "Role": "owl"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234654",
+        "Role": "owl"
+      },
+      {
+        "Name": "Vale Guest",
+        "Phone": "+27821234655",
+        "Role": "guest"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234656",
+        "Role": "owl"
+      },
+      {
+        "Name": "Leo Owl",
+        "Phone": "+27821234657",
+        "Role": "owl"
+      },
+      {
+        "Name": "Zoe Owl",
+        "Phone": "+27821234658",
+        "Role": "owl"
+      },
+      {
+        "Name": "Aria Guest",
+        "Phone": "+27821234659",
+        "Role": "guest"
+      },
+      {
+        "Name": "Ivy Owl",
+        "Phone": "+27821234660",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sam Owl",
+        "Phone": "+27821234661",
+        "Role": "owl"
+      },
+      {
+        "Name": "Ruby Owl",
+        "Phone": "+27821234662",
+        "Role": "owl"
+      },
+      {
+        "Name": "Sage Guest",
+        "Phone": "+27821234663",
+        "Role": "guest"
+      },
+      {
+        "Name": "Nova Owl",
+        "Phone": "+27821234664",
+        "Role": "owl"
+      },
+      {
+        "Name": "Finn Owl",
+        "Phone": "+27821234665",
+        "Role": "owl"
+      },
+      {
+        "Name": "Luna Owl",
+        "Phone": "+27821234666",
+        "Role": "owl"
+      }
+    ],
+    "Schedules": [
+      {
+        "Name": "Daily Evening Patrol",
+        "CronExpr": "0 18 * * *",
+        "StartDate": "2024-01-01",
+        "EndDate": "2024-12-31",
+        "DurationMinutes": 120,
+        "Timezone": "Africa/Johannesburg"
+      },
+      {
+        "Name": "Weekend Morning Watch",
+        "CronExpr": "0 6,10 * * 6,0",
+        "StartDate": "2024-01-01",
+        "EndDate": "2024-12-31",
+        "DurationMinutes": 240,
+        "Timezone": "Africa/Johannesburg"
+      },
+      {
+        "Name": "Weekday Lunch Security",
+        "CronExpr": "0 12 * * 1-5",
+        "StartDate": "2024-01-01",
+        "EndDate": "2024-12-31",
+        "DurationMinutes": 60,
+        "Timezone": "Africa/Johannesburg"
+      }
+    ],
+    "RecurringAssignments": [
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Weekend Morning Watch",
+        "DayOfWeek": 6,
+        "TimeSlot": "06:00-10:00",
+        "BuddyName": "Diana Scout",
+        "Description": "Regular Saturday morning patrol"
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "DayOfWeek": 0,
+        "TimeSlot": "10:00-14:00",
+        "BuddyName": "Charlie Volunteer",
+        "Description": "Sunday morning community watch"
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "DayOfWeek": 1,
+        "TimeSlot": "18:00-20:00",
+        "BuddyName": "",
+        "Description": "Monday evening patrol"
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "DayOfWeek": 3,
+        "TimeSlot": "18:00-20:00",
+        "BuddyName": "",
+        "Description": "Wednesday evening patrol"
+      },
+      {
+        "UserPhone": "+27821234572",
+        "ScheduleName": "Weekday Lunch Security",
+        "DayOfWeek": 2,
+        "TimeSlot": "12:00-13:00",
+        "BuddyName": "",
+        "Description": "Tuesday lunch security"
+      },
+      {
+        "UserPhone": "+27821234572",
+        "ScheduleName": "Weekday Lunch Security",
+        "DayOfWeek": 4,
+        "TimeSlot": "12:00-13:00",
+        "BuddyName": "",
+        "Description": "Thursday lunch security"
+      },
+      {
+        "UserPhone": "+27821234573",
+        "ScheduleName": "Summer Patrol (Nov-Apr)",
+        "DayOfWeek": 6,
+        "TimeSlot": "00:00-02:00",
+        "BuddyName": "Henry Security",
+        "Description": "Summer Saturday night patrol"
+      }
+    ],
+    "Bookings": [
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2024-11-25T18:00:00Z",
+        "BuddyName": "Diana Scout",
+        "Attended": true
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2024-11-24T06:00:00Z",
+        "BuddyName": "Charlie Volunteer",
+        "Attended": true
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2024-11-26T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234572",
+        "ScheduleName": "Weekday Lunch Security",
+        "ShiftStart": "2024-11-26T12:00:00Z",
+        "BuddyName": "",
+        "Attended": true
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-05-25T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-05-26T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-05-27T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-05-28T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-05-29T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-05-30T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-05-31T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-01T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-02T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-03T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-04T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-05T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-06T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-07T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-08T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-09T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-10T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-11T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-12T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-13T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-14T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-15T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-16T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-17T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-18T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-19T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-20T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234569",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-21T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234570",
+        "ScheduleName": "Weekend Morning Watch",
+        "ShiftStart": "2025-06-22T06:00:00Z",
+        "BuddyName": "Auto-generated buddy",
+        "Attended": false
+      },
+      {
+        "UserPhone": "+27821234571",
+        "ScheduleName": "Daily Evening Patrol",
+        "ShiftStart": "2025-06-23T18:00:00Z",
+        "BuddyName": "",
+        "Attended": false
+      }
+    ]
+  }
+}

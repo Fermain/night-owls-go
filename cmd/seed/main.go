@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"night-owls-go/internal/config"
@@ -66,6 +68,10 @@ func main() {
 		dbPath = flag.String("db", "", "Database path (if empty, uses config)")
 		reset  = flag.Bool("reset", false, "Reset database before seeding")
 		dryRun = flag.Bool("dry-run", false, "Show what would be seeded without actually doing it")
+		userCount = flag.Int("users", 10, "Number of users to create (default: 10)")
+		futureBookings = flag.Bool("future-bookings", false, "Generate future bookings for next 30 days")
+		exportJSON = flag.String("export", "", "Export seeded data to JSON file")
+		verbose = flag.Bool("verbose", false, "Enable verbose logging")
 	)
 	flag.Parse()
 
@@ -81,6 +87,10 @@ func main() {
 	}
 
 	logger := logging.NewLogger(cfg)
+	if *verbose {
+		// Set log level to debug for verbose output
+		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	}
 	slog.SetDefault(logger)
 
 	// Determine database path
@@ -89,11 +99,17 @@ func main() {
 		databasePath = *dbPath
 	}
 
-	logger.Info("Starting seeding process", "database", databasePath, "reset", *reset, "dry_run", *dryRun)
+	logger.Info("Starting seeding process", 
+		"database", databasePath, 
+		"reset", *reset, 
+		"dry_run", *dryRun,
+		"user_count", *userCount,
+		"future_bookings", *futureBookings,
+		"export", *exportJSON)
 
 	if *dryRun {
 		logger.Info("DRY RUN MODE - No actual changes will be made")
-		showSeedData(logger)
+		showSeedData(logger, *userCount, *futureBookings)
 		return
 	}
 
@@ -127,9 +143,19 @@ func main() {
 
 	// Perform seeding
 	querier := db.New(dbConn)
-	if err := seedDatabase(context.Background(), querier, logger); err != nil {
+	seededData, err := seedDatabase(context.Background(), querier, logger, *userCount, *futureBookings)
+	if err != nil {
 		logger.Error("Seeding failed", "error", err)
 		os.Exit(1)
+	}
+
+	// Export data if requested
+	if *exportJSON != "" {
+		if err := exportSeededData(seededData, *exportJSON, logger); err != nil {
+			logger.Error("Failed to export data", "file", *exportJSON, "error", err)
+			os.Exit(1)
+		}
+		logger.Info("Data exported successfully", "file", *exportJSON)
 	}
 
 	logger.Info("Seeding completed successfully")
@@ -162,8 +188,8 @@ func runMigrations(databasePath string, logger *slog.Logger) error {
 	return nil
 }
 
-func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) error {
-	seedData := getSeedData()
+func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, userCount int, futureBookings bool) (SeedData, error) {
+	seedData := getSeedDataWithOptions(userCount, futureBookings)
 
 	// Seed users first
 	userMap := make(map[string]int64)
@@ -175,7 +201,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) 
 		})
 		if err != nil {
 			logger.Error("Failed to create user", "phone", userSeed.Phone, "error", err)
-			return err
+			return SeedData{}, err
 		}
 		userMap[userSeed.Phone] = user.UserID
 		logger.Info("Created user", "name", userSeed.Name, "phone", userSeed.Phone, "role", userSeed.Role)
@@ -197,7 +223,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) 
 		})
 		if err != nil {
 			logger.Error("Failed to create schedule", "name", scheduleSeed.Name, "error", err)
-			return err
+			return SeedData{}, err
 		}
 		scheduleMap[scheduleSeed.Name] = schedule.ScheduleID
 		logger.Info("Created schedule", "name", scheduleSeed.Name, "cron", scheduleSeed.CronExpr)
@@ -206,7 +232,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) 
 	// Get existing schedules from migrations
 	existingSchedules, err := querier.ListAllSchedules(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list existing schedules: %w", err)
+		return SeedData{}, fmt.Errorf("failed to list existing schedules: %w", err)
 	}
 	for _, schedule := range existingSchedules {
 		scheduleMap[schedule.Name] = schedule.ScheduleID
@@ -247,7 +273,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) 
 				"user", assignmentSeed.UserPhone, 
 				"schedule", assignmentSeed.ScheduleName, 
 				"error", err)
-			return err
+			return SeedData{}, err
 		}
 		logger.Info("Created recurring assignment", 
 			"user", assignmentSeed.UserPhone, 
@@ -328,153 +354,185 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger) 
 			"id", booking.BookingID)
 	}
 
-	return nil
+	return seedData, nil
 }
 
 func getSeedData() SeedData {
+	return getSeedDataWithOptions(10, false)
+}
+
+func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData {
+	users := generateUsers(userCount)
+	
+	schedules := []ScheduleSeed{
+		// Development schedules with more frequent shifts for testing
+		{
+			Name:            "Daily Evening Patrol",
+			CronExpr:        "0 18 * * *", // Every day at 6 PM
+			StartDate:       "2024-01-01",
+			EndDate:         "2024-12-31",
+			DurationMinutes: 120,
+			Timezone:        "Africa/Johannesburg",
+		},
+		{
+			Name:            "Weekend Morning Watch",
+			CronExpr:        "0 6,10 * * 6,0", // Sat/Sun at 6 AM and 10 AM
+			StartDate:       "2024-01-01",
+			EndDate:         "2024-12-31",
+			DurationMinutes: 240, // 4 hours
+			Timezone:        "Africa/Johannesburg",
+		},
+		{
+			Name:            "Weekday Lunch Security",
+			CronExpr:        "0 12 * * 1-5", // Mon-Fri at noon
+			StartDate:       "2024-01-01",
+			EndDate:         "2024-12-31",
+			DurationMinutes: 60,
+			Timezone:        "Africa/Johannesburg",
+		},
+	}
+	
+	recurringAssignments := []RecurringAssignmentSeed{
+		// Charlie on weekend mornings (if user exists)
+		{
+			UserPhone:    "+27821234569", // Charlie
+			ScheduleName: "Weekend Morning Watch",
+			DayOfWeek:    6, // Saturday
+			TimeSlot:     "06:00-10:00",
+			BuddyName:    "Diana Scout",
+			Description:  "Regular Saturday morning patrol",
+		},
+		{
+			UserPhone:    "+27821234570", // Diana
+			ScheduleName: "Weekend Morning Watch", 
+			DayOfWeek:    0, // Sunday
+			TimeSlot:     "10:00-14:00",
+			BuddyName:    "Charlie Volunteer",
+			Description:  "Sunday morning community watch",
+		},
+
+		// Eve on daily evening patrol (if user exists)
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Daily Evening Patrol",
+			DayOfWeek:    1, // Monday
+			TimeSlot:     "18:00-20:00",
+			Description:  "Monday evening patrol",
+		},
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Daily Evening Patrol",
+			DayOfWeek:    3, // Wednesday
+			TimeSlot:     "18:00-20:00",
+			Description:  "Wednesday evening patrol",
+		},
+
+		// Frank on weekday lunch (if user exists)
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Weekday Lunch Security",
+			DayOfWeek:    2, // Tuesday
+			TimeSlot:     "12:00-13:00",
+			Description:  "Tuesday lunch security",
+		},
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Weekday Lunch Security",
+			DayOfWeek:    4, // Thursday
+			TimeSlot:     "12:00-13:00",
+			Description:  "Thursday lunch security",
+		},
+
+		// Grace on summer patrol (from migration, if user exists)
+		{
+			UserPhone:    "+27821234573", // Grace
+			ScheduleName: "Summer Patrol (Nov-Apr)",
+			DayOfWeek:    6, // Saturday
+			TimeSlot:     "00:00-02:00",
+			BuddyName:    "Henry Security",
+			Description:  "Summer Saturday night patrol",
+		},
+	}
+	
+	// Filter recurring assignments based on available users
+	var filteredAssignments []RecurringAssignmentSeed
+	userPhones := make(map[string]bool)
+	for _, user := range users {
+		userPhones[user.Phone] = true
+	}
+	
+	for _, assignment := range recurringAssignments {
+		if userPhones[assignment.UserPhone] {
+			filteredAssignments = append(filteredAssignments, assignment)
+		}
+	}
+	
+	historicalBookings := []BookingSeed{
+		// Some historical bookings for testing
+		{
+			UserPhone:    "+27821234569", // Charlie
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2024-11-25T18:00:00Z", // Recent Monday
+			BuddyName:    "Diana Scout",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234570", // Diana
+			ScheduleName: "Weekend Morning Watch",
+			ShiftStart:   "2024-11-24T06:00:00Z", // Recent Sunday
+			BuddyName:    "Charlie Volunteer",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2024-11-26T18:00:00Z", // Recent Tuesday
+			Attended:     false, // Missed shift
+		},
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Weekday Lunch Security",
+			ShiftStart:   "2024-11-26T12:00:00Z", // Recent Tuesday
+			Attended:     true,
+		},
+	}
+	
+	// Filter historical bookings based on available users
+	var filteredBookings []BookingSeed
+	for _, booking := range historicalBookings {
+		if userPhones[booking.UserPhone] {
+			filteredBookings = append(filteredBookings, booking)
+		}
+	}
+	
+	// Add future bookings if requested
+	if includeFutureBookings {
+		// Create user and schedule maps for future booking generation
+		userMap := make(map[string]int64)
+		scheduleMap := make(map[string]int64)
+		
+		// These would be populated during actual seeding
+		// For now, we'll generate future bookings based on known users
+		futureBookings := generateFutureBookings(userMap, scheduleMap)
+		
+		// Filter future bookings based on available users
+		for _, booking := range futureBookings {
+			if userPhones[booking.UserPhone] {
+				filteredBookings = append(filteredBookings, booking)
+			}
+		}
+	}
+
 	return SeedData{
-		Users: []UserSeed{
-			// Admin users
-			{Name: "Alice Admin", Phone: "+27821234567", Role: "admin"},
-			{Name: "Bob Manager", Phone: "+27821234568", Role: "admin"},
-
-			// Owl volunteers
-			{Name: "Charlie Volunteer", Phone: "+27821234569", Role: "owl"},
-			{Name: "Diana Scout", Phone: "+27821234570", Role: "owl"},
-			{Name: "Eve Patrol", Phone: "+27821234571", Role: "owl"},
-			{Name: "Frank Guard", Phone: "+27821234572", Role: "owl"},
-			{Name: "Grace Watch", Phone: "+27821234573", Role: "owl"},
-			{Name: "Henry Security", Phone: "+27821234574", Role: "owl"},
-
-			// Guest users
-			{Name: "Iris Guest", Phone: "+27821234575", Role: "guest"},
-			{Name: "Jack Visitor", Phone: "+27821234576", Role: "guest"},
-		},
-
-		Schedules: []ScheduleSeed{
-			// Development schedules with more frequent shifts for testing
-			{
-				Name:            "Daily Evening Patrol",
-				CronExpr:        "0 18 * * *", // Every day at 6 PM
-				StartDate:       "2024-01-01",
-				EndDate:         "2024-12-31",
-				DurationMinutes: 120,
-				Timezone:        "Africa/Johannesburg",
-			},
-			{
-				Name:            "Weekend Morning Watch",
-				CronExpr:        "0 6,10 * * 6,0", // Sat/Sun at 6 AM and 10 AM
-				StartDate:       "2024-01-01",
-				EndDate:         "2024-12-31",
-				DurationMinutes: 240, // 4 hours
-				Timezone:        "Africa/Johannesburg",
-			},
-			{
-				Name:            "Weekday Lunch Security",
-				CronExpr:        "0 12 * * 1-5", // Mon-Fri at noon
-				StartDate:       "2024-01-01",
-				EndDate:         "2024-12-31",
-				DurationMinutes: 60,
-				Timezone:        "Africa/Johannesburg",
-			},
-		},
-
-		RecurringAssignments: []RecurringAssignmentSeed{
-			// Charlie on weekend mornings
-			{
-				UserPhone:    "+27821234569", // Charlie
-				ScheduleName: "Weekend Morning Watch",
-				DayOfWeek:    6, // Saturday
-				TimeSlot:     "06:00-10:00",
-				BuddyName:    "Diana Scout",
-				Description:  "Regular Saturday morning patrol",
-			},
-			{
-				UserPhone:    "+27821234570", // Diana
-				ScheduleName: "Weekend Morning Watch", 
-				DayOfWeek:    0, // Sunday
-				TimeSlot:     "10:00-14:00",
-				BuddyName:    "Charlie Volunteer",
-				Description:  "Sunday morning community watch",
-			},
-
-			// Eve on daily evening patrol
-			{
-				UserPhone:    "+27821234571", // Eve
-				ScheduleName: "Daily Evening Patrol",
-				DayOfWeek:    1, // Monday
-				TimeSlot:     "18:00-20:00",
-				Description:  "Monday evening patrol",
-			},
-			{
-				UserPhone:    "+27821234571", // Eve
-				ScheduleName: "Daily Evening Patrol",
-				DayOfWeek:    3, // Wednesday
-				TimeSlot:     "18:00-20:00",
-				Description:  "Wednesday evening patrol",
-			},
-
-			// Frank on weekday lunch
-			{
-				UserPhone:    "+27821234572", // Frank
-				ScheduleName: "Weekday Lunch Security",
-				DayOfWeek:    2, // Tuesday
-				TimeSlot:     "12:00-13:00",
-				Description:  "Tuesday lunch security",
-			},
-			{
-				UserPhone:    "+27821234572", // Frank
-				ScheduleName: "Weekday Lunch Security",
-				DayOfWeek:    4, // Thursday
-				TimeSlot:     "12:00-13:00",
-				Description:  "Thursday lunch security",
-			},
-
-			// Grace on summer patrol (from migration)
-			{
-				UserPhone:    "+27821234573", // Grace
-				ScheduleName: "Summer Patrol (Nov-Apr)",
-				DayOfWeek:    6, // Saturday
-				TimeSlot:     "00:00-02:00",
-				BuddyName:    "Henry Security",
-				Description:  "Summer Saturday night patrol",
-			},
-		},
-
-		Bookings: []BookingSeed{
-			// Some historical bookings for testing
-			{
-				UserPhone:    "+27821234569", // Charlie
-				ScheduleName: "Daily Evening Patrol",
-				ShiftStart:   "2024-11-25T18:00:00Z", // Recent Monday
-				BuddyName:    "Diana Scout",
-				Attended:     true,
-			},
-			{
-				UserPhone:    "+27821234570", // Diana
-				ScheduleName: "Weekend Morning Watch",
-				ShiftStart:   "2024-11-24T06:00:00Z", // Recent Sunday
-				BuddyName:    "Charlie Volunteer",
-				Attended:     true,
-			},
-			{
-				UserPhone:    "+27821234571", // Eve
-				ScheduleName: "Daily Evening Patrol",
-				ShiftStart:   "2024-11-26T18:00:00Z", // Recent Tuesday
-				Attended:     false, // Missed shift
-			},
-			{
-				UserPhone:    "+27821234572", // Frank
-				ScheduleName: "Weekday Lunch Security",
-				ShiftStart:   "2024-11-26T12:00:00Z", // Recent Tuesday
-				Attended:     true,
-			},
-		},
+		Users:               users,
+		Schedules:           schedules,
+		RecurringAssignments: filteredAssignments,
+		Bookings:            filteredBookings,
 	}
 }
 
-func showSeedData(logger *slog.Logger) {
-	seedData := getSeedData()
+func showSeedData(logger *slog.Logger, userCount int, futureBookings bool) {
+	seedData := getSeedDataWithOptions(userCount, futureBookings)
 	
 	logger.Info("=== SEED DATA PREVIEW ===")
 	
@@ -505,4 +563,138 @@ func showSeedData(logger *slog.Logger) {
 			"shift", booking.ShiftStart,
 			"attended", booking.Attended)
 	}
+	
+	if futureBookings {
+		futureCount := 0
+		for _, booking := range seedData.Bookings {
+			// Count future bookings (approximate)
+			if strings.Contains(booking.ShiftStart, "2024-12") || strings.Contains(booking.ShiftStart, "2025") {
+				futureCount++
+			}
+		}
+		logger.Info("Future bookings included", "estimated_count", futureCount)
+	}
+}
+
+func exportSeededData(seedData SeedData, filePath string, logger *slog.Logger) error {
+	logger.Info("Exporting seeded data", "file", filePath)
+	
+	// Create export structure with metadata
+	exportData := struct {
+		ExportedAt time.Time `json:"exported_at"`
+		Version    string    `json:"version"`
+		Database   string    `json:"database"`
+		Data       SeedData  `json:"data"`
+	}{
+		ExportedAt: time.Now().UTC(),
+		Version:    "1.0",
+		Database:   "Night Owls Go",
+		Data:       seedData,
+	}
+	
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create export file: %w", err)
+	}
+	defer file.Close()
+	
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	
+	if err := encoder.Encode(exportData); err != nil {
+		return fmt.Errorf("failed to encode data: %w", err)
+	}
+	
+	return nil
+}
+
+func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int64) []BookingSeed {
+	var futureBookings []BookingSeed
+	now := time.Now()
+	
+	// Generate bookings for the next 30 days
+	for i := 1; i <= 30; i++ {
+		futureDate := now.AddDate(0, 0, i)
+		weekday := int(futureDate.Weekday())
+		
+		// Add some evening patrol bookings
+		if weekday >= 1 && weekday <= 5 { // Monday to Friday
+			futureBookings = append(futureBookings, BookingSeed{
+				UserPhone:    "+27821234571", // Eve Patrol
+				ScheduleName: "Daily Evening Patrol",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T18:00:00Z",
+				BuddyName:    "",
+				Attended:     false, // Future bookings default to not attended
+			})
+		}
+		
+		// Add weekend morning watches
+		if weekday == 6 || weekday == 0 { // Saturday or Sunday
+			userPhone := "+27821234569" // Charlie
+			if weekday == 0 { // Sunday
+				userPhone = "+27821234570" // Diana
+			}
+			
+			futureBookings = append(futureBookings, BookingSeed{
+				UserPhone:    userPhone,
+				ScheduleName: "Weekend Morning Watch",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T06:00:00Z",
+				BuddyName:    "Auto-generated buddy",
+				Attended:     false,
+			})
+		}
+	}
+	
+	return futureBookings
+}
+
+func generateUsers(count int) []UserSeed {
+	if count <= 10 {
+		// Return the default user set for small counts
+		return []UserSeed{
+			// Admin users
+			{Name: "Alice Admin", Phone: "+27821234567", Role: "admin"},
+			{Name: "Bob Manager", Phone: "+27821234568", Role: "admin"},
+
+			// Owl volunteers
+			{Name: "Charlie Volunteer", Phone: "+27821234569", Role: "owl"},
+			{Name: "Diana Scout", Phone: "+27821234570", Role: "owl"},
+			{Name: "Eve Patrol", Phone: "+27821234571", Role: "owl"},
+			{Name: "Frank Guard", Phone: "+27821234572", Role: "owl"},
+			{Name: "Grace Watch", Phone: "+27821234573", Role: "owl"},
+			{Name: "Henry Security", Phone: "+27821234574", Role: "owl"},
+
+			// Guest users
+			{Name: "Iris Guest", Phone: "+27821234575", Role: "guest"},
+			{Name: "Jack Visitor", Phone: "+27821234576", Role: "guest"},
+		}[:count]
+	}
+	
+	// Generate additional users for larger counts
+	users := generateUsers(10) // Start with base 10
+	
+	owlNames := []string{"Leo", "Zoe", "Max", "Ivy", "Sam", "Ruby", "Alex", "Nova", "Finn", "Luna"}
+	guestNames := []string{"Maya", "Ryan", "Aria", "Dean", "Nora", "Kyle", "Sage", "Troy", "Vale", "Reed"}
+	
+	phoneBase := 27821234577 // Continue from last default user
+	
+	for i := 10; i < count; i++ {
+		var name, role string
+		
+		if i%4 == 0 { // Every 4th user is a guest
+			role = "guest"
+			name = fmt.Sprintf("%s Guest", guestNames[(i-10)%len(guestNames)])
+		} else { // Rest are owls
+			role = "owl"
+			name = fmt.Sprintf("%s Owl", owlNames[(i-10)%len(owlNames)])
+		}
+		
+		users = append(users, UserSeed{
+			Name:  name,
+			Phone: fmt.Sprintf("+%d", phoneBase+i-10),
+			Role:  role,
+		})
+	}
+	
+	return users
 } 

@@ -16,6 +16,13 @@ help:
 	@echo "  seed-preview  Preview what would be seeded (dry run)"
 	@echo "  seed-test     Seed a test database (test-seed.db)"
 	@echo ""
+	@echo "Enhanced Seeding:"
+	@echo "  seed-minimal  Create minimal seed (3 users only)"
+	@echo "  seed-large    Seed database with 50 users"
+	@echo "  seed-future   Seed with future bookings (next 30 days)"
+	@echo "  seed-export   Seed and export data to JSON file"
+	@echo "  seed-demo     Full demo (100 users, future bookings, export)"
+	@echo ""
 	@echo "Testing:"
 	@echo "  test          Run all tests"
 	@echo "  test-api      Run API integration tests"
@@ -57,6 +64,27 @@ seed-test: build-seed
 	@echo "Seeding test database..."
 	./cmd/seed/seed --db "./test-seed.db" --reset
 
+# Enhanced seeding targets
+seed-large: build-seed
+	@echo "Seeding database with 50 users..."
+	./cmd/seed/seed --reset --users 50
+
+seed-future: build-seed
+	@echo "Seeding database with future bookings..."
+	./cmd/seed/seed --reset --future-bookings
+
+seed-export: build-seed
+	@echo "Seeding and exporting data..."
+	./cmd/seed/seed --reset --export "./seed-export.json"
+
+seed-demo: build-seed
+	@echo "Creating demo environment (100 users, future bookings, export)..."
+	./cmd/seed/seed --reset --users 100 --future-bookings --export "./demo-data.json" --verbose
+
+seed-minimal: build-seed
+	@echo "Creating minimal seed (3 users only)..."
+	./cmd/seed/seed --reset --users 3
+
 # Testing targets
 test:
 	@echo "Running all tests..."
@@ -95,6 +123,7 @@ clean:
 	rm -f server cmd/seed/seed
 	rm -f test-seed.db
 	rm -f coverage.out coverage.html
+	rm -f seed-export.json demo-data.json
 	@echo "Clean complete"
 
 # Development workflow

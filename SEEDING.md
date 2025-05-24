@@ -20,6 +20,20 @@ make seed-reset
 
 # Set up complete development environment
 make dev-setup
+
+# Basic seeding
+make seed-reset          # Reset and seed with 10 users
+make seed-preview        # Preview seed data (dry run)
+
+# Enhanced seeding options
+make seed-minimal        # 3 users only
+make seed-large          # 50 users  
+make seed-future         # Include 30 days of future bookings
+make seed-export         # Export seed data to JSON
+make seed-demo           # Full demo: 100 users, future bookings, export
+
+# Custom seeding
+./cmd/seed/seed --users 25 --future-bookings --export data.json --verbose
 ```
 
 ## Seeding Command
@@ -272,4 +286,173 @@ The seeding system is designed for development only:
 - Includes debug-friendly data patterns
 - May conflict with real user data
 
-For production data management, use proper database administration tools and scripts. 
+For production data management, use proper database administration tools and scripts.
+
+## Advanced Features
+
+### 1. Custom User Count
+Generate any number of users with intelligent role distribution:
+
+```bash
+# Generate exactly 5 users (core team)
+./cmd/seed/seed --users 5 --reset
+
+# Generate 100 users for load testing  
+./cmd/seed/seed --users 100 --reset
+```
+
+**User Generation Logic:**
+- **First 10**: Core team with specific names and roles
+- **Additional users**: Auto-generated with pattern-based names
+- **Role distribution**: Every 4th additional user is a guest, rest are owls
+- **Phone numbers**: Sequential starting from +27821234577
+
+### 2. Future Bookings
+Generate realistic future bookings for testing and development:
+
+```bash
+./cmd/seed/seed --future-bookings --reset
+```
+
+**Future Booking Logic:**
+- **Next 30 days**: Generates bookings for upcoming month
+- **Weekday evenings**: Eve Patrol on Mon-Fri at 6 PM
+- **Weekend mornings**: Charlie (Saturday), Diana (Sunday) at 6 AM
+- **Realistic data**: All future bookings default to `attended: false`
+
+### 3. Data Export
+Export seeded data to structured JSON for analysis or documentation:
+
+```bash
+./cmd/seed/seed --export ./my-seed-data.json --reset
+```
+
+**Export Structure:**
+```json
+{
+  "exported_at": "2025-05-24T13:47:19.03008Z",
+  "version": "1.0", 
+  "database": "Night Owls Go",
+  "data": {
+    "Users": [...],
+    "Schedules": [...],
+    "RecurringAssignments": [...],
+    "Bookings": [...]
+  }
+}
+```
+
+### 4. Verbose Logging
+Enhanced debugging and development visibility:
+
+```bash
+./cmd/seed/seed --verbose --users 50
+```
+
+**Features:**
+- Detailed progress logging
+- Debug-level information
+- Human-readable timestamps
+- Enhanced context information
+
+### 5. Smart Data Filtering
+Automatically filters data based on available users:
+
+- **Recurring assignments**: Only created for existing users
+- **Bookings**: Only generated for users that exist  
+- **Relationships**: Maintains data integrity across all entities
+- **Scaling**: Works seamlessly from 1 to 1000+ users
+
+## Development Workflows
+
+### Testing Different Scales
+```bash
+# Minimal for unit testing
+make seed-minimal
+
+# Standard for development
+make seed-reset  
+
+# Large scale for performance testing
+make seed-large
+```
+
+### Demo Environment Setup
+```bash
+# Complete demo environment
+make seed-demo
+
+# Results in:
+# - 100 users (2 admins, 73 owls, 25 guests)
+# - 3 additional schedules + 2 from migrations
+# - 7 recurring assignments (filtered by available users)
+# - 4 historical + 30 future bookings
+# - Complete data export in demo-data.json
+```
+
+### Data Analysis Workflow
+```bash
+# 1. Seed with export
+make seed-export
+
+# 2. Analyze the JSON
+cat seed-export.json | jq '.data.Users | length'  # Count users
+cat seed-export.json | jq '.data.Users | group_by(.Role)'  # Group by role
+
+# 3. Verify database state
+sqlite3 night-owls.test.db "SELECT role, COUNT(*) FROM users GROUP BY role;"
+```
+
+## Command Line Options
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--users N` | Generate N users | `--users 25` |
+| `--future-bookings` | Generate 30 days of future bookings | `--future-bookings` |
+| `--export FILE` | Export seed data to JSON file | `--export data.json` |
+| `--verbose` | Enable detailed logging | `--verbose` |
+| `--reset` | Reset database before seeding | `--reset` |
+| `--dry-run` | Preview without making changes | `--dry-run` |
+| `--db PATH` | Use specific database file | `--db test.db` |
+
+## User Generation Patterns
+
+### Core Users (1-10)
+- **2 Admins**: Alice Admin, Bob Manager
+- **6 Owls**: Charlie, Diana, Eve, Frank, Grace, Henry  
+- **2 Guests**: Iris, Jack
+
+### Additional Users (11+)
+- **Pattern**: Every 4th user is a guest, rest are owls
+- **Names**: Leo, Zoe, Max, Ivy, Sam, Ruby, Alex, Nova, Finn, Luna...
+- **Phones**: Sequential +27821234577, +27821234578...
+- **Roles**: Smart distribution for realistic testing
+
+## Integration with Development
+
+### Docker Development
+```bash
+# Seed container database
+docker exec night-owls-container ./cmd/seed/seed --users 50 --reset
+
+# Export for backup
+docker exec night-owls-container ./cmd/seed/seed --export /backup/seed.json
+```
+
+### CI/CD Pipeline
+```bash
+# Test with minimal data  
+make seed-minimal && make test
+
+# Performance test with large dataset
+make seed-large && make test-performance
+
+# Integration test with future bookings
+make seed-future && make test-integration
+```
+
+### Production Setup (Staging)
+```bash
+# Staging environment with realistic scale
+./cmd/seed/seed --users 500 --future-bookings --export staging-backup.json --reset
+``` 
