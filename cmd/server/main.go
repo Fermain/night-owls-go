@@ -241,6 +241,7 @@ func main() {
 	fuego.GetStd(admin, "/users", adminUserAPIHandler.AdminListUsers)
 	fuego.PostStd(admin, "/users", adminUserAPIHandler.AdminCreateUser)
 	fuego.GetStd(admin, "/users/{id}", adminUserAPIHandler.AdminGetUser)
+	fuego.GetStd(admin, "/users/{userId}/bookings", adminBookingAPIHandler.GetUserBookingsHandler)
 	fuego.PutStd(admin, "/users/{id}", adminUserAPIHandler.AdminUpdateUser)
 	fuego.DeleteStd(admin, "/users/{id}", adminUserAPIHandler.AdminDeleteUser)
 	fuego.PostStd(admin, "/users/bulk-delete", adminUserAPIHandler.AdminBulkDeleteUsers)

@@ -13,6 +13,10 @@
 	import { userSchema, type UserFormValues, type UserData } from '$lib/schemas/user';
 	import UserDeleteConfirmDialog from '$lib/components/admin/dialogs/UserDeleteConfirmDialog.svelte';
 	import UserRoleChangeDialog from '$lib/components/admin/dialogs/UserRoleChangeDialog.svelte';
+	import { BookingsApiService, type BookingResponse } from '$lib/services/api/bookings';
+	import { createQuery } from '@tanstack/svelte-query';
+	import { CalendarIcon, ClockIcon, UserIcon, CheckCircleIcon, XCircleIcon } from 'lucide-svelte';
+	import { format, isPast } from 'date-fns';
 
 	// Use $props() for Svelte 5 runes mode
 	let { user }: { user?: UserData } = $props();
@@ -116,6 +120,48 @@
 			showDeleteConfirm = true;
 		}
 	}
+
+	// Fetch user bookings for display (only when editing an existing user)
+	const userBookingsQuery = $derived.by(() => {
+		if (!user?.id) return null;
+		
+		return createQuery<BookingResponse[], Error>({
+			queryKey: ['userBookings', user.id],
+			queryFn: () => BookingsApiService.getUserBookings(user.id),
+			staleTime: 1000 * 60 * 5 // 5 minutes
+		});
+	});
+
+	// Separate past and upcoming bookings
+	const { pastBookings, upcomingBookings } = $derived.by(() => {
+		if (!userBookingsQuery?.$data) {
+			return { pastBookings: [], upcomingBookings: [] };
+		}
+
+		const bookings = userBookingsQuery.$data;
+		const now = new Date();
+		
+		const past = bookings.filter((booking: BookingResponse) => isPast(new Date(booking.shift_start)));
+		const upcoming = bookings.filter((booking: BookingResponse) => !isPast(new Date(booking.shift_start)));
+		
+		// Sort past bookings by date (newest first)
+		past.sort((a: BookingResponse, b: BookingResponse) => new Date(b.shift_start).getTime() - new Date(a.shift_start).getTime());
+		
+		// Sort upcoming bookings by date (earliest first)
+		upcoming.sort((a: BookingResponse, b: BookingResponse) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		
+		return { pastBookings: past, upcomingBookings: upcoming };
+	});
+
+	function formatShiftDate(dateString: string): string {
+		return format(new Date(dateString), 'EEEE, MMMM d, yyyy');
+	}
+
+	function formatShiftTime(startTime: string, endTime: string): string {
+		const start = format(new Date(startTime), 'HH:mm');
+		const end = format(new Date(endTime), 'HH:mm');
+		return `${start} - ${end}`;
+	}
 </script>
 
 <svelte:head>
@@ -214,6 +260,136 @@
 		</div>
 	</form>
 </div>
+
+<!-- Booked Shifts Section (only shown for existing users) -->
+{#if user?.id}
+	<div class="container mr-auto p-4 border-t">
+		<h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+			<CalendarIcon class="h-5 w-5" />
+			Booked Shifts
+		</h2>
+
+		{#if userBookingsQuery?.$isLoading}
+			<div class="text-sm text-muted-foreground">Loading bookings...</div>
+		{:else if userBookingsQuery?.$isError}
+			<div class="text-sm text-destructive">
+				Error loading bookings: {userBookingsQuery.$error.message}
+			</div>
+		{:else if !userBookingsQuery?.$data || userBookingsQuery.$data.length === 0}
+			<div class="text-sm text-muted-foreground">No bookings found for this user.</div>
+		{:else}
+			<div class="space-y-6">
+				<!-- Upcoming Bookings -->
+				{#if upcomingBookings.length > 0}
+					<div>
+						<h3 class="text-lg font-semibold mb-3 text-blue-700">
+							Upcoming Shifts ({upcomingBookings.length})
+						</h3>
+						<div class="grid gap-3">
+							{#each upcomingBookings as booking (booking.booking_id)}
+								<div class="border rounded-lg p-4 bg-blue-50 border-blue-200">
+									<div class="flex items-start justify-between">
+										<div class="flex-1">
+											<div class="font-medium text-sm">{booking.schedule_name}</div>
+											<div class="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+												<CalendarIcon class="h-3 w-3" />
+												{formatShiftDate(booking.shift_start)}
+											</div>
+											<div class="text-sm text-muted-foreground flex items-center gap-1">
+												<ClockIcon class="h-3 w-3" />
+												{formatShiftTime(booking.shift_start, booking.shift_end)}
+											</div>
+											{#if booking.buddy_name}
+												<div class="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+													<UserIcon class="h-3 w-3" />
+													Buddy: {booking.buddy_name}
+												</div>
+											{/if}
+										</div>
+										<div class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+											Upcoming
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Past Bookings -->
+				{#if pastBookings.length > 0}
+					<div>
+						<h3 class="text-lg font-semibold mb-3 text-gray-700">
+							Past Shifts ({pastBookings.length})
+						</h3>
+						<div class="grid gap-3">
+							{#each pastBookings.slice(0, 10) as booking (booking.booking_id)}
+								<div class="border rounded-lg p-4 bg-gray-50 border-gray-200">
+									<div class="flex items-start justify-between">
+										<div class="flex-1">
+											<div class="font-medium text-sm">{booking.schedule_name}</div>
+											<div class="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+												<CalendarIcon class="h-3 w-3" />
+												{formatShiftDate(booking.shift_start)}
+											</div>
+											<div class="text-sm text-muted-foreground flex items-center gap-1">
+												<ClockIcon class="h-3 w-3" />
+												{formatShiftTime(booking.shift_start, booking.shift_end)}
+											</div>
+											{#if booking.buddy_name}
+												<div class="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+													<UserIcon class="h-3 w-3" />
+													Buddy: {booking.buddy_name}
+												</div>
+											{/if}
+										</div>
+										<div class="flex items-center gap-2">
+											{#if booking.attended === true}
+												<div class="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+													<CheckCircleIcon class="h-3 w-3" />
+													Attended
+												</div>
+											{:else if booking.attended === false}
+												<div class="flex items-center gap-1 text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+													<XCircleIcon class="h-3 w-3" />
+													No-show
+												</div>
+											{:else}
+												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+													Past
+												</div>
+											{/if}
+										</div>
+									</div>
+								</div>
+							{/each}
+							{#if pastBookings.length > 10}
+								<div class="text-sm text-muted-foreground text-center">
+									Showing 10 of {pastBookings.length} past shifts
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Summary -->
+				<div class="bg-gray-50 rounded-lg p-4">
+					<div class="text-sm text-muted-foreground">
+						<strong>Total bookings:</strong> {userBookingsQuery.$data.length}
+						| <strong>Upcoming:</strong> {upcomingBookings.length}
+						| <strong>Past:</strong> {pastBookings.length}
+						{#if pastBookings.some((b: BookingResponse) => b.attended === true)}
+							| <strong>Attended:</strong> {pastBookings.filter((b: BookingResponse) => b.attended === true).length}
+						{/if}
+						{#if pastBookings.some((b: BookingResponse) => b.attended === false)}
+							| <strong>No-shows:</strong> {pastBookings.filter((b: BookingResponse) => b.attended === false).length}
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
+{/if}
 
 {#if showDeleteConfirm}
 	<UserDeleteConfirmDialog bind:open={showDeleteConfirm} {user} mutation={deleteUserMutation} />

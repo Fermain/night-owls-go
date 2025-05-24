@@ -10,6 +10,7 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -274,7 +275,14 @@
 								<div class="flex items-center justify-between">
 									<h3 class="font-medium text-sm truncate">{shift.schedule_name}</h3>
 									{#if shift.is_booked}
-										<CheckIcon class="h-4 w-4 text-green-600" />
+										{#if shift.is_recurring_reservation}
+											<div class="flex items-center gap-1">
+												<CalendarClockIcon class="h-4 w-4 text-blue-600" />
+												<span class="text-xs text-blue-600">Recurring</span>
+											</div>
+										{:else}
+											<CheckIcon class="h-4 w-4 text-green-600" />
+										{/if}
 									{:else}
 										<XIcon class="h-4 w-4 text-orange-600" />
 									{/if}
@@ -288,6 +296,9 @@
 								{#if shift.is_booked && shift.user_name}
 									<p class="text-xs text-green-700">
 										Assigned to: {shift.user_name}
+										{#if shift.is_recurring_reservation && shift.recurring_description}
+											<span class="text-blue-600">({shift.recurring_description})</span>
+										{/if}
 									</p>
 								{/if}
 							</div>

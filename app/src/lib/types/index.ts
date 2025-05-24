@@ -11,6 +11,10 @@ export type AdminShiftSlot = {
 	booking_id?: number | null;
 	user_name?: string | null;
 	user_phone?: string | null;
+	is_recurring_reservation?: boolean;
+	recurring_assignment_id?: number | null;
+	buddy_name?: string | null;
+	recurring_description?: string | null;
 };
 
 export interface UserSessionData {

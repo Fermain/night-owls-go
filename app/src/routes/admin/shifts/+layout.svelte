@@ -10,6 +10,7 @@
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
+	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -42,10 +43,10 @@
 			description: 'Calendar view'
 		},
 		{
-			title: 'Recurring',
-			url: '/admin/shifts/recurring',
-			icon: CalendarClockIcon,
-			description: 'Recurring assignments'
+			title: 'Bulk Assignment',
+			url: '/admin/shifts/bulk-signup',
+			icon: CalendarDaysIcon,
+			description: 'Individual & pattern selection'
 		}
 	];
 

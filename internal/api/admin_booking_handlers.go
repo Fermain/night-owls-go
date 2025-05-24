@@ -5,9 +5,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"night-owls-go/internal/service"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // AdminBookingHandler handles admin-specific booking operations.
@@ -89,4 +92,46 @@ func (h *AdminBookingHandler) AssignUserToShiftHandler(w http.ResponseWriter, r 
 
 	bookingResponse := ToBookingResponse(createdBooking)
 	RespondWithJSON(w, http.StatusCreated, bookingResponse, h.logger)
+}
+
+// GetUserBookingsHandler handles GET /api/admin/users/{userId}/bookings
+// @Summary Get all bookings for a specific user (Admin)
+// @Description Allows an admin to view all bookings (past and future) for a specific user.
+// @Tags admin-bookings
+// @Produce json
+// @Param userId path int true "User ID" example(42)
+// @Success 200 {array} BookingResponse "List of bookings for the user"
+// @Failure 400 {object} ErrorResponse "Invalid user ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized - admin authentication required"
+// @Failure 403 {object} ErrorResponse "Forbidden - user does not have admin privileges"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/users/{userId}/bookings [get]
+func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "userId")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil || userID <= 0 {
+		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "user_id", userIDStr)
+		return
+	}
+
+	bookings, err := h.bookingService.GetUserBookings(r.Context(), userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			RespondWithError(w, http.StatusNotFound, "User not found", h.logger, "user_id", userID)
+		default:
+			RespondWithError(w, http.StatusInternalServerError, "Failed to fetch user bookings", h.logger, "error", err.Error())
+		}
+		return
+	}
+
+	// Convert to API response format
+	bookingResponses := make([]BookingResponse, len(bookings))
+	for i, booking := range bookings {
+		bookingResponses[i] = ToBookingResponse(booking)
+	}
+
+	RespondWithJSON(w, http.StatusOK, bookingResponses, h.logger)
 } 

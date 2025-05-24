@@ -99,6 +99,7 @@
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['adminRecurringAssignments'] });
+			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
 			resetForm();
 		},
 		onError: (error: Error) => {
@@ -120,28 +121,7 @@
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['adminRecurringAssignments'] });
-		}
-	});
-
-	// Materialize bookings mutation
-	const materializeBookingsMutation = createMutation({
-		mutationFn: async () => {
-			const response = await authenticatedFetch(
-				'/api/admin/recurring-assignments?materialize=true',
-				{
-					method: 'GET'
-				}
-			);
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to materialize bookings');
-			}
-			return response.json();
-		},
-		onSuccess: (data) => {
-			// Invalidate shift slots to show newly created bookings
 			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
-			console.log('Materialization completed:', data);
 		}
 	});
 
@@ -266,17 +246,6 @@
 				</p>
 			</div>
 			<div class="flex gap-2">
-				<Button
-					variant="outline"
-					onclick={() => $materializeBookingsMutation.mutate()}
-					disabled={$materializeBookingsMutation.isPending}
-				>
-					{#if $materializeBookingsMutation.isPending}
-						Materializing...
-					{:else}
-						Materialize Now
-					{/if}
-				</Button>
 				<Button onclick={() => (showCreateForm = true)} disabled={showCreateForm}>
 					<PlusIcon class="h-4 w-4 mr-2" />
 					New Recurring Assignment

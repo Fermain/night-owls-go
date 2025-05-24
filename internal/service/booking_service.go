@@ -320,4 +320,28 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	}
 
 	return createdBooking, nil
+}
+
+// GetUserBookings retrieves all bookings for a specific user.
+func (s *BookingService) GetUserBookings(ctx context.Context, userID int64) ([]db.Booking, error) {
+	// Validate that user exists
+	_, err := s.querier.GetUserByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "User not found for booking retrieval", "user_id", userID)
+			return nil, ErrUserNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get user by ID for booking retrieval", "user_id", userID, "error", err)
+		return nil, ErrInternalServer
+	}
+
+	// Get all bookings for the user
+	bookings, err := s.querier.ListBookingsByUserID(ctx, userID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to list bookings by user ID", "user_id", userID, "error", err)
+		return nil, ErrInternalServer
+	}
+
+	s.logger.InfoContext(ctx, "Successfully retrieved user bookings", "user_id", userID, "booking_count", len(bookings))
+	return bookings, nil
 } 
