@@ -233,7 +233,7 @@
 	function handleDateRangeChange(range: { start: string | null; end: string | null }) {
 		dateRangeStart = range.start;
 		dateRangeEnd = range.end;
-		
+
 		// If in pattern mode, re-select matching shifts with new date range
 		if (patternMode && selectedPattern) {
 			selectAllMatchingShifts();
@@ -249,7 +249,7 @@
 	function selectPattern(shift: AdminShiftSlot) {
 		const dayOfWeek = new Date(shift.start_time).getDay();
 		const timeSlot = formatTimeSlot(shift.start_time, shift.end_time);
-		
+
 		selectedPattern = {
 			scheduleName: shift.schedule_name,
 			dayOfWeek,
@@ -265,7 +265,7 @@
 		if (!selectedPattern) return;
 
 		selectedShifts.clear();
-		
+
 		availableShifts
 			.filter((shift) => {
 				if (shift.is_booked) return false;
@@ -280,22 +280,22 @@
 			.forEach((shift) => {
 				selectedShifts.add(`${shift.schedule_id}-${shift.start_time}`);
 			});
-		
+
 		selectedShifts = new Set(selectedShifts); // Trigger reactivity
 	}
 
 	function getPatternDescription(): string {
 		if (!selectedPattern) return '';
-		
+
 		const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 		const dayName = dayNames[selectedPattern.dayOfWeek];
-		
+
 		return `Every ${dayName} ${selectedPattern.timeSlot} - ${selectedPattern.scheduleName}`;
 	}
 
 	function getMatchingShiftsCount(): number {
 		if (!selectedPattern) return 0;
-		
+
 		return availableShifts.filter((shift) => {
 			if (shift.is_booked) return false;
 			const shiftDay = new Date(shift.start_time).getDay();
@@ -336,7 +336,8 @@
 					Bulk Shift Assignment
 				</h1>
 				<p class="text-muted-foreground">
-					Select individual shifts or commit to a pattern (e.g., "every Saturday 0-2AM until end date")
+					Select individual shifts or commit to a pattern (e.g., "every Saturday 0-2AM until end
+					date")
 				</p>
 			</div>
 		</div>
@@ -427,8 +428,8 @@
 							</Label>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							{patternMode 
-								? 'Click any shift to select all matching shifts until end date' 
+							{patternMode
+								? 'Click any shift to select all matching shifts until end date'
 								: 'Manually select individual shifts with checkboxes'}
 						</p>
 					</div>
@@ -534,9 +535,9 @@
 										size="sm"
 										onclick={() => toggleAllShiftsForDate(shifts)}
 									>
-										{shifts.filter((s) => !s.is_booked).every((s) =>
-											selectedShifts.has(`${s.schedule_id}-${s.start_time}`)
-										)
+										{shifts
+											.filter((s) => !s.is_booked)
+											.every((s) => selectedShifts.has(`${s.schedule_id}-${s.start_time}`))
 											? 'Deselect All'
 											: 'Select Available'}
 									</Button>
@@ -546,7 +547,9 @@
 									{#each shifts as shift (shift.schedule_id + '-' + shift.start_time)}
 										{@const shiftKey = `${shift.schedule_id}-${shift.start_time}`}
 										{@const isSelected = selectedShifts.has(shiftKey)}
-										{@const isPatternMatch = patternMode && selectedPattern && 
+										{@const isPatternMatch =
+											patternMode &&
+											selectedPattern &&
 											shift.schedule_id === selectedPattern.scheduleId &&
 											new Date(shift.start_time).getDay() === selectedPattern.dayOfWeek &&
 											formatTimeSlot(shift.start_time, shift.end_time) === selectedPattern.timeSlot}
@@ -597,9 +600,12 @@
 
 													{#if patternMode && !shift.is_booked}
 														<div class="text-xs text-blue-600 mt-1">
-															{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'short' })}
+															{new Date(shift.start_time).toLocaleDateString('en-US', {
+																weekday: 'short'
+															})}
 															{#if isPatternMatch}
-																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge>
+																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge
+																>
 															{/if}
 														</div>
 													{/if}
@@ -629,4 +635,4 @@
 			</CardContent>
 		</Card>
 	</div>
-</div> 
+</div>

@@ -124,7 +124,7 @@
 	// Fetch user bookings for display (only when editing an existing user)
 	const userBookingsQuery = $derived.by(() => {
 		if (!user?.id) return null;
-		
+
 		return createQuery<BookingResponse[], Error>({
 			queryKey: ['userBookings', user.id],
 			queryFn: () => BookingsApiService.getUserBookings(user.id),
@@ -140,16 +140,26 @@
 
 		const bookings = userBookingsQuery.$data;
 		const now = new Date();
-		
-		const past = bookings.filter((booking: BookingResponse) => isPast(new Date(booking.shift_start)));
-		const upcoming = bookings.filter((booking: BookingResponse) => !isPast(new Date(booking.shift_start)));
-		
+
+		const past = bookings.filter((booking: BookingResponse) =>
+			isPast(new Date(booking.shift_start))
+		);
+		const upcoming = bookings.filter(
+			(booking: BookingResponse) => !isPast(new Date(booking.shift_start))
+		);
+
 		// Sort past bookings by date (newest first)
-		past.sort((a: BookingResponse, b: BookingResponse) => new Date(b.shift_start).getTime() - new Date(a.shift_start).getTime());
-		
+		past.sort(
+			(a: BookingResponse, b: BookingResponse) =>
+				new Date(b.shift_start).getTime() - new Date(a.shift_start).getTime()
+		);
+
 		// Sort upcoming bookings by date (earliest first)
-		upcoming.sort((a: BookingResponse, b: BookingResponse) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
-		
+		upcoming.sort(
+			(a: BookingResponse, b: BookingResponse) =>
+				new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
+		);
+
 		return { pastBookings: past, upcomingBookings: upcoming };
 	});
 
@@ -306,9 +316,7 @@
 												</div>
 											{/if}
 										</div>
-										<div class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-											Upcoming
-										</div>
+										<div class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">Upcoming</div>
 									</div>
 								</div>
 							{/each}
@@ -345,19 +353,21 @@
 										</div>
 										<div class="flex items-center gap-2">
 											{#if booking.attended === true}
-												<div class="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+												<div
+													class="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded"
+												>
 													<CheckCircleIcon class="h-3 w-3" />
 													Attended
 												</div>
 											{:else if booking.attended === false}
-												<div class="flex items-center gap-1 text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+												<div
+													class="flex items-center gap-1 text-xs text-red-600 bg-red-100 px-2 py-1 rounded"
+												>
 													<XCircleIcon class="h-3 w-3" />
 													No-show
 												</div>
 											{:else}
-												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-													Past
-												</div>
+												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">Past</div>
 											{/if}
 										</div>
 									</div>
@@ -375,14 +385,19 @@
 				<!-- Summary -->
 				<div class="bg-gray-50 rounded-lg p-4">
 					<div class="text-sm text-muted-foreground">
-						<strong>Total bookings:</strong> {userBookingsQuery.$data.length}
-						| <strong>Upcoming:</strong> {upcomingBookings.length}
-						| <strong>Past:</strong> {pastBookings.length}
+						<strong>Total bookings:</strong>
+						{userBookingsQuery.$data.length}
+						| <strong>Upcoming:</strong>
+						{upcomingBookings.length}
+						| <strong>Past:</strong>
+						{pastBookings.length}
 						{#if pastBookings.some((b: BookingResponse) => b.attended === true)}
-							| <strong>Attended:</strong> {pastBookings.filter((b: BookingResponse) => b.attended === true).length}
+							| <strong>Attended:</strong>
+							{pastBookings.filter((b: BookingResponse) => b.attended === true).length}
 						{/if}
 						{#if pastBookings.some((b: BookingResponse) => b.attended === false)}
-							| <strong>No-shows:</strong> {pastBookings.filter((b: BookingResponse) => b.attended === false).length}
+							| <strong>No-shows:</strong>
+							{pastBookings.filter((b: BookingResponse) => b.attended === false).length}
 						{/if}
 					</div>
 				</div>

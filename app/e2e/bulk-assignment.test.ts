@@ -34,13 +34,13 @@ async function navigateToBulkAssignment(page: Page) {
 async function selectUser(page: Page, userName: string) {
 	// Open user dropdown
 	await page.click('button:has-text("Select user...")');
-	
+
 	// Wait for dropdown to open and search for user
 	await page.fill('[placeholder="Search users..."]', userName);
-	
+
 	// Click on the user option
 	await page.click(`[role="option"]:has-text("${userName}")`);
-	
+
 	// Verify user is selected
 	await expect(page.locator('button').filter({ hasText: userName })).toBeVisible();
 }
@@ -48,11 +48,11 @@ async function selectUser(page: Page, userName: string) {
 async function togglePatternMode(page: Page, enabled: boolean) {
 	const checkbox = page.locator('#pattern-mode');
 	const isChecked = await checkbox.isChecked();
-	
+
 	if (isChecked !== enabled) {
 		await checkbox.click();
 	}
-	
+
 	// Verify pattern mode state
 	await expect(checkbox).toBeChecked({ checked: enabled });
 }
@@ -60,7 +60,7 @@ async function togglePatternMode(page: Page, enabled: boolean) {
 async function selectDateRange(page: Page, days: number = 30) {
 	// Click date range picker
 	await page.click('[data-testid="date-range-picker"], button:has-text("Next 30 days")');
-	
+
 	// For simplicity, we'll use the default range or extend it
 	// In a real test, you might want to select specific dates
 }
@@ -83,10 +83,10 @@ test.describe('Bulk Assignment - Page Loading and Navigation', () => {
 
 	test('Navigation from shifts layout works', async ({ page }) => {
 		await page.goto('/admin/shifts');
-		
+
 		// Click bulk assignment navigation item
 		await page.click('a[href="/admin/shifts/bulk-signup"]');
-		
+
 		await expect(page).toHaveURL('/admin/shifts/bulk-signup');
 		await expect(page.locator('h1')).toContainText('Bulk Shift Assignment');
 	});
@@ -96,10 +96,10 @@ test.describe('Bulk Assignment - Page Loading and Navigation', () => {
 
 		// Open user dropdown
 		await page.click('button:has-text("Select user...")');
-		
+
 		// Search for a user
 		await page.fill('[placeholder="Search users..."]', 'Charlie');
-		
+
 		// Should show matching users
 		await expect(page.locator('[role="option"]:has-text("Charlie Volunteer")')).toBeVisible();
 	});
@@ -150,7 +150,7 @@ test.describe('Bulk Assignment - Manual Selection Mode', () => {
 		// Select multiple checkboxes
 		const checkboxes = page.locator('[type="checkbox"]');
 		const checkboxCount = await checkboxes.count();
-		
+
 		if (checkboxCount >= 3) {
 			await checkboxes.nth(0).click();
 			await checkboxes.nth(1).click();
@@ -211,7 +211,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 
 		// Verify UI changes
 		await expect(page.locator('text=Click any shift to select all matching shifts')).toBeVisible();
-		
+
 		// Checkboxes should be replaced with pattern indicators
 		await expect(page.locator('[type="checkbox"]')).not.toBeVisible();
 	});
@@ -288,7 +288,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 		// Change date range (extend it)
 		// This would trigger re-selection of pattern matches
 		// Note: Actual date range selection would need more specific implementation
-		
+
 		// For now, just verify the feature is responsive to changes
 		await expect(page.locator('.text-3xl.font-bold')).toBeVisible();
 	});
@@ -395,11 +395,11 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 
 		// Wait for completion and check for partial success message
 		await page.waitForTimeout(5000);
-		
+
 		// Should either show full success or partial success with error count
 		const successText = page.locator('text=successfully');
 		const partialText = page.locator('text=failed');
-		
+
 		await expect(successText.or(partialText)).toBeVisible({ timeout: 30000 });
 	});
 });
@@ -441,13 +441,13 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
 
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
-		
+
 		// Should show schedule name
 		await expect(firstShift.locator('.font-medium')).toBeVisible();
-		
+
 		// Should show time slot
 		await expect(firstShift.locator('text=:')).toBeVisible(); // Time format contains colon
-		
+
 		// Should show relative time
 		await expect(firstShift.locator('text=in, text=ago')).toBeVisible();
 	});
@@ -458,7 +458,7 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 
 		// Should show date headers
 		await expect(page.locator('.font-semibold.text-lg')).toBeVisible();
-		
+
 		// Should show "Select Available" buttons for each date group
 		await expect(page.locator('button:has-text("Select Available")')).toBeVisible();
 	});
@@ -473,7 +473,7 @@ test.describe('Bulk Assignment - Error Handling', () => {
 	test('Handles API errors gracefully', async ({ page }) => {
 		// This test would need to mock API failures or use invalid data
 		// For now, just verify error handling UI is present
-		
+
 		await selectUser(page, 'Charlie Volunteer');
 		await togglePatternMode(page, false);
 
@@ -483,14 +483,14 @@ test.describe('Bulk Assignment - Error Handling', () => {
 		// Error handling would be triggered by backend issues
 		// We can test that error display elements exist
 		const errorContainer = page.locator('.bg-destructive\\/10, .text-destructive');
-		
+
 		// Error container should exist in DOM (even if not visible)
 		await expect(errorContainer).toHaveCount(0); // No errors initially
 	});
 
 	test('Handles network failures', async ({ page }) => {
 		// Intercept and fail API calls
-		await page.route('**/api/admin/bookings/assign', route => {
+		await page.route('**/api/admin/bookings/assign', (route) => {
 			route.abort();
 		});
 
@@ -509,4 +509,4 @@ test.describe('Bulk Assignment - Error Handling', () => {
 		// Should show network error
 		await expect(page.locator('text=Failed, text=error')).toBeVisible({ timeout: 10000 });
 	});
-}); 
+});

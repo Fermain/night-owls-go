@@ -19,12 +19,12 @@ export class BookingsApiService {
 	 */
 	static async getUserBookings(userId: number): Promise<BookingResponse[]> {
 		const response = await authenticatedFetch(`/api/admin/users/${userId}/bookings`);
-		
+
 		if (!response.ok) {
 			const error = await response.text();
 			throw new Error(`Failed to fetch user bookings: ${error}`);
 		}
-		
+
 		return response.json();
 	}
 
@@ -43,12 +43,12 @@ export class BookingsApiService {
 			},
 			body: JSON.stringify(params)
 		});
-		
+
 		if (!response.ok) {
 			const error = await response.text();
 			throw new Error(`Failed to assign user to shift: ${error}`);
 		}
-		
+
 		return response.json();
 	}
-} 
+}
