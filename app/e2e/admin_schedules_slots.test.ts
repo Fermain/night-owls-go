@@ -34,7 +34,7 @@ test.describe('Admin Schedules Slots Page', () => {
 		console.log('Attempting to click date picker button in filters section');
 
 		// --- First selection ---
-		await expect(datePickerButton).toBeVisible({ timeout: 10000 });
+		await expect(datePickerButton).toBeVisible({ timeout: 300 });
 		await datePickerButton.click();
 
 		// Wait for the calendar popover to be visible

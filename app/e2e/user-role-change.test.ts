@@ -102,10 +102,10 @@ test.describe('User Role Change', () => {
 		}
 
 		// Step 4: Verify we're on the user edit page
-		await page.waitForURL(`**/admin/users?userId=${existingUserId}`, { timeout: 10000 });
+		await page.waitForURL(`**/admin/users?userId=${existingUserId}`, { timeout: 300 });
 
 		// Step 5: Wait for form to load and verify current role
-		await page.waitForSelector('input[readonly]', { timeout: 10000 });
+		await page.waitForSelector('input[readonly]', { timeout: 300 });
 
 		const currentRoleInput = page.locator('input[readonly]').first();
 		const currentRole = await currentRoleInput.getAttribute('value');
@@ -194,7 +194,7 @@ test.describe('User Role Change', () => {
 			await page.getByText(existingUserName).first().click();
 		}
 
-		await page.waitForURL(`**/admin/users?userId=${existingUserId}`, { timeout: 10000 });
+		await page.waitForURL(`**/admin/users?userId=${existingUserId}`, { timeout: 300 });
 
 		// Log form state
 		const formData = await page.evaluate(() => {

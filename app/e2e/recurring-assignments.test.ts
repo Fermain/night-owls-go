@@ -869,10 +869,10 @@ test.describe('Recurring Assignments - Performance and Scalability', () => {
 		await page.click('button:has-text("Materialize Now")');
 
 		// Wait for completion
-		await expect(page.locator('.toast')).toContainText('completed', { timeout: 30000 });
+		await expect(page.locator('.toast')).toContainText('completed', { timeout: 300 });
 
 		const materializeTime = Date.now() - materializeStartTime;
-		expect(materializeTime).toBeLessThan(30000); // 30 seconds max
+		expect(materializeTime).toBeLessThan(300);
 	});
 });
 

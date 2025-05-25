@@ -141,36 +141,31 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<!-- Header -->
-	<div class="bg-card border-b">
-		<div class="px-4 py-3">
-			<div class="flex items-center justify-between">
-				<div>
-					<h1 class="text-lg font-semibold">
-						{#if currentUser.isAuthenticated && currentUser.name}
-							Evening, {currentUser.name.split(' ')[0]}
-						{:else}
-							Night Owls Patrol
-						{/if}
-					</h1>
-					<p class="text-sm text-muted-foreground">
-						{#if currentUser.isAuthenticated}
-							Ready for patrol
-						{:else}
-							<a href="/login" class="text-primary hover:underline">Sign in to get started</a>
-						{/if}
-					</p>
+	{#if currentUser.isAuthenticated}
+		<!-- Authenticated Dashboard -->
+		<!-- Header -->
+		<div class="bg-card border-b">
+			<div class="px-4 py-3">
+				<div class="flex items-center justify-between">
+					<div>
+						<h1 class="text-lg font-semibold">
+							{#if currentUser.name}
+								Evening, {currentUser.name.split(' ')[0]}
+							{:else}
+								Night Owls Patrol
+							{/if}
+						</h1>
+						<p class="text-sm text-muted-foreground">Ready for patrol</p>
+					</div>
+					<Button variant="destructive" size="sm" onclick={handleEmergency}>
+						Emergency
+					</Button>
 				</div>
-				<Button variant="destructive" size="sm" onclick={handleEmergency}>
-					Emergency
-				</Button>
 			</div>
 		</div>
-	</div>
 
-	<div class="p-4">
-		{#if currentUser.isAuthenticated}
-			<!-- My Next Shift (TODO: Replace with real user bookings) -->
+		<div class="p-4">
+			<!-- My Next Shift -->
 			{#if nextShift}
 				<Card.Root>
 					<Card.Header class="pb-3">
@@ -242,73 +237,136 @@
 					Report Incident
 				</a>
 			</div>
-		{/if}
 
-		<!-- Unfilled Shifts -->
-		{#if $availableShiftsQuery.isLoading}
-			<Card.Root>
-				<Card.Content class="text-center py-8">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-					<p class="text-sm text-muted-foreground">Loading available shifts...</p>
-				</Card.Content>
-			</Card.Root>
-		{:else if $availableShiftsQuery.isError}
-			<Card.Root>
-				<Card.Content class="text-center py-8">
-					<AlertTriangleIcon class="h-8 w-8 mx-auto mb-2 text-destructive" />
-					<h3 class="text-sm font-medium mb-1">Error loading shifts</h3>
-					<p class="text-xs text-muted-foreground">{$availableShiftsQuery.error?.message}</p>
-				</Card.Content>
-			</Card.Root>
-		{:else if unfillableShifts.length > 0}
-			<Card.Root>
-				<Card.Header class="pb-3">
-					<Card.Title class="text-base">Available shifts</Card.Title>
-				</Card.Header>
-				<Card.Content class="pt-0">
-					{#each unfillableShifts as shift, i}
-						<div class="flex items-center justify-between py-3">
-							<div class="flex-1">
-								<div class="text-sm font-medium">{shift.schedule_name}</div>
-								<div class="text-xs text-muted-foreground">
-									{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+			<!-- Unfilled Shifts -->
+			{#if $availableShiftsQuery.isLoading}
+				<Card.Root>
+					<Card.Content class="text-center py-8">
+						<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+						<p class="text-sm text-muted-foreground">Loading available shifts...</p>
+					</Card.Content>
+				</Card.Root>
+			{:else if $availableShiftsQuery.isError}
+				<Card.Root>
+					<Card.Content class="text-center py-8">
+						<AlertTriangleIcon class="h-8 w-8 mx-auto mb-2 text-destructive" />
+						<h3 class="text-sm font-medium mb-1">Error loading shifts</h3>
+						<p class="text-xs text-muted-foreground">{$availableShiftsQuery.error?.message}</p>
+					</Card.Content>
+				</Card.Root>
+			{:else if unfillableShifts.length > 0}
+				<Card.Root>
+					<Card.Header class="pb-3">
+						<Card.Title class="text-base">Available shifts</Card.Title>
+					</Card.Header>
+					<Card.Content class="pt-0">
+						{#each unfillableShifts as shift, i}
+							<div class="flex items-center justify-between py-3">
+								<div class="flex-1">
+									<div class="text-sm font-medium">{shift.schedule_name}</div>
+									<div class="text-xs text-muted-foreground">
+										{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+									</div>
+									<div class="text-xs text-orange-600 dark:text-orange-400">
+										Available now
+									</div>
 								</div>
-								<div class="text-xs text-orange-600 dark:text-orange-400">
-									Available now
-								</div>
+								<Button 
+									size="sm" 
+									onclick={() => handleBookShift(shift)}
+									disabled={$bookingMutation.isPending}
+								>
+									{$bookingMutation.isPending ? 'Booking...' : 'Book'}
+								</Button>
 							</div>
-							<Button 
-								size="sm" 
-								onclick={() => handleBookShift(shift)}
-								disabled={$bookingMutation.isPending || !currentUser.isAuthenticated}
-							>
-								{$bookingMutation.isPending ? 'Booking...' : 'Book'}
-							</Button>
-						</div>
-						{#if i < unfillableShifts.length - 1}
-							<Separator class="my-2" />
+							{#if i < unfillableShifts.length - 1}
+								<Separator class="my-2" />
+							{/if}
+						{/each}
+						{#if availableShifts.length > 3}
+							<div class="mt-4 text-center">
+								<a 
+									href="/shifts"
+									class="text-sm text-primary hover:underline"
+								>
+									View all {availableShifts.length} available shifts →
+								</a>
+							</div>
 						{/if}
-					{/each}
-					{#if availableShifts.length > 3}
-						<div class="mt-4 text-center">
-							<a 
-								href="/shifts"
-								class="text-sm text-primary hover:underline"
-							>
-								View all {availableShifts.length} available shifts →
-							</a>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				<Card.Root>
+					<Card.Content class="text-center py-8">
+						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+						<h3 class="text-sm font-medium mb-1">No shifts available</h3>
+						<p class="text-xs text-muted-foreground">Check back later for new opportunities</p>
+					</Card.Content>
+				</Card.Root>
+			{/if}
+		</div>
+	{:else}
+		<!-- Unauthenticated Welcome Page -->
+		<div class="min-h-screen flex flex-col">
+			<!-- Header -->
+			<header class="border-b">
+				<div class="container mx-auto px-4 py-4 flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<div class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
+							<AlertTriangleIcon class="size-4" />
 						</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
-		{:else}
-			<Card.Root>
-				<Card.Content class="text-center py-8">
-					<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-					<h3 class="text-sm font-medium mb-1">No shifts available</h3>
-					<p class="text-xs text-muted-foreground">Check back later for new opportunities</p>
-				</Card.Content>
-			</Card.Root>
-		{/if}
-	</div>
+						<span class="font-semibold">Night Owls Patrol</span>
+					</div>
+					<div class="flex gap-2">
+						<Button variant="ghost" href="/login">Sign In</Button>
+						<Button href="/register">Join Us</Button>
+					</div>
+				</div>
+			</header>
+
+			<!-- Hero Section -->
+			<main class="flex-1 flex items-center justify-center px-4">
+				<div class="text-center max-w-2xl">
+					<h1 class="text-4xl font-bold tracking-tight mb-4">
+						Protecting Our Community Together
+					</h1>
+					<p class="text-xl text-muted-foreground mb-8">
+						Join your neighbors in keeping our community safe through coordinated patrols, 
+						real-time communication, and shared vigilance.
+					</p>
+					<div class="flex gap-4 justify-center">
+						<Button size="lg" href="/register">
+							Join Us
+						</Button>
+						<Button variant="outline" size="lg" href="/login">
+							Sign In
+						</Button>
+					</div>
+				</div>
+			</main>
+
+			<!-- Features Section -->
+			<section class="py-16 bg-muted/30">
+				<div class="container mx-auto px-4">
+					<div class="grid md:grid-cols-3 gap-8">
+						<div class="text-center">
+							<CalendarIcon class="h-12 w-12 mx-auto mb-4 text-primary" />
+							<h3 class="text-lg font-semibold mb-2">Coordinate Patrols</h3>
+							<p class="text-muted-foreground">Schedule and join community patrol shifts</p>
+						</div>
+						<div class="text-center">
+							<AlertTriangleIcon class="h-12 w-12 mx-auto mb-4 text-primary" />
+							<h3 class="text-lg font-semibold mb-2">Report Incidents</h3>
+							<p class="text-muted-foreground">Quickly report and track community incidents</p>
+						</div>
+						<div class="text-center">
+							<ClockIcon class="h-12 w-12 mx-auto mb-4 text-primary" />
+							<h3 class="text-lg font-semibold mb-2">Real-time Updates</h3>
+							<p class="text-muted-foreground">Stay informed with instant notifications</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	{/if}
 </div>

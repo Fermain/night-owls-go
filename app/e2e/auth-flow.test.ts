@@ -75,7 +75,7 @@ test.describe('Authentication Flow', () => {
 
 		// Step 11: Verify user is authenticated and admin page loads
 		await expect(page.getByText('Admin Dashboard').or(page.getByText('Dashboard'))).toBeVisible({
-			timeout: 10000
+			timeout: 300
 		});
 
 		// Verify user exists in database

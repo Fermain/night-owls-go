@@ -12,7 +12,7 @@ test.describe('Shifts Page', () => {
 		await page.goto('/shifts');
 		
 		// Verify the page loads (should show login prompt)
-		await expect(page.getByText('Available Shifts')).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText('Available Shifts')).toBeVisible({ timeout: 300 });
 		await expect(page.getByText('Please sign in to view available shifts')).toBeVisible();
 		
 		// Verify the page URL is correct
@@ -124,7 +124,7 @@ test.describe('Shifts Page', () => {
 		await page.goto('/bookings');
 		
 		// Verify the page loads
-		await expect(page.getByText('My Bookings')).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText('My Bookings')).toBeVisible({ timeout: 300 });
 		
 		// Check if bookings/my redirect works
 		await page.goto('/bookings/my');

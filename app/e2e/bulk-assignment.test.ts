@@ -12,7 +12,7 @@ const TEST_USERS = {
 
 async function navigateToBulkAssignment(page: Page) {
 	await page.goto('/admin/shifts/bulk-signup');
-	await expect(page.locator('h1')).toContainText('Bulk', { timeout: 10000 });
+	await expect(page.locator('h1')).toContainText('Bulk', { timeout: 300 });
 }
 
 async function selectUser(page: Page, userName: string) {
@@ -93,7 +93,7 @@ test.describe('Bulk Assignment - Page Loading and Navigation', () => {
 
 		// Wait for shifts to load
 		await expect(page.locator('text=Loading shifts...')).toBeVisible({ timeout: 5000 });
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Should show available shifts
 		await expect(page.locator('[data-testid="shift-card"], .border.rounded-lg.p-3')).toBeVisible();
@@ -114,7 +114,7 @@ test.describe('Bulk Assignment - Manual Selection Mode', () => {
 		await selectUser(page, 'Charlie Volunteer');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Find and click a checkbox for an available shift
 		const firstCheckbox = page.locator('[type="checkbox"]').first();
@@ -129,7 +129,7 @@ test.describe('Bulk Assignment - Manual Selection Mode', () => {
 		await selectUser(page, 'Diana Scout');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Select multiple checkboxes
 		const checkboxes = page.locator('[type="checkbox"]');
@@ -150,7 +150,7 @@ test.describe('Bulk Assignment - Manual Selection Mode', () => {
 		await selectUser(page, 'Eve Patrol');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Click "Select Available" button for a date group
 		const selectAllButton = page.locator('button:has-text("Select Available")').first();
@@ -167,7 +167,7 @@ test.describe('Bulk Assignment - Manual Selection Mode', () => {
 		await selectUser(page, 'Charlie Volunteer');
 
 		// Wait for shifts to load and select some shifts
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		const firstCheckbox = page.locator('[type="checkbox"]').first();
 		await firstCheckbox.click();
@@ -205,7 +205,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 		await selectUser(page, 'Diana Scout');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Click on any shift to select the pattern
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
@@ -224,7 +224,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 		await selectUser(page, 'Charlie Volunteer');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Click on a specific shift
 		const mondayShift = page.locator('.border.rounded-lg.p-3:has-text("Monday")').first();
@@ -241,7 +241,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 		await selectUser(page, 'Eve Patrol');
 
 		// Wait for shifts and select a pattern
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
 		await firstShift.click();
@@ -262,7 +262,7 @@ test.describe('Bulk Assignment - Pattern Selection Mode', () => {
 		await selectUser(page, 'Charlie Volunteer');
 
 		// Wait for shifts and select a pattern
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
 		await firstShift.click();
@@ -289,7 +289,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await selectUser(page, 'Diana Scout');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Select a shift
 		const firstCheckbox = page.locator('[type="checkbox"]').first();
@@ -310,7 +310,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await selectUser(page, 'Eve Patrol');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Select a pattern
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
@@ -320,7 +320,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await page.click('button:has-text("Assign Pattern")');
 
 		// Wait for success (this might take longer for multiple assignments)
-		await expect(page.locator('text=successfully')).toBeVisible({ timeout: 30000 });
+		await expect(page.locator('text=successfully')).toBeVisible({ timeout: 300 });
 	});
 
 	test('Shows validation error when no user selected', async ({ page }) => {
@@ -328,7 +328,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await togglePatternMode(page, false);
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Try to assign without selecting user
 		await page.click('button:has-text("Assign")');
@@ -353,7 +353,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await selectUser(page, 'Diana Scout');
 
 		// Wait for shifts to load and select one
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		const firstCheckbox = page.locator('[type="checkbox"]').first();
 		await firstCheckbox.click();
@@ -368,7 +368,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		await selectUser(page, 'Charlie Volunteer');
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Select a pattern that might have some conflicts
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
@@ -384,7 +384,7 @@ test.describe('Bulk Assignment - Assignment Execution', () => {
 		const successText = page.locator('text=successfully');
 		const partialText = page.locator('text=failed');
 
-		await expect(successText.or(partialText)).toBeVisible({ timeout: 30000 });
+		await expect(successText.or(partialText)).toBeVisible({ timeout: 300 });
 	});
 });
 
@@ -400,7 +400,7 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 		await expect(availableOnlyCheckbox).toBeChecked();
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// All visible shifts should be available (not booked)
 		const bookedShifts = page.locator('text=Assigned, text=Booked');
@@ -412,7 +412,7 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 		await page.click('#available-only');
 
 		// Wait for shifts to reload
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Should now show both available and booked shifts
 		// Booked shifts should be disabled/styled differently
@@ -422,7 +422,7 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 
 	test('Shift cards display correct information', async ({ page }) => {
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		const firstShift = page.locator('.border.rounded-lg.p-3').first();
 
@@ -438,7 +438,7 @@ test.describe('Bulk Assignment - Filters and Display', () => {
 
 	test('Grouped by date display works', async ({ page }) => {
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Should show date headers
 		await expect(page.locator('.font-semibold.text-lg')).toBeVisible();
@@ -462,7 +462,7 @@ test.describe('Bulk Assignment - Error Handling', () => {
 		await togglePatternMode(page, false);
 
 		// Wait for shifts to load
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Error handling would be triggered by backend issues
 		// We can test that error display elements exist
@@ -482,7 +482,7 @@ test.describe('Bulk Assignment - Error Handling', () => {
 		await togglePatternMode(page, false);
 
 		// Wait for shifts to load (this should still work)
-		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Loading shifts...')).not.toBeVisible({ timeout: 300 });
 
 		// Select a shift and try to assign
 		const firstCheckbox = page.locator('[type="checkbox"]').first();
@@ -491,6 +491,6 @@ test.describe('Bulk Assignment - Error Handling', () => {
 		await page.click('button:has-text("Assign")');
 
 		// Should show network error
-		await expect(page.locator('text=Failed, text=error')).toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Failed, text=error')).toBeVisible({ timeout: 300 });
 	});
 });
