@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
-	import { createQuery, createMutation, QueryClient } from '@tanstack/svelte-query';
+	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
@@ -12,7 +12,7 @@
 	import { userSession } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
 
-	const queryClient = new QueryClient();
+	const queryClient = useQueryClient();
 
 	// Query for user's bookings
 	const userBookingsQuery = createQuery({

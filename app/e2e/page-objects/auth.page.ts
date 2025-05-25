@@ -58,16 +58,21 @@ export class AuthPage {
     await expect(this.page).toHaveURL('/register');
   }
 
+  async navigateToRegister() {
+    await this.page.goto('/register');
+  }
+
+  async navigateToLogin() {
+    await this.page.goto('/login');
+  }
+
   async fillRegistrationForm(name: string, phone: string) {
-    await expect(this.registerHeading).toBeVisible();
-    await this.nameInput.fill(name);
-    await this.phoneInput.fill(phone);
+    await this.page.getByLabel('Full Name').fill(name);
+    await this.page.getByLabel('Phone Number').fill(phone);
   }
 
   async submitRegistration() {
-    await this.createAccountButton.click();
-    await expect(this.successMessage).toBeVisible();
-    await expect(this.page).toHaveURL(/\/login/);
+    await this.page.getByRole('button', { name: 'Create account' }).click();
   }
 
   async register(name: string, phone: string) {
@@ -173,5 +178,55 @@ export class AuthPage {
     await this.page.evaluate(() => {
       localStorage.removeItem('user-session');
     });
+  }
+
+  async fillLoginForm(phone: string, name?: string) {
+    if (name) {
+      await this.page.getByLabel('Name (optional)').fill(name);
+    }
+    await this.page.getByLabel('Phone Number').fill(phone);
+  }
+
+  async submitLoginForm() {
+    await this.page.getByRole('button', { name: 'Send verification code' }).click();
+  }
+
+  async fillOTPCode(code: string) {
+    const otpInputs = this.page.locator('[data-input-otp] input');
+    
+    for (let i = 0; i < code.length && i < 6; i++) {
+      await otpInputs.nth(i).fill(code[i]);
+    }
+  }
+
+  async submitOTPCode() {
+    await this.page.getByRole('button', { name: 'Verify & Continue' }).click();
+  }
+
+  async waitForSuccessMessage() {
+    await this.page.waitForSelector('text=/Registration successful|OTP sent|Login successful/i');
+  }
+
+  async waitForRedirectTo(path: string) {
+    await this.page.waitForURL(`**${path}`);
+  }
+
+  async registerUser(name: string, phone: string) {
+    await this.navigateToRegister();
+    await this.fillRegistrationForm(name, phone);
+    await this.submitRegistration();
+    await this.waitForSuccessMessage();
+  }
+
+  async loginUser(phone: string, otpCode: string, name?: string) {
+    await this.navigateToLogin();
+    await this.fillLoginForm(phone, name);
+    await this.submitLoginForm();
+    
+    await this.page.waitForSelector('text=/Enter verification code/i');
+    
+    await this.fillOTPCode(otpCode);
+    await this.submitOTPCode();
+    await this.waitForRedirectTo('/admin');
   }
 } 

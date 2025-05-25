@@ -8,7 +8,7 @@ export default defineConfig({
 	
 	// Use a local test server instead of depending on external services
 	use: {
-		baseURL: 'http://localhost:5173',
+		baseURL: 'http://localhost:4173',
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure'
@@ -42,4 +42,12 @@ export default defineConfig({
 
 	// Output directory
 	outputDir: 'test-results/',
+
+	webServer: {
+		command: 'PLAYWRIGHT_TEST=1 npm run build && PLAYWRIGHT_TEST=1 npm run preview',
+		port: 4173,
+		env: {
+			PLAYWRIGHT_TEST: '1'
+		}
+	},
 });

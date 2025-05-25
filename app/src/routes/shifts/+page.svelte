@@ -2,38 +2,18 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { createQuery, createMutation, QueryClient } from '@tanstack/svelte-query';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import FilterIcon from '@lucide/svelte/icons/filter';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import { UserApiService } from '$lib/services/api/user';
 	import { userSession } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
+	import { onMount } from 'svelte';
 
-	const queryClient = new QueryClient();
-
-	// Query for available shifts
-	const availableShiftsQuery = createQuery({
-		queryKey: ['available-shifts'],
-		queryFn: () => UserApiService.getAvailableShifts(),
-		enabled: $userSession.isAuthenticated
-	});
-
-	// Mutation for booking shifts
-	const bookShiftMutation = createMutation({
-		mutationFn: ({ scheduleId, startTime }: { scheduleId: number; startTime: string }) =>
-			UserApiService.createBooking({ schedule_id: scheduleId, start_time: startTime }),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['available-shifts'] });
-			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
-			toast.success('Shift booked successfully!');
-		},
-		onError: (error) => {
-			toast.error(`Failed to book shift: ${error.message}`);
-		}
-	});
+	// Simplified state management without TanStack Query
+	let shifts = $state([]);
+	let isLoading = $state(false);
+	let error = $state(null);
 
 	// Filter state
 	let selectedFilter = $state('all');
@@ -46,22 +26,40 @@
 		{ value: 'urgent', label: 'Urgent Need' }
 	];
 
-	// Get shifts from query
-	const shifts = $derived($availableShiftsQuery.data ?? []);
-	const isLoading = $derived($availableShiftsQuery.isLoading);
-	const error = $derived($availableShiftsQuery.error);
+	// Load shifts on mount if authenticated
+	onMount(async () => {
+		if ($userSession.isAuthenticated) {
+			await loadShifts();
+		}
+	});
 
-	// Add helper function to determine if shift is tonight
+	async function loadShifts() {
+		isLoading = true;
+		error = null;
+		try {
+			const response = await fetch('/shifts/available');
+			if (!response.ok) {
+				throw new Error(`Failed to fetch shifts: ${response.status}`);
+			}
+			shifts = await response.json();
+		} catch (err) {
+			error = err.message;
+			console.error('Error loading shifts:', err);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Helper function to determine if shift is tonight
 	function isTonight(startTime: string): boolean {
 		const shiftDate = new Date(startTime);
 		const today = new Date();
 		return shiftDate.toDateString() === today.toDateString();
 	}
 
-	// Add helper function to determine priority (based on available status)
+	// Helper function to determine priority (based on available status)
 	function getPriority(shift: any): string {
-		// Since we don't have slots_available, use is_booked status
-		if (shift.is_booked) return 'high'; // Already booked = high priority for waiting list
+		if (shift.is_booked) return 'high';
 		return 'normal';
 	}
 
@@ -71,7 +69,6 @@
 			...shift,
 			is_tonight: isTonight(shift.start_time),
 			priority: getPriority(shift),
-			// Add missing fields for compatibility
 			slots_available: shift.is_booked ? 0 : 1,
 			total_slots: 1
 		}));
@@ -89,7 +86,6 @@
 		}
 		
 		return filteredList.sort((a, b) => {
-			// Sort by priority first, then by start time
 			if (a.priority === 'high' && b.priority !== 'high') return -1;
 			if (b.priority === 'high' && a.priority !== 'high') return 1;
 			return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
@@ -138,16 +134,34 @@
 		}
 	}
 
-	function handleBookShift(shift: any) {
+	async function handleBookShift(shift: any) {
 		if (!$userSession.isAuthenticated) {
 			toast.error('Please sign in to book shifts');
 			return;
 		}
 
-		$bookShiftMutation.mutate({
-			scheduleId: shift.schedule_id,
-			startTime: shift.start_time
-		});
+		try {
+			const response = await fetch('/bookings', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${$userSession.token}`
+				},
+				body: JSON.stringify({
+					schedule_id: shift.schedule_id,
+					start_time: shift.start_time
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to book shift');
+			}
+
+			toast.success('Shift booked successfully!');
+			await loadShifts(); // Reload shifts
+		} catch (err) {
+			toast.error(`Failed to book shift: ${err.message}`);
+		}
 	}
 </script>
 
@@ -219,7 +233,7 @@
 			<Card.Root>
 				<Card.Content class="pt-6">
 					<p class="text-destructive text-center">
-						Error loading shifts: {error.message}
+						Error loading shifts: {error}
 					</p>
 				</Card.Content>
 			</Card.Root>
@@ -304,10 +318,9 @@
 											<Button 
 												size="sm" 
 												class="w-full min-w-[80px]"
-												disabled={$bookShiftMutation.isPending}
 												onclick={() => handleBookShift(shift)}
 											>
-												{$bookShiftMutation.isPending ? 'Booking...' : 'Book Slot'}
+												Book Slot
 											</Button>
 										{:else}
 											<Button 

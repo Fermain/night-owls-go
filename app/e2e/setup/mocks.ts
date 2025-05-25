@@ -224,7 +224,34 @@ export const handlers = [
 
   // Shifts endpoints
   http.get('/shifts/available', () => {
-    return HttpResponse.json(mockShifts.filter(s => s.positions_filled < s.positions_available));
+    // Return data in the format expected by AvailableShiftSlot interface
+    const availableShifts = [
+      {
+        schedule_id: 1,
+        schedule_name: 'Evening Patrol',
+        start_time: '2024-12-22T18:00:00Z',
+        end_time: '2024-12-22T20:00:00Z',
+        timezone: 'Africa/Johannesburg',
+        is_booked: false
+      },
+      {
+        schedule_id: 2,
+        schedule_name: 'Weekend Watch',
+        start_time: '2024-12-21T10:00:00Z',
+        end_time: '2024-12-21T13:00:00Z',
+        timezone: 'Africa/Johannesburg',
+        is_booked: true
+      },
+      {
+        schedule_id: 1,
+        schedule_name: 'Evening Patrol',
+        start_time: '2024-12-23T18:00:00Z',
+        end_time: '2024-12-23T20:00:00Z',
+        timezone: 'Africa/Johannesburg',
+        is_booked: false
+      }
+    ];
+    return HttpResponse.json(availableShifts);
   }),
 
   http.post('/bookings', async ({ request }) => {
