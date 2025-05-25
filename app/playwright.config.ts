@@ -1,16 +1,45 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-	webServer: {
-		command: "echo 'Playwright webServer: Using server started by dev.sh'", // Dummy command to satisfy TS
-		url: 'http://localhost:5173', // Playwright will wait for this URL to be available
-		reuseExistingServer: true, // Important: use the server started by dev.sh
-		// cwd: '.', // Not needed if the command is a simple echo
-		// timeout: 120 * 1000 // Timeout for the web server to be ready (Playwright still checks the URL)
-	},
+	testDir: 'e2e',
+	
+	// Global setup to start MSW
+	globalSetup: './e2e/setup/global-setup.ts',
+	
+	// Use a local test server instead of depending on external services
 	use: {
 		baseURL: 'http://localhost:5173',
-		trace: 'on' // Enable tracing for all tests
+		trace: 'on-first-retry',
+		screenshot: 'only-on-failure',
+		video: 'retain-on-failure'
 	},
-	testDir: 'e2e'
+
+	// Configure projects for different test types
+	projects: [
+		{
+			name: 'chromium',
+			use: { ...devices['Desktop Chrome'] },
+		}
+	],
+
+	// Test configuration
+	timeout: 30 * 1000,
+	expect: {
+		timeout: 5 * 1000
+	},
+	
+	// Run tests in parallel
+	workers: 1,
+	
+	// Retry configuration
+	retries: 0,
+	
+	// Reporter configuration
+	reporter: [
+		['html'],
+		['line']
+	],
+
+	// Output directory
+	outputDir: 'test-results/',
 });

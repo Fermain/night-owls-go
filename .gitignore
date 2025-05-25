@@ -32,3 +32,7 @@ node_modules/
 night-owls.test.db
 test-results/.last-run.json
 night-owls.test.db
+
+**.mp4
+**.webm
+playwright-report/
