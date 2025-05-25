@@ -10,7 +10,11 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { userSession } from '$lib/stores/authStore';
-	import { UserApiService, type AvailableShiftSlot, type CreateBookingRequest } from '$lib/services/api/user';
+	import {
+		UserApiService,
+		type AvailableShiftSlot,
+		type CreateBookingRequest
+	} from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
 
 	// Get current user from auth store
@@ -36,24 +40,24 @@
 	// Derived data
 	const availableShifts = $derived($availableShiftsQuery.data ?? []);
 	const unfillableShifts = $derived(availableShifts.slice(0, 3)); // Show first 3 as examples
-	
+
 	// Find next shift from user bookings
 	const nextShift = $derived.by(() => {
 		if (!$userBookingsQuery.data) return null;
-		
+
 		const now = new Date();
 		const upcomingBookings = $userBookingsQuery.data
-			.filter(booking => new Date(booking.shift_start) > now)
+			.filter((booking) => new Date(booking.shift_start) > now)
 			.sort((a, b) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
-		
+
 		if (upcomingBookings.length === 0) return null;
-		
+
 		const booking = upcomingBookings[0];
 		const startTime = new Date(booking.shift_start);
 		const endTime = new Date(booking.shift_end);
-		const canCheckin = (startTime.getTime() - now.getTime()) <= (30 * 60 * 1000); // 30 min before
+		const canCheckin = startTime.getTime() - now.getTime() <= 30 * 60 * 1000; // 30 min before
 		const isActive = now >= startTime && now <= endTime;
-		
+
 		return {
 			id: booking.booking_id,
 			start_time: booking.shift_start,
@@ -80,9 +84,9 @@
 
 	// Helper functions
 	function formatTime(timeString: string) {
-		return new Date(timeString).toLocaleTimeString('en-GB', { 
-			hour: '2-digit', 
-			minute: '2-digit' 
+		return new Date(timeString).toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit'
 		});
 	}
 
@@ -92,7 +96,7 @@
 		const diffMs = time.getTime() - now.getTime();
 		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-		
+
 		if (diffMs < 0) return 'Started';
 		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
 		return `${diffMins}m`;
@@ -157,9 +161,7 @@
 						</h1>
 						<p class="text-sm text-muted-foreground">Ready for patrol</p>
 					</div>
-					<Button variant="destructive" size="sm" onclick={handleEmergency}>
-						Emergency
-					</Button>
+					<Button variant="destructive" size="sm" onclick={handleEmergency}>Emergency</Button>
 				</div>
 			</div>
 		</div>
@@ -180,7 +182,7 @@
 						<div class="text-sm text-muted-foreground mb-3">
 							{nextShift.schedule_name} • {nextShift.location}
 						</div>
-						
+
 						<div class="flex items-center text-sm mb-4">
 							<ClockIcon class="h-4 w-4 mr-2 text-muted-foreground" />
 							<span>{formatTime(nextShift.start_time)} - {formatTime(nextShift.end_time)}</span>
@@ -222,15 +224,15 @@
 
 			<!-- Quick Actions -->
 			<div class="grid grid-cols-2 gap-2 my-4">
-				<a 
-					href="/shifts" 
+				<a
+					href="/shifts"
 					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 				>
 					<CalendarIcon class="h-4 w-4 mr-2" />
 					Browse Shifts
 				</a>
-				<a 
-					href="/report" 
+				<a
+					href="/report"
 					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 				>
 					<AlertTriangleIcon class="h-4 w-4 mr-2" />
@@ -242,7 +244,9 @@
 			{#if $availableShiftsQuery.isLoading}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
-						<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+						<div
+							class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
+						></div>
 						<p class="text-sm text-muted-foreground">Loading available shifts...</p>
 					</Card.Content>
 				</Card.Root>
@@ -267,12 +271,10 @@
 									<div class="text-xs text-muted-foreground">
 										{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
 									</div>
-									<div class="text-xs text-orange-600 dark:text-orange-400">
-										Available now
-									</div>
+									<div class="text-xs text-orange-600 dark:text-orange-400">Available now</div>
 								</div>
-								<Button 
-									size="sm" 
+								<Button
+									size="sm"
 									onclick={() => handleBookShift(shift)}
 									disabled={$bookingMutation.isPending}
 								>
@@ -285,10 +287,7 @@
 						{/each}
 						{#if availableShifts.length > 3}
 							<div class="mt-4 text-center">
-								<a 
-									href="/shifts"
-									class="text-sm text-primary hover:underline"
-								>
+								<a href="/shifts" class="text-sm text-primary hover:underline">
 									View all {availableShifts.length} available shifts →
 								</a>
 							</div>
@@ -312,7 +311,9 @@
 			<header class="border-b">
 				<div class="container mx-auto px-4 py-4 flex items-center justify-between">
 					<div class="flex items-center gap-2">
-						<div class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
+						<div
+							class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md"
+						>
 							<AlertTriangleIcon class="size-4" />
 						</div>
 						<span class="font-semibold">Night Owls Patrol</span>
@@ -327,20 +328,14 @@
 			<!-- Hero Section -->
 			<main class="flex-1 flex items-center justify-center px-4">
 				<div class="text-center max-w-2xl">
-					<h1 class="text-4xl font-bold tracking-tight mb-4">
-						Protecting Our Community Together
-					</h1>
+					<h1 class="text-4xl font-bold tracking-tight mb-4">Protecting Our Community Together</h1>
 					<p class="text-xl text-muted-foreground mb-8">
-						Join your neighbors in keeping our community safe through coordinated patrols, 
-						real-time communication, and shared vigilance.
+						Join your neighbors in keeping our community safe through coordinated patrols, real-time
+						communication, and shared vigilance.
 					</p>
 					<div class="flex gap-4 justify-center">
-						<Button size="lg" href="/register">
-							Join Us
-						</Button>
-						<Button variant="outline" size="lg" href="/login">
-							Sign In
-						</Button>
+						<Button size="lg" href="/register">Join Us</Button>
+						<Button variant="outline" size="lg" href="/login">Sign In</Button>
 					</div>
 				</div>
 			</main>

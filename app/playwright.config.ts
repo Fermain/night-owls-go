@@ -2,10 +2,10 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: 'e2e',
-	
+
 	// Global setup to start MSW
 	globalSetup: './e2e/setup/global-setup.ts',
-	
+
 	// Use a local test server instead of depending on external services
 	use: {
 		baseURL: 'http://localhost:4173',
@@ -18,7 +18,7 @@ export default defineConfig({
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] },
+			use: { ...devices['Desktop Chrome'] }
 		}
 	],
 
@@ -27,18 +27,15 @@ export default defineConfig({
 	expect: {
 		timeout: 5 * 1000
 	},
-	
+
 	// Run tests in parallel
 	workers: 1,
-	
+
 	// Retry configuration
 	retries: 0,
-	
+
 	// Reporter configuration
-	reporter: [
-		['html'],
-		['line']
-	],
+	reporter: [['html'], ['line']],
 
 	// Output directory
 	outputDir: 'test-results/',
@@ -49,5 +46,5 @@ export default defineConfig({
 		env: {
 			PLAYWRIGHT_TEST: '1'
 		}
-	},
+	}
 });

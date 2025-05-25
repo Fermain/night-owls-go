@@ -106,7 +106,10 @@ export class UserApiService {
 	/**
 	 * Submit an incident report for a booking
 	 */
-	static async submitReport(bookingId: number, request: CreateReportRequest): Promise<ReportResponse> {
+	static async submitReport(
+		bookingId: number,
+		request: CreateReportRequest
+	): Promise<ReportResponse> {
 		const response = await authenticatedFetch(`/bookings/${bookingId}/report`, {
 			method: 'POST',
 			headers: {
@@ -133,4 +136,4 @@ export class UserApiService {
 		}
 		return response.json();
 	}
-} 
+}

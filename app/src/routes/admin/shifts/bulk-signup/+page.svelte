@@ -88,7 +88,10 @@
 			params.append('from', fromDate);
 			params.append('to', toDate);
 
-			console.log('Fetching shifts with URL:', `/api/admin/schedules/all-slots?${params.toString()}`);
+			console.log(
+				'Fetching shifts with URL:',
+				`/api/admin/schedules/all-slots?${params.toString()}`
+			);
 
 			const response = await authenticatedFetch(
 				`/api/admin/schedules/all-slots?${params.toString()}`
@@ -132,7 +135,7 @@
 		},
 		onSuccess: (results) => {
 			// Invalidate all adminShiftSlots queries regardless of date parameters
-			queryClient.invalidateQueries({ 
+			queryClient.invalidateQueries({
 				queryKey: ['adminShiftSlots'],
 				exact: false // This allows matching queries with additional parameters
 			});
@@ -237,7 +240,7 @@
 			const firstHyphenIndex = shiftKey.indexOf('-');
 			const scheduleId = shiftKey.substring(0, firstHyphenIndex);
 			const startTime = shiftKey.substring(firstHyphenIndex + 1);
-			
+
 			return {
 				scheduleId: parseInt(scheduleId),
 				startTime: startTime
@@ -642,7 +645,8 @@
 																weekday: 'short'
 															})}
 															{#if isPatternMatch}
-																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge>
+																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge
+																>
 															{/if}
 														</div>
 													{/if}

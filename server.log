@@ -144,3 +144,61 @@
 {"time":"2025-05-25T18:50:59.00936+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
 {"time":"2025-05-25T18:51:59.001651+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
 {"time":"2025-05-25T18:51:59.002923+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:52:59.001194+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:52:59.002524+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:53:59.001204+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:53:59.001852+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:54:59.001207+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:54:59.002+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:55:59.001345+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:55:59.001829+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:56:59.001355+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:56:59.002175+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:57:59.001371+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:57:59.002247+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:58:59.001438+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:58:59.002583+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:59:59.002004+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T18:59:59.016982+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:00:00.002297+02:00","level":"INFO","msg":"Starting to materialize upcoming bookings from recurring assignments","service":"RecurringAssignmentService","from":"2025-05-25T17:00:00.002217Z","to":"2025-06-08T17:00:00.002217Z"}
+{"time":"2025-05-25T19:00:00.04326+02:00","level":"INFO","msg":"Completed materializing bookings","service":"RecurringAssignmentService","materialized":0,"skipped":0,"total_slots":1000}
+{"time":"2025-05-25T19:25:49.559829+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:25:49.561648+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:26:49.002298+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:26:49.002656+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:27:49.002088+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:27:49.00244+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:28:49.002436+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:28:49.003597+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:29:49.002158+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:29:49.003011+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:30:49.001868+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:30:49.002358+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:31:49.002002+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:31:49.00392+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:32:49.067979+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:32:49.070598+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:33:49.003432+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:33:49.004776+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:34:49.003346+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:34:49.006081+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:35:49.003175+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:35:49.006213+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:36:49.002859+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:36:49.003551+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:37:53.145577+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:37:53.14819+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:38:53.012001+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:38:53.01343+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:39:53.00347+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:39:53.004692+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:40:53.003874+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:40:53.006766+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:41:53.003411+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:41:53.006621+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:42:53.004013+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:42:53.008839+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:43:53.004565+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:43:53.008435+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:44:53.003625+02:00","level":"INFO","msg":"Starting to process pending outbox messages...","service":"OutboxDispatcher"}
+{"time":"2025-05-25T19:44:53.019155+02:00","level":"INFO","msg":"No pending outbox messages found in this batch.","service":"OutboxDispatcher"}

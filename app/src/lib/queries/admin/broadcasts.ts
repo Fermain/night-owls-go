@@ -29,4 +29,4 @@ export async function getBroadcast(id: number): Promise<BroadcastData> {
 		throw new Error(`Failed to fetch broadcast: ${response.status}`);
 	}
 	return response.json();
-} 
+}

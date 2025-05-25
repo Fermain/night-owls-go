@@ -56,4 +56,4 @@ if (typeof window !== 'undefined') {
   console.log('Setting up MSW in browser...');
   // Browser MSW setup would go here
 }
-`; 
+`;

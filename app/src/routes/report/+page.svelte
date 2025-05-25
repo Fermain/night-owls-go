@@ -3,7 +3,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Badge } from '$lib/components/ui/badge';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
@@ -31,21 +30,24 @@
 			value: '0',
 			label: 'Low Priority',
 			description: 'Routine patrol notes, minor observations',
-			color: 'text-green-700 bg-green-50 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
+			color:
+				'text-green-700 bg-green-50 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
 			icon: CheckCircleIcon
 		},
 		{
 			value: '1',
 			label: 'Normal',
 			description: 'General incidents, noise complaints, suspicious activity',
-			color: 'text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+			color:
+				'text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
 			icon: InfoIcon
 		},
 		{
 			value: '2',
 			label: 'High Priority',
 			description: 'Security threats, property damage, immediate attention needed',
-			color: 'text-red-700 bg-red-50 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+			color:
+				'text-red-700 bg-red-50 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 			icon: AlertTriangleIcon
 		}
 	];
@@ -71,7 +73,7 @@
 	}
 
 	function getSeverityOption(value: string) {
-		return severityOptions.find(opt => opt.value === value);
+		return severityOptions.find((opt) => opt.value === value);
 	}
 
 	function useTemplate(template: string) {
@@ -83,25 +85,24 @@
 			toast.error('Please select incident severity');
 			return;
 		}
-		
+
 		if (!message.trim()) {
 			toast.error('Please enter incident details');
 			return;
 		}
 
 		isSubmitting = true;
-		
+
 		// Simulate API call
 		try {
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
 			// Mock successful submission
 			toast.success('Incident report submitted successfully');
-			
+
 			// Reset form
 			selectedSeverity = '';
 			message = '';
-			
 		} catch (error) {
 			toast.error('Failed to submit report. Please try again.');
 		} finally {
@@ -121,21 +122,20 @@
 	<title>Report Incident - Night Owls</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+<div
+	class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+>
 	<!-- Header -->
-	<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
+	<header
+		class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40"
+	>
 		<div class="px-4 py-3">
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Report Incident</h1>
 					<p class="text-sm text-slate-600 dark:text-slate-400">Document patrol observations</p>
 				</div>
-				<Button 
-					variant="destructive" 
-					size="sm" 
-					class="gap-2"
-					onclick={handleEmergency}
-				>
+				<Button variant="destructive" size="sm" class="gap-2" onclick={handleEmergency}>
 					<PhoneIcon class="h-4 w-4" />
 					Emergency
 				</Button>
@@ -152,7 +152,9 @@
 						<ClockIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
 						<div>
 							<h3 class="font-medium text-slate-900 dark:text-slate-100">Current Shift</h3>
-							<p class="text-sm text-slate-600 dark:text-slate-400">{mockCurrentShift.schedule_name} • {mockCurrentShift.location}</p>
+							<p class="text-sm text-slate-600 dark:text-slate-400">
+								{mockCurrentShift.schedule_name} • {mockCurrentShift.location}
+							</p>
 						</div>
 					</div>
 					<div class="text-xs text-slate-500 dark:text-slate-400">
@@ -177,15 +179,16 @@
 							<button
 								type="button"
 								class="w-full p-4 rounded-lg border-2 text-left transition-all
-									{selectedSeverity === severity.value 
-										? severity.color 
-										: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-									}"
-								onclick={() => selectedSeverity = severity.value}
+									{selectedSeverity === severity.value
+									? severity.color
+									: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}"
+								onclick={() => (selectedSeverity = severity.value)}
 							>
 								<div class="flex items-start gap-3">
-									<IconComponent 
-										class="h-5 w-5 mt-0.5 {selectedSeverity === severity.value ? '' : 'text-slate-400'}" 
+									<IconComponent
+										class="h-5 w-5 mt-0.5 {selectedSeverity === severity.value
+											? ''
+											: 'text-slate-400'}"
 									/>
 									<div class="flex-1">
 										<div class="font-medium text-sm">{severity.label}</div>
@@ -236,7 +239,7 @@
 				</div>
 
 				<!-- Submit Button -->
-				<Button 
+				<Button
 					onclick={handleSubmit}
 					disabled={isSubmitting || !selectedSeverity || !message.trim()}
 					class="w-full"
@@ -260,15 +263,10 @@
 					<div class="flex-1">
 						<h3 class="font-medium text-red-900 dark:text-red-100 text-sm">Emergency Situations</h3>
 						<p class="text-xs text-red-700 dark:text-red-300 mt-1">
-							For immediate threats or emergencies requiring police, medical, or fire response, 
-							call 999 directly rather than submitting a report.
+							For immediate threats or emergencies requiring police, medical, or fire response, call
+							999 directly rather than submitting a report.
 						</p>
-						<Button 
-							variant="destructive" 
-							size="sm" 
-							class="mt-2"
-							onclick={handleEmergency}
-						>
+						<Button variant="destructive" size="sm" class="mt-2" onclick={handleEmergency}>
 							<PhoneIcon class="h-4 w-4 mr-2" />
 							Call Emergency Services
 						</Button>
@@ -277,4 +275,4 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
-</div> 
+</div>

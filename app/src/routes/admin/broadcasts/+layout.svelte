@@ -114,11 +114,16 @@
 										'Unknown'}
 								</div>
 								<div class="text-xs">
-									<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-										{broadcast.status === 'sent' ? 'bg-green-100 text-green-800' :
-										broadcast.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-										broadcast.status === 'sending' ? 'bg-blue-100 text-blue-800' :
-										'bg-red-100 text-red-800'}">
+									<span
+										class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+										{broadcast.status === 'sent'
+											? 'bg-green-100 text-green-800'
+											: broadcast.status === 'pending'
+												? 'bg-yellow-100 text-yellow-800'
+												: broadcast.status === 'sending'
+													? 'bg-blue-100 text-blue-800'
+													: 'bg-red-100 text-red-800'}"
+									>
 										{broadcast.status}
 									</span>
 									{#if broadcast.status === 'sent' && broadcast.sent_count !== broadcast.recipient_count}

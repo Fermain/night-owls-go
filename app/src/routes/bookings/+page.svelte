@@ -135,11 +135,16 @@
 									Booking #{booking.booking_id}
 								</Card.Description>
 							</div>
-							<Badge 
-								variant={status === 'completed' ? 'default' : 
-										status === 'active' ? 'destructive' : 
-										status === 'upcoming' ? 'secondary' : 
-										status === 'missed' ? 'destructive' : 'outline'}
+							<Badge
+								variant={status === 'completed'
+									? 'default'
+									: status === 'active'
+										? 'destructive'
+										: status === 'upcoming'
+											? 'secondary'
+											: status === 'missed'
+												? 'destructive'
+												: 'outline'}
 							>
 								{status.charAt(0).toUpperCase() + status.slice(1)}
 							</Badge>
@@ -160,7 +165,8 @@
 
 						{#if booking.buddy_name}
 							<div class="text-sm">
-								<span class="font-medium">Buddy:</span> {booking.buddy_name}
+								<span class="font-medium">Buddy:</span>
+								{booking.buddy_name}
 							</div>
 						{/if}
 
@@ -214,4 +220,4 @@
 			{/each}
 		</div>
 	{/if}
-</div> 
+</div>

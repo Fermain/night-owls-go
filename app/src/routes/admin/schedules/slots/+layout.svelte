@@ -23,7 +23,7 @@
 	// Initialize filters state with next 7 days by default
 	const now = new Date();
 	const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-	
+
 	let dateRangeStart = $state<string | null>(now.toISOString().split('T')[0]);
 	let dateRangeEnd = $state<string | null>(nextWeek.toISOString().split('T')[0]);
 	let showOnlyAvailable = $state(false);
@@ -39,13 +39,16 @@
 		if (debounceTimeout) {
 			clearTimeout(debounceTimeout);
 		}
-		
+
 		debounceTimeout = setTimeout(() => {
 			debouncedDateRangeStart = dateRangeStart;
 			debouncedDateRangeEnd = dateRangeEnd;
-			console.log('Debounced date range updated:', { debouncedDateRangeStart, debouncedDateRangeEnd });
+			console.log('Debounced date range updated:', {
+				debouncedDateRangeStart,
+				debouncedDateRangeEnd
+			});
 		}, 500); // 500ms debounce
-		
+
 		return () => {
 			if (debounceTimeout) {
 				clearTimeout(debounceTimeout);
@@ -167,21 +170,21 @@
 	// Upcoming shifts - respect user's date range selection
 	const upcomingShifts = $derived.by(() => {
 		const now = new Date();
-		
+
 		// Use the user's selected date range
 		const userStartDate = new Date(dateRangeStart + 'T00:00:00Z');
 		const userEndDate = new Date(dateRangeEnd + 'T23:59:59Z');
-		
+
 		// Only show future shifts, but within the user's selected range
 		const startFilter = userStartDate > now ? userStartDate : now;
 		const endFilter = userEndDate;
-		
+
 		console.log('Date range filter:', {
 			userSelected: { start: dateRangeStart, end: dateRangeEnd },
 			actualFilter: { start: startFilter.toISOString(), end: endFilter.toISOString() },
 			totalShifts: filteredShifts.length
 		});
-		
+
 		const upcoming = filteredShifts
 			.filter((shift) => {
 				const shiftDate = new Date(shift.start_time);
@@ -190,7 +193,13 @@
 			.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 			.slice(0, 20); // Limit to 20 items for sidebar
 
-		console.log('Upcoming shifts filtered:', upcoming.length, 'from', filteredShifts.length, 'total');
+		console.log(
+			'Upcoming shifts filtered:',
+			upcoming.length,
+			'from',
+			filteredShifts.length,
+			'total'
+		);
 		return upcoming;
 	});
 
@@ -209,9 +218,9 @@
 		const defaultNextWeek = new Date(defaultNow.getTime() + 7 * 24 * 60 * 60 * 1000);
 		const defaultStart = defaultNow.toISOString().split('T')[0];
 		const defaultEnd = defaultNextWeek.toISOString().split('T')[0];
-		
+
 		const dateRangeChanged = dateRangeStart !== defaultStart || dateRangeEnd !== defaultEnd;
-		
+
 		return dateRangeChanged || showOnlyAvailable || showOnlyFilled;
 	});
 

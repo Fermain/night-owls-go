@@ -24,4 +24,4 @@ export const createBroadcastSchema = z.object({
 });
 
 export type BroadcastData = z.infer<typeof broadcastSchema>;
-export type CreateBroadcastData = z.infer<typeof createBroadcastSchema>; 
+export type CreateBroadcastData = z.infer<typeof createBroadcastSchema>;

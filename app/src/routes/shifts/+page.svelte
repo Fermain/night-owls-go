@@ -10,10 +10,29 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 
+	// Type definitions
+	interface Shift {
+		schedule_id: number;
+		schedule_name: string;
+		start_time: string;
+		end_time: string;
+		timezone: string;
+		is_booked: boolean;
+		positions_available?: number;
+		positions_filled?: number;
+	}
+
+	interface ProcessedShift extends Shift {
+		is_tonight: boolean;
+		priority: string;
+		slots_available: number;
+		total_slots: number;
+	}
+
 	// Simplified state management without TanStack Query
-	let shifts = $state([]);
+	let shifts = $state<Shift[]>([]);
 	let isLoading = $state(false);
-	let error = $state(null);
+	let error = $state<string | null>(null);
 
 	// Filter state
 	let selectedFilter = $state('all');
@@ -43,7 +62,7 @@
 			}
 			shifts = await response.json();
 		} catch (err) {
-			error = err.message;
+			error = err instanceof Error ? err.message : 'An error occurred while loading shifts';
 			console.error('Error loading shifts:', err);
 		} finally {
 			isLoading = false;
@@ -58,33 +77,33 @@
 	}
 
 	// Helper function to determine priority (based on available status)
-	function getPriority(shift: any): string {
+	function getPriority(shift: Shift): string {
 		if (shift.is_booked) return 'high';
 		return 'normal';
 	}
 
 	// Filtered shifts
-	const filteredShifts = $derived.by(() => {
-		let filteredList = shifts.map(shift => ({
+	const filteredShifts = $derived.by((): ProcessedShift[] => {
+		let filteredList: ProcessedShift[] = shifts.map((shift) => ({
 			...shift,
 			is_tonight: isTonight(shift.start_time),
 			priority: getPriority(shift),
 			slots_available: shift.is_booked ? 0 : 1,
 			total_slots: 1
 		}));
-		
+
 		switch (selectedFilter) {
 			case 'tonight':
-				filteredList = filteredList.filter(shift => shift.is_tonight);
+				filteredList = filteredList.filter((shift) => shift.is_tonight);
 				break;
 			case 'available':
-				filteredList = filteredList.filter(shift => !shift.is_booked);
+				filteredList = filteredList.filter((shift) => !shift.is_booked);
 				break;
 			case 'urgent':
-				filteredList = filteredList.filter(shift => shift.is_booked);
+				filteredList = filteredList.filter((shift) => shift.is_booked);
 				break;
 		}
-		
+
 		return filteredList.sort((a, b) => {
 			if (a.priority === 'high' && b.priority !== 'high') return -1;
 			if (b.priority === 'high' && a.priority !== 'high') return 1;
@@ -104,16 +123,16 @@
 		const today = new Date();
 		const tomorrow = new Date(today);
 		tomorrow.setDate(today.getDate() + 1);
-		
+
 		if (date.toDateString() === today.toDateString()) {
 			return 'Today';
 		} else if (date.toDateString() === tomorrow.toDateString()) {
 			return 'Tomorrow';
 		} else {
-			return date.toLocaleDateString('en-GB', { 
-				weekday: 'short', 
-				month: 'short', 
-				day: 'numeric' 
+			return date.toLocaleDateString('en-GB', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric'
 			});
 		}
 	}
@@ -127,14 +146,18 @@
 
 	function getPriorityColor(priority: string) {
 		switch (priority) {
-			case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-			case 'normal': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-			case 'low': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-			default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+			case 'high':
+				return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+			case 'normal':
+				return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+			case 'low':
+				return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+			default:
+				return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
 		}
 	}
 
-	async function handleBookShift(shift: any) {
+	async function handleBookShift(shift: ProcessedShift) {
 		if (!$userSession.isAuthenticated) {
 			toast.error('Please sign in to book shifts');
 			return;
@@ -145,7 +168,7 @@
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${$userSession.token}`
+					Authorization: `Bearer ${$userSession.token}`
 				},
 				body: JSON.stringify({
 					schedule_id: shift.schedule_id,
@@ -158,9 +181,9 @@
 			}
 
 			toast.success('Shift booked successfully!');
-			await loadShifts(); // Reload shifts
+			await loadShifts();
 		} catch (err) {
-			toast.error(`Failed to book shift: ${err.message}`);
+			toast.error(`Failed to book shift: ${err instanceof Error ? err.message : 'Unknown error'}`);
 		}
 	}
 </script>
@@ -169,33 +192,37 @@
 	<title>Available Shifts - Night Owls</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+<div
+	class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+>
 	<!-- Header -->
-	<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
+	<header
+		class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40"
+	>
 		<div class="px-4 py-3">
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Available Shifts</h1>
 					<p class="text-sm text-slate-600 dark:text-slate-400">Choose your patrol time</p>
 				</div>
-				<Button 
-					variant="outline" 
-					size="sm" 
+				<Button
+					variant="outline"
+					size="sm"
 					class="gap-2"
-					onclick={() => showFilters = !showFilters}
+					onclick={() => (showFilters = !showFilters)}
 				>
 					<FilterIcon class="h-4 w-4" />
 					Filter
 				</Button>
 			</div>
-			
+
 			{#if showFilters}
 				<div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-					<select 
+					<select
 						bind:value={selectedFilter}
 						class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-background text-foreground"
 					>
-						{#each filterOptions as option}
+						{#each filterOptions as option (option.value)}
 							<option value={option.value}>
 								{option.label}
 							</option>
@@ -211,13 +238,14 @@
 			<Card.Root>
 				<Card.Content class="pt-6">
 					<p class="text-center text-muted-foreground">
-						Please <a href="/login" class="text-primary hover:underline">sign in</a> to view available shifts.
+						Please <a href="/login" class="text-primary hover:underline">sign in</a> to view available
+						shifts.
 					</p>
 				</Card.Content>
 			</Card.Root>
 		{:else if isLoading}
 			<div class="space-y-4">
-				{#each Array(3) as _}
+				{#each Array(3) as _, index (index)}
 					<Card.Root>
 						<Card.Content class="pt-6">
 							<div class="animate-pulse space-y-3">
@@ -243,25 +271,25 @@
 				<Card.Root class="text-center">
 					<Card.Content class="p-3">
 						<div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-							{shifts.filter(s => isTonight(s.start_time)).length}
+							{shifts.filter((s) => isTonight(s.start_time)).length}
 						</div>
 						<div class="text-xs text-slate-600 dark:text-slate-400">Tonight</div>
 					</Card.Content>
 				</Card.Root>
-				
+
 				<Card.Root class="text-center">
 					<Card.Content class="p-3">
 						<div class="text-lg font-bold text-green-600 dark:text-green-400">
-							{shifts.filter(s => !s.is_booked).length}
+							{shifts.filter((s) => !s.is_booked).length}
 						</div>
 						<div class="text-xs text-slate-600 dark:text-slate-400">Available</div>
 					</Card.Content>
 				</Card.Root>
-				
+
 				<Card.Root class="text-center">
 					<Card.Content class="p-3">
 						<div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-							{shifts.filter(s => s.is_booked).length}
+							{shifts.filter((s) => s.is_booked).length}
 						</div>
 						<div class="text-xs text-slate-600 dark:text-slate-400">Urgent</div>
 					</Card.Content>
@@ -274,18 +302,28 @@
 					<Card.Root class="text-center">
 						<Card.Content class="p-8">
 							<CalendarIcon class="h-12 w-12 text-slate-400 mx-auto mb-3" />
-							<h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No shifts found</h3>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Try adjusting your filters or check back later.</p>
+							<h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+								No shifts found
+							</h3>
+							<p class="text-sm text-slate-600 dark:text-slate-400">
+								Try adjusting your filters or check back later.
+							</p>
 						</Card.Content>
 					</Card.Root>
 				{:else}
 					{#each filteredShifts as shift (shift.schedule_id + '-' + shift.start_time)}
-						<Card.Root class="hover:shadow-md transition-shadow {shift.priority === 'high' ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}">
+						<Card.Root
+							class="hover:shadow-md transition-shadow {shift.priority === 'high'
+								? 'ring-2 ring-red-200 dark:ring-red-800'
+								: ''}"
+						>
 							<Card.Content class="p-4">
 								<div class="flex items-start justify-between mb-3">
 									<div class="flex-1">
 										<div class="flex items-center gap-2 mb-1">
-											<h3 class="font-semibold text-slate-900 dark:text-slate-100">{shift.schedule_name}</h3>
+											<h3 class="font-semibold text-slate-900 dark:text-slate-100">
+												{shift.schedule_name}
+											</h3>
 											{#if shift.priority === 'high'}
 												<Badge variant="destructive" class="text-xs">Urgent</Badge>
 											{/if}
@@ -293,50 +331,51 @@
 												<Badge class={getPriorityColor('normal')}>Tonight</Badge>
 											{/if}
 										</div>
-										
+
 										<div class="space-y-1 text-sm text-slate-600 dark:text-slate-400">
 											<div class="flex items-center gap-2">
 												<CalendarIcon class="h-4 w-4" />
 												<span>{formatShiftDate(shift.start_time)}</span>
 											</div>
-											
+
 											<div class="flex items-center gap-2">
 												<ClockIcon class="h-4 w-4" />
 												<span>{formatShiftTime(shift.start_time, shift.end_time)}</span>
-												<span class="text-xs">({getShiftDuration(shift.start_time, shift.end_time)})</span>
+												<span class="text-xs"
+													>({getShiftDuration(shift.start_time, shift.end_time)})</span
+												>
 											</div>
 										</div>
 									</div>
-									
+
 									<div class="text-right">
-										<div class="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 mb-2">
+										<div
+											class="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 mb-2"
+										>
 											<UsersIcon class="h-4 w-4" />
 											<span>{shift.slots_available}/{shift.total_slots}</span>
 										</div>
-										
+
 										{#if !shift.is_booked}
-											<Button 
-												size="sm" 
+											<Button
+												size="sm"
 												class="w-full min-w-[80px]"
 												onclick={() => handleBookShift(shift)}
 											>
 												Book Slot
 											</Button>
 										{:else}
-											<Button 
-												size="sm" 
-												variant="outline" 
-												disabled
-												class="w-full min-w-[80px]"
-											>
+											<Button size="sm" variant="outline" disabled class="w-full min-w-[80px]">
 												Full
 											</Button>
 										{/if}
 									</div>
 								</div>
-								
+
 								{#if shift.slots_available === 1 && shift.total_slots > 1}
-									<div class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 rounded p-2">
+									<div
+										class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 rounded p-2"
+									>
 										⚠️ Only 1 slot remaining
 									</div>
 								{/if}
@@ -350,4 +389,4 @@
 		<!-- Bottom spacing for mobile navigation -->
 		<div class="h-6"></div>
 	</div>
-</div> 
+</div>

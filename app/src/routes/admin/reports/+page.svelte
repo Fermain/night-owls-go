@@ -48,7 +48,7 @@
 				if (!response.ok) {
 					throw new Error(`Failed to fetch reports: ${response.status}`);
 				}
-				const reports = await response.json() as Array<{
+				const reports = (await response.json()) as Array<{
 					report_id: number;
 					severity: number;
 					created_at: string;
@@ -249,7 +249,8 @@
 					<Label>Schedule</Label>
 					<Select.Root type="single" bind:value={scheduleFilter}>
 						<Select.Trigger class="w-40">
-							{scheduleOptions.find((opt) => opt.value === scheduleFilter)?.label ?? 'Select schedule'}
+							{scheduleOptions.find((opt) => opt.value === scheduleFilter)?.label ??
+								'Select schedule'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each scheduleOptions as option (option.value)}

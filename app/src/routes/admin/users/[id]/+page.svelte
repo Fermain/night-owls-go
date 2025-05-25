@@ -2,7 +2,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
@@ -119,7 +118,7 @@
 						</div>
 					{/if}
 				</div>
-				
+
 				<div class="flex gap-2">
 					<Button href="/admin/users?userId={user.id}" variant="outline" size="sm">
 						Edit User
@@ -148,7 +147,11 @@
 				{:else}
 					<div class="space-y-4">
 						{#each bookings as booking (booking.booking_id)}
-							{@const status = getShiftStatus(booking.shift_start, booking.shift_end, booking.attended)}
+							{@const status = getShiftStatus(
+								booking.shift_start,
+								booking.shift_end,
+								booking.attended
+							)}
 							<div class="border rounded-lg p-4 space-y-3">
 								<div class="flex items-center justify-between">
 									<div>
@@ -157,16 +160,21 @@
 											Booking #{booking.booking_id}
 										</p>
 									</div>
-									<Badge 
-										variant={status === 'completed' ? 'default' : 
-												status === 'active' ? 'destructive' : 
-												status === 'upcoming' ? 'secondary' : 
-												status === 'missed' ? 'destructive' : 'outline'}
+									<Badge
+										variant={status === 'completed'
+											? 'default'
+											: status === 'active'
+												? 'destructive'
+												: status === 'upcoming'
+													? 'secondary'
+													: status === 'missed'
+														? 'destructive'
+														: 'outline'}
 									>
 										{status.charAt(0).toUpperCase() + status.slice(1)}
 									</Badge>
 								</div>
-								
+
 								<div class="flex items-center gap-4 text-sm">
 									<div class="flex items-center gap-1">
 										<CalendarIcon class="h-4 w-4" />
@@ -181,10 +189,11 @@
 
 								{#if booking.buddy_name}
 									<div class="text-sm">
-										<span class="font-medium">Buddy:</span> {booking.buddy_name}
+										<span class="font-medium">Buddy:</span>
+										{booking.buddy_name}
 									</div>
 								{/if}
-								
+
 								<div class="text-xs text-muted-foreground">
 									Booked: {new Date(booking.created_at).toLocaleString()}
 								</div>
@@ -195,4 +204,4 @@
 			</Card.Content>
 		</Card.Root>
 	{/if}
-</div> 
+</div>
