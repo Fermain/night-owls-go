@@ -30,7 +30,7 @@
 	const userBookingsQuery = createQuery({
 		queryKey: ['user-bookings'],
 		queryFn: () => UserApiService.getMyBookings(),
-		enabled: currentUser.isAuthenticated
+		enabled: $userSession.isAuthenticated
 	});
 
 	// Derived data

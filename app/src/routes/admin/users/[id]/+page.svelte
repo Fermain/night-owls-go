@@ -17,16 +17,16 @@
 
 	// Query for user details
 	const userQuery = createQuery({
-		queryKey: ['admin-user', userId],
+		queryKey: ['admin-user', () => userId],
 		queryFn: () => UsersApiService.getById(userId),
-		enabled: !isNaN(userId)
+		enabled: () => !isNaN(userId)
 	});
 
 	// Query for user's bookings
 	const userBookingsQuery = createQuery({
-		queryKey: ['admin-user-bookings', userId],
+		queryKey: ['admin-user-bookings', () => userId],
 		queryFn: () => BookingsApiService.getUserBookings(userId),
-		enabled: !isNaN(userId)
+		enabled: () => !isNaN(userId)
 	});
 
 	const user = $derived($userQuery.data);

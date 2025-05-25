@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createMutation, createQuery, createQueryClient } from '@tanstack/svelte-query';
+	import { createMutation, createQuery, QueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -19,7 +19,7 @@
 	let isScheduled = $state(false);
 	let scheduledDateTime = $state('');
 
-	const queryClient = createQueryClient();
+	const queryClient = new QueryClient();
 
 	// Broadcast types
 	const audienceOptions = [

@@ -173,6 +173,7 @@
 					<Label class="text-base font-medium">Incident Severity *</Label>
 					<div class="space-y-2">
 						{#each severityOptions as severity}
+							{@const IconComponent = severity.icon}
 							<button
 								type="button"
 								class="w-full p-4 rounded-lg border-2 text-left transition-all
@@ -183,8 +184,7 @@
 								onclick={() => selectedSeverity = severity.value}
 							>
 								<div class="flex items-start gap-3">
-									<svelte:component 
-										this={severity.icon} 
+									<IconComponent 
 										class="h-5 w-5 mt-0.5 {selectedSeverity === severity.value ? '' : 'text-slate-400'}" 
 									/>
 									<div class="flex-1">
