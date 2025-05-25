@@ -1,204 +1,314 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
+	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { isAuthenticated } from '$lib/services/userService';
-	import { goto } from '$app/navigation';
-	import type { Schedule } from '$lib/types';
-	import ShieldIcon from 'lucide-svelte/icons/shield';
-	import CalendarIcon from 'lucide-svelte/icons/calendar';
-	import UsersIcon from 'lucide-svelte/icons/users';
-	import ClockIcon from 'lucide-svelte/icons/clock';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Separator } from '$lib/components/ui/separator';
+	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import ClockIcon from '@lucide/svelte/icons/clock';
+	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import PlayIcon from '@lucide/svelte/icons/play';
+	import SquareIcon from '@lucide/svelte/icons/square';
+	import { userSession } from '$lib/stores/authStore';
+	import { UserApiService, type AvailableShiftSlot, type CreateBookingRequest } from '$lib/services/api/user';
+	import { toast } from 'svelte-sonner';
 
-	// Redirect authenticated users to admin panel
-	$effect(() => {
-		if ($isAuthenticated) {
-			goto('/admin', { replaceState: true });
+	// Get current user from auth store
+	const currentUser = $derived($userSession);
+
+	// Query for available shifts (next 7 days)
+	const availableShiftsQuery = createQuery({
+		queryKey: ['available-shifts'],
+		queryFn: () => {
+			const from = new Date().toISOString();
+			const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+			return UserApiService.getAvailableShifts({ from, to, limit: 10 });
 		}
 	});
 
-	const fetchSchedules = async (): Promise<Schedule[]> => {
-		const response = await fetch('/schedules');
-		if (!response.ok) {
-			throw new Error('Network response was not ok');
-		}
-		return response.json();
-	};
-
-	const query = createQuery<Schedule[], Error>({
-		queryKey: ['schedules'],
-		queryFn: fetchSchedules
+	// Query for user's bookings (only if authenticated)
+	const userBookingsQuery = createQuery({
+		queryKey: ['user-bookings'],
+		queryFn: () => UserApiService.getMyBookings(),
+		enabled: currentUser.isAuthenticated
 	});
 
-	let data = $derived($query.data ?? []);
+	// Derived data
+	const availableShifts = $derived($availableShiftsQuery.data ?? []);
+	const unfillableShifts = $derived(availableShifts.slice(0, 3)); // Show first 3 as examples
+	
+	// Find next shift from user bookings
+	const nextShift = $derived.by(() => {
+		if (!$userBookingsQuery.data) return null;
+		
+		const now = new Date();
+		const upcomingBookings = $userBookingsQuery.data
+			.filter(booking => new Date(booking.shift_start) > now)
+			.sort((a, b) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		
+		if (upcomingBookings.length === 0) return null;
+		
+		const booking = upcomingBookings[0];
+		const startTime = new Date(booking.shift_start);
+		const endTime = new Date(booking.shift_end);
+		const canCheckin = (startTime.getTime() - now.getTime()) <= (30 * 60 * 1000); // 30 min before
+		const isActive = now >= startTime && now <= endTime;
+		
+		return {
+			id: booking.booking_id,
+			start_time: booking.shift_start,
+			end_time: booking.shift_end,
+			buddy_name: booking.buddy_name,
+			schedule_name: booking.schedule_name,
+			can_checkin: canCheckin,
+			is_active: isActive,
+			location: 'Main Street Area' // TODO: Add location to schedule data
+		};
+	});
+
+	// Mutations for booking
+	const bookingMutation = createMutation({
+		mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
+		onSuccess: () => {
+			toast.success('Shift booked successfully!');
+			$availableShiftsQuery.refetch();
+		},
+		onError: (error) => {
+			toast.error(`Failed to book shift: ${error.message}`);
+		}
+	});
+
+	// Helper functions
+	function formatTime(timeString: string) {
+		return new Date(timeString).toLocaleTimeString('en-GB', { 
+			hour: '2-digit', 
+			minute: '2-digit' 
+		});
+	}
+
+	function getTimeUntil(timeString: string) {
+		const now = new Date();
+		const time = new Date(timeString);
+		const diffMs = time.getTime() - now.getTime();
+		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+		
+		if (diffMs < 0) return 'Started';
+		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
+		return `${diffMins}m`;
+	}
+
+	function handleCheckIn() {
+		// TODO: Implement with real booking attendance API
+		console.log('Checking in to shift...');
+		toast.success('Checked in successfully!');
+	}
+
+	function handleCheckOut() {
+		// TODO: Implement with real booking attendance API
+		console.log('Checking out of shift...');
+		toast.success('Checked out successfully!');
+	}
+
+	function handleQuickReport() {
+		// TODO: Navigate to report page with booking context
+		window.location.href = '/report';
+	}
+
+	function handleEmergency() {
+		if (confirm('Call emergency services?')) {
+			window.location.href = 'tel:999';
+		}
+	}
+
+	function handleBookShift(shift: AvailableShiftSlot) {
+		if (!currentUser.isAuthenticated) {
+			toast.error('Please log in to book shifts');
+			return;
+		}
+
+		const request: CreateBookingRequest = {
+			schedule_id: shift.schedule_id,
+			start_time: shift.start_time
+		};
+
+		$bookingMutation.mutate(request);
+	}
 </script>
 
 <svelte:head>
-	<title>Community Watch - Keeping Our Neighborhood Safe</title>
-	<meta
-		name="description"
-		content="Join the Community Watch and help keep our neighborhood safe. View patrol schedules and sign up for shifts."
-	/>
+	<title>Night Owls</title>
 </svelte:head>
 
 <div class="min-h-screen bg-background">
 	<!-- Header -->
-	<header class="border-b">
-		<div class="container mx-auto flex h-16 items-center justify-between px-4">
-			<div class="flex items-center gap-2">
-				<div
-					class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md"
+	<div class="bg-card border-b">
+		<div class="px-4 py-3">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-lg font-semibold">
+						{#if currentUser.isAuthenticated && currentUser.name}
+							Evening, {currentUser.name.split(' ')[0]}
+						{:else}
+							Night Owls Patrol
+						{/if}
+					</h1>
+					<p class="text-sm text-muted-foreground">
+						{#if currentUser.isAuthenticated}
+							Ready for patrol
+						{:else}
+							<a href="/login" class="text-primary hover:underline">Sign in to get started</a>
+						{/if}
+					</p>
+				</div>
+				<Button variant="destructive" size="sm" onclick={handleEmergency}>
+					Emergency
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	<div class="p-4">
+		{#if currentUser.isAuthenticated}
+			<!-- My Next Shift (TODO: Replace with real user bookings) -->
+			{#if nextShift}
+				<Card.Root>
+					<Card.Header class="pb-3">
+						<div class="flex items-center justify-between">
+							<Card.Title class="text-base">My next shift</Card.Title>
+							<Badge variant={nextShift.is_active ? 'default' : 'secondary'}>
+								{nextShift.is_active ? 'Active' : getTimeUntil(nextShift.start_time)}
+							</Badge>
+						</div>
+					</Card.Header>
+					<Card.Content class="pt-0">
+						<div class="text-sm text-muted-foreground mb-3">
+							{nextShift.schedule_name} • {nextShift.location}
+						</div>
+						
+						<div class="flex items-center text-sm mb-4">
+							<ClockIcon class="h-4 w-4 mr-2 text-muted-foreground" />
+							<span>{formatTime(nextShift.start_time)} - {formatTime(nextShift.end_time)}</span>
+						</div>
+
+						<div class="flex gap-2">
+							{#if nextShift.is_active}
+								<Button onclick={handleCheckOut} variant="destructive" class="flex-1">
+									<SquareIcon class="h-4 w-4 mr-2" />
+									Check Out
+								</Button>
+								<Button onclick={handleQuickReport} variant="outline">
+									<AlertTriangleIcon class="h-4 w-4 mr-2" />
+									Report
+								</Button>
+							{:else if nextShift.can_checkin}
+								<Button onclick={handleCheckIn} class="flex-1">
+									<PlayIcon class="h-4 w-4 mr-2" />
+									Check In
+								</Button>
+							{:else}
+								<Button disabled class="flex-1">
+									<ClockIcon class="h-4 w-4 mr-2" />
+									Too Early
+								</Button>
+							{/if}
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				<Card.Root>
+					<Card.Content class="text-center py-8">
+						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+						<h3 class="text-sm font-medium mb-1">No upcoming shifts</h3>
+						<p class="text-xs text-muted-foreground">Check available shifts below</p>
+					</Card.Content>
+				</Card.Root>
+			{/if}
+
+			<!-- Quick Actions -->
+			<div class="grid grid-cols-2 gap-2 my-4">
+				<a 
+					href="/shifts" 
+					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 				>
-					<ShieldIcon class="size-5" />
-				</div>
-				<span class="text-xl font-semibold">Community Watch</span>
+					<CalendarIcon class="h-4 w-4 mr-2" />
+					Browse Shifts
+				</a>
+				<a 
+					href="/report" 
+					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+				>
+					<AlertTriangleIcon class="h-4 w-4 mr-2" />
+					Report Incident
+				</a>
 			</div>
+		{/if}
 
-			<div class="flex items-center gap-2">
-				<Button variant="ghost" onclick={() => goto('/login')}>Sign In</Button>
-				<Button onclick={() => goto('/register')}>Join Us</Button>
-			</div>
-		</div>
-	</header>
-
-	<!-- Hero Section -->
-	<section class="py-20 px-4">
-		<div class="container mx-auto text-center">
-			<div class="mx-auto max-w-3xl">
-				<h1 class="mb-6 text-4xl font-bold tracking-tight sm:text-6xl">
-					Protecting Our Community
-					<span class="text-primary">Together</span>
-				</h1>
-				<p class="mb-8 text-xl text-muted-foreground">
-					Join the Community Watch and be part of a network dedicated to keeping our neighborhood
-					safe. Sign up for patrol shifts, connect with neighbors, and make a difference.
-				</p>
-				<div class="flex flex-col gap-4 sm:flex-row sm:justify-center">
-					<Button size="lg" class="text-lg" onclick={() => goto('/register')}>
-						<UsersIcon class="mr-2 h-5 w-5" />
-						Join the Watch
-					</Button>
-					<Button size="lg" variant="outline" class="text-lg" onclick={() => goto('/login')}>
-						Sign In
-					</Button>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- Features Section -->
-	<section class="py-16 px-4 bg-muted/50">
-		<div class="container mx-auto">
-			<div class="text-center mb-12">
-				<h2 class="text-3xl font-bold mb-4">How It Works</h2>
-				<p class="text-muted-foreground text-lg">
-					Simple steps to get involved in community safety
-				</p>
-			</div>
-
-			<div class="grid gap-8 md:grid-cols-3">
-				<div class="text-center">
-					<div
-						class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-primary/10"
-					>
-						<UsersIcon class="h-8 w-8 text-primary" />
-					</div>
-					<h3 class="mb-2 text-xl font-semibold">1. Join the Community</h3>
-					<p class="text-muted-foreground">
-						Sign up with your phone number and become part of our safety network.
-					</p>
-				</div>
-
-				<div class="text-center">
-					<div
-						class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-primary/10"
-					>
-						<CalendarIcon class="h-8 w-8 text-primary" />
-					</div>
-					<h3 class="mb-2 text-xl font-semibold">2. Choose Your Shifts</h3>
-					<p class="text-muted-foreground">
-						Browse available patrol schedules and sign up for times that work for you.
-					</p>
-				</div>
-
-				<div class="text-center">
-					<div
-						class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-primary/10"
-					>
-						<ShieldIcon class="h-8 w-8 text-primary" />
-					</div>
-					<h3 class="mb-2 text-xl font-semibold">3. Keep Us Safe</h3>
-					<p class="text-muted-foreground">
-						Patrol your neighborhood and help maintain a safe environment for everyone.
-					</p>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- Current Schedules Section -->
-	<section class="py-16 px-4">
-		<div class="container mx-auto">
-			<div class="text-center mb-12">
-				<h2 class="text-3xl font-bold mb-4">Current Patrol Schedules</h2>
-				<p class="text-muted-foreground text-lg">
-					See what patrol schedules are active in our community
-				</p>
-			</div>
-
-			{#if $query.isLoading}
-				<div class="text-center">
-					<div
-						class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent"
-					></div>
-					<p class="text-muted-foreground">Loading schedules...</p>
-				</div>
-			{:else if $query.isError}
-				<div class="text-center text-destructive">
-					<p>Error loading schedules: {$query.error?.message}</p>
-				</div>
-			{:else if data && data.length > 0}
-				<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{#each data as schedule (schedule.schedule_id)}
-						<div class="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-							<div class="flex items-start justify-between">
-								<div>
-									<h3 class="font-semibold text-lg mb-2">{schedule.name}</h3>
-									<div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-										<ClockIcon class="h-4 w-4" />
-										<span>{schedule.duration_minutes} minutes per shift</span>
-									</div>
-									<div class="flex items-center gap-2 text-sm text-muted-foreground">
-										<CalendarIcon class="h-4 w-4" />
-										<span>{schedule.start_date} to {schedule.end_date}</span>
-									</div>
+		<!-- Unfilled Shifts -->
+		{#if $availableShiftsQuery.isLoading}
+			<Card.Root>
+				<Card.Content class="text-center py-8">
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+					<p class="text-sm text-muted-foreground">Loading available shifts...</p>
+				</Card.Content>
+			</Card.Root>
+		{:else if $availableShiftsQuery.isError}
+			<Card.Root>
+				<Card.Content class="text-center py-8">
+					<AlertTriangleIcon class="h-8 w-8 mx-auto mb-2 text-destructive" />
+					<h3 class="text-sm font-medium mb-1">Error loading shifts</h3>
+					<p class="text-xs text-muted-foreground">{$availableShiftsQuery.error?.message}</p>
+				</Card.Content>
+			</Card.Root>
+		{:else if unfillableShifts.length > 0}
+			<Card.Root>
+				<Card.Header class="pb-3">
+					<Card.Title class="text-base">Available shifts</Card.Title>
+				</Card.Header>
+				<Card.Content class="pt-0">
+					{#each unfillableShifts as shift, i}
+						<div class="flex items-center justify-between py-3">
+							<div class="flex-1">
+								<div class="text-sm font-medium">{shift.schedule_name}</div>
+								<div class="text-xs text-muted-foreground">
+									{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+								</div>
+								<div class="text-xs text-orange-600 dark:text-orange-400">
+									Available now
 								</div>
 							</div>
+							<Button 
+								size="sm" 
+								onclick={() => handleBookShift(shift)}
+								disabled={$bookingMutation.isPending || !currentUser.isAuthenticated}
+							>
+								{$bookingMutation.isPending ? 'Booking...' : 'Book'}
+							</Button>
 						</div>
+						{#if i < unfillableShifts.length - 1}
+							<Separator class="my-2" />
+						{/if}
 					{/each}
-				</div>
-
-				<div class="mt-8 text-center">
-					<p class="text-muted-foreground mb-4">Ready to help keep our community safe?</p>
-					<Button size="lg" onclick={() => goto('/register')}>
-						<UsersIcon class="mr-2 h-5 w-5" />
-						Join Community Watch
-					</Button>
-				</div>
-			{:else}
-				<div class="text-center">
-					<p class="text-muted-foreground mb-4">No active patrol schedules at the moment.</p>
-					<p class="text-sm text-muted-foreground">
-						Join our community to be notified when new schedules are available.
-					</p>
-				</div>
-			{/if}
-		</div>
-	</section>
-
-	<!-- Footer -->
-	<footer class="border-t py-8 px-4 bg-muted/30">
-		<div class="container mx-auto text-center text-sm text-muted-foreground">
-			<p>&copy; 2025 Community Watch. Making our neighborhood safer, together.</p>
-		</div>
-	</footer>
+					{#if availableShifts.length > 3}
+						<div class="mt-4 text-center">
+							<a 
+								href="/shifts"
+								class="text-sm text-primary hover:underline"
+							>
+								View all {availableShifts.length} available shifts →
+							</a>
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+		{:else}
+			<Card.Root>
+				<Card.Content class="text-center py-8">
+					<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+					<h3 class="text-sm font-medium mb-1">No shifts available</h3>
+					<p class="text-xs text-muted-foreground">Check back later for new opportunities</p>
+				</Card.Content>
+			</Card.Root>
+		{/if}
+	</div>
 </div>

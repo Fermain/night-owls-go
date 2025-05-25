@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"night-owls-go/internal/service"
@@ -109,9 +110,35 @@ func (h *AdminBookingHandler) AssignUserToShiftHandler(w http.ResponseWriter, r 
 // @Security BearerAuth
 // @Router /api/admin/users/{userId}/bookings [get]
 func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	userIDStr := chi.URLParam(r, "userId")
+	h.logger.InfoContext(r.Context(), "GetUserBookingsHandler called", "id_param", userIDStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if userIDStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 5 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" && pathParts[4] == "bookings" {
+			userIDStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", userIDStr)
+		}
+	}
+	
+	// Alternative method 2: Check request context for route values
+	if userIDStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "userId" && i < len(rctx.URLParams.Values) {
+					userIDStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", userIDStr)
+					break
+				}
+			}
+		}
+	}
+	
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil || userID <= 0 {
+		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", userIDStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "user_id", userIDStr)
 		return
 	}

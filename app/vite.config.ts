@@ -8,6 +8,14 @@ export default defineConfig({
 			'/api': {
 				target: 'http://localhost:8080',
 				changeOrigin: true
+			},
+			'/shifts': {
+				target: 'http://localhost:8080',
+				changeOrigin: true
+			},
+			'/bookings': {
+				target: 'http://localhost:8080',
+				changeOrigin: true
 			}
 		}
 	}

@@ -209,6 +209,9 @@ func main() {
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 
+	// Debug: Check handler initialization
+	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
+
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
@@ -223,12 +226,13 @@ func main() {
 	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
-
+	
 	// Protected routes (require auth)
 	protected := fuego.Group(s, "")
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
 	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
-	fuego.PatchStd(protected, "/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
+	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
+	fuego.PostStd(protected, "/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
