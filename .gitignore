@@ -36,3 +36,5 @@ night-owls.test.db
 **.mp4
 **.webm
 playwright-report/
+server.log
+server_debug.log
