@@ -317,6 +317,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	})
+
 	
 	// Simple test handler - mimicking working admin handlers
 	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {

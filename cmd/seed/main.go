@@ -461,45 +461,45 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 		{
 			UserPhone:    "+27821234569", // Charlie
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-25T00:00:00Z", // Recent Monday
+			ShiftStart:   "2025-05-19T00:00:00Z", // Recent Monday
 			BuddyName:    "Diana Scout",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-26T00:00:00Z", // Recent Tuesday
+			ShiftStart:   "2025-05-20T00:00:00Z", // Recent Tuesday
 			BuddyName:    "Charlie Volunteer",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-27T00:00:00Z", // Recent Wednesday
+			ShiftStart:   "2025-05-21T00:00:00Z", // Recent Wednesday
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-28T00:00:00Z", // Recent Thursday
+			ShiftStart:   "2025-05-22T00:00:00Z", // Recent Thursday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-29T00:00:00Z", // Recent Friday
+			ShiftStart:   "2025-05-23T00:00:00Z", // Recent Friday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-30T00:00:00Z", // Recent Saturday
+			ShiftStart:   "2025-05-24T00:00:00Z", // Recent Saturday
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234573", // Grace
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-12-01T00:00:00Z", // Recent Sunday
+			ShiftStart:   "2025-05-25T00:00:00Z", // Recent Sunday
 			BuddyName:    "Henry Security",
 			Attended:     true,
 		},
@@ -507,46 +507,46 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 		{
 			UserPhone:    "+27821234569", // Charlie
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-18T00:00:00Z", // Previous Monday
+			ShiftStart:   "2025-05-12T00:00:00Z", // Previous Monday
 			BuddyName:    "Diana Scout",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-19T00:00:00Z", // Previous Tuesday
+			ShiftStart:   "2025-05-13T00:00:00Z", // Previous Tuesday
 			BuddyName:    "Charlie Volunteer",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-20T00:00:00Z", // Previous Wednesday
+			ShiftStart:   "2025-05-14T00:00:00Z", // Previous Wednesday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-21T00:00:00Z", // Previous Thursday
+			ShiftStart:   "2025-05-15T00:00:00Z", // Previous Thursday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234573", // Grace
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-22T00:00:00Z", // Previous Friday
+			ShiftStart:   "2025-05-16T00:00:00Z", // Previous Friday
 			BuddyName:    "Henry Security",
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234574", // Henry
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-23T00:00:00Z", // Previous Saturday
+			ShiftStart:   "2025-05-17T00:00:00Z", // Previous Saturday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234577", // Leo
 			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-24T00:00:00Z", // Previous Sunday
+			ShiftStart:   "2025-05-18T00:00:00Z", // Previous Sunday
 			Attended:     true,
 		},
 		// Even older bookings for more data

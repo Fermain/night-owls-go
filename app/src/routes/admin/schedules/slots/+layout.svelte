@@ -167,12 +167,13 @@
 		let toDate: string | undefined;
 
 		if (dateRangeStart && dateRangeEnd) {
+			// Always use the full day range - this allows viewing past slots for the current day
+			// The backend will return all slots (past and future) within the range
 			fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
 			toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
 
 			// Safety check to prevent invalid ranges
 			if (new Date(fromDate) > new Date(toDate)) {
-				const now = new Date();
 				const futureDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 				fromDate = now.toISOString();
 				toDate = futureDate.toISOString();

@@ -5,8 +5,8 @@ INSERT INTO schedules (name, cron_expr, start_date, end_date, duration_minutes, 
 VALUES (
     'Old schedule',
     '0 0 * * *', -- Every day at midnight
-    '2024-01-01',
-    '2024-12-31',
+    '2025-01-01',
+    '2025-12-31',
     120,
     'Africa/Johannesburg'
 );
@@ -16,8 +16,8 @@ INSERT INTO schedules (name, cron_expr, start_date, end_date, duration_minutes, 
 VALUES (
     'New schedule',
     '0 0 * * *', -- Every day at midnight
-    '2024-01-01',
-    '2024-12-31',
+    '2025-01-01',
+    '2025-12-31',
     120,
     'Africa/Johannesburg'
 ); 
