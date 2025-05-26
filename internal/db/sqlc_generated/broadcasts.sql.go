@@ -145,9 +145,9 @@ SELECT
     b.sent_count,
     b.failed_count,
     b.created_at,
-    COALESCE(u.name, '') as sender_name
+    COALESCE(u.name, 'Unknown User') as sender_name
 FROM broadcasts b
-JOIN users u ON b.sender_user_id = u.user_id
+LEFT JOIN users u ON b.sender_user_id = u.user_id
 ORDER BY b.created_at DESC
 `
 
