@@ -1,5 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import { authenticatedFetch } from '$lib/utils/api';
+import { messageStorage } from './messageStorageService';
 
 interface NotificationData {
 	broadcastId?: number;
@@ -46,6 +47,40 @@ const createNotificationStore = () => {
 	return {
 		subscribe,
 		
+		// Initialize from IndexedDB
+		async init() {
+			try {
+				// Dexie handles database initialization automatically
+				const storedMessages = await messageStorage.getMessages();
+				const unreadCount = await messageStorage.getUnreadCount();
+				
+				// Convert stored messages to UserNotification format
+				const notifications: UserNotification[] = storedMessages.map(stored => ({
+					id: stored.id,
+					type: 'broadcast' as const,
+					title: stored.title,
+					message: stored.message,
+					timestamp: stored.timestamp,
+					read: stored.read,
+					data: {
+						broadcastId: stored.id,
+						audience: stored.audience
+					}
+				}));
+
+				update(state => ({
+					...state,
+					notifications,
+					unreadCount,
+					lastFetched: storedMessages.length > 0 ? new Date().toISOString() : null
+				}));
+				
+				console.log('📦 Notification service initialized with', notifications.length, 'messages');
+			} catch (error) {
+				console.error('Failed to initialize notifications from storage:', error);
+			}
+		},
+		
 		// Actions
 		async fetchNotifications(force = false) {
 			// Don't fetch if already loading and not forced
@@ -65,7 +100,7 @@ const createNotificationStore = () => {
 			update(state => ({ ...state, isLoading: true }));
 			
 			try {
-				// Fetch broadcasts (main source of notifications for now)
+				// Fetch broadcasts from API
 				const response = await authenticatedFetch('/api/broadcasts');
 				
 				if (!response.ok) {
@@ -75,29 +110,52 @@ const createNotificationStore = () => {
 				const broadcasts: BroadcastResponse[] = await response.json();
 				
 				// Transform broadcasts into notifications
-				const notifications: UserNotification[] = broadcasts.map((broadcast) => ({
+				const apiNotifications: UserNotification[] = broadcasts.map((broadcast) => ({
 					id: broadcast.id,
 					type: 'broadcast' as const,
 					title: 'New Message',
 					message: broadcast.message,
 					timestamp: broadcast.created_at,
-					read: false, // TODO: Track read status per user
+					read: false, // Will be overridden by stored state
 					data: {
 						broadcastId: broadcast.id,
 						audience: broadcast.audience
 					}
 				}));
 
-				// Sort by timestamp (newest first)
-				notifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+				// Store new messages in IndexedDB (preserves read state)
+				await messageStorage.storeMessages(apiNotifications);
+				
+				// Get all messages from IndexedDB (with persisted read state)
+				const storedMessages = await messageStorage.getMessages();
+				
+				// Convert stored messages back to UserNotification format
+				const notifications: UserNotification[] = storedMessages.map(stored => ({
+					id: stored.id,
+					type: 'broadcast' as const,
+					title: stored.title,
+					message: stored.message,
+					timestamp: stored.timestamp,
+					read: stored.read,
+					data: {
+						broadcastId: stored.id,
+						audience: stored.audience
+					}
+				}));
+
+				// Get unread count from IndexedDB
+				const unreadCount = await messageStorage.getUnreadCount();
 
 				update(state => ({
 					...state,
 					notifications,
-					unreadCount: notifications.filter(n => !n.read).length,
+					unreadCount,
 					isLoading: false,
 					lastFetched: new Date().toISOString()
 				}));
+
+				// Clean up old messages (keep last 30 days)
+				await messageStorage.clearOldMessages(30);
 
 			} catch (error) {
 				console.error('Failed to fetch notifications:', error);
@@ -106,23 +164,40 @@ const createNotificationStore = () => {
 		},
 
 		// Mark notification as read
-		markAsRead(notificationId: number) {
-			update(state => ({
-				...state,
-				notifications: state.notifications.map(n => 
-					n.id === notificationId ? { ...n, read: true } : n
-				),
-				unreadCount: Math.max(0, state.unreadCount - 1)
-			}));
+		async markAsRead(notificationId: number) {
+			try {
+				// Update in IndexedDB
+				await messageStorage.markAsRead(notificationId);
+				
+				// Update in memory state
+				const unreadCount = await messageStorage.getUnreadCount();
+				update(state => ({
+					...state,
+					notifications: state.notifications.map(n => 
+						n.id === notificationId ? { ...n, read: true } : n
+					),
+					unreadCount
+				}));
+			} catch (error) {
+				console.error('Failed to mark notification as read:', error);
+			}
 		},
 
 		// Mark all as read
-		markAllAsRead() {
-			update(state => ({
-				...state,
-				notifications: state.notifications.map(n => ({ ...n, read: true })),
-				unreadCount: 0
-			}));
+		async markAllAsRead() {
+			try {
+				// Update in IndexedDB
+				await messageStorage.markAllAsRead();
+				
+				// Update in memory state
+				update(state => ({
+					...state,
+					notifications: state.notifications.map(n => ({ ...n, read: true })),
+					unreadCount: 0
+				}));
+			} catch (error) {
+				console.error('Failed to mark all notifications as read:', error);
+			}
 		},
 
 		// Add new notification (e.g., from push notification)
@@ -144,6 +219,34 @@ const createNotificationStore = () => {
 		// Clear all notifications
 		clear() {
 			set(initialState);
+		},
+
+		// Debug utilities
+		async getDebugInfo() {
+			try {
+				const stats = await messageStorage.getStats();
+				const currentState = get({ subscribe });
+				
+				return {
+					database: stats,
+					memory: {
+						notifications: currentState.notifications.length,
+						unreadCount: currentState.unreadCount,
+						lastFetched: currentState.lastFetched,
+						isLoading: currentState.isLoading
+					},
+					performance: {
+						memoryVsDatabase: {
+							memory: currentState.notifications.length,
+							database: stats.total,
+							synced: currentState.notifications.length === stats.total
+						}
+					}
+				};
+			} catch (error) {
+				console.error('Failed to get debug info:', error);
+				return null;
+			}
 		}
 	};
 };

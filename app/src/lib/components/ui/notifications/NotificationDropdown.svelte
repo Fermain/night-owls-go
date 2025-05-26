@@ -29,12 +29,12 @@
 		return () => clearInterval(interval);
 	});
 
-	function handleNotificationClick(notificationId: number) {
-		notificationStore.markAsRead(notificationId);
+	async function handleNotificationClick(notificationId: number) {
+		await notificationStore.markAsRead(notificationId);
 	}
 
-	function handleMarkAllRead() {
-		notificationStore.markAllAsRead();
+	async function handleMarkAllRead() {
+		await notificationStore.markAllAsRead();
 	}
 
 	function formatTimestamp(timestamp: string): string {
@@ -149,9 +149,11 @@
 		{#if $notificationState.notifications.length > 0}
 			<Separator />
 			<DropdownMenu.Item class="justify-center text-center py-2">
-				<Button variant="ghost" size="sm" class="text-xs" onclick={() => {}}>
-					View all messages
-				</Button>
+				<a href="/broadcasts" class="w-full">
+					<Button variant="ghost" size="sm" class="text-xs w-full">
+						View all messages
+					</Button>
+				</a>
 			</DropdownMenu.Item>
 		{/if}
 	</DropdownMenu.Content>

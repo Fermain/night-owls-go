@@ -19,10 +19,16 @@
 
 	// Check if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
+
+	// Initialize notification service on app startup
+	onMount(() => {
+		notificationStore.init();
+	});
 	
 	// Import unified header and mobile navigation
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
+	import { notificationStore } from '$lib/services/notificationService';
 
 	let { children } = $props();
 

@@ -8,12 +8,17 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import FilterIcon from '@lucide/svelte/icons/filter';
 	import { notificationStore } from '$lib/services/notificationService';
 	import type { UserNotification } from '$lib/services/notificationService';
 
 	// Real notification state
 	let notificationState = $state(notificationStore);
 	let showUnreadOnly = $state(false);
+	let searchQuery = $state('');
+	let selectedAudience = $state('all');
+	let markingAsRead = $state(new Set<number>());
 
 	onMount(() => {
 		// Load notifications when page loads
@@ -24,21 +29,91 @@
 			notificationStore.fetchNotifications();
 		}, 10000);
 
-		return () => clearInterval(interval);
+		// Keyboard shortcuts
+		const handleKeydown = (e: KeyboardEvent) => {
+			// Ctrl/Cmd + K to focus search
+			if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+				e.preventDefault();
+				const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
+				searchInput?.focus();
+			}
+			// Escape to clear search
+			if (e.key === 'Escape' && searchQuery) {
+				searchQuery = '';
+			}
+			// Ctrl/Cmd + A to mark all as read
+			if ((e.ctrlKey || e.metaKey) && e.key === 'a' && e.shiftKey) {
+				e.preventDefault();
+				markAllAsRead();
+			}
+		};
+
+		document.addEventListener('keydown', handleKeydown);
+
+		return () => {
+			clearInterval(interval);
+			document.removeEventListener('keydown', handleKeydown);
+		};
 	});
 
 	function refreshNotifications() {
 		notificationStore.fetchNotifications(true); // Force refresh
 	}
 
-	// Computed - using real notifications
+	// Computed - using real notifications with filtering and search
 	const filteredNotifications = $derived.by(() => {
-		const notifications = $notificationState.notifications;
+		let notifications = $notificationState.notifications;
+		
+		// Filter by read status
 		if (showUnreadOnly) {
-			return notifications.filter((n) => !n.read);
+			notifications = notifications.filter((n) => !n.read);
 		}
+		
+		// Filter by audience
+		if (selectedAudience !== 'all') {
+			notifications = notifications.filter((n) => n.data?.audience === selectedAudience);
+		}
+		
+		// Filter by search query
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase().trim();
+			notifications = notifications.filter((n) => 
+				n.message.toLowerCase().includes(query) ||
+				n.title.toLowerCase().includes(query)
+			);
+		}
+		
 		return notifications;
 	});
+
+	// Enhanced search using Dexie (for better performance with large datasets)
+	async function performDexieSearch(query: string) {
+		if (!query.trim()) return;
+		
+		try {
+			const { messageStorage } = await import('$lib/services/messageStorageService');
+			const results = await messageStorage.searchMessages(query);
+			
+			// Convert back to UserNotification format and update store
+			const searchNotifications = results.map(stored => ({
+				id: stored.id,
+				type: 'broadcast' as const,
+				title: stored.title,
+				message: stored.message,
+				timestamp: stored.timestamp,
+				read: stored.read,
+				data: {
+					broadcastId: stored.id,
+					audience: stored.audience
+				}
+			}));
+			
+			// You could update the notification store with search results here
+			// For now, we'll stick with the in-memory filtering for simplicity
+		} catch (error) {
+			console.error('Dexie search failed:', error);
+		}
+	}
 
 	const unreadCount = $derived($notificationState.unreadCount);
 	const isLoading = $derived($notificationState.isLoading);
@@ -88,17 +163,40 @@
 		}
 	}
 
-	function markAsRead(notificationId: number) {
-		notificationStore.markAsRead(notificationId);
+	async function markAsRead(notificationId: number) {
+		markingAsRead.add(notificationId);
+		markingAsRead = markingAsRead; // Trigger reactivity
+		try {
+			await notificationStore.markAsRead(notificationId);
+		} finally {
+			markingAsRead.delete(notificationId);
+			markingAsRead = markingAsRead; // Trigger reactivity
+		}
 	}
 
-	function markAllAsRead() {
-		notificationStore.markAllAsRead();
+	async function markAllAsRead() {
+		await notificationStore.markAllAsRead();
 	}
 
 	function toggleShowUnread() {
 		showUnreadOnly = !showUnreadOnly;
 	}
+
+	function clearFilters() {
+		searchQuery = '';
+		selectedAudience = 'all';
+		showUnreadOnly = false;
+	}
+
+	// Get unique audiences from notifications
+	const availableAudiences = $derived.by(() => {
+		const audiences = new Set(
+			$notificationState.notifications
+				.map(n => n.data?.audience)
+				.filter((audience): audience is string => Boolean(audience))
+		);
+		return Array.from(audiences).sort();
+	});
 </script>
 
 <svelte:head>
@@ -150,6 +248,64 @@
 	</header>
 
 	<div class="px-4 py-6">
+		<!-- Search and Filters -->
+		<div class="mb-6 space-y-4">
+			<!-- Search Bar -->
+			<div class="relative">
+				<SearchIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+				<input
+					type="text"
+					placeholder="Search messages... (⌘K)"
+					bind:value={searchQuery}
+					class="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
+				/>
+				{#if searchQuery}
+					<button
+						onclick={() => searchQuery = ''}
+						class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+						aria-label="Clear search"
+					>
+						✕
+					</button>
+				{/if}
+			</div>
+
+			<!-- Filters Row -->
+			<div class="flex flex-wrap items-center gap-3">
+				<!-- Audience Filter -->
+				<div class="flex items-center gap-2">
+					<FilterIcon class="h-4 w-4 text-muted-foreground" />
+					<select
+						bind:value={selectedAudience}
+						class="px-3 py-1 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+					>
+						<option value="all">All audiences</option>
+						{#each availableAudiences as audience}
+							<option value={audience}>{getAudienceLabel(audience)}</option>
+						{/each}
+					</select>
+				</div>
+
+				<!-- Clear Filters -->
+				{#if searchQuery || selectedAudience !== 'all' || showUnreadOnly}
+					<Button variant="outline" size="sm" onclick={clearFilters}>
+						Clear filters
+					</Button>
+				{/if}
+
+				<!-- Keyboard Shortcuts Hint -->
+				<div class="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
+					<span>⌘K to search</span>
+					<span>⇧⌘A to mark all read</span>
+				</div>
+
+				<!-- Results Count -->
+				<div class="text-sm text-muted-foreground ml-auto">
+					{filteredNotifications.length} of {$notificationState.notifications.length} messages
+				</div>
+			</div>
+		</div>
+
 		<!-- Quick Stats -->
 		<div class="grid grid-cols-2 gap-3 mb-6">
 			<Card.Root class="text-center">
@@ -190,19 +346,40 @@
 					<Card.Content class="p-8">
 						<MessageSquareIcon class="h-12 w-12 text-slate-400 mx-auto mb-3" />
 						<h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-							{showUnreadOnly ? 'No unread messages' : 'No messages yet'}
+							{#if $notificationState.notifications.length === 0}
+								No messages yet
+							{:else if searchQuery}
+								No messages match your search
+							{:else if showUnreadOnly}
+								No unread messages
+							{:else if selectedAudience !== 'all'}
+								No messages for {getAudienceLabel(selectedAudience || 'all')}
+							{:else}
+								No messages found
+							{/if}
 						</h3>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
-							{showUnreadOnly
-								? 'All caught up! Check back later for new updates.'
-								: 'Messages from coordinators will appear here.'}
+							{#if $notificationState.notifications.length === 0}
+								Messages from coordinators will appear here.
+							{:else if searchQuery}
+								Try adjusting your search terms or clearing filters.
+							{:else if showUnreadOnly}
+								All caught up! Check back later for new updates.
+							{:else}
+								Try adjusting your filters to see more messages.
+							{/if}
 						</p>
+						{#if searchQuery || selectedAudience !== 'all' || showUnreadOnly}
+							<Button variant="outline" size="sm" onclick={clearFilters} class="mt-4">
+								Clear all filters
+							</Button>
+						{/if}
 					</Card.Content>
 				</Card.Root>
 			{:else}
 				{#each filteredNotifications as notification (notification.id)}
 					<Card.Root
-						class="transition-all hover:shadow-md {!notification.read
+						class="transition-all duration-200 hover:shadow-md hover:scale-[1.01] {!notification.read
 							? 'ring-2 ring-blue-200 dark:ring-blue-800 bg-blue-50/50 dark:bg-blue-950/20'
 							: ''}"
 					>
@@ -250,10 +427,16 @@
 											variant="ghost"
 											size="sm"
 											onclick={() => markAsRead(notification.id)}
+											disabled={markingAsRead.has(notification.id)}
 											class="text-xs h-auto p-1"
 										>
-											<CheckIcon class="h-3 w-3 mr-1" />
-											Mark as read
+											{#if markingAsRead.has(notification.id)}
+												<LoaderCircleIcon class="h-3 w-3 mr-1 animate-spin" />
+												Marking...
+											{:else}
+												<CheckIcon class="h-3 w-3 mr-1" />
+												Mark as read
+											{/if}
 										</Button>
 									{/if}
 								</div>
