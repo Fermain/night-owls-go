@@ -9,6 +9,7 @@
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import type { E164Number } from 'svelte-tel-input/types';
 
 	$effect(() => {
@@ -22,15 +23,29 @@
 	const urlPhone = $page.url.searchParams.get('phone');
 	const urlName = $page.url.searchParams.get('name');
 
-	// State management
+	// State management - prioritize URL params, then saved values from store
 	let step = $state<'register' | 'verify'>(urlPhone ? 'verify' : 'register');
-	let phoneNumber: E164Number | null = $state(urlPhone as E164Number || null);
+	let phoneNumber: E164Number | null = $state(
+		(urlPhone as E164Number) || ($formStore.lastPhoneNumber as E164Number) || null
+	);
 	let phoneValid = $state(true);
-	let name = $state(urlName || '');
+	let name = $state(urlName || $formStore.lastName || '');
 	let otpValue = $state('');
 	let isLoading = $state(false);
+	let isAutoVerifying = $state(false);
 
 	const OTP_LENGTH = 6;
+
+	// Auto-verify when OTP is complete
+	$effect(() => {
+		if (otpValue.length === OTP_LENGTH && !isLoading && !isAutoVerifying && step === 'verify') {
+			isAutoVerifying = true;
+			handleVerification();
+		} else if (otpValue.length < OTP_LENGTH) {
+			// Reset auto-verification flag when OTP is cleared/modified
+			isAutoVerifying = false;
+		}
+	});
 
 	// Step 1: Submit phone number and name to register/request OTP
 	async function handleRegistration(event: SubmitEvent) {
@@ -43,6 +58,9 @@
 
 		isLoading = true;
 		try {
+			// Save phone number and name to persistent store for future logins
+			saveUserData(phoneNumber, name);
+
 			await authService.register({
 				phone: phoneNumber, // E164 format ready for API
 				name: name.trim() || undefined
@@ -59,35 +77,64 @@
 	}
 
 	// Step 2: Verify OTP and get JWT token
-	async function handleVerification(event: SubmitEvent) {
-		event.preventDefault();
+	async function handleVerification(event?: SubmitEvent) {
+		event?.preventDefault();
+		
+		// Prevent manual verification if auto-verification is in progress
+		if (isAutoVerifying && event) {
+			return;
+		}
+		
 		if (otpValue.length !== OTP_LENGTH) {
-			toast.error('Please enter the complete OTP.');
+			if (event) { // Only show error if manually submitted
+				toast.error('Please enter the complete OTP.');
+			}
+			isAutoVerifying = false;
 			return;
 		}
 
 		if (!phoneNumber) {
 			toast.error('Phone number is missing.');
+			isAutoVerifying = false;
 			return;
 		}
 
 		isLoading = true;
 		try {
+			// Show different message for auto-verification vs manual
+			const isAuto = !event;
+			if (isAuto) {
+				toast.loading('Verifying code...', { id: 'auto-verify' });
+			}
+			
 			await authService.login(phoneNumber, name, otpValue);
+			
+			if (isAuto) {
+				toast.dismiss('auto-verify');
+			}
 			toast.success('Login successful!');
 			goto('/admin', { replaceState: true });
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Verification failed');
+			const isAuto = !event;
+			if (isAuto) {
+				toast.dismiss('auto-verify');
+				// For auto-verification, show a less intrusive error
+				toast.error('Invalid code. Please check and try again.');
+			} else {
+				toast.error(error instanceof Error ? error.message : 'Verification failed');
+			}
 			otpValue = ''; // Clear OTP on error
 			console.error('Verification error:', error);
 		} finally {
 			isLoading = false;
+			isAutoVerifying = false;
 		}
 	}
 
 	function goBackToRegistration() {
 		step = 'register';
 		otpValue = '';
+		isAutoVerifying = false;
 	}
 </script>
 
@@ -134,6 +181,21 @@
 						/>
 						<p class="text-xs text-muted-foreground mt-1">
 							We'll send you a verification code via SMS • Country: South Africa (ZA)
+							{#if $formStore.lastPhoneNumber && phoneNumber === $formStore.lastPhoneNumber}
+								<br />
+								<span class="text-primary">Using saved phone number</span>
+								<button 
+									type="button" 
+									class="text-xs text-muted-foreground hover:text-foreground underline ml-2"
+									onclick={() => {
+										clearUserData();
+										phoneNumber = null;
+										name = '';
+									}}
+								>
+									Clear saved data
+								</button>
+							{/if}
 						</p>
 						{#if !phoneValid && phoneNumber}
 							<p class="text-xs text-destructive mt-1">
@@ -160,7 +222,7 @@
 				<form onsubmit={handleVerification} class="flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
 						<Label>Verification Code</Label>
-						<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading}>
+						<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading || isAutoVerifying}>
 							{#snippet children({ cells })}
 								<InputOTP.Group class="justify-center">
 									{#each cells.slice(0, 3) as cell, i (i)}
@@ -175,18 +237,21 @@
 								</InputOTP.Group>
 							{/snippet}
 						</InputOTP.Root>
+						<p class="text-xs text-muted-foreground text-center">
+							Code will verify automatically when complete
+						</p>
 					</div>
 
 					<Button
 						type="submit"
 						class="w-full"
-						disabled={isLoading || otpValue.length !== OTP_LENGTH}
+						disabled={isLoading || isAutoVerifying || otpValue.length !== OTP_LENGTH}
 					>
-						{#if isLoading}
+						{#if isLoading || isAutoVerifying}
 							<div
 								class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
 							></div>
-							Verifying...
+							{isAutoVerifying ? 'Auto-verifying...' : 'Verifying...'}
 						{:else}
 							Verify & Continue
 						{/if}
@@ -197,12 +262,24 @@
 							type="button"
 							class="text-sm text-muted-foreground underline-offset-4 hover:underline"
 							onclick={goBackToRegistration}
-							disabled={isLoading}
+							disabled={isLoading || isAutoVerifying}
 						>
 							Wrong phone number? Go back
 						</button>
 					</div>
 				</form>
+			{/if}
+
+			<!-- Navigation and Help text -->
+			{#if step === 'register'}
+				<div class="text-center text-sm text-muted-foreground">
+					<p>
+						Don't have an account?
+						<a href="/register" class="underline underline-offset-4 hover:text-primary">
+							Create one here
+						</a>
+					</p>
+				</div>
 			{/if}
 
 			<!-- Help text -->

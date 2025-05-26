@@ -7,6 +7,7 @@
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import ShieldIcon from 'lucide-svelte/icons/shield';
 	import type { E164Number } from 'svelte-tel-input/types';
 
@@ -17,10 +18,10 @@
 		}
 	});
 
-	// State management
-	let phoneNumber: E164Number | null = $state(null);
+	// State management - use saved values from persistent store
+	let phoneNumber: E164Number | null = $state(($formStore.lastPhoneNumber as E164Number) || null);
 	let phoneValid = $state(true);
-	let name = $state('');
+	let name = $state($formStore.lastName || '');
 	let isLoading = $state(false);
 
 	async function handleRegistration(event: SubmitEvent) {
@@ -38,6 +39,9 @@
 
 		isLoading = true;
 		try {
+			// Save phone number and name to persistent store for future use
+			saveUserData(phoneNumber, name);
+
 			await authService.register({
 				phone: phoneNumber, // E164 format ready for API
 				name: name.trim()
@@ -97,6 +101,9 @@
 									disabled={isLoading}
 									required
 								/>
+								{#if $formStore.lastName && name === $formStore.lastName}
+									<p class="text-xs text-primary">Using saved name</p>
+								{/if}
 							</div>
 
 							<div class="flex flex-col gap-2 relative pb-6">
@@ -109,6 +116,21 @@
 								/>
 								<p class="text-xs text-muted-foreground mt-1">
 									We'll send you a verification code via SMS • Country: South Africa (ZA)
+									{#if $formStore.lastPhoneNumber && phoneNumber === $formStore.lastPhoneNumber}
+										<br />
+										<span class="text-primary">Using saved phone number</span>
+										<button 
+											type="button" 
+											class="text-xs text-muted-foreground hover:text-foreground underline ml-2"
+											onclick={() => {
+												clearUserData();
+												phoneNumber = null;
+												name = '';
+											}}
+										>
+											Clear saved data
+										</button>
+									{/if}
 								</p>
 								{#if !phoneValid && phoneNumber}
 									<p class="text-xs text-destructive mt-1">
