@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { goto } from '$app/navigation';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
@@ -119,19 +120,25 @@
 
 	// Quick action handlers
 	function handleBulkAssignment() {
-		window.location.href = '/admin/shifts/bulk-signup';
+		goto('/admin/shifts/bulk-signup');
 	}
 
 	function handleViewSchedules() {
-		window.location.href = '/admin/schedules';
+		goto('/admin/schedules');
 	}
 
 	function handleManageUsers() {
-		window.location.href = '/admin/users';
+		goto('/admin/users');
 	}
 
 	function handleCreateSchedule() {
-		window.location.href = '/admin/schedules/new';
+		goto('/admin/schedules/new');
+	}
+
+	// Navigation function for shift details
+	function navigateToShiftDetail(shift: any) {
+		const shiftStartTime = encodeURIComponent(shift.start_time);
+		goto(`/admin/shifts?shiftStartTime=${shiftStartTime}`);
 	}
 </script>
 
@@ -346,7 +353,19 @@
 							{@const urgentShifts = metrics.upcomingShifts.filter(s => !s.is_booked).slice(0, 8)}
 							{#if urgentShifts.length > 0}
 								{#each urgentShifts as shift (shift.schedule_id + '-' + shift.start_time)}
-									<div class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+									<div 
+										class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer group"
+										onclick={() => navigateToShiftDetail(shift)}
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												navigateToShiftDetail(shift);
+											}
+										}}
+										role="button"
+										tabindex="0"
+										aria-label={`View details for ${formatShiftTitle(shift.start_time, shift.end_time)} shift`}
+									>
 										<div class="flex-shrink-0">
 											<div
 												class="w-8 h-8 rounded-full flex items-center justify-center
@@ -360,7 +379,7 @@
 											</div>
 										</div>
 										<div class="flex-grow min-w-0">
-											<p class="font-medium text-sm truncate">{formatShiftTitle(shift.start_time, shift.end_time)}</p>
+											<p class="font-medium text-sm truncate group-hover:text-primary transition-colors">{formatShiftTitle(shift.start_time, shift.end_time)}</p>
 											<p class="text-xs text-muted-foreground">
 												{shift.schedule_name}
 											</p>
