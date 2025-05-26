@@ -60,22 +60,18 @@
 
 <QueryClientProvider client={queryClient}>
 	<div class="min-h-screen bg-background text-foreground">
-		<!-- Unified Header for all pages -->
-		<UnifiedHeader 
-			showBreadcrumbs={isAdminRoute}
-			showMobileMenu={!isAdminRoute}
-		/>
-
 		{#if isAdminRoute}
-			<!-- Admin layout (existing admin pages) -->
+			<!-- Admin layout uses existing sidebar system -->
 			{@render children()}
 		{:else}
-			<!-- End-user layout (mobile-first) -->
+			<!-- Public layout with header + mobile nav -->
+			<UnifiedHeader 
+				showBreadcrumbs={false}
+				showMobileMenu={true}
+			/>
 			<main class="pb-16 md:pb-0">
 				{@render children()}
 			</main>
-
-			<!-- Mobile bottom navigation (only for end-users) -->
 			<MobileNav />
 		{/if}
 	</div>

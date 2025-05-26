@@ -7,7 +7,7 @@
 
 	const isLoading = $derived($dashboardQuery.isLoading);
 	const isError = $derived($dashboardQuery.isError);
-	const error = $derived($dashboardQuery.error);
+	const error = $derived($dashboardQuery.error || undefined);
 	const dashboardData = $derived($dashboardQuery.data);
 </script>
 

@@ -5,6 +5,7 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
@@ -114,12 +115,18 @@
 	});
 </script>
 
-<header class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-	<div class="container flex h-14 max-w-screen-2xl items-center">
-		<!-- Left side: Logo/Title and Breadcrumbs -->
-		<div class="mr-4 flex items-center gap-4">
-			<!-- Logo and Title -->
-			<a href={isAdminRoute ? '/admin' : '/'} class="flex items-center space-x-2">
+<header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+	<!-- Sidebar trigger for admin routes -->
+	{#if isAdminRoute}
+		<Sidebar.Trigger class="-ml-1" />
+		<Separator orientation="vertical" class="mr-2 h-4" />
+	{/if}
+
+	<!-- Left side: Logo/Title and Breadcrumbs -->
+	<div class="mr-4 flex items-center gap-4">
+		<!-- Logo and Title (only for public routes) -->
+		{#if !isAdminRoute}
+			<a href="/" class="flex items-center space-x-2">
 				<div class="h-6 w-6 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center">
 					<span class="text-primary-foreground text-xs font-bold">NO</span>
 				</div>
@@ -127,27 +134,27 @@
 					{pageTitle}
 				</span>
 			</a>
+		{/if}
 
-			<!-- Breadcrumbs for admin pages -->
-			{#if showBreadcrumbs && breadcrumbs.length > 0}
-				<Separator orientation="vertical" class="h-6" />
-				<Breadcrumb.Root>
-					<Breadcrumb.List>
-						{#each breadcrumbs as crumb, i (crumb.href)}
-							<Breadcrumb.Item class="hidden md:block">
-								<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-							</Breadcrumb.Item>
-							{#if i < breadcrumbs.length - 1}
-								<Breadcrumb.Separator class="hidden md:block" />
-							{/if}
-						{/each}
-					</Breadcrumb.List>
-				</Breadcrumb.Root>
-			{/if}
-		</div>
+		<!-- Breadcrumbs for admin pages -->
+		{#if showBreadcrumbs && breadcrumbs.length > 0}
+			<Breadcrumb.Root>
+				<Breadcrumb.List>
+					{#each breadcrumbs as crumb, i (crumb.href)}
+						<Breadcrumb.Item class="hidden md:block">
+							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+						</Breadcrumb.Item>
+						{#if i < breadcrumbs.length - 1}
+							<Breadcrumb.Separator class="hidden md:block" />
+						{/if}
+					{/each}
+				</Breadcrumb.List>
+			</Breadcrumb.Root>
+		{/if}
+	</div>
 
-		<!-- Right side: User actions -->
-		<div class="flex flex-1 items-center justify-end space-x-2">
+	<!-- Right side: User actions -->
+	<div class="flex flex-1 items-center justify-end space-x-2">
 			<!-- Notifications (only for authenticated users) -->
 			{#if $isAuthenticated}
 				<NotificationDropdown />
@@ -234,5 +241,4 @@
 				</Button>
 			{/if}
 		</div>
-	</div>
 </header> 
