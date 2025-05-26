@@ -3,7 +3,7 @@
 # Ensure cleanup on exit
 trap 'echo "Stopping servers..."; kill $(jobs -p) 2>/dev/null; exit' SIGINT SIGTERM
 
-echo "Starting Go backend server on http://localhost:8080 ..."
+echo "Starting Go backend server on http://localhost:5888 ..."
 go run ./cmd/server/main.go &
 GO_PID=$!
 # echo "Go backend server PID: $GO_PID" # Optional: for debugging
@@ -20,8 +20,8 @@ echo
 echo "---------------------------------------------------------------------"
 echo "Go backend (PID $GO_PID) and SvelteKit dev server (PID $SVELTE_PID) started."
 echo "SvelteKit dev (frontend): http://localhost:5173"
-echo "Go backend (API):       http://localhost:8080"
-echo "Frontend API calls (/api/*) will be proxied from 5173 to 8080."
+echo "Go backend (API):       http://localhost:5888"
+echo "Frontend API calls (/api/*) will be proxied from 5173 to 5888."
 echo "Press Ctrl+C to stop both servers."
 echo "---------------------------------------------------------------------"
 echo

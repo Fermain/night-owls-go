@@ -22,11 +22,34 @@
 
 	let { children } = $props();
 
-	onMount(() => {
+	onMount(async () => {
 		// Set dark mode preference
 		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 		if (prefersDark) {
 			document.documentElement.classList.add('dark');
+		}
+
+		// Register service worker
+		try {
+			const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
+			const registered = await serviceWorkerService.register();
+			
+			if (registered) {
+				console.log('🔧 Service worker registered successfully');
+				
+				// Listen for service worker messages
+				navigator.serviceWorker.addEventListener('message', (event) => {
+					console.log('📨 Message from service worker:', event.data);
+					
+					if (event.data.type === 'SW_ACTIVATED') {
+						console.log('🎉 ' + event.data.message);
+					}
+				});
+			} else {
+				console.log('⚠️ Service worker registration failed');
+			}
+		} catch (error) {
+			console.error('Service worker registration error:', error);
 		}
 	});
 </script>
@@ -38,6 +61,9 @@
 			{@render children()}
 		{:else}
 			<!-- End-user layout (mobile-first) -->
+			{#await import('$lib/components/layout/PublicHeader.svelte') then { default: PublicHeader }}
+				<PublicHeader />
+			{/await}
 			<main class="pb-16 md:pb-0">
 				{@render children()}
 			</main>

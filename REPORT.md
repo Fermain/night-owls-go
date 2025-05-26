@@ -63,7 +63,7 @@ This section will be populated as diagnostic steps are performed.
     *   `sqlc generate` (data access layer code generation) completed successfully.
 *   **Configuration:**
     *   A `.env` file is required to run the backend. Based on `internal/config/config.go` and `README.md`, it should contain at least:
-        *   `SERVER_PORT` (e.g., `8080`)
+        *   `SERVER_PORT` (e.g., `5888`)
         *   `DATABASE_PATH` (e.g., `./night-owls.dev.db`)
         *   `JWT_SECRET` (a strong secret)
         *   `OTP_LOG_PATH` (e.g., `./sms_outbox.log`)
@@ -109,7 +109,7 @@ This section will be populated as diagnostic steps are performed.
 1.  **Create a `.env.example` file:** Based on the current `.env` provided and the application's configuration structure (`internal/config/config.go`), it's highly recommended to create a `.env.example` file in the project root to guide future environment setup. Its content should be:
     ```dotenv
     # Server Configuration
-    SERVER_PORT=8080
+    SERVER_PORT=5888
 
     # Database Configuration
     # For development, a local SQLite file is typical:

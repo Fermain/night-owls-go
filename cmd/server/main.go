@@ -50,7 +50,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8080
+// @host localhost:5888
 // @BasePath /
 // @schemes http
 
@@ -209,6 +209,7 @@ func main() {
 	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService, scheduleService)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
+	broadcastAPIHandler := api.NewBroadcastHandler(querier, logger)
 	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
 
 	// Debug: Check handler initialization
@@ -236,6 +237,7 @@ func main() {
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
 
@@ -279,6 +281,27 @@ func main() {
 	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
 	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
 	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
+	
+	// Test user broadcasts under admin for debugging
+	fuego.GetStd(admin, "/test-broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+	
+	// Simple test handler - mimicking working admin handlers
+	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Simple test handler called")
+		// Mimic the exact response pattern of working admin handlers
+		broadcasts := []map[string]interface{}{
+			{
+				"id": 999,
+				"message": "Test broadcast from simple handler",
+				"audience": "all",
+				"created_at": "2025-05-26T12:00:00Z",
+			},
+		}
+		
+		// Use the same response pattern as other handlers
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(broadcasts)
+	})
 
 	// Admin Dashboard
 	fuego.GetStd(admin, "/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
@@ -330,11 +353,34 @@ func main() {
 
 	// Serve static files and fallback to index.html for SPA routes
 	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
-		// Don't serve SPA for API requests - let them 404 if not found
-		if strings.HasPrefix(r.URL.Path, "/api/") {
+		// Enhanced debug logging
+		logger.Info("SPA fallback handler hit", "path", r.URL.Path, "method", r.Method)
+		
+		// Check each condition individually for debugging
+		hasApiPrefix := strings.HasPrefix(r.URL.Path, "/api/")
+		hasBookingsPrefix := strings.HasPrefix(r.URL.Path, "/bookings")
+		hasBroadcastsPrefix := strings.HasPrefix(r.URL.Path, "/broadcasts")
+		hasSchedulesPrefix := strings.HasPrefix(r.URL.Path, "/schedules")
+		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
+		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
+		
+		logger.Info("Path prefix checks", 
+			"path", r.URL.Path,
+			"api", hasApiPrefix,
+			"bookings", hasBookingsPrefix,
+			"broadcasts", hasBroadcastsPrefix,
+			"schedules", hasSchedulesPrefix,
+			"shifts", hasShiftsPrefix,
+			"push", hasPushPrefix)
+		
+		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
+		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix {
+			logger.Info("Returning 404 for API route", "path", r.URL.Path)
 			http.NotFound(w, r)
 			return
 		}
+		
+		logger.Info("Serving SPA for route", "path", r.URL.Path)
 		
 		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
 		stat, err := os.Stat(requestedFilePath)

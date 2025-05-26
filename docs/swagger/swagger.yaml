@@ -155,7 +155,7 @@ definitions:
       timezone:
         type: string
     type: object
-host: localhost:8080
+host: localhost:5888
 info:
   contact:
     email: support@example.com

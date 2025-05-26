@@ -1,83 +1,35 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
+	import { notificationStore } from '$lib/services/notificationService';
+	import type { UserNotification } from '$lib/services/notificationService';
 
-	// Mock broadcasts data
-	const mockBroadcasts = [
-		{
-			id: 1,
-			message:
-				"Weekly safety briefing tomorrow at 6 PM. All volunteers welcome! We'll cover new patrol routes and safety protocols.",
-			sender_name: 'Sarah Admin',
-			audience: 'all',
-			push_enabled: true,
-			priority: 'normal',
-			created_at: '2025-05-24T18:00:00Z',
-			read: false
-		},
-		{
-			id: 2,
-			message:
-				'URGENT: Increased security concerns in the Main Street area tonight. Extra volunteers needed for patrol shifts.',
-			sender_name: 'Mike Coordinator',
-			audience: 'owls',
-			push_enabled: true,
-			priority: 'high',
-			created_at: '2025-05-24T15:30:00Z',
-			read: false
-		},
-		{
-			id: 3,
-			message:
-				"Thanks to everyone who participated in last week's community safety training. Your dedication makes our neighborhood safer!",
-			sender_name: 'Sarah Admin',
-			audience: 'all',
-			push_enabled: false,
-			priority: 'normal',
-			created_at: '2025-05-23T09:15:00Z',
-			read: true
-		},
-		{
-			id: 4,
-			message:
-				'Reminder: Please check in at the start of your shift and check out when finished. This helps us track coverage.',
-			sender_name: 'System',
-			audience: 'owls',
-			push_enabled: false,
-			priority: 'normal',
-			created_at: '2025-05-22T20:00:00Z',
-			read: true
-		},
-		{
-			id: 5,
-			message:
-				'New patrol equipment available for pickup at the community center. Contact admin for scheduling.',
-			sender_name: 'Sarah Admin',
-			audience: 'all',
-			push_enabled: true,
-			priority: 'normal',
-			created_at: '2025-05-21T14:30:00Z',
-			read: true
-		}
-	];
-
-	// State
-	let broadcasts = $state([...mockBroadcasts]);
+	// Real notification state
+	let notificationState = $state(notificationStore);
 	let showUnreadOnly = $state(false);
 
-	// Computed
-	const filteredBroadcasts = $derived.by(() => {
-		if (showUnreadOnly) {
-			return broadcasts.filter((b) => !b.read);
-		}
-		return broadcasts;
+	onMount(() => {
+		// Load notifications when page loads
+		notificationStore.fetchNotifications();
 	});
 
-	const unreadCount = $derived(broadcasts.filter((b) => !b.read).length);
+	// Computed - using real notifications
+	const filteredNotifications = $derived.by(() => {
+		const notifications = $notificationState.notifications;
+		if (showUnreadOnly) {
+			return notifications.filter((n) => !n.read);
+		}
+		return notifications;
+	});
+
+	const unreadCount = $derived($notificationState.unreadCount);
+	const isLoading = $derived($notificationState.isLoading);
 
 	// Helper functions
 	function formatTimeAgo(dateString: string) {
@@ -124,12 +76,12 @@
 		}
 	}
 
-	function markAsRead(broadcastId: number) {
-		broadcasts = broadcasts.map((b) => (b.id === broadcastId ? { ...b, read: true } : b));
+	function markAsRead(notificationId: number) {
+		notificationStore.markAsRead(notificationId);
 	}
 
 	function markAllAsRead() {
-		broadcasts = broadcasts.map((b) => ({ ...b, read: true }));
+		notificationStore.markAllAsRead();
 	}
 
 	function toggleShowUnread() {
@@ -182,7 +134,7 @@
 			<Card.Root class="text-center">
 				<Card.Content class="p-3">
 					<div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-						{broadcasts.length}
+						{$notificationState.notifications.length}
 					</div>
 					<div class="text-xs text-slate-600 dark:text-slate-400">Total Messages</div>
 				</Card.Content>
@@ -200,7 +152,19 @@
 
 		<!-- Messages List -->
 		<div class="space-y-3">
-			{#if filteredBroadcasts.length === 0}
+			{#if isLoading && $notificationState.notifications.length === 0}
+				<Card.Root class="text-center">
+					<Card.Content class="p-8">
+						<LoaderCircleIcon class="h-12 w-12 text-slate-400 mx-auto mb-3 animate-spin" />
+						<h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+							Loading messages...
+						</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							Fetching your latest messages and updates.
+						</p>
+					</Card.Content>
+				</Card.Root>
+			{:else if filteredNotifications.length === 0}
 				<Card.Root class="text-center">
 					<Card.Content class="p-8">
 						<MessageSquareIcon class="h-12 w-12 text-slate-400 mx-auto mb-3" />
@@ -215,9 +179,9 @@
 					</Card.Content>
 				</Card.Root>
 			{:else}
-				{#each filteredBroadcasts as broadcast (broadcast.id)}
+				{#each filteredNotifications as notification (notification.id)}
 					<Card.Root
-						class="transition-all hover:shadow-md {!broadcast.read
+						class="transition-all hover:shadow-md {!notification.read
 							? 'ring-2 ring-blue-200 dark:ring-blue-800 bg-blue-50/50 dark:bg-blue-950/20'
 							: ''}"
 					>
@@ -225,7 +189,7 @@
 							<div class="flex items-start gap-3">
 								<!-- Status indicator -->
 								<div class="mt-1">
-									{#if !broadcast.read}
+									{#if !notification.read}
 										<div class="w-3 h-3 bg-blue-500 rounded-full"></div>
 									{:else}
 										<div class="w-3 h-3 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
@@ -237,36 +201,34 @@
 									<div class="flex items-start justify-between mb-2">
 										<div class="flex items-center gap-2 flex-wrap">
 											<span class="text-sm font-medium text-slate-900 dark:text-slate-100">
-												{broadcast.sender_name}
+												{notification.title}
 											</span>
-											{#if broadcast.priority === 'high'}
+											{#if notification.type === 'shift_reminder'}
 												<Badge variant="destructive" class="text-xs">Urgent</Badge>
 											{/if}
-											{#if broadcast.push_enabled}
-												<BellIcon class="h-3 w-3 text-slate-400" />
-											{/if}
+											<BellIcon class="h-3 w-3 text-slate-400" />
 										</div>
 										<div class="text-right">
 											<div class="text-xs text-slate-500 dark:text-slate-400">
-												{formatTimeAgo(broadcast.created_at)}
+												{formatTimeAgo(notification.timestamp)}
 											</div>
 											<Badge variant="secondary" class="text-xs mt-1">
-												{getAudienceLabel(broadcast.audience)}
+												{notification.data?.audience ? getAudienceLabel(notification.data.audience) : 'Message'}
 											</Badge>
 										</div>
 									</div>
 
 									<!-- Message content -->
 									<div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-										{broadcast.message}
+										{notification.message}
 									</div>
 
 									<!-- Actions -->
-									{#if !broadcast.read}
+									{#if !notification.read}
 										<Button
 											variant="ghost"
 											size="sm"
-											onclick={() => markAsRead(broadcast.id)}
+											onclick={() => markAsRead(notification.id)}
 											class="text-xs h-auto p-1"
 										>
 											<CheckIcon class="h-3 w-3 mr-1" />

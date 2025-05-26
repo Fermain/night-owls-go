@@ -219,7 +219,7 @@ npm run test:e2e -- simplified-journeys.test.ts
 cd .. && ./night-owls-server  # Adjust path as needed
 
 # 3. Test API endpoints
-curl http://localhost:8080/shifts/available
+curl http://localhost:5888/shifts/available
 
 # 4. Fix TanStack Query setup
 # Check QueryClient configuration in app.html or +layout.svelte

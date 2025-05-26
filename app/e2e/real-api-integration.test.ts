@@ -6,7 +6,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		const name = 'Integration Test User';
 
 		// Step 1: Register user and get OTP
-		const registerResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+		const registerResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 			data: {
 				phone: phone,
 				name: name
@@ -24,7 +24,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		console.log('✅ Registration successful, OTP:', registerData.dev_otp);
 
 		// Step 2: Verify OTP and get token
-		const verifyResponse = await page.request.post('http://localhost:8080/api/auth/verify', {
+		const verifyResponse = await page.request.post('http://localhost:5888/api/auth/verify', {
 			data: {
 				phone: phone,
 				code: registerData.dev_otp
@@ -40,7 +40,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		console.log('✅ Verification successful, received JWT token');
 
 		// Step 3: Test protected endpoint with token
-		const protectedResponse = await page.request.get('http://localhost:8080/bookings/my', {
+		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my', {
 			headers: {
 				Authorization: `Bearer ${verifyData.token}`
 			}
@@ -59,13 +59,13 @@ test.describe('🔌 Real API Integration Tests', () => {
 		const name = 'Invalid OTP Test User';
 
 		// Register first
-		const registerResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+		const registerResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 			data: { phone, name }
 		});
 		expect(registerResponse.status()).toBe(200);
 
 		// Try invalid OTP
-		const verifyResponse = await page.request.post('http://localhost:8080/api/auth/verify', {
+		const verifyResponse = await page.request.post('http://localhost:5888/api/auth/verify', {
 			data: {
 				phone: phone,
 				code: '000000' // Invalid OTP
@@ -77,7 +77,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 	});
 
 	test('should reject requests without authorization header', async ({ page }) => {
-		const protectedResponse = await page.request.get('http://localhost:8080/bookings/my');
+		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my');
 		expect(protectedResponse.status()).toBe(401);
 		console.log('✅ Protected endpoint correctly rejects requests without auth');
 	});
@@ -90,7 +90,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		];
 
 		for (const phone of phones) {
-			const registerResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+			const registerResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 				data: {
 					phone: phone,
 					name: 'Normalization Test User'
@@ -109,7 +109,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 	});
 
 	test('should test available shifts endpoint', async ({ page }) => {
-		const shiftsResponse = await page.request.get('http://localhost:8080/shifts/available');
+		const shiftsResponse = await page.request.get('http://localhost:5888/shifts/available');
 
 		expect(shiftsResponse.status()).toBe(200);
 		const shiftsData = await shiftsResponse.json();
@@ -130,12 +130,12 @@ test.describe('🔌 Real API Integration Tests', () => {
 	test('should test development login endpoint', async ({ page }) => {
 		// First register a user
 		const phone = '+27821111111';
-		await page.request.post('http://localhost:8080/api/auth/register', {
+		await page.request.post('http://localhost:5888/api/auth/register', {
 			data: { phone, name: 'Dev Login Test User' }
 		});
 
 		// Then try dev login
-		const devLoginResponse = await page.request.post('http://localhost:8080/api/auth/dev-login', {
+		const devLoginResponse = await page.request.post('http://localhost:5888/api/auth/dev-login', {
 			data: { phone }
 		});
 
@@ -151,7 +151,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 
 	test('should handle malformed requests gracefully', async ({ page }) => {
 		// Test with invalid JSON
-		const invalidJsonResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+		const invalidJsonResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 			data: 'invalid json',
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -159,7 +159,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 
 		// Test with missing required fields
 		const missingFieldsResponse = await page.request.post(
-			'http://localhost:8080/api/auth/register',
+			'http://localhost:5888/api/auth/register',
 			{
 				data: { name: 'Test' } // Missing phone
 			}

@@ -56,7 +56,7 @@ Key features include:
     Example `.env` content:
     ```env
     # Server Configuration
-    SERVER_PORT=8080
+    SERVER_PORT=5888
 
     # Database Configuration
     DATABASE_PATH=./community_watch.db
@@ -119,10 +119,10 @@ To start the backend server for development:
 go run ./cmd/server/main.go
 ```
 
-The server will start (by default on port 8080, as per config) and apply database migrations if needed.
+The server will start (by default on port 5888, as per config) and apply database migrations if needed.
 Output, including mock OTPs and other notifications, will be logged to the console (structured JSON) and potentially to `sms_outbox.log` (as per `OTP_LOG_PATH` config).
 
-Swagger API documentation will be available at: http://localhost:8080/swagger/index.html
+Swagger API documentation will be available at: http://localhost:5888/swagger/index.html
 
 ### Running Tests
 
@@ -134,7 +134,7 @@ go test ./...
 
 ## API Endpoints
 
-The API is fully documented using Swagger/OpenAPI. When the server is running, you can access the interactive documentation at: http://localhost:8080/swagger/index.html
+The API is fully documented using Swagger/OpenAPI. When the server is running, you can access the interactive documentation at: http://localhost:5888/swagger/index.html
 
 ### Authentication
 

@@ -39,7 +39,7 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		// Default values
-		ServerPort:         "8080",
+		ServerPort:         "5888",
 		DatabasePath:       "./community_watch.db",
 		JWTSecret:          "super-secret-jwt-key-please-change-in-prod", // IMPORTANT: Change this in production!
 		DefaultShiftDuration: 2 * time.Hour,

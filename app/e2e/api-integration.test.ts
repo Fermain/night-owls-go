@@ -359,7 +359,7 @@ test.describe('Authentication Flow', () => {
 		const name = 'Integration Test User';
 
 		// Step 1: Register user and get OTP
-		const registerResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+		const registerResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 			data: {
 				phone: phone,
 				name: name
@@ -377,7 +377,7 @@ test.describe('Authentication Flow', () => {
 		console.log('✅ Registration successful, OTP:', registerData.dev_otp);
 
 		// Step 2: Verify OTP and get token
-		const verifyResponse = await page.request.post('http://localhost:8080/api/auth/verify', {
+		const verifyResponse = await page.request.post('http://localhost:5888/api/auth/verify', {
 			data: {
 				phone: phone,
 				code: registerData.dev_otp
@@ -393,7 +393,7 @@ test.describe('Authentication Flow', () => {
 		console.log('✅ Verification successful, received JWT token');
 
 		// Step 3: Test protected endpoint with token
-		const protectedResponse = await page.request.get('http://localhost:8080/bookings/my', {
+		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my', {
 			headers: {
 				Authorization: `Bearer ${verifyData.token}`
 			}
@@ -412,13 +412,13 @@ test.describe('Authentication Flow', () => {
 		const name = 'Invalid OTP Test User';
 
 		// Register first
-		const registerResponse = await page.request.post('http://localhost:8080/api/auth/register', {
+		const registerResponse = await page.request.post('http://localhost:5888/api/auth/register', {
 			data: { phone, name }
 		});
 		expect(registerResponse.status()).toBe(200);
 
 		// Try invalid OTP
-		const verifyResponse = await page.request.post('http://localhost:8080/api/auth/verify', {
+		const verifyResponse = await page.request.post('http://localhost:5888/api/auth/verify', {
 			data: {
 				phone: phone,
 				code: '000000' // Invalid OTP
@@ -430,7 +430,7 @@ test.describe('Authentication Flow', () => {
 	});
 
 	test('should reject requests without authorization header', async ({ page }) => {
-		const protectedResponse = await page.request.get('http://localhost:8080/bookings/my');
+		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my');
 		expect(protectedResponse.status()).toBe(401);
 		console.log('✅ Protected endpoint correctly rejects requests without auth');
 	});
