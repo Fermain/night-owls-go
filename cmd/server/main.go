@@ -114,6 +114,7 @@ func main() {
 	reportService := service.NewReportService(querier, logger)
 	recurringAssignmentService := service.NewRecurringAssignmentService(querier, logger, cfg)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
+	broadcastService := service.NewBroadcastService(querier, logger, cfg)
 
 	// Instantiate PushSender service
 	pushSenderService := service.NewPushSender(querier, cfg, logger)
@@ -137,6 +138,20 @@ func main() {
 	})
 	if err != nil {
 		slog.Error("Failed to add outbox dispatcher job to cron", "error", err)
+		os.Exit(1)
+	}
+
+	// Process pending broadcasts every 30 seconds
+	_, err = cronScheduler.AddFunc("@every 30s", func() {
+		processed, err := broadcastService.ProcessPendingBroadcasts(context.Background())
+		if err != nil {
+			slog.Error("Failed to process pending broadcasts", "error", err)
+		} else if processed > 0 {
+			slog.Info("Successfully processed pending broadcasts", "processed_count", processed)
+		}
+	})
+	if err != nil {
+		slog.Error("Failed to add broadcast processing job to cron", "error", err)
 		os.Exit(1)
 	}
 
@@ -284,6 +299,24 @@ func main() {
 	
 	// Test user broadcasts under admin for debugging
 	fuego.GetStd(admin, "/test-broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+	
+	// Debug endpoint to manually trigger broadcast processing
+	fuego.PostStd(admin, "/debug/process-broadcasts", func(w http.ResponseWriter, r *http.Request) {
+		processed, err := broadcastService.ProcessPendingBroadcasts(r.Context())
+		if err != nil {
+			logger.Error("Failed to process broadcasts", "error", err)
+			http.Error(w, "Failed to process broadcasts: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		response := map[string]interface{}{
+			"processed": processed,
+			"message": fmt.Sprintf("Successfully processed %d broadcasts", processed),
+		}
+		
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
 	
 	// Simple test handler - mimicking working admin handlers
 	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {

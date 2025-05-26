@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { authenticatedFetch } from '$lib/utils/api';
 
 interface NotificationData {
@@ -48,6 +48,20 @@ const createNotificationStore = () => {
 		
 		// Actions
 		async fetchNotifications(force = false) {
+			// Don't fetch if already loading and not forced
+			const currentState: NotificationState = get({ subscribe });
+			if (currentState.isLoading && !force) {
+				return;
+			}
+
+			// Don't fetch too frequently unless forced
+			if (!force && currentState.lastFetched) {
+				const timeSinceLastFetch = Date.now() - new Date(currentState.lastFetched).getTime();
+				if (timeSinceLastFetch < 5000) { // 5 seconds minimum between fetches
+					return;
+				}
+			}
+
 			update(state => ({ ...state, isLoading: true }));
 			
 			try {

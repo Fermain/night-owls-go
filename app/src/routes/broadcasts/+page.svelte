@@ -7,6 +7,7 @@
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import { notificationStore } from '$lib/services/notificationService';
 	import type { UserNotification } from '$lib/services/notificationService';
 
@@ -17,7 +18,18 @@
 	onMount(() => {
 		// Load notifications when page loads
 		notificationStore.fetchNotifications();
+
+		// Set up periodic refresh every 10 seconds on the broadcasts page
+		const interval = setInterval(() => {
+			notificationStore.fetchNotifications();
+		}, 10000);
+
+		return () => clearInterval(interval);
 	});
+
+	function refreshNotifications() {
+		notificationStore.fetchNotifications(true); // Force refresh
+	}
 
 	// Computed - using real notifications
 	const filteredNotifications = $derived.by(() => {
@@ -109,6 +121,15 @@
 					</p>
 				</div>
 				<div class="flex items-center gap-2">
+					<Button 
+						variant="ghost" 
+						size="sm" 
+						onclick={refreshNotifications}
+						disabled={isLoading}
+					>
+						<RefreshCwIcon class="h-4 w-4 mr-1 {isLoading ? 'animate-spin' : ''}" />
+						Refresh
+					</Button>
 					{#if unreadCount > 0}
 						<Button variant="ghost" size="sm" onclick={markAllAsRead}>
 							<CheckIcon class="h-4 w-4 mr-1" />

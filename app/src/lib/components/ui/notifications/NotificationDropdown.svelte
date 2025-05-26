@@ -21,10 +21,10 @@
 		// Load notifications on mount
 		notificationStore.fetchNotifications();
 
-		// Set up periodic refresh every 30 seconds
+		// Set up periodic refresh every 15 seconds for more responsive updates
 		const interval = setInterval(() => {
 			notificationStore.fetchNotifications();
-		}, 30000);
+		}, 15000);
 
 		return () => clearInterval(interval);
 	});
