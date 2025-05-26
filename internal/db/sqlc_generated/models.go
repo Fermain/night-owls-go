@@ -17,8 +17,8 @@ type Booking struct {
 	ShiftEnd    time.Time      `json:"shift_end"`
 	BuddyUserID sql.NullInt64  `json:"buddy_user_id"`
 	BuddyName   sql.NullString `json:"buddy_name"`
-	Attended    bool           `json:"attended"`
 	CreatedAt   sql.NullTime   `json:"created_at"`
+	CheckedInAt sql.NullTime   `json:"checked_in_at"`
 }
 
 type Broadcast struct {

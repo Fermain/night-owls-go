@@ -113,6 +113,7 @@ func main() {
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
 	recurringAssignmentService := service.NewRecurringAssignmentService(querier, logger, cfg)
+	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 
 	// Instantiate PushSender service
 	pushSenderService := service.NewPushSender(querier, cfg, logger)
@@ -208,6 +209,7 @@ func main() {
 	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService, scheduleService)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
+	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
 
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
@@ -232,7 +234,7 @@ func main() {
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
 	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
-	fuego.PostStd(protected, "/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
+	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
@@ -277,6 +279,9 @@ func main() {
 	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
 	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
 	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
+
+	// Admin Dashboard
+	fuego.GetStd(admin, "/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
 
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {

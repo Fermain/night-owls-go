@@ -10,83 +10,92 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import type { UserData } from '$lib/schemas/user';
-	import type { AdminShiftSlot, Schedule } from '$lib/types';
-	import { calculateUserMetrics } from '$lib/utils/userProcessing';
-	import { calculateDashboardMetrics } from '$lib/utils/shiftProcessing';
-	import { formatDistanceToNow } from 'date-fns';
+	import UserCheckIcon from '@lucide/svelte/icons/user-check';
+	import UserXIcon from '@lucide/svelte/icons/user-x';
+	import TrendingDownIcon from '@lucide/svelte/icons/trending-down';
+	import type { AdminDashboardData } from '$lib/queries/admin/dashboard';
 
 	let {
 		isLoading,
 		isError,
 		error,
-		users,
-		schedules,
-		shifts
+		data
 	}: {
 		isLoading: boolean;
 		isError: boolean;
 		error?: Error;
-		users?: UserData[];
-		schedules?: Schedule[];
-		shifts?: AdminShiftSlot[];
+		data?: AdminDashboardData;
 	} = $props();
 
-	// Calculate metrics
-	const userMetrics = $derived.by(() => {
-		if (!users || users.length === 0) return null;
-		return calculateUserMetrics(users);
+	// Extract metrics from dashboard data
+	const metrics = $derived(data?.metrics);
+	const memberContributions = $derived(data?.member_contributions || []);
+	const qualityMetrics = $derived(data?.quality_metrics);
+	const problematicSlots = $derived(data?.problematic_slots || []);
+
+	// Calculate derived metrics
+	const weekendStatusColor = $derived.by(() => {
+		if (!metrics?.this_weekend_status) return 'gray';
+		switch (metrics.this_weekend_status) {
+			case 'fully_covered': return 'green';
+			case 'partial_coverage': return 'yellow';
+			case 'critical': return 'red';
+			case 'no_shifts': return 'gray';
+			default: return 'gray';
+		}
 	});
 
-	const shiftMetrics = $derived.by(() => {
-		if (!shifts) return null;
-		return calculateDashboardMetrics(shifts);
+	const weekendStatusText = $derived.by(() => {
+		if (!metrics?.this_weekend_status) return 'Unknown';
+		switch (metrics.this_weekend_status) {
+			case 'fully_covered': return 'Fully Covered';
+			case 'partial_coverage': return 'Partial Coverage';
+			case 'critical': return 'Critical';
+			case 'no_shifts': return 'No Shifts';
+			default: return 'Unknown';
+		}
 	});
 
-	const scheduleCount = $derived(schedules?.length || 0);
-
-	// Recent activity calculations
-	const recentUsers = $derived.by(() => {
-		if (!users) return [];
-		const sorted = [...users].sort(
-			(a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-		);
-		return sorted.slice(0, 5);
-	});
-
-	const upcomingShifts = $derived.by(() => {
-		if (!shifts) return [];
-		const now = new Date();
-		const upcoming = shifts
-			.filter((shift) => new Date(shift.start_time) > now)
-			.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-		return upcoming.slice(0, 5);
-	});
-
-	// System health indicators
+	// System health based on backend data
 	const systemHealth = $derived.by(() => {
-		if (!userMetrics || !shiftMetrics) return null;
+		if (!metrics || !qualityMetrics) return null;
 
 		const warnings = [];
 		const issues = [];
 
 		// Check fill rate
-		if (shiftMetrics.fillRate < 50) {
+		if (metrics.fill_rate < 50) {
 			issues.push('Low shift fill rate (< 50%)');
-		} else if (shiftMetrics.fillRate < 75) {
+		} else if (metrics.fill_rate < 75) {
 			warnings.push('Moderate shift fill rate (< 75%)');
 		}
 
-		// Check user engagement
-		const activeUsers = userMetrics.owlUsers + userMetrics.adminUsers;
-		if (activeUsers < 5) {
-			warnings.push('Few active volunteers (< 5)');
+		// Check next week coverage
+		if (metrics.next_week_unfilled > 5) {
+			issues.push(`${metrics.next_week_unfilled} unfilled shifts next week`);
+		} else if (metrics.next_week_unfilled > 2) {
+			warnings.push(`${metrics.next_week_unfilled} unfilled shifts next week`);
 		}
 
-		// Check upcoming shifts
-		const upcomingCount = upcomingShifts?.length || 0;
-		if (upcomingCount < 3) {
-			warnings.push('Few upcoming shifts scheduled');
+		// Check weekend status
+		if (metrics.this_weekend_status === 'critical') {
+			issues.push('Critical weekend coverage shortage');
+		} else if (metrics.this_weekend_status === 'partial_coverage') {
+			warnings.push('Partial weekend coverage');
+		}
+
+		// Check reliability
+		if (qualityMetrics.reliability_score < 60) {
+			issues.push('Low reliability score (< 60%)');
+		} else if (qualityMetrics.reliability_score < 80) {
+			warnings.push('Moderate reliability score (< 80%)');
+		}
+
+		// Check no-show rate
+		if (qualityMetrics.no_show_rate > 20) {
+			issues.push('High no-show rate (> 20%)');
+		} else if (qualityMetrics.no_show_rate > 10) {
+			warnings.push('Elevated no-show rate (> 10%)');
 		}
 
 		return {
@@ -95,6 +104,22 @@
 			warnings,
 			score: Math.max(0, 100 - issues.length * 30 - warnings.length * 15)
 		};
+	});
+
+	// Top contributors (sorted by contribution level)
+	const topContributors = $derived.by(() => {
+		if (!memberContributions) return [];
+		const contributors = [...memberContributions]
+			.filter(c => c.shifts_booked > 0)
+			.sort((a, b) => b.shifts_booked - a.shifts_booked)
+			.slice(0, 5);
+		return contributors;
+	});
+
+	// Non-contributors who need encouragement
+	const nonContributors = $derived.by(() => {
+		if (!memberContributions) return [];
+		return memberContributions.filter(c => c.contribution_category === 'non_contributor');
 	});
 
 	// Quick action handlers
@@ -112,6 +137,26 @@
 
 	function handleViewReports() {
 		window.location.href = '/admin/reports';
+	}
+
+	function formatContributionCategory(category: string): string {
+		switch (category) {
+			case 'non_contributor': return 'Not Contributing';
+			case 'minimum_contributor': return 'Minimal';
+			case 'fair_contributor': return 'Fair Share';
+			case 'heavy_lifter': return 'Heavy Lifter';
+			default: return category;
+		}
+	}
+
+	function getContributionColor(category: string): string {
+		switch (category) {
+			case 'non_contributor': return 'text-red-600 dark:text-red-400';
+			case 'minimum_contributor': return 'text-yellow-600 dark:text-yellow-400';
+			case 'fair_contributor': return 'text-green-600 dark:text-green-400';
+			case 'heavy_lifter': return 'text-blue-600 dark:text-blue-400';
+			default: return 'text-gray-600 dark:text-gray-400';
+		}
 	}
 </script>
 
@@ -150,39 +195,9 @@
 					{error?.message || 'Unknown error occurred'}
 				</p>
 			</div>
-		{:else}
+		{:else if data}
 			<!-- Main Metrics Cards -->
 			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-				<!-- Total Users -->
-				<Card.Root class="p-6">
-					<div class="flex items-center gap-3">
-						<div class="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-							<UsersIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
-						</div>
-						<div>
-							<p class="text-sm font-medium text-muted-foreground">Total Users</p>
-							<p class="text-2xl font-bold">{userMetrics?.totalUsers || 0}</p>
-							<p class="text-xs text-muted-foreground">
-								{userMetrics?.adminUsers || 0} admins, {userMetrics?.owlUsers || 0} owls
-							</p>
-						</div>
-					</div>
-				</Card.Root>
-
-				<!-- Active Schedules -->
-				<Card.Root class="p-6">
-					<div class="flex items-center gap-3">
-						<div class="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-							<CalendarIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
-						</div>
-						<div>
-							<p class="text-sm font-medium text-muted-foreground">Active Schedules</p>
-							<p class="text-2xl font-bold">{scheduleCount}</p>
-							<p class="text-xs text-muted-foreground">Generating shifts automatically</p>
-						</div>
-					</div>
-				</Card.Root>
-
 				<!-- Shift Fill Rate -->
 				<Card.Root class="p-6">
 					<div class="flex items-center gap-3">
@@ -191,9 +206,51 @@
 						</div>
 						<div>
 							<p class="text-sm font-medium text-muted-foreground">Fill Rate</p>
-							<p class="text-2xl font-bold">{shiftMetrics?.fillRate.toFixed(1) || 0}%</p>
+							<p class="text-2xl font-bold">{metrics?.fill_rate.toFixed(1) || 0}%</p>
 							<p class="text-xs text-muted-foreground">
-								{shiftMetrics?.filledShifts || 0} of {shiftMetrics?.totalShifts || 0} filled
+								{metrics?.booked_shifts || 0} of {metrics?.total_shifts || 0} filled
+							</p>
+						</div>
+					</div>
+				</Card.Root>
+
+				<!-- Check-in Rate -->
+				<Card.Root class="p-6">
+					<div class="flex items-center gap-3">
+						<div class="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+							<UserCheckIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+						</div>
+						<div>
+							<p class="text-sm font-medium text-muted-foreground">Check-in Rate</p>
+							<p class="text-2xl font-bold">{metrics?.check_in_rate.toFixed(1) || 0}%</p>
+							<p class="text-xs text-muted-foreground">
+								{metrics?.checked_in_shifts || 0} checked in
+							</p>
+						</div>
+					</div>
+				</Card.Root>
+
+				<!-- Weekend Status -->
+				<Card.Root class="p-6">
+					<div class="flex items-center gap-3">
+						<div class="p-2 rounded-lg {weekendStatusColor === 'green' 
+							? 'bg-green-100 dark:bg-green-900/20'
+							: weekendStatusColor === 'yellow'
+								? 'bg-yellow-100 dark:bg-yellow-900/20'
+								: weekendStatusColor === 'red'
+									? 'bg-red-100 dark:bg-red-900/20'
+									: 'bg-gray-100 dark:bg-gray-900/20'}">
+							{#if weekendStatusColor === 'green'}
+								<CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+							{:else}
+								<AlertTriangleIcon class="h-6 w-6 text-{weekendStatusColor}-600 dark:text-{weekendStatusColor}-400" />
+							{/if}
+						</div>
+						<div>
+							<p class="text-sm font-medium text-muted-foreground">This Weekend</p>
+							<p class="text-lg font-bold">{weekendStatusText}</p>
+							<p class="text-xs text-muted-foreground">
+								{metrics?.next_week_unfilled || 0} unfilled next week
 							</p>
 						</div>
 					</div>
@@ -221,6 +278,48 @@
 							<p class="text-xs text-muted-foreground capitalize">
 								{systemHealth?.status || 'unknown'} status
 							</p>
+						</div>
+					</div>
+				</Card.Root>
+			</div>
+
+			<!-- Quality Metrics Row -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+				<Card.Root class="p-6">
+					<div class="flex items-center gap-3">
+						<div class="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+							<TrendingUpIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+						</div>
+						<div>
+							<p class="text-sm font-medium text-muted-foreground">Reliability Score</p>
+							<p class="text-2xl font-bold">{qualityMetrics?.reliability_score.toFixed(1) || 0}%</p>
+							<p class="text-xs text-muted-foreground">Overall completion rate</p>
+						</div>
+					</div>
+				</Card.Root>
+
+				<Card.Root class="p-6">
+					<div class="flex items-center gap-3">
+						<div class="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+							<UserXIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
+						</div>
+						<div>
+							<p class="text-sm font-medium text-muted-foreground">No-Show Rate</p>
+							<p class="text-2xl font-bold">{qualityMetrics?.no_show_rate.toFixed(1) || 0}%</p>
+							<p class="text-xs text-muted-foreground">Didn't check in</p>
+						</div>
+					</div>
+				</Card.Root>
+
+				<Card.Root class="p-6">
+					<div class="flex items-center gap-3">
+						<div class="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
+							<TrendingDownIcon class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+						</div>
+						<div>
+							<p class="text-sm font-medium text-muted-foreground">Incomplete Rate</p>
+							<p class="text-2xl font-bold">{qualityMetrics?.incomplete_rate.toFixed(1) || 0}%</p>
+							<p class="text-xs text-muted-foreground">No report submitted</p>
 						</div>
 					</div>
 				</Card.Root>
@@ -254,10 +353,10 @@
 
 			<!-- Content Grid -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-				<!-- Recent Users -->
+				<!-- Top Contributors -->
 				<Card.Root class="p-6">
 					<div class="flex items-center justify-between mb-4">
-						<h2 class="text-lg font-semibold">Recent Users</h2>
+						<h2 class="text-lg font-semibold">Top Contributors</h2>
 						<Button
 							variant="ghost"
 							size="sm"
@@ -267,39 +366,25 @@
 						</Button>
 					</div>
 					<div class="space-y-3">
-						{#if recentUsers && recentUsers.length > 0}
-							{#each recentUsers as user (user.id)}
+						{#if topContributors && topContributors.length > 0}
+							{#each topContributors as contributor (contributor.user_id)}
 								<div class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
 									<div class="flex-shrink-0">
-										{#if user.role === 'admin'}
-											<div
-												class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center"
-											>
-												<UsersIcon class="h-4 w-4 text-red-600 dark:text-red-400" />
-											</div>
-										{:else if user.role === 'owl'}
-											<div
-												class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center"
-											>
-												<UsersIcon class="h-4 w-4 text-blue-600 dark:text-blue-400" />
-											</div>
-										{:else}
-											<div
-												class="w-8 h-8 bg-gray-100 dark:bg-gray-900/20 rounded-full flex items-center justify-center"
-											>
-												<UsersIcon class="h-4 w-4 text-gray-600 dark:text-gray-400" />
-											</div>
-										{/if}
+										<div
+											class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center"
+										>
+											<UsersIcon class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+										</div>
 									</div>
 									<div class="flex-grow min-w-0">
-										<p class="font-medium text-sm truncate">{user.name || 'Unnamed User'}</p>
-										<p class="text-xs text-muted-foreground capitalize">{user.role}</p>
+										<p class="font-medium text-sm truncate">{contributor.name}</p>
+										<p class="text-xs {getContributionColor(contributor.contribution_category)}">
+											{formatContributionCategory(contributor.contribution_category)} • {contributor.shifts_booked} shifts
+										</p>
 									</div>
 									<div class="flex-shrink-0 text-right">
 										<p class="text-xs text-muted-foreground">
-											{user.created_at
-												? formatDistanceToNow(new Date(user.created_at), { addSuffix: true })
-												: 'Recently'}
+											{contributor.attendance_rate.toFixed(0)}% attend
 										</p>
 									</div>
 								</div>
@@ -307,60 +392,52 @@
 						{:else}
 							<div class="text-center py-8 text-muted-foreground">
 								<UsersIcon class="h-8 w-8 mx-auto mb-2" />
-								<p class="text-sm">No users found</p>
+								<p class="text-sm">No active contributors</p>
 							</div>
 						{/if}
 					</div>
 				</Card.Root>
 
-				<!-- Upcoming Shifts -->
+				<!-- Problematic Time Slots -->
 				<Card.Root class="p-6">
 					<div class="flex items-center justify-between mb-4">
-						<h2 class="text-lg font-semibold">Upcoming Shifts</h2>
+						<h2 class="text-lg font-semibold">Problem Time Slots</h2>
 						<Button
 							variant="ghost"
 							size="sm"
 							onclick={() => (window.location.href = '/admin/shifts')}
 						>
-							View All
+							View Shifts
 						</Button>
 					</div>
 					<div class="space-y-3">
-						{#if upcomingShifts && upcomingShifts.length > 0}
-							{#each upcomingShifts as shift (shift.start_time)}
+						{#if problematicSlots && problematicSlots.length > 0}
+							{#each problematicSlots as slot (slot.day_of_week + slot.hour_of_day)}
 								<div class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
 									<div class="flex-shrink-0">
-										{#if shift.user_name}
-											<div
-												class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center"
-											>
-												<CheckCircleIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
-											</div>
-										{:else}
-											<div
-												class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center"
-											>
-												<ClockIcon class="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-											</div>
-										{/if}
+										<div
+											class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center"
+										>
+											<AlertTriangleIcon class="h-4 w-4 text-red-600 dark:text-red-400" />
+										</div>
 									</div>
 									<div class="flex-grow min-w-0">
-										<p class="font-medium text-sm truncate">{shift.schedule_name}</p>
+										<p class="font-medium text-sm truncate">{slot.day_of_week} {slot.hour_of_day}</p>
 										<p class="text-xs text-muted-foreground">
-											{shift.user_name || 'Unassigned'}
+											{slot.total_bookings} bookings
 										</p>
 									</div>
 									<div class="flex-shrink-0 text-right">
-										<p class="text-xs text-muted-foreground">
-											{formatDistanceToNow(new Date(shift.start_time), { addSuffix: true })}
+										<p class="text-xs text-red-600 dark:text-red-400">
+											{slot.completion_rate.toFixed(0)}% complete
 										</p>
 									</div>
 								</div>
 							{/each}
 						{:else}
 							<div class="text-center py-8 text-muted-foreground">
-								<ClockIcon class="h-8 w-8 mx-auto mb-2" />
-								<p class="text-sm">No upcoming shifts</p>
+								<CheckCircleIcon class="h-8 w-8 mx-auto mb-2 text-green-500" />
+								<p class="text-sm">No problematic time slots</p>
 							</div>
 						{/if}
 					</div>
@@ -399,6 +476,18 @@
 							<div class="text-center py-8 text-muted-foreground">
 								<CheckCircleIcon class="h-8 w-8 mx-auto mb-2 text-green-500" />
 								<p class="text-sm">All systems operational</p>
+							</div>
+						{/if}
+
+						<!-- Show non-contributors alert if any -->
+						{#if nonContributors.length > 0}
+							<div
+								class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800"
+							>
+								<UsersIcon class="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+								<p class="text-sm text-blue-700 dark:text-blue-400">
+									{nonContributors.length} volunteers haven't taken shifts recently
+								</p>
 							</div>
 						{/if}
 					</div>

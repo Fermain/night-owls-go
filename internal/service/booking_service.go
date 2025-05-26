@@ -164,34 +164,37 @@ func isUniqueConstraintError(err error) bool {
 }
 
 
-// MarkAttendance handles marking a booking as attended or not.
-func (s *BookingService) MarkAttendance(ctx context.Context, bookingID int64, userIDFromAuth int64, attendedStatus bool) (db.Booking, error) {
+// MarkCheckIn handles marking a booking as checked in with a timestamp.
+func (s *BookingService) MarkCheckIn(ctx context.Context, bookingID int64, userIDFromAuth int64) (db.Booking, error) {
 	booking, err := s.querier.GetBookingByID(ctx, bookingID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			s.logger.WarnContext(ctx, "Booking not found for attendance marking", "booking_id", bookingID)
+			s.logger.WarnContext(ctx, "Booking not found for check-in marking", "booking_id", bookingID)
 			return db.Booking{}, ErrBookingNotFound
 		}
-		s.logger.ErrorContext(ctx, "Failed to get booking by ID for attendance", "booking_id", bookingID, "error", err)
+		s.logger.ErrorContext(ctx, "Failed to get booking by ID for check-in", "booking_id", bookingID, "error", err)
 		return db.Booking{}, ErrInternalServer
 	}
 
-	// Authorization: Only the user who booked can mark attendance (or an admin, not implemented yet)
+	// Authorization: Only the user who booked can mark check-in (or an admin, not implemented yet)
 	if booking.UserID != userIDFromAuth {
-		s.logger.WarnContext(ctx, "User forbidden to mark attendance for booking", "booking_id", bookingID, "booking_owner_id", booking.UserID, "auth_user_id", userIDFromAuth)
+		s.logger.WarnContext(ctx, "User forbidden to mark check-in for booking", "booking_id", bookingID, "booking_owner_id", booking.UserID, "auth_user_id", userIDFromAuth)
 		return db.Booking{}, ErrForbiddenUpdate
 	}
 
-	updatedBooking, err := s.querier.UpdateBookingAttendance(ctx, db.UpdateBookingAttendanceParams{
-		BookingID: bookingID,
-		Attended:  attendedStatus,
+	// Set check-in timestamp to current time
+	checkInTime := sql.NullTime{Time: time.Now().UTC(), Valid: true}
+
+	updatedBooking, err := s.querier.UpdateBookingCheckIn(ctx, db.UpdateBookingCheckInParams{
+		BookingID:   bookingID,
+		CheckedInAt: checkInTime,
 	})
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to update booking attendance in DB", "booking_id", bookingID, "attended_status", attendedStatus, "error", err)
+		s.logger.ErrorContext(ctx, "Failed to update booking check-in in DB", "booking_id", bookingID, "check_in_time", checkInTime, "error", err)
 		return db.Booking{}, ErrInternalServer
 	}
 
-	s.logger.InfoContext(ctx, "Booking attendance marked successfully", "booking_id", updatedBooking.BookingID, "attended", updatedBooking.Attended)
+	s.logger.InfoContext(ctx, "Booking check-in marked successfully", "booking_id", updatedBooking.BookingID, "checked_in_at", updatedBooking.CheckedInAt)
 	return updatedBooking, nil
 }
 

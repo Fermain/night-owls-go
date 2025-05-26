@@ -25,7 +25,16 @@ type Querier interface {
 	DeleteUser(ctx context.Context, userID int64) error
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
+	// Admin Dashboard Metrics Queries
+	// Get booking-based metrics for dashboard (will be combined with slot data in Go)
+	GetBookingMetrics(ctx context.Context, arg GetBookingMetricsParams) (GetBookingMetricsRow, error)
+	// Get booking patterns by time slot from historical data
+	GetBookingPatternsByTimeSlot(ctx context.Context) ([]GetBookingPatternsByTimeSlotRow, error)
+	// Get all bookings in date range with check-in and report status
+	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
 	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	// Get member contribution analysis for the past month
+	GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
@@ -47,7 +56,7 @@ type Querier interface {
 	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
-	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
+	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateRecurringAssignment(ctx context.Context, arg UpdateRecurringAssignmentParams) (RecurringAssignment, error)

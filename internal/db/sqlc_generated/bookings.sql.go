@@ -27,7 +27,7 @@ INSERT INTO bookings (
     ?,
     ?
 )
-RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, attended, created_at
+RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at
 `
 
 type CreateBookingParams struct {
@@ -57,14 +57,14 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (B
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.Attended,
 		&i.CreatedAt,
+		&i.CheckedInAt,
 	)
 	return i, err
 }
 
 const getBookingByID = `-- name: GetBookingByID :one
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, attended, created_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
 WHERE booking_id = ?
 `
 
@@ -79,14 +79,14 @@ func (q *Queries) GetBookingByID(ctx context.Context, bookingID int64) (Booking,
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.Attended,
 		&i.CreatedAt,
+		&i.CheckedInAt,
 	)
 	return i, err
 }
 
 const getBookingByScheduleAndStartTime = `-- name: GetBookingByScheduleAndStartTime :one
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, attended, created_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
 WHERE schedule_id = ? AND shift_start = ?
 `
 
@@ -106,14 +106,273 @@ func (q *Queries) GetBookingByScheduleAndStartTime(ctx context.Context, arg GetB
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.Attended,
 		&i.CreatedAt,
+		&i.CheckedInAt,
 	)
 	return i, err
 }
 
+const getBookingMetrics = `-- name: GetBookingMetrics :one
+
+SELECT 
+    COUNT(*) as total_bookings,
+    COUNT(b.checked_in_at) as checked_in_bookings,
+    COUNT(r.report_id) as completed_bookings,
+    CAST(ROUND((CAST(COUNT(b.checked_in_at) AS FLOAT) / COUNT(*)) * 100, 1) AS REAL) as check_in_rate,
+    COALESCE(CAST(ROUND((CAST(COUNT(r.report_id) AS FLOAT) / NULLIF(COUNT(b.checked_in_at), 0)) * 100, 1) AS REAL), 0.0) as completion_rate
+FROM bookings b
+LEFT JOIN reports r ON b.booking_id = r.booking_id
+WHERE b.shift_start >= ? AND b.shift_start <= ?
+`
+
+type GetBookingMetricsParams struct {
+	ShiftStart   time.Time `json:"shift_start"`
+	ShiftStart_2 time.Time `json:"shift_start_2"`
+}
+
+type GetBookingMetricsRow struct {
+	TotalBookings     int64       `json:"total_bookings"`
+	CheckedInBookings int64       `json:"checked_in_bookings"`
+	CompletedBookings int64       `json:"completed_bookings"`
+	CheckInRate       float64     `json:"check_in_rate"`
+	CompletionRate    interface{} `json:"completion_rate"`
+}
+
+// Admin Dashboard Metrics Queries
+// Get booking-based metrics for dashboard (will be combined with slot data in Go)
+func (q *Queries) GetBookingMetrics(ctx context.Context, arg GetBookingMetricsParams) (GetBookingMetricsRow, error) {
+	row := q.db.QueryRowContext(ctx, getBookingMetrics, arg.ShiftStart, arg.ShiftStart_2)
+	var i GetBookingMetricsRow
+	err := row.Scan(
+		&i.TotalBookings,
+		&i.CheckedInBookings,
+		&i.CompletedBookings,
+		&i.CheckInRate,
+		&i.CompletionRate,
+	)
+	return i, err
+}
+
+const getBookingPatternsByTimeSlot = `-- name: GetBookingPatternsByTimeSlot :many
+SELECT 
+    strftime('%w', b.shift_start) as day_of_week,
+    strftime('%H', b.shift_start) as hour_of_day,
+    COUNT(*) as total_bookings,
+    COUNT(b.checked_in_at) as checked_in_bookings,
+    COUNT(r.report_id) as completed_bookings,
+    CAST(ROUND((CAST(COUNT(b.checked_in_at) AS FLOAT) / COUNT(*)) * 100, 1) AS REAL) as check_in_rate,
+    COALESCE(CAST(ROUND((CAST(COUNT(r.report_id) AS FLOAT) / NULLIF(COUNT(b.checked_in_at), 0)) * 100, 1) AS REAL), 0.0) as completion_rate
+FROM bookings b
+LEFT JOIN reports r ON b.booking_id = r.booking_id
+WHERE b.shift_start >= datetime('now', '-60 days')
+    AND b.shift_start <= datetime('now')
+GROUP BY day_of_week, hour_of_day
+HAVING total_bookings >= 3
+ORDER BY check_in_rate ASC, completion_rate ASC
+`
+
+type GetBookingPatternsByTimeSlotRow struct {
+	DayOfWeek         interface{} `json:"day_of_week"`
+	HourOfDay         interface{} `json:"hour_of_day"`
+	TotalBookings     int64       `json:"total_bookings"`
+	CheckedInBookings int64       `json:"checked_in_bookings"`
+	CompletedBookings int64       `json:"completed_bookings"`
+	CheckInRate       float64     `json:"check_in_rate"`
+	CompletionRate    interface{} `json:"completion_rate"`
+}
+
+// Get booking patterns by time slot from historical data
+func (q *Queries) GetBookingPatternsByTimeSlot(ctx context.Context) ([]GetBookingPatternsByTimeSlotRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBookingPatternsByTimeSlot)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetBookingPatternsByTimeSlotRow{}
+	for rows.Next() {
+		var i GetBookingPatternsByTimeSlotRow
+		if err := rows.Scan(
+			&i.DayOfWeek,
+			&i.HourOfDay,
+			&i.TotalBookings,
+			&i.CheckedInBookings,
+			&i.CompletedBookings,
+			&i.CheckInRate,
+			&i.CompletionRate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getBookingsInDateRange = `-- name: GetBookingsInDateRange :many
+SELECT 
+    b.booking_id,
+    b.user_id,
+    b.schedule_id,
+    b.shift_start,
+    b.shift_end,
+    b.checked_in_at,
+    COALESCE(u.name, '') as user_name,
+    u.phone as user_phone,
+    s.name as schedule_name,
+    CASE WHEN r.report_id IS NOT NULL THEN 1 ELSE 0 END as has_report,
+    CAST((julianday(b.shift_start) - julianday('now')) AS INTEGER) as days_from_now,
+    CASE 
+        WHEN datetime(b.shift_start) <= datetime('now', '+1 day') THEN 'urgent'
+        WHEN datetime(b.shift_start) <= datetime('now', '+3 days') THEN 'critical'
+        ELSE 'normal'
+    END as urgency_level
+FROM bookings b
+JOIN users u ON b.user_id = u.user_id
+JOIN schedules s ON b.schedule_id = s.schedule_id
+LEFT JOIN reports r ON b.booking_id = r.booking_id
+WHERE b.shift_start >= ? AND b.shift_start <= ?
+ORDER BY b.shift_start ASC
+`
+
+type GetBookingsInDateRangeParams struct {
+	ShiftStart   time.Time `json:"shift_start"`
+	ShiftStart_2 time.Time `json:"shift_start_2"`
+}
+
+type GetBookingsInDateRangeRow struct {
+	BookingID    int64        `json:"booking_id"`
+	UserID       int64        `json:"user_id"`
+	ScheduleID   int64        `json:"schedule_id"`
+	ShiftStart   time.Time    `json:"shift_start"`
+	ShiftEnd     time.Time    `json:"shift_end"`
+	CheckedInAt  sql.NullTime `json:"checked_in_at"`
+	UserName     string       `json:"user_name"`
+	UserPhone    string       `json:"user_phone"`
+	ScheduleName string       `json:"schedule_name"`
+	HasReport    int64        `json:"has_report"`
+	DaysFromNow  int64        `json:"days_from_now"`
+	UrgencyLevel string       `json:"urgency_level"`
+}
+
+// Get all bookings in date range with check-in and report status
+func (q *Queries) GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBookingsInDateRange, arg.ShiftStart, arg.ShiftStart_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetBookingsInDateRangeRow{}
+	for rows.Next() {
+		var i GetBookingsInDateRangeRow
+		if err := rows.Scan(
+			&i.BookingID,
+			&i.UserID,
+			&i.ScheduleID,
+			&i.ShiftStart,
+			&i.ShiftEnd,
+			&i.CheckedInAt,
+			&i.UserName,
+			&i.UserPhone,
+			&i.ScheduleName,
+			&i.HasReport,
+			&i.DaysFromNow,
+			&i.UrgencyLevel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getMemberContributions = `-- name: GetMemberContributions :many
+SELECT 
+    u.user_id,
+    u.name,
+    u.phone,
+    COUNT(b.booking_id) as shifts_booked,
+    COUNT(b.checked_in_at) as shifts_attended,
+    COUNT(r.report_id) as shifts_completed,
+    COALESCE(CAST(ROUND((CAST(COUNT(b.checked_in_at) AS FLOAT) / NULLIF(COUNT(b.booking_id), 0)) * 100, 1) AS REAL), 0.0) as attendance_rate,
+    COALESCE(CAST(ROUND((CAST(COUNT(r.report_id) AS FLOAT) / NULLIF(COUNT(b.checked_in_at), 0)) * 100, 1) AS REAL), 0.0) as completion_rate,
+    MAX(b.shift_start) as last_shift_date,
+    CASE 
+        WHEN COUNT(b.booking_id) = 0 THEN 'non_contributor'
+        WHEN COUNT(b.booking_id) = 1 THEN 'minimum_contributor' 
+        WHEN COUNT(b.booking_id) >= 2 THEN 'fair_contributor'
+        WHEN COUNT(b.booking_id) >= 3 THEN 'heavy_lifter'
+    END as contribution_category
+FROM users u
+LEFT JOIN bookings b ON u.user_id = b.user_id 
+    AND b.shift_start >= datetime('now', '-30 days')
+    AND b.shift_start <= datetime('now')
+LEFT JOIN reports r ON b.booking_id = r.booking_id
+WHERE u.role IN ('admin', 'owl')
+GROUP BY u.user_id, u.name, u.phone
+ORDER BY shifts_booked DESC, shifts_completed DESC
+`
+
+type GetMemberContributionsRow struct {
+	UserID               int64          `json:"user_id"`
+	Name                 sql.NullString `json:"name"`
+	Phone                string         `json:"phone"`
+	ShiftsBooked         int64          `json:"shifts_booked"`
+	ShiftsAttended       int64          `json:"shifts_attended"`
+	ShiftsCompleted      int64          `json:"shifts_completed"`
+	AttendanceRate       interface{}    `json:"attendance_rate"`
+	CompletionRate       interface{}    `json:"completion_rate"`
+	LastShiftDate        interface{}    `json:"last_shift_date"`
+	ContributionCategory interface{}    `json:"contribution_category"`
+}
+
+// Get member contribution analysis for the past month
+func (q *Queries) GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMemberContributions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetMemberContributionsRow{}
+	for rows.Next() {
+		var i GetMemberContributionsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Name,
+			&i.Phone,
+			&i.ShiftsBooked,
+			&i.ShiftsAttended,
+			&i.ShiftsCompleted,
+			&i.AttendanceRate,
+			&i.CompletionRate,
+			&i.LastShiftDate,
+			&i.ContributionCategory,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBookingsByUserID = `-- name: ListBookingsByUserID :many
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, attended, created_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
 WHERE user_id = ?
 ORDER BY shift_start DESC
 `
@@ -135,8 +394,8 @@ func (q *Queries) ListBookingsByUserID(ctx context.Context, userID int64) ([]Boo
 			&i.ShiftEnd,
 			&i.BuddyUserID,
 			&i.BuddyName,
-			&i.Attended,
 			&i.CreatedAt,
+			&i.CheckedInAt,
 		); err != nil {
 			return nil, err
 		}
@@ -160,7 +419,7 @@ SELECT
     b.shift_end,
     b.buddy_user_id,
     b.buddy_name,
-    b.attended,
+    b.checked_in_at,
     b.created_at,
     s.name as schedule_name
 FROM bookings b
@@ -177,7 +436,7 @@ type ListBookingsByUserIDWithScheduleRow struct {
 	ShiftEnd     time.Time      `json:"shift_end"`
 	BuddyUserID  sql.NullInt64  `json:"buddy_user_id"`
 	BuddyName    sql.NullString `json:"buddy_name"`
-	Attended     bool           `json:"attended"`
+	CheckedInAt  sql.NullTime   `json:"checked_in_at"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
 	ScheduleName string         `json:"schedule_name"`
 }
@@ -199,7 +458,7 @@ func (q *Queries) ListBookingsByUserIDWithSchedule(ctx context.Context, userID i
 			&i.ShiftEnd,
 			&i.BuddyUserID,
 			&i.BuddyName,
-			&i.Attended,
+			&i.CheckedInAt,
 			&i.CreatedAt,
 			&i.ScheduleName,
 		); err != nil {
@@ -216,20 +475,20 @@ func (q *Queries) ListBookingsByUserIDWithSchedule(ctx context.Context, userID i
 	return items, nil
 }
 
-const updateBookingAttendance = `-- name: UpdateBookingAttendance :one
+const updateBookingCheckIn = `-- name: UpdateBookingCheckIn :one
 UPDATE bookings
-SET attended = ?
+SET checked_in_at = ?
 WHERE booking_id = ?
-RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, attended, created_at
+RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at
 `
 
-type UpdateBookingAttendanceParams struct {
-	Attended  bool  `json:"attended"`
-	BookingID int64 `json:"booking_id"`
+type UpdateBookingCheckInParams struct {
+	CheckedInAt sql.NullTime `json:"checked_in_at"`
+	BookingID   int64        `json:"booking_id"`
 }
 
-func (q *Queries) UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error) {
-	row := q.db.QueryRowContext(ctx, updateBookingAttendance, arg.Attended, arg.BookingID)
+func (q *Queries) UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error) {
+	row := q.db.QueryRowContext(ctx, updateBookingCheckIn, arg.CheckedInAt, arg.BookingID)
 	var i Booking
 	err := row.Scan(
 		&i.BookingID,
@@ -239,8 +498,8 @@ func (q *Queries) UpdateBookingAttendance(ctx context.Context, arg UpdateBooking
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.Attended,
 		&i.CreatedAt,
+		&i.CheckedInAt,
 	)
 	return i, err
 }

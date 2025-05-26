@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"night-owls-go/internal/service"
@@ -146,28 +145,21 @@ func (h *BookingHandler) GetMyBookingsHandler(w http.ResponseWriter, r *http.Req
 	RespondWithJSON(w, http.StatusOK, bookingResponses, h.logger)
 }
 
-// MarkAttendanceRequest is the expected JSON for PATCH /bookings/{id}/attendance.
-type MarkAttendanceRequest struct {
-	Attended bool `json:"attended"`
-}
-
-// MarkAttendanceHandler handles PATCH /bookings/{id}/attendance
-// @Summary Mark attendance for a booking
-// @Description Mark whether the user attended their booked shift
+// MarkCheckInHandler handles POST /bookings/{id}/checkin
+// @Summary Check in to a booking
+// @Description Mark the user as checked in to their booked shift with a timestamp
 // @Tags bookings
-// @Accept json
 // @Produce json
 // @Param id path int true "Booking ID"
-// @Param request body MarkAttendanceRequest true "Attendance status"
-// @Success 200 {object} BookingResponse "Attendance marked successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request or booking ID"
+// @Success 200 {object} BookingResponse "Check-in marked successfully"
+// @Failure 400 {object} ErrorResponse "Invalid booking ID"
 // @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
-// @Failure 403 {object} ErrorResponse "Not authorized to mark attendance for this booking"
+// @Failure 403 {object} ErrorResponse "Not authorized to check in to this booking"
 // @Failure 404 {object} ErrorResponse "Booking not found"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /bookings/{id}/attendance [patch]
-func (h *BookingHandler) MarkAttendanceHandler(w http.ResponseWriter, r *http.Request) {
+// @Router /bookings/{id}/checkin [post]
+func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
 	userID, ok := r.Context().Value(UserIDKey).(int64)
 	if !ok {
@@ -175,31 +167,9 @@ func (h *BookingHandler) MarkAttendanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Try multiple methods to extract the ID parameter
+	// Extract booking ID from URL
 	bookingIDStr := chi.URLParam(r, "id")
-	h.logger.InfoContext(r.Context(), "MarkAttendanceHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
-	
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
-	if bookingIDStr == "" {
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) >= 3 && pathParts[0] == "bookings" && pathParts[2] == "attendance" {
-			bookingIDStr = pathParts[1]
-			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", bookingIDStr)
-		}
-	}
-	
-	// Alternative method 2: Check request context for route values
-	if bookingIDStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					bookingIDStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", bookingIDStr)
-					break
-				}
-			}
-		}
-	}
+	h.logger.InfoContext(r.Context(), "MarkCheckInHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
 	
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {
@@ -208,24 +178,15 @@ func (h *BookingHandler) MarkAttendanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	h.logger.InfoContext(r.Context(), "About to decode request body", "bookingID", bookingID)
-
-	var req MarkAttendanceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
-		return
-	}
-	defer r.Body.Close()
-
-	updatedBooking, err := h.bookingService.MarkAttendance(r.Context(), bookingID, userID, req.Attended)
+	updatedBooking, err := h.bookingService.MarkCheckIn(r.Context(), bookingID, userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrBookingNotFound):
 			RespondWithError(w, http.StatusNotFound, "Booking not found", h.logger, "booking_id", bookingID, "error", err.Error())
 		case errors.Is(err, service.ErrForbiddenUpdate):
-			RespondWithError(w, http.StatusForbidden, "Not authorized to mark attendance for this booking", h.logger, "booking_id", bookingID, "user_id", userID, "error", err.Error())
+			RespondWithError(w, http.StatusForbidden, "Not authorized to check in to this booking", h.logger, "booking_id", bookingID, "user_id", userID, "error", err.Error())
 		default:
-			RespondWithError(w, http.StatusInternalServerError, "Failed to mark attendance", h.logger, "error", err.Error())
+			RespondWithError(w, http.StatusInternalServerError, "Failed to mark check-in", h.logger, "error", err.Error())
 		}
 		return
 	}

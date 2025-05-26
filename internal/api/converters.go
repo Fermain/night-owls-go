@@ -30,6 +30,12 @@ func ToBookingResponse(booking db.Booking) BookingResponse {
 		createdAt = time.Now() // Fallback, though this shouldn't happen
 	}
 
+	// Handle CheckedInAt
+	var checkedInAt *time.Time
+	if booking.CheckedInAt.Valid {
+		checkedInAt = &booking.CheckedInAt.Time
+	}
+
 	return BookingResponse{
 		BookingID:    booking.BookingID,
 		UserID:       booking.UserID,
@@ -38,7 +44,7 @@ func ToBookingResponse(booking db.Booking) BookingResponse {
 		ShiftEnd:     booking.ShiftEnd,
 		BuddyUserID:  buddyUserID,
 		BuddyName:    buddyName,
-		Attended:     booking.Attended,
+		CheckedInAt:  checkedInAt,
 		CreatedAt:    createdAt,
 	}
 }
@@ -138,6 +144,12 @@ func ToBookingWithScheduleResponse(booking db.ListBookingsByUserIDWithScheduleRo
 		createdAt = time.Now() // Fallback, though this shouldn't happen
 	}
 
+	// Handle CheckedInAt
+	var checkedInAt *time.Time
+	if booking.CheckedInAt.Valid {
+		checkedInAt = &booking.CheckedInAt.Time
+	}
+
 	return BookingWithScheduleResponse{
 		BookingID:    booking.BookingID,
 		UserID:       booking.UserID,
@@ -147,7 +159,7 @@ func ToBookingWithScheduleResponse(booking db.ListBookingsByUserIDWithScheduleRo
 		ShiftEnd:     booking.ShiftEnd,
 		BuddyUserID:  buddyUserID,
 		BuddyName:    buddyName,
-		Attended:     booking.Attended,
+		CheckedInAt:  checkedInAt,
 		CreatedAt:    createdAt,
 	}
 } 

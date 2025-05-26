@@ -1,22 +1,14 @@
 <script lang="ts">
 	import AdminDashboard from '$lib/components/admin/AdminDashboard.svelte';
-	import { createUsersQuery } from '$lib/queries/admin/users/usersQuery';
-	import { createSchedulesQuery } from '$lib/queries/admin/schedules/schedulesQuery';
-	import { createDashboardShiftsQuery } from '$lib/queries/admin/shifts/dashboardShiftsQuery';
+	import { createAdminDashboardQuery } from '$lib/queries/admin/dashboard';
 
-	// Create queries for all admin data
-	const usersQuery = $derived(createUsersQuery());
-	const schedulesQuery = $derived(createSchedulesQuery());
-	const shiftsQuery = $derived(createDashboardShiftsQuery());
+	// Create the comprehensive dashboard query
+	const dashboardQuery = $derived(createAdminDashboardQuery());
 
-	// Combined loading and error states
-	const isLoading = $derived(
-		$usersQuery.isLoading || $schedulesQuery.isLoading || $shiftsQuery.isLoading
-	);
-	const isError = $derived($usersQuery.isError || $schedulesQuery.isError || $shiftsQuery.isError);
-	const error = $derived(
-		$usersQuery.error || $schedulesQuery.error || $shiftsQuery.error || undefined
-	);
+	const isLoading = $derived($dashboardQuery.isLoading);
+	const isError = $derived($dashboardQuery.isError);
+	const error = $derived($dashboardQuery.error);
+	const dashboardData = $derived($dashboardQuery.data);
 </script>
 
 <svelte:head>
@@ -27,7 +19,5 @@
 	{isLoading}
 	{isError}
 	{error}
-	users={$usersQuery.data}
-	schedules={$schedulesQuery.data}
-	shifts={$shiftsQuery.data}
+	data={dashboardData}
 />

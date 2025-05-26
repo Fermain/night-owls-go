@@ -2,56 +2,25 @@
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
 	import type { AdminShiftSlot, Schedule } from '$lib/types';
-	import ShiftsDashboard from '$lib/components/dashboard/ShiftsDashboard.svelte';
+	import EnhancedShiftsDashboard from '$lib/components/dashboard/EnhancedShiftsDashboard.svelte';
 	import ShiftBookingForm from '$lib/components/admin/shifts/ShiftBookingForm.svelte';
-	import { createDashboardShiftsQuery } from '$lib/queries/admin/shifts/dashboardShiftsQuery';
 	import { createShiftDetailsQuery } from '$lib/queries/admin/shifts/shiftDetailsQuery';
-	import { createSchedulesQuery } from '$lib/queries/admin/schedules/schedulesQuery';
-	import { calculateDashboardMetrics } from '$lib/utils/shiftProcessing';
+	import { createShiftsAnalyticsQuery } from '$lib/queries/admin/shifts/shiftsAnalyticsQuery';
 
 	// State
 	let selectedShift = $state<AdminShiftSlot | null>(null);
 	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
 
-	// Schedule dialog state
-	let showScheduleDialog = $state(false);
-	let selectedScheduleForEdit = $state<Schedule | null>(null);
-	let scheduleDialogMode = $state<'create' | 'edit'>('create');
-
 	const queryClient = useQueryClient();
 
-	// Queries using new centralized query hooks
+	// Queries using new analytics query for dashboard
 	const shiftDetailsQuery = $derived(createShiftDetailsQuery(shiftStartTimeFromUrl));
-	const dashboardShiftsQuery = $derived(createDashboardShiftsQuery(!shiftStartTimeFromUrl));
-	const schedulesQuery = $derived(createSchedulesQuery());
-
-	// Dashboard metrics using new utility function
-	const dashboardMetrics = $derived.by(() => {
-		const shifts = $dashboardShiftsQuery.data ?? [];
-		return calculateDashboardMetrics(shifts);
-	});
-
-	// Schedule management functions
-	function openCreateScheduleDialog() {
-		selectedScheduleForEdit = null;
-		scheduleDialogMode = 'create';
-		showScheduleDialog = true;
-	}
-
-	function openEditScheduleDialog(schedule: Schedule) {
-		selectedScheduleForEdit = schedule;
-		scheduleDialogMode = 'edit';
-		showScheduleDialog = true;
-	}
-
-	function closeScheduleDialog() {
-		showScheduleDialog = false;
-		selectedScheduleForEdit = null;
-	}
+	const shiftsAnalyticsQuery = $derived(createShiftsAnalyticsQuery(30)); // 30 days of analytics
 
 	function handleBookingSuccess() {
-		// Refresh shift details after successful booking
+		// Refresh shift details and analytics after successful booking
 		queryClient.invalidateQueries({ queryKey: ['shiftDetails'] });
+		queryClient.invalidateQueries({ queryKey: ['shifts', 'analytics'] });
 	}
 
 	// Effects
@@ -99,11 +68,11 @@
 		</div>
 	</div>
 {:else}
-	<!-- Dashboard View using refactored component -->
-	<ShiftsDashboard
-		isLoading={$dashboardShiftsQuery.isLoading}
-		isError={$dashboardShiftsQuery.isError}
-		error={$dashboardShiftsQuery.error || undefined}
-		metrics={dashboardMetrics}
+	<!-- Enhanced Dashboard View with Analytics -->
+	<EnhancedShiftsDashboard
+		isLoading={$shiftsAnalyticsQuery.isLoading}
+		isError={$shiftsAnalyticsQuery.isError}
+		error={$shiftsAnalyticsQuery.error || undefined}
+		analytics={$shiftsAnalyticsQuery.data}
 	/>
 {/if}
