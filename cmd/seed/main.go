@@ -334,14 +334,15 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 			continue
 		}
 
-		// Update attendance if specified
+		// Update check-in status if specified
 		if bookingSeed.Attended {
-			_, err = querier.UpdateBookingAttendance(ctx, db.UpdateBookingAttendanceParams{
-				BookingID: booking.BookingID,
-				Attended:  bookingSeed.Attended,
+			checkInTime := sql.NullTime{Time: shiftStart.Add(10 * time.Minute), Valid: true} // Check in 10 minutes after shift start
+			_, err = querier.UpdateBookingCheckIn(ctx, db.UpdateBookingCheckInParams{
+				BookingID:   booking.BookingID,
+				CheckedInAt: checkInTime,
 			})
 			if err != nil {
-				logger.Warn("Failed to update booking attendance", 
+				logger.Warn("Failed to update booking check-in", 
 					"booking_id", booking.BookingID, 
 					"error", err)
 			}
@@ -352,6 +353,19 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 			"schedule", bookingSeed.ScheduleName,
 			"shift_start", shiftStart.Format(time.RFC3339),
 			"id", booking.BookingID)
+	}
+
+	// Seed reports after bookings are created
+	logger.Info("Seeding reports...")
+	if err := seedReports(querier); err != nil {
+		logger.Error("Failed to seed reports", "error", err)
+		return SeedData{}, err
+	}
+
+	// Seed some recent critical reports for demo purposes
+	if err := seedRecentCriticalReports(querier); err != nil {
+		logger.Error("Failed to seed recent critical reports", "error", err)
+		return SeedData{}, err
 	}
 
 	return seedData, nil
@@ -487,6 +501,83 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 			ScheduleName: "Old schedule",
 			ShiftStart:   "2024-12-01T00:00:00Z", // Recent Sunday
 			BuddyName:    "Henry Security",
+			Attended:     true,
+		},
+		// More historical bookings for better report data
+		{
+			UserPhone:    "+27821234569", // Charlie
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-18T00:00:00Z", // Previous Monday
+			BuddyName:    "Diana Scout",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234570", // Diana
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-19T00:00:00Z", // Previous Tuesday
+			BuddyName:    "Charlie Volunteer",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234571", // Eve
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-20T00:00:00Z", // Previous Wednesday
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234572", // Frank
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-21T00:00:00Z", // Previous Thursday
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234573", // Grace
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-22T00:00:00Z", // Previous Friday
+			BuddyName:    "Henry Security",
+			Attended:     false, // Missed shift
+		},
+		{
+			UserPhone:    "+27821234574", // Henry
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-23T00:00:00Z", // Previous Saturday
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234577", // Leo
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-24T00:00:00Z", // Previous Sunday
+			Attended:     true,
+		},
+		// Even older bookings for more data
+		{
+			UserPhone:    "+27821234578", // Zoe
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-11T00:00:00Z",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234580", // Ivy
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-12T00:00:00Z",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234581", // Sam
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-13T00:00:00Z",
+			Attended:     false,
+		},
+		{
+			UserPhone:    "+27821234569", // Charlie
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-14T00:00:00Z",
+			Attended:     true,
+		},
+		{
+			UserPhone:    "+27821234570", // Diana
+			ScheduleName: "Old schedule",
+			ShiftStart:   "2024-11-15T00:00:00Z",
 			Attended:     true,
 		},
 	}
