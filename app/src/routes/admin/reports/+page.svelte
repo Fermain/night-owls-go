@@ -24,6 +24,7 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportDetail from '$lib/components/admin/reports/ReportDetail.svelte';
+	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
 
 	// Get current selected report ID from URL
 	const currentSelectedReportId = $derived.by(() => {
@@ -38,6 +39,7 @@
 	let dateRangeStart = $state<string | null>(null);
 	let dateRangeEnd = $state<string | null>(null);
 	let sortBy = $state<string>('newest');
+	let viewMode = $state<'list' | 'map'>('list');
 
 	// Filter options
 	const severityOptions = [
@@ -283,10 +285,30 @@
 							Monitor and analyze incident reports submitted by volunteers during shifts
 						</p>
 					</div>
-					<Button onclick={() => goto('/admin/reports/analytics')} variant="outline">
-						<TrendingUpIcon class="h-4 w-4 mr-2" />
-						View Analytics
-					</Button>
+					<div class="flex gap-2">
+						<div class="flex border rounded-lg p-1">
+							<Button 
+								variant={viewMode === 'list' ? 'default' : 'ghost'} 
+								size="sm"
+								onclick={() => viewMode = 'list'}
+							>
+								<FileTextIcon class="h-4 w-4 mr-2" />
+								List
+							</Button>
+							<Button 
+								variant={viewMode === 'map' ? 'default' : 'ghost'} 
+								size="sm"
+								onclick={() => viewMode = 'map'}
+							>
+								<MapPinIcon class="h-4 w-4 mr-2" />
+								Map
+							</Button>
+						</div>
+						<Button onclick={() => goto('/admin/reports/analytics')} variant="outline">
+							<TrendingUpIcon class="h-4 w-4 mr-2" />
+							View Analytics
+						</Button>
+					</div>
 				</div>
 			</div>
 
@@ -459,8 +481,31 @@
 				</div>
 			</Card.Root>
 
-			<!-- Reports List -->
-			<div class="space-y-4">
+			<!-- Reports Content -->
+			{#if viewMode === 'map'}
+				<Card.Root class="p-6">
+					<Card.Header class="px-0 pt-0">
+						<Card.Title class="flex items-center gap-2">
+							<MapPinIcon class="h-5 w-5" />
+							Reports Map Overview
+						</Card.Title>
+						<Card.Description>
+							Click on markers to view report details
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="px-0 pb-0">
+						<div class="h-96">
+							<ReportsMapOverview 
+								reports={$reportsQuery.data ?? []}
+								className="h-full"
+								onReportClick={(reportId) => viewReportDetail(reportId)}
+							/>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				<!-- Reports List -->
+				<div class="space-y-4">
 				{#if $reportsQuery.isLoading}
 					{#each Array(3) as _, i (i)}
 						<Card.Root class="p-6">
@@ -591,7 +636,8 @@
 						</Card.Root>
 					{/each}
 				{/if}
-			</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}

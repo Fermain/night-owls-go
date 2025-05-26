@@ -19,6 +19,7 @@
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import { authenticatedFetch } from '$lib/utils/api';
+	import ReportMap from './ReportMap.svelte';
 
 	interface Props {
 		reportId: number;
@@ -304,28 +305,28 @@
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="space-y-3">
 									<div>
-										<label class="text-sm font-medium text-muted-foreground">Coordinates</label>
+										<span class="text-sm font-medium text-muted-foreground">Coordinates</span>
 										<p class="text-sm font-mono">
 											{mockGpsData.latitude.toFixed(6)}, {mockGpsData.longitude.toFixed(6)}
 										</p>
 									</div>
 									<div>
-										<label class="text-sm font-medium text-muted-foreground">Accuracy</label>
+										<span class="text-sm font-medium text-muted-foreground">Accuracy</span>
 										<p class="text-sm">±{mockGpsData.accuracy}m</p>
 									</div>
 									<div>
-										<label class="text-sm font-medium text-muted-foreground">Captured</label>
+										<span class="text-sm font-medium text-muted-foreground">Captured</span>
 										<p class="text-sm">{formatFullDateTime(mockGpsData.timestamp)}</p>
 									</div>
 								</div>
-								<div class="bg-muted/20 rounded-lg p-4 flex items-center justify-center">
-									<div class="text-center">
-										<MapPinIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-										<p class="text-sm text-muted-foreground">Map view would appear here</p>
-										<p class="text-xs text-muted-foreground mt-1">
-											Integration with mapping service
-										</p>
-									</div>
+								<div class="h-48">
+									<ReportMap
+										latitude={mockGpsData.latitude}
+										longitude={mockGpsData.longitude}
+										accuracy={mockGpsData.accuracy}
+										severity={report.severity}
+										className="h-full"
+									/>
 								</div>
 							</div>
 						</Card.Content>
@@ -375,20 +376,20 @@
 						<Card.Content class="px-0 pb-0">
 							<div class="space-y-4">
 								<div>
-									<label class="text-sm font-medium text-muted-foreground">Schedule</label>
+									<span class="text-sm font-medium text-muted-foreground">Schedule</span>
 									<p class="text-sm font-medium">{report.schedule_name}</p>
 								</div>
 								<Separator />
 								<div>
-									<label class="text-sm font-medium text-muted-foreground">Start Time</label>
+									<span class="text-sm font-medium text-muted-foreground">Start Time</span>
 									<p class="text-sm">{formatFullDateTime(report.shift_start)}</p>
 								</div>
 								<div>
-									<label class="text-sm font-medium text-muted-foreground">End Time</label>
+									<span class="text-sm font-medium text-muted-foreground">End Time</span>
 									<p class="text-sm">{formatFullDateTime(report.shift_end)}</p>
 								</div>
 								<div>
-									<label class="text-sm font-medium text-muted-foreground">Duration</label>
+									<span class="text-sm font-medium text-muted-foreground">Duration</span>
 									<p class="text-sm">{formatShiftDuration(report.shift_start, report.shift_end)}</p>
 								</div>
 							</div>
@@ -443,7 +444,15 @@
 									<FileTextIcon class="h-4 w-4 mr-2" />
 									Export Report
 								</Button>
-								<Button variant="outline" class="w-full justify-start">
+								<Button 
+									variant="outline" 
+									class="w-full justify-start"
+									onclick={() => {
+										// Open in a new window with a larger map
+										const mapUrl = `https://www.openstreetmap.org/?mlat=${mockGpsData.latitude}&mlon=${mockGpsData.longitude}&zoom=18`;
+										window.open(mapUrl, '_blank');
+									}}
+								>
 									<MapPinIcon class="h-4 w-4 mr-2" />
 									View on Map
 								</Button>
