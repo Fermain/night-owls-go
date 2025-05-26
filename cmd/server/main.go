@@ -112,6 +112,7 @@ func main() {
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
+	reportArchivingService := service.NewReportArchivingService(querier, logger)
 	recurringAssignmentService := service.NewRecurringAssignmentService(querier, logger, cfg)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
@@ -169,6 +170,21 @@ func main() {
 	})
 	if err != nil {
 		slog.Error("Failed to add recurring assignment materialization job to cron", "error", err)
+		os.Exit(1)
+	}
+
+	// Auto-archive old reports daily at 2 AM
+	_, err = cronScheduler.AddFunc("0 2 * * *", func() {
+		ctx := context.Background()
+		archived, err := reportArchivingService.ArchiveOldReports(ctx)
+		if err != nil {
+			slog.Error("Failed to auto-archive old reports", "error", err)
+		} else if archived > 0 {
+			slog.Info("Successfully auto-archived old reports", "archived_count", archived)
+		}
+	})
+	if err != nil {
+		slog.Error("Failed to add report archiving job to cron", "error", err)
 		os.Exit(1)
 	}
 
@@ -290,7 +306,10 @@ func main() {
 
 	// Admin Reports
 	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)
+	fuego.GetStd(admin, "/reports/archived", adminReportAPIHandler.AdminListArchivedReportsHandler)
 	fuego.GetStd(admin, "/reports/{id}", adminReportAPIHandler.AdminGetReportHandler)
+	fuego.PutStd(admin, "/reports/{id}/archive", adminReportAPIHandler.AdminArchiveReportHandler)
+	fuego.PutStd(admin, "/reports/{id}/unarchive", adminReportAPIHandler.AdminUnarchiveReportHandler)
 
 	// Admin Broadcasts
 	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
@@ -316,6 +335,37 @@ func main() {
 		
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
+	})
+
+	// Debug endpoint to manually trigger report archiving
+	fuego.PostStd(admin, "/debug/archive-reports", func(w http.ResponseWriter, r *http.Request) {
+		archived, err := reportArchivingService.ArchiveOldReports(r.Context())
+		if err != nil {
+			logger.Error("Failed to archive reports", "error", err)
+			http.Error(w, "Failed to archive reports: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		response := map[string]interface{}{
+			"archived": archived,
+			"message": fmt.Sprintf("Successfully archived %d reports", archived),
+		}
+		
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Debug endpoint to get archiving statistics
+	fuego.GetStd(admin, "/debug/archiving-stats", func(w http.ResponseWriter, r *http.Request) {
+		stats, err := reportArchivingService.GetArchivingStats(r.Context())
+		if err != nil {
+			logger.Error("Failed to get archiving stats", "error", err)
+			http.Error(w, "Failed to get archiving stats: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stats)
 	})
 
 	

@@ -12,7 +12,10 @@ type Querier interface {
 	AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error
 	AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error
 	AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error)
+	AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error)
 	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
+	ArchiveReport(ctx context.Context, reportID int64) error
+	BulkArchiveReports(ctx context.Context, reportIds []int64) error
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
@@ -42,6 +45,7 @@ type Querier interface {
 	GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (RecurringAssignment, error)
 	GetRecurringAssignmentsByPattern(ctx context.Context, arg GetRecurringAssignmentsByPatternParams) ([]GetRecurringAssignmentsByPatternRow, error)
 	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
+	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
@@ -57,6 +61,7 @@ type Querier interface {
 	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
+	UnarchiveReport(ctx context.Context, reportID int64) error
 	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)

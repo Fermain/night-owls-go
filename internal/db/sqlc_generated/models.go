@@ -82,6 +82,7 @@ type Report struct {
 	Longitude    sql.NullFloat64 `json:"longitude"`
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	ArchivedAt   interface{}     `json:"archived_at"`
 }
 
 type Schedule struct {

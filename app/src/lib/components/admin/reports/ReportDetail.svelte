@@ -18,6 +18,8 @@
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
+	import ArchiveIcon from '@lucide/svelte/icons/archive';
+	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportMap from './ReportMap.svelte';
 
@@ -41,6 +43,7 @@
 					severity: number;
 					message: string;
 					created_at: string;
+					archived_at?: string;
 					schedule_name: string;
 					user_name: string;
 					user_phone: string;
@@ -119,6 +122,40 @@
 		goto('/admin/reports');
 	}
 
+	async function handleArchive() {
+		try {
+			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/archive`, {
+				method: 'PUT'
+			});
+			
+			if (response.ok) {
+				// Refresh the report data
+				$reportQuery.refetch();
+			} else {
+				console.error('Failed to archive report');
+			}
+		} catch (error) {
+			console.error('Error archiving report:', error);
+		}
+	}
+
+	async function handleUnarchive() {
+		try {
+			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/unarchive`, {
+				method: 'PUT'
+			});
+			
+			if (response.ok) {
+				// Refresh the report data
+				$reportQuery.refetch();
+			} else {
+				console.error('Failed to unarchive report');
+			}
+		} catch (error) {
+			console.error('Error unarchiving report:', error);
+		}
+	}
+
 	// Mock GPS data - in real implementation, this would come from the report
 	const mockGpsData = {
 		latitude: -33.9249,
@@ -191,10 +228,16 @@
 							Submitted on {formatFullDateTime(report.created_at)}
 						</p>
 					</div>
-					<div class="ml-auto">
+					<div class="ml-auto flex gap-2">
 						<Badge class="{getSeverityColor(report.severity)} border text-sm px-3 py-1">
 							{getSeverityLabel(report.severity)}
 						</Badge>
+						{#if report.archived_at}
+							<Badge variant="secondary" class="text-sm px-3 py-1">
+								<ArchiveIcon class="h-3 w-3 mr-1" />
+								Archived
+							</Badge>
+						{/if}
 					</div>
 				</div>
 			{/if}
@@ -460,6 +503,26 @@
 									<UserIcon class="h-4 w-4 mr-2" />
 									Contact Reporter
 								</Button>
+								
+								{#if report.archived_at}
+									<Button 
+										variant="outline" 
+										class="w-full justify-start text-green-600 hover:text-green-700"
+										onclick={handleUnarchive}
+									>
+										<ArchiveRestoreIcon class="h-4 w-4 mr-2" />
+										Unarchive Report
+									</Button>
+								{:else}
+									<Button 
+										variant="outline" 
+										class="w-full justify-start text-orange-600 hover:text-orange-700"
+										onclick={handleArchive}
+									>
+										<ArchiveIcon class="h-4 w-4 mr-2" />
+										Archive Report
+									</Button>
+								{/if}
 							</div>
 						</Card.Content>
 					</Card.Root>

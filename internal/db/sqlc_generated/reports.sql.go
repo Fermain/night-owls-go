@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ SELECT
     r.severity,
     r.message,
     r.created_at,
+    r.archived_at,
     b.user_id,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
@@ -38,6 +40,7 @@ type AdminGetReportWithContextRow struct {
 	Severity     int64          `json:"severity"`
 	Message      sql.NullString `json:"message"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
+	ArchivedAt   interface{}    `json:"archived_at"`
 	UserID       int64          `json:"user_id"`
 	UserName     string         `json:"user_name"`
 	UserPhone    string         `json:"user_phone"`
@@ -56,6 +59,7 @@ func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64)
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
+		&i.ArchivedAt,
 		&i.UserID,
 		&i.UserName,
 		&i.UserPhone,
@@ -67,13 +71,14 @@ func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64)
 	return i, err
 }
 
-const adminListReportsWithContext = `-- name: AdminListReportsWithContext :many
+const adminListArchivedReportsWithContext = `-- name: AdminListArchivedReportsWithContext :many
 SELECT 
     r.report_id,
     r.booking_id,
     r.severity,
     r.message,
     r.created_at,
+    r.archived_at,
     b.user_id,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
@@ -85,6 +90,83 @@ FROM reports r
 JOIN bookings b ON r.booking_id = b.booking_id
 JOIN users u ON b.user_id = u.user_id
 JOIN schedules s ON b.schedule_id = s.schedule_id
+WHERE r.archived_at IS NOT NULL
+ORDER BY r.archived_at DESC
+`
+
+type AdminListArchivedReportsWithContextRow struct {
+	ReportID     int64          `json:"report_id"`
+	BookingID    int64          `json:"booking_id"`
+	Severity     int64          `json:"severity"`
+	Message      sql.NullString `json:"message"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	ArchivedAt   interface{}    `json:"archived_at"`
+	UserID       int64          `json:"user_id"`
+	UserName     string         `json:"user_name"`
+	UserPhone    string         `json:"user_phone"`
+	ScheduleID   int64          `json:"schedule_id"`
+	ScheduleName string         `json:"schedule_name"`
+	ShiftStart   time.Time      `json:"shift_start"`
+	ShiftEnd     time.Time      `json:"shift_end"`
+}
+
+func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error) {
+	rows, err := q.db.QueryContext(ctx, adminListArchivedReportsWithContext)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminListArchivedReportsWithContextRow{}
+	for rows.Next() {
+		var i AdminListArchivedReportsWithContextRow
+		if err := rows.Scan(
+			&i.ReportID,
+			&i.BookingID,
+			&i.Severity,
+			&i.Message,
+			&i.CreatedAt,
+			&i.ArchivedAt,
+			&i.UserID,
+			&i.UserName,
+			&i.UserPhone,
+			&i.ScheduleID,
+			&i.ScheduleName,
+			&i.ShiftStart,
+			&i.ShiftEnd,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const adminListReportsWithContext = `-- name: AdminListReportsWithContext :many
+SELECT 
+    r.report_id,
+    r.booking_id,
+    r.severity,
+    r.message,
+    r.created_at,
+    r.archived_at,
+    b.user_id,
+    COALESCE(u.name, '') as user_name,
+    u.phone as user_phone,
+    b.schedule_id,
+    s.name as schedule_name,
+    b.shift_start,
+    b.shift_end
+FROM reports r
+JOIN bookings b ON r.booking_id = b.booking_id
+JOIN users u ON b.user_id = u.user_id
+JOIN schedules s ON b.schedule_id = s.schedule_id
+WHERE r.archived_at IS NULL
 ORDER BY r.created_at DESC
 `
 
@@ -94,6 +176,7 @@ type AdminListReportsWithContextRow struct {
 	Severity     int64          `json:"severity"`
 	Message      sql.NullString `json:"message"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
+	ArchivedAt   interface{}    `json:"archived_at"`
 	UserID       int64          `json:"user_id"`
 	UserName     string         `json:"user_name"`
 	UserPhone    string         `json:"user_phone"`
@@ -118,6 +201,7 @@ func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListR
 			&i.Severity,
 			&i.Message,
 			&i.CreatedAt,
+			&i.ArchivedAt,
 			&i.UserID,
 			&i.UserName,
 			&i.UserPhone,
@@ -139,17 +223,51 @@ func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListR
 	return items, nil
 }
 
+const archiveReport = `-- name: ArchiveReport :exec
+UPDATE reports 
+SET archived_at = CURRENT_TIMESTAMP 
+WHERE report_id = ? AND archived_at IS NULL
+`
+
+func (q *Queries) ArchiveReport(ctx context.Context, reportID int64) error {
+	_, err := q.db.ExecContext(ctx, archiveReport, reportID)
+	return err
+}
+
+const bulkArchiveReports = `-- name: BulkArchiveReports :exec
+UPDATE reports 
+SET archived_at = CURRENT_TIMESTAMP 
+WHERE report_id IN (/*SLICE:report_ids*/?) AND archived_at IS NULL
+`
+
+func (q *Queries) BulkArchiveReports(ctx context.Context, reportIds []int64) error {
+	query := bulkArchiveReports
+	var queryParams []interface{}
+	if len(reportIds) > 0 {
+		for _, v := range reportIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:report_ids*/?", strings.Repeat(",?", len(reportIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:report_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const createReport = `-- name: CreateReport :one
 INSERT INTO reports (
     booking_id,
     severity,
-    message
+    message,
+    archived_at
 ) VALUES (
     ?,
     ?,
-    ?
+    ?,
+    NULL
 )
-RETURNING report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp
+RETURNING report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at
 `
 
 type CreateReportParams struct {
@@ -171,13 +289,14 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Rep
 		&i.Longitude,
 		&i.GpsAccuracy,
 		&i.GpsTimestamp,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
 
 const getReportByBookingID = `-- name: GetReportByBookingID :one
-SELECT report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp FROM reports
-WHERE booking_id = ?
+SELECT report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at FROM reports
+WHERE booking_id = ? AND archived_at IS NULL
 `
 
 func (q *Queries) GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error) {
@@ -193,15 +312,59 @@ func (q *Queries) GetReportByBookingID(ctx context.Context, bookingID int64) (Re
 		&i.Longitude,
 		&i.GpsAccuracy,
 		&i.GpsTimestamp,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
 
+const getReportsForAutoArchiving = `-- name: GetReportsForAutoArchiving :many
+SELECT report_id, severity, created_at
+FROM reports 
+WHERE archived_at IS NULL 
+AND (
+    -- Info reports older than 1 month
+    (severity = 0 AND created_at < datetime('now', '-1 month'))
+    OR
+    -- Warning reports older than 1 year  
+    (severity = 1 AND created_at < datetime('now', '-1 year'))
+    -- Critical reports (severity = 2) are never auto-archived
+)
+`
+
+type GetReportsForAutoArchivingRow struct {
+	ReportID  int64        `json:"report_id"`
+	Severity  int64        `json:"severity"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+func (q *Queries) GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error) {
+	rows, err := q.db.QueryContext(ctx, getReportsForAutoArchiving)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetReportsForAutoArchivingRow{}
+	for rows.Next() {
+		var i GetReportsForAutoArchivingRow
+		if err := rows.Scan(&i.ReportID, &i.Severity, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReportsByUserID = `-- name: ListReportsByUserID :many
-SELECT r.report_id, r.booking_id, r.severity, r.message, r.created_at, r.latitude, r.longitude, r.gps_accuracy, r.gps_timestamp 
+SELECT r.report_id, r.booking_id, r.severity, r.message, r.created_at, r.latitude, r.longitude, r.gps_accuracy, r.gps_timestamp, r.archived_at 
 FROM reports r
 JOIN bookings b ON r.booking_id = b.booking_id
-WHERE b.user_id = ?
+WHERE b.user_id = ? AND r.archived_at IS NULL
 ORDER BY r.created_at DESC
 `
 
@@ -224,6 +387,7 @@ func (q *Queries) ListReportsByUserID(ctx context.Context, userID int64) ([]Repo
 			&i.Longitude,
 			&i.GpsAccuracy,
 			&i.GpsTimestamp,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -236,4 +400,15 @@ func (q *Queries) ListReportsByUserID(ctx context.Context, userID int64) ([]Repo
 		return nil, err
 	}
 	return items, nil
+}
+
+const unarchiveReport = `-- name: UnarchiveReport :exec
+UPDATE reports 
+SET archived_at = NULL 
+WHERE report_id = ?
+`
+
+func (q *Queries) UnarchiveReport(ctx context.Context, reportID int64) error {
+	_, err := q.db.ExecContext(ctx, unarchiveReport, reportID)
+	return err
 }

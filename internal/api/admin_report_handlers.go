@@ -35,18 +35,19 @@ func NewAdminReportHandler(reportService *service.ReportService, scheduleService
 
 // AdminReportResponse extends the basic ReportResponse with admin context
 type AdminReportResponse struct {
-	ReportID     int64     `json:"report_id"`
-	BookingID    int64     `json:"booking_id"`
-	Severity     int64     `json:"severity"`
-	Message      string    `json:"message,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	UserID       int64     `json:"user_id"`
-	UserName     string    `json:"user_name,omitempty"`
-	UserPhone    string    `json:"user_phone"`
-	ScheduleID   int64     `json:"schedule_id"`
-	ScheduleName string    `json:"schedule_name"`
-	ShiftStart   time.Time `json:"shift_start"`
-	ShiftEnd     time.Time `json:"shift_end"`
+	ReportID     int64      `json:"report_id"`
+	BookingID    int64      `json:"booking_id"`
+	Severity     int64      `json:"severity"`
+	Message      string     `json:"message,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	ArchivedAt   *time.Time `json:"archived_at,omitempty"`
+	UserID       int64      `json:"user_id"`
+	UserName     string     `json:"user_name,omitempty"`
+	UserPhone    string     `json:"user_phone"`
+	ScheduleID   int64      `json:"schedule_id"`
+	ScheduleName string     `json:"schedule_name"`
+	ShiftStart   time.Time  `json:"shift_start"`
+	ShiftEnd     time.Time  `json:"shift_end"`
 }
 
 // AdminListReportsHandler handles GET /api/admin/reports
@@ -92,6 +93,17 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 		// Handle nullable CreatedAt field
 		if report.CreatedAt.Valid {
 			apiReport.CreatedAt = report.CreatedAt.Time
+		}
+
+		// Handle nullable ArchivedAt field (interface{} from SQLite)
+		if report.ArchivedAt != nil {
+			if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
+				apiReport.ArchivedAt = &archivedTime
+			} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
+				if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
+					apiReport.ArchivedAt = &parsedTime
+				}
+			}
 		}
 
 		// Handle nullable message field
@@ -168,10 +180,152 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 		apiReport.CreatedAt = report.CreatedAt.Time
 	}
 
+	// Handle nullable ArchivedAt field (interface{} from SQLite)
+	if report.ArchivedAt != nil {
+		if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
+			apiReport.ArchivedAt = &archivedTime
+		} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
+			if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
+				apiReport.ArchivedAt = &parsedTime
+			}
+		}
+	}
+
 	// Handle nullable message field
 	if report.Message.Valid {
 		apiReport.Message = report.Message.String
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiReport, h.logger)
+}
+
+// AdminArchiveReportHandler handles PUT /api/admin/reports/{id}/archive
+// @Summary Archive a report (Admin)
+// @Description Archive a specific report by ID (soft delete)
+// @Tags admin/reports
+// @Param id path int true "Report ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} ErrorResponse "Invalid report ID"
+// @Failure 404 {object} ErrorResponse "Report not found or already archived"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/reports/{id}/archive [put]
+func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
+			idStr = pathParts[3]
+		}
+	}
+	
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger)
+		return
+	}
+
+	err = h.querier.ArchiveReport(r.Context(), id)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to archive report", "report_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to archive report", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report archived successfully"}, h.logger)
+}
+
+// AdminUnarchiveReportHandler handles PUT /api/admin/reports/{id}/unarchive
+// @Summary Unarchive a report (Admin)
+// @Description Unarchive a specific report by ID
+// @Tags admin/reports
+// @Param id path int true "Report ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} ErrorResponse "Invalid report ID"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/reports/{id}/unarchive [put]
+func (h *AdminReportHandler) AdminUnarchiveReportHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
+			idStr = pathParts[3]
+		}
+	}
+	
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger)
+		return
+	}
+
+	err = h.querier.UnarchiveReport(r.Context(), id)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to unarchive report", "report_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to unarchive report", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report unarchived successfully"}, h.logger)
+}
+
+// AdminListArchivedReportsHandler handles GET /api/admin/reports/archived
+// @Summary List archived reports (Admin)
+// @Description Get all archived reports with full context
+// @Tags admin/reports
+// @Produce json
+// @Success 200 {array} AdminReportResponse "List of archived reports"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/reports/archived [get]
+func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWriter, r *http.Request) {
+	reports, err := h.querier.AdminListArchivedReportsWithContext(r.Context())
+	if err != nil {
+		h.logger.Error("Failed to fetch archived reports", "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to fetch archived reports", h.logger)
+		return
+	}
+
+	// Convert to API response format
+	apiReports := make([]AdminReportResponse, 0, len(reports))
+	for _, report := range reports {
+		apiReport := AdminReportResponse{
+			ReportID:     report.ReportID,
+			BookingID:    report.BookingID,
+			Severity:     report.Severity,
+			UserID:       report.UserID,
+			UserName:     report.UserName,
+			UserPhone:    report.UserPhone,
+			ScheduleID:   report.ScheduleID,
+			ScheduleName: report.ScheduleName,
+			ShiftStart:   report.ShiftStart,
+			ShiftEnd:     report.ShiftEnd,
+		}
+
+		// Handle nullable CreatedAt field
+		if report.CreatedAt.Valid {
+			apiReport.CreatedAt = report.CreatedAt.Time
+		}
+
+		// Handle nullable ArchivedAt field (interface{} from SQLite)
+		if report.ArchivedAt != nil {
+			if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
+				apiReport.ArchivedAt = &archivedTime
+			} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
+				if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
+					apiReport.ArchivedAt = &parsedTime
+				}
+			}
+		}
+
+		// Handle nullable message field
+		if report.Message.Valid {
+			apiReport.Message = report.Message.String
+		}
+
+		apiReports = append(apiReports, apiReport)
+	}
+
+	RespondWithJSON(w, http.StatusOK, apiReports, h.logger)
 } 

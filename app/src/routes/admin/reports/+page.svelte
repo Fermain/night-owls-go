@@ -22,6 +22,7 @@
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportDetail from '$lib/components/admin/reports/ReportDetail.svelte';
 	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
@@ -40,6 +41,7 @@
 	let dateRangeEnd = $state<string | null>(null);
 	let sortBy = $state<string>('newest');
 	let viewMode = $state<'list' | 'map'>('list');
+	let showArchived = $state<boolean>(false);
 
 	// Filter options
 	const severityOptions = [
@@ -65,9 +67,10 @@
 	// Fetch shift reports from the real API
 	const reportsQuery = $derived(
 		createQuery({
-			queryKey: ['adminReports', searchQuery, severityFilter, scheduleFilter, dateRangeStart, dateRangeEnd, sortBy],
+			queryKey: ['adminReports', showArchived, searchQuery, severityFilter, scheduleFilter, dateRangeStart, dateRangeEnd, sortBy],
 			queryFn: async () => {
-				const response = await authenticatedFetch('/api/admin/reports');
+				const endpoint = showArchived ? '/api/admin/reports/archived' : '/api/admin/reports';
+				const response = await authenticatedFetch(endpoint);
 				if (!response.ok) {
 					throw new Error(`Failed to fetch reports: ${response.status}`);
 				}
@@ -76,6 +79,7 @@
 					severity: number;
 					message: string;
 					created_at: string;
+					archived_at?: string;
 					schedule_name: string;
 					user_name: string;
 					user_phone: string;
@@ -280,30 +284,55 @@
 			<div class="mb-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<h1 class="text-3xl font-bold mb-2">Incident Reports</h1>
+						<h1 class="text-3xl font-bold mb-2">
+							{showArchived ? 'Archived' : 'Active'} Incident Reports
+						</h1>
 						<p class="text-muted-foreground">
-							Monitor and analyze incident reports submitted by volunteers during shifts
+							{showArchived 
+								? 'View and manage archived incident reports' 
+								: 'Monitor and analyze incident reports submitted by volunteers during shifts'
+							}
 						</p>
 					</div>
 					<div class="flex gap-2">
 						<div class="flex border rounded-lg p-1">
 							<Button 
-								variant={viewMode === 'list' ? 'default' : 'ghost'} 
+								variant={!showArchived ? 'default' : 'ghost'} 
 								size="sm"
-								onclick={() => viewMode = 'list'}
+								onclick={() => showArchived = false}
 							>
 								<FileTextIcon class="h-4 w-4 mr-2" />
-								List
+								Active
 							</Button>
 							<Button 
-								variant={viewMode === 'map' ? 'default' : 'ghost'} 
+								variant={showArchived ? 'default' : 'ghost'} 
 								size="sm"
-								onclick={() => viewMode = 'map'}
+								onclick={() => showArchived = true}
 							>
-								<MapPinIcon class="h-4 w-4 mr-2" />
-								Map
+								<ArchiveIcon class="h-4 w-4 mr-2" />
+								Archived
 							</Button>
 						</div>
+						{#if !showArchived}
+							<div class="flex border rounded-lg p-1">
+								<Button 
+									variant={viewMode === 'list' ? 'default' : 'ghost'} 
+									size="sm"
+									onclick={() => viewMode = 'list'}
+								>
+									<FileTextIcon class="h-4 w-4 mr-2" />
+									List
+								</Button>
+								<Button 
+									variant={viewMode === 'map' ? 'default' : 'ghost'} 
+									size="sm"
+									onclick={() => viewMode = 'map'}
+								>
+									<MapPinIcon class="h-4 w-4 mr-2" />
+									Map
+								</Button>
+							</div>
+						{/if}
 						<Button onclick={() => goto('/admin/reports/analytics')} variant="outline">
 							<TrendingUpIcon class="h-4 w-4 mr-2" />
 							View Analytics
