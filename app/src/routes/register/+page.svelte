@@ -2,13 +2,13 @@
 	import { goto } from '$app/navigation';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
-	import { TelInput } from 'svelte-tel-input';
+	import { PhoneInput } from '$lib/components/ui/phone-input';
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import ShieldIcon from 'lucide-svelte/icons/shield';
-	import type { E164Number, CountryCode } from 'svelte-tel-input/types';
+	import type { E164Number } from 'svelte-tel-input/types';
 
 	$effect(() => {
 		if ($isAuthenticated) {
@@ -19,7 +19,6 @@
 
 	// State management
 	let phoneNumber: E164Number | null = $state(null);
-	let selectedCountry: CountryCode | null = $state('ZA');
 	let phoneValid = $state(true);
 	let name = $state('');
 	let isLoading = $state(false);
@@ -102,16 +101,14 @@
 
 							<div class="flex flex-col gap-2 relative pb-6">
 								<Label for="phone">Phone Number</Label>
-								<TelInput
-									bind:country={selectedCountry}
+								<PhoneInput
 									bind:value={phoneNumber}
 									bind:valid={phoneValid}
 									disabled={isLoading}
 									required
-									class="tel-input {!phoneValid && phoneNumber ? 'tel-input-invalid' : ''}"
 								/>
 								<p class="text-xs text-muted-foreground mt-1">
-									We'll send you a verification code via SMS
+									We'll send you a verification code via SMS • Country: South Africa (ZA)
 								</p>
 								{#if !phoneValid && phoneNumber}
 									<p class="text-xs text-destructive mt-1">
@@ -180,12 +177,4 @@
 	</div>
 {/if}
 
-<style>
-	:global(.tel-input) {
-		@apply border-input placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
-	}
-	
-	:global(.tel-input-invalid) {
-		@apply border-destructive focus-visible:ring-destructive;
-	}
-</style>
+
