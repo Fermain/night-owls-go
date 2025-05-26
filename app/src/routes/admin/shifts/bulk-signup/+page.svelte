@@ -29,6 +29,34 @@
 	import type { UserData } from '$lib/schemas/user';
 	import type { AdminShiftSlot } from '$lib/types';
 
+	// Format shift title using watch tradition (previous day + "Night" + time)
+	function formatShiftTitle(startTime: string, endTime: string): string {
+		const start = new Date(startTime);
+		const end = new Date(endTime);
+		
+		// Get the previous day for the "Night" reference
+		const previousDay = new Date(start);
+		previousDay.setDate(previousDay.getDate() - 1);
+		
+		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+		
+		// Format time as condensed AM/PM (e.g., "1-3AM")
+		const startHour = start.getUTCHours();
+		const endHour = end.getUTCHours();
+		
+		// Convert to 12-hour format
+		const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+		const getAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
+		
+		const startHour12 = formatHour(startHour);
+		const endHour12 = formatHour(endHour);
+		const endAmPm = getAmPm(endHour);
+		
+		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
+		
+		return `${dayName} Night ${timeRange}`;
+	}
+
 	const queryClient = useQueryClient();
 
 	// Form state
@@ -484,10 +512,10 @@
 				</CardHeader>
 				<CardContent class="space-y-4">
 					{#if patternMode && selectedPattern}
-						<div class="border rounded-lg p-3 bg-blue-50 border-blue-200">
-							<div class="text-sm font-medium text-blue-800 mb-1">Selected Pattern</div>
-							<div class="text-sm text-blue-700">{getPatternDescription()}</div>
-							<div class="text-xs text-blue-600 mt-1">
+						<div class="border rounded-lg p-3 border-primary/30 bg-primary/10">
+							<div class="text-sm font-medium text-card-foreground mb-1">Selected Pattern</div>
+							<div class="text-sm text-card-foreground/80">{getPatternDescription()}</div>
+							<div class="text-xs text-muted-foreground mt-1">
 								{getMatchingShiftsCount()} matching shifts until {dateRangeEnd || 'end of range'}
 							</div>
 						</div>
@@ -580,13 +608,13 @@
 											new Date(shift.start_time).getDay() === selectedPattern.dayOfWeek &&
 											formatTimeSlot(shift.start_time, shift.end_time) === selectedPattern.timeSlot}
 										<div
-											class="border rounded-lg p-3 transition-colors cursor-pointer {isSelected
-												? 'border-primary bg-primary/5'
+											class="group border rounded-lg p-3 transition-all duration-200 cursor-pointer {isSelected
+												? 'border-primary bg-primary/10 shadow-primary/5'
 												: isPatternMatch
-													? 'border-blue-300 bg-blue-50'
+													? 'border-primary/40 bg-primary/5'
 													: shift.is_booked
-														? 'border-muted bg-muted/50'
-														: 'border-border hover:bg-accent'}"
+														? 'border-border/50 bg-muted/50 opacity-75'
+														: 'border-border/50 hover:bg-accent/50 hover:border-border'}"
 											role="button"
 											tabindex={shift.is_booked ? -1 : 0}
 											onclick={() => {
@@ -616,9 +644,9 @@
 													{#if patternMode}
 														<div class="w-4 h-4 mt-1 flex items-center justify-center">
 															{#if isPatternMatch}
-																<div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+																<div class="w-3 h-3 bg-primary rounded-full"></div>
 															{:else}
-																<div class="w-3 h-3 border-2 border-gray-300 rounded-full"></div>
+																<div class="w-3 h-3 border-2 border-border rounded-full"></div>
 															{/if}
 														</div>
 													{:else}
@@ -633,30 +661,29 @@
 												{/if}
 
 												<div class="flex-1 min-w-0">
-													<div class="font-medium text-sm truncate">{shift.schedule_name}</div>
-													<div class="text-sm text-muted-foreground flex items-center gap-1">
-														<ClockIcon class="h-3 w-3" />
-														{formatTimeSlot(shift.start_time, shift.end_time)}
+													<div class="font-medium text-sm text-card-foreground truncate group-hover:text-accent-foreground transition-colors">{formatShiftTitle(shift.start_time, shift.end_time)}</div>
+													<div class="flex items-center gap-2 mt-1">
+														<Badge variant="secondary" class="text-xs">{shift.schedule_name}</Badge>
 													</div>
 
 													{#if patternMode && !shift.is_booked}
-														<div class="text-xs text-blue-600 mt-1">
+														<div class="text-xs text-primary mt-1">
 															{new Date(shift.start_time).toLocaleDateString('en-US', {
 																weekday: 'short'
 															})}
 															{#if isPatternMatch}
-																<Badge variant="secondary" class="text-xs ml-1">Pattern Match</Badge
+																<Badge variant="secondary" class="text-xs ml-1 bg-primary/20 text-primary border-primary/30">Pattern Match</Badge
 																>
 															{/if}
 														</div>
 													{/if}
 
 													{#if shift.is_booked}
-														<div class="text-xs text-green-700 flex items-center gap-1 mt-1">
+														<div class="text-xs flex items-center gap-1 mt-1" style="color: hsl(var(--safety-green))">
 															<UsersIcon class="h-3 w-3" />
 															{shift.user_name || 'Assigned'}
 															{#if shift.is_recurring_reservation}
-																<Badge variant="secondary" class="text-xs">Recurring</Badge>
+																<Badge variant="secondary" class="text-xs bg-primary/20 text-primary border-primary/30">Recurring</Badge>
 															{/if}
 														</div>
 													{:else if !patternMode}

@@ -325,71 +325,71 @@
 				{:else}
 					{#each filteredShifts as shift, index (shift.schedule_id + '-' + shift.start_time)}
 						<Card.Root
-							class="hover:shadow-lg transition-all duration-300 interactive-scale animate-in {shift.priority ===
+							class="group hover:shadow-lg hover:shadow-muted/50 transition-all duration-300 interactive-scale animate-in border-border/50 bg-card/50 backdrop-blur-sm {shift.priority ===
 							'high'
-								? 'ring-2 ring-destructive/20 shadow-destructive/5'
+								? 'ring-1 ring-destructive/30 shadow-destructive/10'
 								: ''}"
 							style="animation-delay: {index * 50}ms"
 						>
-							<Card.Content class="p-5">
+							<Card.Content class="p-6">
 								<div class="flex items-start justify-between mb-4">
-									<div class="flex-1 space-y-3">
+									<div class="flex-1 space-y-4">
 										<div class="flex items-center gap-3">
-											<div class="bg-primary/10 p-2 rounded-lg">
+											<div class="bg-primary/10 border border-primary/20 p-2.5 rounded-lg group-hover:bg-primary/15 transition-colors">
 												<ShieldIcon class="h-4 w-4 text-primary" />
 											</div>
 											<div>
-												<h3 class="font-semibold text-foreground text-base">
+												<h3 class="font-semibold text-card-foreground text-lg tracking-tight">
 													{shift.schedule_name}
 												</h3>
-												<div class="flex items-center gap-2 mt-1">
-													<Badge class={getStatusBadgeClass(shift)}>
+												<div class="flex items-center gap-2 mt-2">
+													<span class={getStatusBadgeClass(shift)}>
 														{getStatusText(shift)}
-													</Badge>
+													</span>
 													{#if shift.priority === 'high'}
-														<Badge variant="destructive" class="text-xs">Urgent</Badge>
+														<Badge variant="destructive" class="text-xs border-destructive/30 bg-destructive/10">Urgent</Badge>
 													{/if}
 												</div>
 											</div>
 										</div>
 
-										<div class="space-y-2 text-sm text-muted-foreground">
-											<div class="flex items-center gap-2">
-												<CalendarIcon class="h-4 w-4" />
-												<span class="font-medium">{formatShiftDate(shift.start_time)}</span>
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+											<div class="flex items-center gap-2 text-muted-foreground">
+												<CalendarIcon class="h-4 w-4 flex-shrink-0" />
+												<span class="font-medium text-card-foreground">{formatShiftDate(shift.start_time)}</span>
 											</div>
 
-											<div class="flex items-center gap-2">
-												<ClockIcon class="h-4 w-4" />
-												<span>{formatShiftTime(shift.start_time, shift.end_time)}</span>
-												<span class="text-xs bg-muted px-2 py-1 rounded-full">
+											<div class="flex items-center gap-2 text-muted-foreground">
+												<ClockIcon class="h-4 w-4 flex-shrink-0" />
+												<span class="text-card-foreground">{formatShiftTime(shift.start_time, shift.end_time)}</span>
+												<span class="text-xs bg-muted/50 border border-border/50 px-2 py-1 rounded-full ml-1">
 													{getShiftDuration(shift.start_time, shift.end_time)}
 												</span>
 											</div>
 
-											<div class="flex items-center gap-2">
-												<MapPinIcon class="h-4 w-4" />
-												<span>Main Street Area</span>
+											<div class="flex items-center gap-2 text-muted-foreground">
+												<MapPinIcon class="h-4 w-4 flex-shrink-0" />
+												<span class="text-card-foreground">Main Street Area</span>
 											</div>
 										</div>
 									</div>
 
-									<div class="text-right space-y-3">
-										<div class="flex items-center gap-1 text-sm text-muted-foreground">
+									<div class="text-right space-y-3 flex-shrink-0 ml-4">
+										<div class="flex items-center gap-1 text-sm text-muted-foreground justify-end">
 											<UsersIcon class="h-4 w-4" />
-											<span class="font-medium">{shift.slots_available}/{shift.total_slots}</span>
+											<span class="font-medium text-card-foreground">{shift.slots_available}/{shift.total_slots}</span>
 										</div>
 
 										{#if !shift.is_booked}
 											<Button
 												size="sm"
-												class="w-full min-w-[90px] interactive-scale"
+												class="w-full min-w-[100px] interactive-scale bg-primary hover:bg-primary/90 shadow-sm"
 												onclick={() => handleBookShift(shift)}
 											>
 												Join Patrol
 											</Button>
 										{:else}
-											<Button size="sm" variant="outline" disabled class="w-full min-w-[90px]">
+											<Button size="sm" variant="outline" disabled class="w-full min-w-[100px] opacity-60">
 												Full
 											</Button>
 										{/if}
@@ -397,8 +397,10 @@
 								</div>
 
 								{#if shift.slots_available === 1 && shift.total_slots > 1}
-									<div class="status-warning text-xs rounded-lg p-3 font-medium">
-										⚠️ Only 1 patrol slot remaining - join now!
+									<div class="mt-4 p-3 rounded-lg border border-warning-amber/20 bg-warning-amber/5">
+										<div class="flex items-center gap-2 text-sm font-medium" style="color: hsl(var(--warning-amber))">
+											⚠️ Only 1 patrol slot remaining - join now!
+										</div>
 									</div>
 								{/if}
 							</Card.Content>

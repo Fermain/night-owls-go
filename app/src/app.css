@@ -131,27 +131,31 @@
 
 @layer components {
 	.status-safe {
-		@apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
-		background-color: hsl(var(--safety-green) / 0.1);
+		background-color: hsl(var(--safety-green) / 0.12);
 		color: hsl(var(--safety-green));
+		border: 1px solid hsl(var(--safety-green) / 0.2);
+		@apply font-medium text-xs px-2.5 py-1 rounded-full;
 	}
 
 	.status-warning {
-		@apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400;
-		background-color: hsl(var(--warning-amber) / 0.1);
+		background-color: hsl(var(--warning-amber) / 0.12);
 		color: hsl(var(--warning-amber));
+		border: 1px solid hsl(var(--warning-amber) / 0.2);
+		@apply font-medium text-xs px-2.5 py-1 rounded-full;
 	}
 
 	.status-urgent {
-		@apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
-		background-color: hsl(var(--urgent-red) / 0.1);
+		background-color: hsl(var(--urgent-red) / 0.12);
 		color: hsl(var(--urgent-red));
+		border: 1px solid hsl(var(--urgent-red) / 0.2);
+		@apply font-medium text-xs px-2.5 py-1 rounded-full;
 	}
 
 	.status-night {
-		@apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
-		background-color: hsl(var(--night-blue) / 0.1);
+		background-color: hsl(var(--night-blue) / 0.12);
 		color: hsl(var(--night-blue));
+		border: 1px solid hsl(var(--night-blue) / 0.2);
+		@apply font-medium text-xs px-2.5 py-1 rounded-full;
 	}
 
 	.interactive-scale {
@@ -184,8 +188,8 @@
 	.bg-patrol-gradient {
 		background: linear-gradient(
 			135deg,
-			hsl(var(--primary) / 0.05) 0%,
-			hsl(var(--night-blue) / 0.1) 100%
+			hsl(var(--background)) 0%,
+			hsl(var(--muted) / 0.3) 100%
 		);
 	}
 }

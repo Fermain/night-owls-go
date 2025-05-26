@@ -4,6 +4,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Badge } from '$lib/components/ui/badge';
 	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
@@ -20,6 +21,34 @@
 		formatRelativeTime,
 		normalizeDateRange
 	} from '$lib/utils/dateFormatting';
+
+	// Format shift title using watch tradition (previous day + "Night" + time)
+	function formatShiftTitle(startTime: string, endTime: string): string {
+		const start = new Date(startTime);
+		const end = new Date(endTime);
+		
+		// Get the previous day for the "Night" reference
+		const previousDay = new Date(start);
+		previousDay.setDate(previousDay.getDate() - 1);
+		
+		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+		
+		// Format time as condensed AM/PM (e.g., "1-3AM")
+		const startHour = start.getUTCHours();
+		const endHour = end.getUTCHours();
+		
+		// Convert to 12-hour format
+		const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+		const getAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
+		
+		const startHour12 = formatHour(startHour);
+		const endHour12 = formatHour(endHour);
+		const endAmPm = getAmPm(endHour);
+		
+		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
+		
+		return `${dayName} Night ${timeRange}`;
+	}
 	import { SchedulesApiService } from '$lib/services/api';
 
 	// Filters state - active by default with both selected
@@ -216,39 +245,33 @@
 				<div class="p-2">
 					{#each upcomingShifts as shift (shift.schedule_id + '-' + shift.start_time)}
 						<button
-							class="w-full p-3 mb-2 text-left rounded-lg border transition-colors hover:bg-accent
+							class="group w-full p-3 mb-2 text-left rounded-lg border transition-all duration-200 hover:shadow-sm
 								{shiftStartTimeFromUrl === shift.start_time
-								? 'border-primary bg-primary/10'
-								: shift.is_booked
-									? 'border-green-200 bg-green-50 hover:bg-green-100'
-									: 'border-orange-200 bg-orange-50 hover:bg-orange-100'}"
+								? 'border-primary/50 bg-primary/10 shadow-primary/5'
+								: 'border-border/50 bg-card/50 hover:bg-accent/50 hover:border-border'}"
 							onclick={() => selectShift(shift)}
 						>
-							<div class="space-y-1">
+							<div class="space-y-2">
 								<div class="flex items-center justify-between">
-									<h3 class="font-medium text-sm truncate">{shift.schedule_name}</h3>
+									<h3 class="font-medium text-sm text-card-foreground truncate group-hover:text-accent-foreground transition-colors">{formatShiftTitle(shift.start_time, shift.end_time)}</h3>
 									{#if shift.is_booked}
-										<span
-											class="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full"
-										>
+										<span class="status-safe text-xs">
 											Filled
 										</span>
 									{:else}
-										<span
-											class="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full"
-										>
+										<span class="status-warning text-xs">
 											Available
 										</span>
 									{/if}
 								</div>
-								<p class="text-xs text-muted-foreground">
-									{formatTimeSlot(shift.start_time, shift.end_time)}
-								</p>
+								<div class="flex items-center gap-2">
+									<Badge variant="secondary" class="text-xs">{shift.schedule_name}</Badge>
+								</div>
 								<p class="text-xs text-muted-foreground">
 									{formatRelativeTime(shift.start_time)}
 								</p>
 								{#if shift.is_booked && shift.user_name}
-									<p class="text-xs text-green-700 font-medium">
+									<p class="text-xs font-medium" style="color: hsl(var(--safety-green))">
 										Assigned to: {shift.user_name}
 									</p>
 								{/if}
