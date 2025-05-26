@@ -2,11 +2,13 @@
 	import { goto } from '$app/navigation';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
+	import { TelInput } from 'svelte-tel-input';
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import ShieldIcon from 'lucide-svelte/icons/shield';
+	import type { E164Number, CountryCode } from 'svelte-tel-input/types';
 
 	$effect(() => {
 		if ($isAuthenticated) {
@@ -16,13 +18,16 @@
 	});
 
 	// State management
-	let phoneNumber = $state('');
+	let phoneNumber: E164Number | null = $state(null);
+	let selectedCountry: CountryCode | null = $state('ZA');
+	let phoneValid = $state(true);
 	let name = $state('');
 	let isLoading = $state(false);
 
 	async function handleRegistration(event: SubmitEvent) {
 		event.preventDefault();
-		if (!phoneNumber.trim()) {
+
+		if (!phoneNumber || !phoneValid) {
 			toast.error('Please enter a valid phone number.');
 			return;
 		}
@@ -35,7 +40,7 @@
 		isLoading = true;
 		try {
 			await authService.register({
-				phone: phoneNumber,
+				phone: phoneNumber, // E164 format ready for API
 				name: name.trim()
 			});
 
@@ -82,7 +87,7 @@
 						</div>
 
 						<!-- Registration Form -->
-						<form onsubmit={handleRegistration} class="flex flex-col gap-4">
+						<form onsubmit={handleRegistration} class="flex flex-col gap-6">
 							<div class="flex flex-col gap-2">
 								<Label for="name">Full Name</Label>
 								<Input
@@ -95,23 +100,30 @@
 								/>
 							</div>
 
-							<div class="flex flex-col gap-2">
+							<div class="flex flex-col gap-2 relative pb-6">
 								<Label for="phone">Phone Number</Label>
-								<Input
-									id="phone"
-									type="tel"
-									placeholder="+1234567890"
+								<TelInput
+									bind:country={selectedCountry}
 									bind:value={phoneNumber}
+									bind:valid={phoneValid}
 									disabled={isLoading}
 									required
+									class="tel-input {!phoneValid && phoneNumber ? 'tel-input-invalid' : ''}"
 								/>
-								<p class="text-xs text-muted-foreground">We'll send you a verification code</p>
+								<p class="text-xs text-muted-foreground mt-1">
+									We'll send you a verification code via SMS
+								</p>
+								{#if !phoneValid && phoneNumber}
+									<p class="text-xs text-destructive mt-1">
+										Please enter a valid phone number
+									</p>
+								{/if}
 							</div>
 
 							<Button
 								type="submit"
 								class="w-full"
-								disabled={isLoading || !phoneNumber.trim() || !name.trim()}
+								disabled={isLoading || !phoneNumber || !phoneValid || !name.trim()}
 							>
 								{#if isLoading}
 									<div
@@ -167,3 +179,13 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	:global(.tel-input) {
+		@apply border-input placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+	}
+	
+	:global(.tel-input-invalid) {
+		@apply border-destructive focus-visible:ring-destructive;
+	}
+</style>

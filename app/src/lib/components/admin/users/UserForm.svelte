@@ -7,7 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { TelInput } from 'svelte-tel-input';
-	import type { E164Number } from 'svelte-tel-input/types';
+	import type { E164Number, CountryCode } from 'svelte-tel-input/types';
 	import { createSaveUserMutation } from '$lib/queries/admin/users/saveUserMutation';
 	import { createDeleteUserMutation } from '$lib/queries/admin/users/deleteUserMutation';
 	import { userSchema, type UserFormValues, type UserData } from '$lib/schemas/user';
@@ -23,6 +23,7 @@
 
 	// State for svelte-tel-input validity
 	let phoneInputValid = $state(true);
+	let selectedCountry: CountryCode | null = $state('ZA');
 
 	// Local Svelte state for form data, initialized with user prop data if available
 	let formData = $state<UserFormValues>({
@@ -214,21 +215,21 @@
 			<TelInput
 				disabled={Boolean(user?.id)}
 				readonly={Boolean(user?.id)}
+				bind:country={selectedCountry}
 				bind:value={formData.phone}
 				bind:valid={phoneInputValid}
-				country="ZA"
-				options={{
-					strictCountry: true,
-					autoPlaceholder: true,
-					format: 'international'
-				}}
-				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 invalid:border-red-500"
 				required
+				class="tel-input {!phoneInputValid && formData.phone ? 'tel-input-invalid' : ''}"
 			/>
+			<p class="text-xs text-muted-foreground mt-1">
+				We'll send verification codes to this number
+			</p>
 			{#if zodErrors.phone}
 				<p class="text-sm text-destructive mt-1">{zodErrors.phone}</p>
 			{:else if !phoneInputValid && formData.phone !== ''}
-				<p class="text-sm text-destructive mt-1">Invalid phone number.</p>
+				<p class="text-xs text-destructive mt-1">
+					Please enter a valid phone number
+				</p>
 			{/if}
 		</div>
 
@@ -437,3 +438,13 @@
 		onConfirm={handleRoleConfirm}
 	/>
 {/if}
+
+<style>
+	:global(.tel-input) {
+		@apply border-input placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+	}
+	
+	:global(.tel-input-invalid) {
+		@apply border-destructive focus-visible:ring-destructive;
+	}
+</style>
