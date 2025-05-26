@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error
 	AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error
+	AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error)
 	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)

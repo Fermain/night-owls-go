@@ -7,7 +7,12 @@ import (
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
 
+	"database/sql"
 	"log/slog"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // AdminReportHandler handles admin-specific report operations.
@@ -113,7 +118,60 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 // @Security BearerAuth
 // @Router /api/admin/reports/{id} [get]
 func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *http.Request) {
-	// This would be implemented similar to AdminListReportsHandler but for a single report
-	// For now, return a not implemented response
-	RespondWithError(w, http.StatusNotImplemented, "Single report retrieval not implemented yet", h.logger)
+	// Try multiple methods to extract the ID parameter (following users pattern)
+	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminGetReportHandler called", "id_param", idStr, "url", r.URL.Path)
+	
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+	
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse report ID", "id_param", idStr, "error", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger, "error", err)
+		return
+	}
+
+	report, err := h.querier.AdminGetReportWithContext(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			RespondWithError(w, http.StatusNotFound, "Report not found", h.logger)
+		} else {
+			h.logger.ErrorContext(r.Context(), "Failed to get report by ID", "report_id", id, "error", err)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to fetch report", h.logger)
+		}
+		return
+	}
+
+	// Convert to API response format
+	apiReport := AdminReportResponse{
+		ReportID:     report.ReportID,
+		BookingID:    report.BookingID,
+		Severity:     report.Severity,
+		UserID:       report.UserID,
+		UserName:     report.UserName,
+		UserPhone:    report.UserPhone,
+		ScheduleID:   report.ScheduleID,
+		ScheduleName: report.ScheduleName,
+		ShiftStart:   report.ShiftStart,
+		ShiftEnd:     report.ShiftEnd,
+	}
+
+	// Handle nullable CreatedAt field
+	if report.CreatedAt.Valid {
+		apiReport.CreatedAt = report.CreatedAt.Time
+	}
+
+	// Handle nullable message field
+	if report.Message.Valid {
+		apiReport.Message = report.Message.String
+	}
+
+	RespondWithJSON(w, http.StatusOK, apiReport, h.logger)
 } 

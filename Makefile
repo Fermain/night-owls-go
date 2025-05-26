@@ -45,7 +45,7 @@ build-seed:
 # Run targets
 run: build
 	@echo "Starting development server..."
-	./server
+	SERVER_PORT=5888 DATABASE_PATH=./night-owls.test.db DEV_MODE=true JWT_SECRET=dev-jwt-secret STATIC_DIR=app/build ./server
 
 # Database seeding targets
 seed: build-seed

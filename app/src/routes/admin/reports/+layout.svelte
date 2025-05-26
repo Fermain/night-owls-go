@@ -2,16 +2,33 @@
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import { authenticatedFetch } from '$lib/utils/api';
 
 	let searchTerm = $state('');
 	let { children } = $props();
+
+	// Define navigation items for the reports section
+	const reportsNavItems = [
+		{
+			title: 'All Reports',
+			url: '/admin/reports',
+			icon: FileTextIcon
+		},
+		{
+			title: 'Analytics',
+			url: '/admin/reports/analytics',
+			icon: TrendingUpIcon
+		}
+	];
 
 	// Fetch shift reports from the real API
 	const reportsQuery = $derived(
@@ -35,6 +52,36 @@
 			}
 		})
 	);
+
+	// Filtered reports for display in sidebar
+	const filteredReports = $derived.by(() => {
+		const reports = $reportsQuery.data ?? [];
+		if (!searchTerm.trim()) return reports;
+		
+		const query = searchTerm.toLowerCase();
+		return reports.filter((report) => {
+			const searchableText = [
+				report.message,
+				report.user_name,
+				report.schedule_name,
+				getSeverityLabel(report.severity),
+				`#${report.report_id}`
+			].join(' ').toLowerCase();
+			
+			return searchableText.includes(query);
+		});
+	});
+
+	// Handle selecting a report from the dynamic list
+	const selectReportForViewing = (report: any) => {
+		goto(`/admin/reports?reportId=${report.report_id}`);
+	};
+
+	// Get current selected report ID from URL
+	const currentSelectedReportId = $derived.by(() => {
+		const reportIdFromUrl = page.url.searchParams.get('reportId');
+		return reportIdFromUrl ? parseInt(reportIdFromUrl, 10) : undefined;
+	});
 
 	function getSeverityIcon(severity: number) {
 		switch (severity) {
@@ -62,6 +109,19 @@
 		}
 	}
 
+	function getSeverityLabel(severity: number) {
+		switch (severity) {
+			case 0:
+				return 'Info';
+			case 1:
+				return 'Warning';
+			case 2:
+				return 'Critical';
+			default:
+				return 'Unknown';
+		}
+	}
+
 	function formatRelativeTime(dateString: string) {
 		const date = new Date(dateString);
 		const now = new Date();
@@ -72,89 +132,61 @@
 		if (diffInHours < 48) return 'Yesterday';
 		return `${Math.floor(diffInHours / 24)}d ago`;
 	}
-
-	// Filter reports based on search term
-	const filteredReports = $derived.by(() => {
-		const reports = $reportsQuery.data ?? [];
-		if (!searchTerm) return reports;
-
-		return reports.filter(
-			(report) =>
-				report.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				report.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				report.schedule_name.toLowerCase().includes(searchTerm.toLowerCase())
-		);
-	});
 </script>
 
 {#snippet reportsListContent()}
 	<div class="flex flex-col h-full">
-		<!-- Header -->
-		<div class="p-3 border-b bg-muted/50">
-			<div class="flex items-center gap-2">
-				<FileTextIcon class="h-4 w-4" />
-				<span class="text-sm font-medium">Recent Reports</span>
-			</div>
-			<p class="text-xs text-muted-foreground">Latest incident reports</p>
-		</div>
+		<!-- Top static nav items -->
+		{#each reportsNavItems as item (item.title)}
+			<a
+				href={item.url}
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
+				class:active={page.url.pathname === item.url && !currentSelectedReportId}
+			>
+				{#if item.icon}
+					<item.icon class="h-4 w-4" />
+				{/if}
+				<span>{item.title}</span>
+			</a>
+		{/each}
 
-		<!-- Reports List -->
+		<!-- Reports list (potentially scrollable) -->
 		<div class="flex-grow overflow-y-auto">
 			{#if $reportsQuery.isLoading}
-				<div class="p-3 space-y-3">
-					{#each Array(4) as _, i (i)}
-						<div class="border rounded-lg p-3">
-							<Skeleton class="h-4 w-3/4 mb-2" />
-							<Skeleton class="h-3 w-1/2 mb-1" />
-							<Skeleton class="h-3 w-1/3" />
-						</div>
-					{/each}
-				</div>
+				<div class="p-4 text-sm">Loading reports...</div>
 			{:else if $reportsQuery.isError}
-				<div class="p-3 text-center">
-					<FileTextIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-					<p class="text-xs text-muted-foreground">Failed to load reports</p>
+				<div class="p-4 text-sm text-destructive">
+					Error loading reports: {$reportsQuery.error.message}
 				</div>
-			{:else if filteredReports.length === 0}
-				<div class="p-3 text-center">
-					<FileTextIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-					<p class="text-xs text-muted-foreground">
-						{searchTerm ? `No reports match "${searchTerm}"` : 'No reports found'}
-					</p>
-				</div>
-			{:else}
-				<div class="p-2">
-					{#each filteredReports as report (report.report_id)}
-						<div class="border rounded-lg p-3 mb-2 hover:bg-accent transition-colors">
-							<div class="space-y-2">
-								{#snippet reportIcon()}
-									{@const SeverityIcon = getSeverityIcon(report.severity)}
-									<SeverityIcon class="h-4 w-4 {getSeverityColor(report.severity)}" />
-								{/snippet}
-
-								<div class="flex items-start gap-2">
-									{@render reportIcon()}
-									<div class="flex-1 min-w-0">
-										<p class="text-sm font-medium line-clamp-2">{report.message}</p>
-									</div>
-								</div>
-
-								<div class="space-y-1 text-xs text-muted-foreground">
-									<div class="flex items-center gap-1">
-										<UserIcon class="h-3 w-3" />
-										<span class="truncate">{report.user_name}</span>
-									</div>
-									<div class="flex items-center gap-1">
-										<ClockIcon class="h-3 w-3" />
-										<span>{formatRelativeTime(report.created_at)}</span>
-									</div>
-									<div class="text-xs truncate">
-										{report.schedule_name}
-									</div>
+			{:else if filteredReports && filteredReports.length > 0}
+				{#each filteredReports as report (report.report_id)}
+					{@const SeverityIcon = getSeverityIcon(report.severity)}
+					<div
+						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedReportId === report.report_id ? 'active' : ''}"
+					>
+						<a
+							href={`/admin/reports?reportId=${report.report_id}`}
+							class="flex items-center gap-2 w-full"
+							onclick={(event) => {
+								event.preventDefault();
+								selectReportForViewing(report);
+							}}
+						>
+							<div class="p-1 rounded {getSeverityColor(report.severity)} bg-opacity-10">
+								<SeverityIcon class="h-3 w-3 {getSeverityColor(report.severity)}" />
+							</div>
+							<div class="flex-1 min-w-0">
+								<div class="font-medium truncate">Report #{report.report_id}</div>
+								<div class="text-xs text-muted-foreground truncate">
+									{report.user_name} • {formatRelativeTime(report.created_at)}
 								</div>
 							</div>
-						</div>
-					{/each}
+						</a>
+					</div>
+				{/each}
+			{:else if $reportsQuery.data}
+				<div class="p-4 text-sm text-muted-foreground">
+					{searchTerm ? `No reports found matching "${searchTerm}".` : 'No reports found.'}
 				</div>
 			{/if}
 		</div>

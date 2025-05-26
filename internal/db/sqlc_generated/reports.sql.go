@@ -11,6 +11,62 @@ import (
 	"time"
 )
 
+const adminGetReportWithContext = `-- name: AdminGetReportWithContext :one
+SELECT 
+    r.report_id,
+    r.booking_id,
+    r.severity,
+    r.message,
+    r.created_at,
+    b.user_id,
+    COALESCE(u.name, '') as user_name,
+    u.phone as user_phone,
+    b.schedule_id,
+    s.name as schedule_name,
+    b.shift_start,
+    b.shift_end
+FROM reports r
+JOIN bookings b ON r.booking_id = b.booking_id
+JOIN users u ON b.user_id = u.user_id
+JOIN schedules s ON b.schedule_id = s.schedule_id
+WHERE r.report_id = ?
+`
+
+type AdminGetReportWithContextRow struct {
+	ReportID     int64          `json:"report_id"`
+	BookingID    int64          `json:"booking_id"`
+	Severity     int64          `json:"severity"`
+	Message      sql.NullString `json:"message"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UserID       int64          `json:"user_id"`
+	UserName     string         `json:"user_name"`
+	UserPhone    string         `json:"user_phone"`
+	ScheduleID   int64          `json:"schedule_id"`
+	ScheduleName string         `json:"schedule_name"`
+	ShiftStart   time.Time      `json:"shift_start"`
+	ShiftEnd     time.Time      `json:"shift_end"`
+}
+
+func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error) {
+	row := q.db.QueryRowContext(ctx, adminGetReportWithContext, reportID)
+	var i AdminGetReportWithContextRow
+	err := row.Scan(
+		&i.ReportID,
+		&i.BookingID,
+		&i.Severity,
+		&i.Message,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.UserName,
+		&i.UserPhone,
+		&i.ScheduleID,
+		&i.ScheduleName,
+		&i.ShiftStart,
+		&i.ShiftEnd,
+	)
+	return i, err
+}
+
 const adminListReportsWithContext = `-- name: AdminListReportsWithContext :many
 SELECT 
     r.report_id,
@@ -93,7 +149,7 @@ INSERT INTO reports (
     ?,
     ?
 )
-RETURNING report_id, booking_id, severity, message, created_at
+RETURNING report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp
 `
 
 type CreateReportParams struct {
@@ -111,12 +167,16 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Rep
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
+		&i.Latitude,
+		&i.Longitude,
+		&i.GpsAccuracy,
+		&i.GpsTimestamp,
 	)
 	return i, err
 }
 
 const getReportByBookingID = `-- name: GetReportByBookingID :one
-SELECT report_id, booking_id, severity, message, created_at FROM reports
+SELECT report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp FROM reports
 WHERE booking_id = ?
 `
 
@@ -129,12 +189,16 @@ func (q *Queries) GetReportByBookingID(ctx context.Context, bookingID int64) (Re
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
+		&i.Latitude,
+		&i.Longitude,
+		&i.GpsAccuracy,
+		&i.GpsTimestamp,
 	)
 	return i, err
 }
 
 const listReportsByUserID = `-- name: ListReportsByUserID :many
-SELECT r.report_id, r.booking_id, r.severity, r.message, r.created_at 
+SELECT r.report_id, r.booking_id, r.severity, r.message, r.created_at, r.latitude, r.longitude, r.gps_accuracy, r.gps_timestamp 
 FROM reports r
 JOIN bookings b ON r.booking_id = b.booking_id
 WHERE b.user_id = ?
@@ -156,6 +220,10 @@ func (q *Queries) ListReportsByUserID(ctx context.Context, userID int64) ([]Repo
 			&i.Severity,
 			&i.Message,
 			&i.CreatedAt,
+			&i.Latitude,
+			&i.Longitude,
+			&i.GpsAccuracy,
+			&i.GpsTimestamp,
 		); err != nil {
 			return nil, err
 		}

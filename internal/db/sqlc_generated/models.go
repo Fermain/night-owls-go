@@ -73,11 +73,15 @@ type RecurringAssignment struct {
 }
 
 type Report struct {
-	ReportID  int64          `json:"report_id"`
-	BookingID int64          `json:"booking_id"`
-	Severity  int64          `json:"severity"`
-	Message   sql.NullString `json:"message"`
-	CreatedAt sql.NullTime   `json:"created_at"`
+	ReportID     int64           `json:"report_id"`
+	BookingID    int64           `json:"booking_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
 }
 
 type Schedule struct {
