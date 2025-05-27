@@ -96,31 +96,23 @@ func (s *AdminDashboardService) GetDashboard(ctx context.Context) (*AdminDashboa
 	twoWeeksFromNow := now.AddDate(0, 0, 14)
 	
 	// Calculate metrics for next 2 weeks
-	metrics, err := s.calculateDashboardMetrics(ctx, now, twoWeeksFromNow)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to calculate dashboard metrics", "error", err)
-		return nil, err
-	}
+	metrics := s.calculateDashboardMetrics(ctx, now, twoWeeksFromNow)
 
 	// Get member contributions (past 30 days)
-	contributions, err := s.getMemberContributions(ctx)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to get member contributions", "error", err)
-		return nil, err
-	}
+	contributions := s.getMemberContributions(ctx)
 
 	// Calculate quality metrics
 	qualityMetrics, err := s.calculateQualityMetrics(ctx, now.AddDate(0, 0, -30), now)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to calculate quality metrics", "error", err)
-		return nil, err
+		qualityMetrics = &QualityMetrics{} // Return default metrics instead of failing
 	}
 
 	// Get problematic time slots
 	problematicSlots, err := s.getProblematicTimeSlots(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get problematic time slots", "error", err)
-		return nil, err
+		problematicSlots = []TimeSlotPattern{} // Return empty slice instead of failing
 	}
 
 	return &AdminDashboard{
@@ -132,11 +124,13 @@ func (s *AdminDashboardService) GetDashboard(ctx context.Context) (*AdminDashboa
 	}, nil
 }
 
-func (s *AdminDashboardService) calculateDashboardMetrics(ctx context.Context, from, to time.Time) (*DashboardMetrics, error) {
+func (s *AdminDashboardService) calculateDashboardMetrics(ctx context.Context, from, to time.Time) *DashboardMetrics {
 	// Get all available slots for the period using existing schedule service
 	allSlots, err := s.scheduleService.AdminGetAllShiftSlots(ctx, &from, &to, nil)
 	if err != nil {
-		return nil, err
+		s.logger.ErrorContext(ctx, "Failed to get all shift slots", "error", err)
+		// Return default metrics instead of failing
+		allSlots = []AdminAvailableShiftSlot{}
 	}
 
 	// Get booking metrics for the same period
@@ -145,7 +139,15 @@ func (s *AdminDashboardService) calculateDashboardMetrics(ctx context.Context, f
 		ShiftStart_2: to,
 	})
 	if err != nil {
-		return nil, err
+		s.logger.ErrorContext(ctx, "Failed to get booking metrics", "error", err)
+		// Return default metrics instead of failing
+		bookingMetrics = db.GetBookingMetricsRow{
+			TotalBookings:     0,
+			CheckedInBookings: 0,
+			CompletedBookings: 0,
+			CheckInRate:       0.0,
+			CompletionRate:    0.0,
+		}
 	}
 
 	totalShifts := len(allSlots)
@@ -183,13 +185,14 @@ func (s *AdminDashboardService) calculateDashboardMetrics(ctx context.Context, f
 		CompletionRate:    toFloat64(bookingMetrics.CompletionRate),
 		NextWeekUnfilled:  nextWeekUnfilled,
 		ThisWeekendStatus: weekendStatus,
-	}, nil
+	}
 }
 
-func (s *AdminDashboardService) getMemberContributions(ctx context.Context) ([]MemberContribution, error) {
+func (s *AdminDashboardService) getMemberContributions(ctx context.Context) []MemberContribution {
 	contributions, err := s.querier.GetMemberContributions(ctx)
 	if err != nil {
-		return nil, err
+		s.logger.ErrorContext(ctx, "Failed to get member contributions", "error", err)
+		return []MemberContribution{}
 	}
 
 	result := make([]MemberContribution, len(contributions))
@@ -222,7 +225,7 @@ func (s *AdminDashboardService) getMemberContributions(ctx context.Context) ([]M
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func (s *AdminDashboardService) calculateQualityMetrics(ctx context.Context, from, to time.Time) (*QualityMetrics, error) {

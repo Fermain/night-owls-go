@@ -59,11 +59,19 @@ func (h *BroadcastHandler) ListUserBroadcasts(w http.ResponseWriter, r *http.Req
 	var userBroadcasts []UserBroadcastResponse
 	for _, broadcast := range broadcasts {
 		if h.shouldUserSeeBroadcast(user, broadcast) {
+			// Handle sql.NullTime properly
+			var createdAt time.Time
+			if broadcast.CreatedAt.Valid {
+				createdAt = broadcast.CreatedAt.Time
+			} else {
+				createdAt = time.Now() // Fallback to current time if null
+			}
+			
 			userBroadcasts = append(userBroadcasts, UserBroadcastResponse{
 				ID:        broadcast.BroadcastID,
 				Message:   broadcast.Message,
 				Audience:  broadcast.Audience,
-				CreatedAt: broadcast.CreatedAt.Time,
+				CreatedAt: createdAt,
 			})
 		}
 	}
