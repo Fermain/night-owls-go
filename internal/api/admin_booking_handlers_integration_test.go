@@ -162,7 +162,8 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
-	adminDashboardAPIHandler := api.NewAdminDashboardHandler(nil, logger) // Using nil service for simple implementation
+	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
+	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
 	// pushAPIHandler := api.NewPushHandler(querier, cfg, logger) // If needed
 
 	// Public routes
