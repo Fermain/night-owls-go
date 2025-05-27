@@ -18,6 +18,8 @@ const (
 	UserIDKey    ContextKey = "userID"
 	// UserPhoneKey is the key used to store the user phone in the request context.
 	UserPhoneKey ContextKey = "userPhone"
+	// UserRoleKey is the key used to store the user role in the request context.
+	UserRoleKey  ContextKey = "userRole"
 )
 
 // AuthMiddleware creates a middleware handler for JWT authentication.
@@ -45,11 +47,33 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger) func(next http.Hand
 				return
 			}
 
-			// Store user ID and phone in context for downstream handlers
+			// Store user ID, phone, and role in context for downstream handlers
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, UserPhoneKey, claims.Phone)
+			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// AdminMiddleware creates a middleware handler that requires admin role.
+// This middleware should be used after AuthMiddleware.
+func AdminMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role, ok := r.Context().Value(UserRoleKey).(string)
+			if !ok {
+				RespondWithError(w, http.StatusUnauthorized, "User role not found in context", logger)
+				return
+			}
+
+			if role != "admin" {
+				RespondWithError(w, http.StatusForbidden, "Admin access required", logger)
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 } 

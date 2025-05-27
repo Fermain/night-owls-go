@@ -170,17 +170,26 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	// Admin routes
 	router.Route("/api/admin", func(r chi.Router) {
 		r.Use(api.AuthMiddleware(cfg, logger)) // Apply AuthMiddleware to all admin routes
+		r.Use(api.AdminMiddleware(logger))     // Apply AdminMiddleware to require admin role
 
 		// Admin Schedules
 		r.Route("/schedules", func(sr chi.Router) {
 			sr.Get("/", adminScheduleAPIHandler.AdminListSchedules)
 			sr.Post("/", adminScheduleAPIHandler.AdminCreateSchedule)
-			// ... other schedule admin routes
+			sr.Get("/{id}", adminScheduleAPIHandler.AdminGetSchedule)
+			sr.Put("/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)
+			sr.Delete("/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)
+			sr.Get("/all-slots", adminScheduleAPIHandler.AdminListAllShiftSlots)
+			sr.Post("/bulk-delete", adminScheduleAPIHandler.AdminBulkDeleteSchedules)
 		})
 		// Admin Users
 		r.Route("/users", func(ur chi.Router) {
 			ur.Get("/", adminUserAPIHandler.AdminListUsers)
-			// ... other user admin routes
+			ur.Get("/{id}", adminUserAPIHandler.AdminGetUser)
+			ur.Post("/", adminUserAPIHandler.AdminCreateUser)
+			ur.Put("/{id}", adminUserAPIHandler.AdminUpdateUser)
+			ur.Delete("/{id}", adminUserAPIHandler.AdminDeleteUser)
+			ur.Post("/bulk-delete", adminUserAPIHandler.AdminBulkDeleteUsers)
 		})
 		// Admin Bookings
 		r.Route("/bookings", func(br chi.Router) {

@@ -108,7 +108,7 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
-	RespondWithJSON(w, http.StatusCreated, schedule, h.logger)
+	RespondWithJSON(w, http.StatusCreated, ToScheduleResponse(schedule), h.logger)
 }
 
 // AdminListSchedules handles GET /api/admin/schedules
@@ -266,7 +266,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to update schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, schedule, h.logger)
+	RespondWithJSON(w, http.StatusOK, ToScheduleResponse(schedule), h.logger)
 }
 
 // AdminDeleteSchedule handles DELETE /api/admin/schedules/{id}
