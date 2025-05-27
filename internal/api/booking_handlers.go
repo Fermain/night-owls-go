@@ -185,6 +185,8 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 			RespondWithError(w, http.StatusNotFound, "Booking not found", h.logger, "booking_id", bookingID, "error", err.Error())
 		case errors.Is(err, service.ErrForbiddenUpdate):
 			RespondWithError(w, http.StatusForbidden, "Not authorized to check in to this booking", h.logger, "booking_id", bookingID, "user_id", userID, "error", err.Error())
+		case errors.Is(err, service.ErrCheckInTooEarly):
+			RespondWithError(w, http.StatusBadRequest, "Check-in is too early - can only check in up to 30 minutes before shift starts", h.logger, "booking_id", bookingID, "error", err.Error())
 		default:
 			RespondWithError(w, http.StatusInternalServerError, "Failed to mark check-in", h.logger, "error", err.Error())
 		}

@@ -21,6 +21,7 @@ var (
 	ErrBookingConflict       = errors.New("shift slot is already booked") // Corresponds to HTTP 409
 	ErrBookingNotFound     = errors.New("booking not found")
 	ErrForbiddenUpdate     = errors.New("user not authorized to update this booking")
+	ErrCheckInTooEarly     = errors.New("check-in is too early - can only check in up to 30 minutes before shift starts")
 )
 
 // BookingService handles logic related to bookings.
@@ -195,8 +196,16 @@ func (s *BookingService) MarkCheckIn(ctx context.Context, bookingID int64, userI
 		return db.Booking{}, ErrForbiddenUpdate
 	}
 
+	// Check if it's too early to check in (can check in up to 30 minutes before shift starts)
+	now := time.Now().UTC()
+	checkInWindow := booking.ShiftStart.Add(-30 * time.Minute) // 30 minutes before shift start
+	if now.Before(checkInWindow) {
+		s.logger.WarnContext(ctx, "Check-in attempt too early", "booking_id", bookingID, "shift_start", booking.ShiftStart, "check_in_window", checkInWindow, "current_time", now)
+		return db.Booking{}, ErrCheckInTooEarly
+	}
+
 	// Set check-in timestamp to current time
-	checkInTime := sql.NullTime{Time: time.Now().UTC(), Valid: true}
+	checkInTime := sql.NullTime{Time: now, Valid: true}
 
 	updatedBooking, err := s.querier.UpdateBookingCheckIn(ctx, db.UpdateBookingCheckInParams{
 		BookingID:   bookingID,
