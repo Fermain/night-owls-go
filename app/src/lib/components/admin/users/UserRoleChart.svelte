@@ -1,60 +1,21 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
-	import * as Chart from '$lib/components/ui/chart';
-	import { PieChart } from 'layerchart';
-	import type { UserMetrics } from '$lib/utils/userProcessing';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import BarChartIcon from '@lucide/svelte/icons/bar-chart';
 
-	let { metrics }: { metrics: UserMetrics } = $props();
-
-	const chartConfig = {
-		admin: { label: 'Admin', color: 'var(--color-chart-1)' },
-		owl: { label: 'Owl', color: 'var(--color-chart-2)' },
-		guest: { label: 'Guest', color: 'var(--color-chart-3)' }
-	} satisfies Chart.ChartConfig;
-
-	// Transform data for the pie chart
-	const chartData = $derived(
-		metrics.roleDistribution
-			.map((item) => ({
-				role: item.role.toLowerCase(),
-				count: item.count,
-				percentage: item.percentage,
-				label: item.role,
-				fill: `var(--color-chart-${item.role === 'Admin' ? '1' : item.role === 'Owl' ? '2' : '3'})`
-			}))
-			.filter((item) => item.count > 0)
-	);
+	let { isLoading = false, metrics = null }: { isLoading?: boolean; metrics?: any } = $props();
 </script>
 
-<Card.Root class="flex flex-col">
-	<Card.Header class="items-center pb-4">
-		<Card.Title>Role Distribution</Card.Title>
-		<Card.Description>Breakdown of user roles</Card.Description>
-	</Card.Header>
-	<Card.Content class="flex-1 pb-4">
-		<Chart.Container config={chartConfig} class="mx-auto aspect-square max-h-72">
-			<PieChart data={chartData} value="count" />
-		</Chart.Container>
-	</Card.Content>
-	<Card.Footer class="flex-col gap-3 text-sm pt-4">
-		<div class="flex items-center gap-2 font-medium leading-none">
-			User roles across the platform
+<Card.Root class="p-6">
+	<div class="flex items-center gap-2 mb-4">
+		<BarChartIcon class="h-5 w-5 text-muted-foreground" />
+		<h2 class="text-lg font-semibold">User Role Distribution</h2>
+	</div>
+	{#if isLoading}
+		<Skeleton class="h-32 w-full" />
+	{:else}
+		<div class="text-center py-8 text-muted-foreground">
+			<p class="text-sm">Role distribution chart will be displayed here</p>
 		</div>
-		<div class="leading-none text-muted-foreground">
-			{#each metrics.roleDistribution as role}
-				{#if role.count > 0}
-					<span class="inline-flex items-center gap-2 mr-6 mb-2">
-						<div
-							class="w-3 h-3 rounded-full {role.role === 'Admin'
-								? 'bg-chart-1'
-								: role.role === 'Owl'
-									? 'bg-chart-2'
-									: 'bg-chart-3'}"
-						></div>
-						{role.role}: {role.count} ({role.percentage}%)
-					</span>
-				{/if}
-			{/each}
-		</div>
-	</Card.Footer>
-</Card.Root>
+	{/if}
+</Card.Root> 

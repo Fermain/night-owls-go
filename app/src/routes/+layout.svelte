@@ -23,12 +23,17 @@
 	// Initialize notification service on app startup
 	onMount(() => {
 		notificationStore.init();
+		// Only fetch notifications if user is authenticated
+		if ($userSession.isAuthenticated) {
+			notificationStore.fetchNotifications();
+		}
 	});
 	
 	// Import unified header and mobile navigation
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import { notificationStore } from '$lib/services/notificationService';
+	import { userSession } from '$lib/stores/authStore';
 
 	let { children } = $props();
 
@@ -39,28 +44,28 @@
 			document.documentElement.classList.add('dark');
 		}
 
-		// Register service worker
-		try {
-			const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
-			const registered = await serviceWorkerService.register();
-			
-			if (registered) {
-				console.log('🔧 Service worker registered successfully');
-				
-				// Listen for service worker messages
-				navigator.serviceWorker.addEventListener('message', (event) => {
-					console.log('📨 Message from service worker:', event.data);
-					
-					if (event.data.type === 'SW_ACTIVATED') {
-						console.log('🎉 ' + event.data.message);
-					}
-				});
-			} else {
-				console.log('⚠️ Service worker registration failed');
-			}
-		} catch (error) {
-			console.error('Service worker registration error:', error);
-		}
+		// Register service worker - temporarily disabled for testing
+		// try {
+		// 	const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
+		// 	const registered = await serviceWorkerService.register();
+		// 	
+		// 	if (registered) {
+		// 		console.log('🔧 Service worker registered successfully');
+		// 		
+		// 		// Listen for service worker messages
+		// 		navigator.serviceWorker.addEventListener('message', (event) => {
+		// 			console.log('📨 Message from service worker:', event.data);
+		// 			
+		// 			if (event.data.type === 'SW_ACTIVATED') {
+		// 				console.log('🎉 ' + event.data.message);
+		// 			}
+		// 		});
+		// 	} else {
+		// 		console.log('⚠️ Service worker registration failed');
+		// 	}
+		// } catch (error) {
+		// 	console.error('Service worker registration error:', error);
+		// }
 	});
 </script>
 

@@ -11,6 +11,7 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import { notificationStore, hasUnread, unreadCount } from '$lib/services/notificationService';
 	import { formatDistanceToNow } from 'date-fns';
+	import { userSession } from '$lib/stores/authStore';
 
 	// Subscribe to notification state
 	let notificationState = $state(notificationStore);
@@ -18,15 +19,19 @@
 	let badgeCount = $state(unreadCount);
 
 	onMount(() => {
-		// Load notifications on mount
-		notificationStore.fetchNotifications();
-
-		// Set up periodic refresh every 15 seconds for more responsive updates
-		const interval = setInterval(() => {
+		// Only load notifications if user is authenticated
+		if ($userSession.isAuthenticated) {
 			notificationStore.fetchNotifications();
-		}, 15000);
 
-		return () => clearInterval(interval);
+			// Set up periodic refresh every 15 seconds for more responsive updates
+			const interval = setInterval(() => {
+				if ($userSession.isAuthenticated) {
+					notificationStore.fetchNotifications();
+				}
+			}, 15000);
+
+			return () => clearInterval(interval);
+		}
 	});
 
 	async function handleNotificationClick(notificationId: number) {

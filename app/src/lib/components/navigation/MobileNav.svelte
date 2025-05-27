@@ -1,27 +1,23 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { contextualNavigation } from '$lib/stores/navigation';
-	
-	// Get navigation items based on user role
-	const navItems = $derived($contextualNavigation.public);
+	import { Button } from '$lib/components/ui/button';
+	import MenuIcon from '@lucide/svelte/icons/menu';
+
+	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
 </script>
 
-<!-- Mobile bottom navigation -->
-<nav class="fixed bottom-0 left-0 right-0 bg-background border-t border-border md:hidden">
-	<div class="flex items-center justify-around h-16">
-		{#each navItems as item (item.url)}
-			{@const IconComponent = item.icon}
-			<a
-				href={item.url}
-				class="flex flex-col items-center gap-1 px-2 py-1 text-xs
-				{page.url.pathname === item.url || 
-				 (item.url !== '/' && page.url.pathname.startsWith(item.url))
-					? 'text-primary' 
-					: 'text-muted-foreground'}"
-			>
-				<IconComponent class="w-5 h-5" />
-				<span>{item.title}</span>
-			</a>
-		{/each}
+<!-- Mobile navigation placeholder -->
+<div class="md:hidden">
+	<Button variant="ghost" size="icon" onclick={() => isOpen = !isOpen}>
+		<MenuIcon class="h-5 w-5" />
+	</Button>
+</div>
+
+{#if isOpen}
+	<div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden">
+		<div class="fixed inset-y-0 left-0 z-50 w-3/4 border-r bg-background p-6">
+			<div class="text-center py-8 text-muted-foreground">
+				<p class="text-sm">Mobile navigation will be implemented here</p>
+			</div>
+		</div>
 	</div>
-</nav> 
+{/if} 

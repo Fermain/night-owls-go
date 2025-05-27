@@ -1,48 +1,21 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
-	import * as Chart from '$lib/components/ui/chart';
-	import { AreaChart } from 'layerchart';
-	import { scaleBand } from 'd3-scale';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import type { UserGrowthData } from '$lib/utils/userProcessing';
 
-	let { data }: { data: UserGrowthData[] } = $props();
-
-	const chartConfig = {
-		total: { label: 'Total Users', color: 'var(--color-chart-1)' },
-		new: { label: 'New Users', color: 'var(--color-chart-2)' }
-	} satisfies Chart.ChartConfig;
-
-	// Calculate growth percentage from first to last data point
-	const growthPercentage = $derived(() => {
-		if (data.length < 2) return 0;
-		const first = data[0].total;
-		const last = data[data.length - 1].total;
-		return first > 0 ? Math.round(((last - first) / first) * 100) : 0;
-	});
+	let { isLoading = false, data = null }: { isLoading?: boolean; data?: any } = $props();
 </script>
 
-<Card.Root>
-	<Card.Header class="pb-4">
-		<Card.Title>User Growth</Card.Title>
-		<Card.Description>User registration trends over the last 6 months</Card.Description>
-	</Card.Header>
-	<Card.Content>
-		<Chart.Container config={chartConfig} class="h-72">
-			<AreaChart {data} x="period" y="total" xScale={scaleBand().padding(0.1)} />
-		</Chart.Container>
-	</Card.Content>
-	<Card.Footer class="pt-4">
-		<div class="flex w-full items-start gap-2 text-sm">
-			<div class="grid gap-3">
-				<div class="flex items-center gap-2 font-medium leading-none">
-					Trending up by {Math.abs(growthPercentage())}% this period
-					<TrendingUpIcon class="h-4 w-4" />
-				</div>
-				<div class="flex items-center gap-2 leading-none text-muted-foreground">
-					Showing user growth over 6 months
-				</div>
-			</div>
+<Card.Root class="p-6">
+	<div class="flex items-center gap-2 mb-4">
+		<TrendingUpIcon class="h-5 w-5 text-muted-foreground" />
+		<h2 class="text-lg font-semibold">User Growth</h2>
+	</div>
+	{#if isLoading}
+		<Skeleton class="h-32 w-full" />
+	{:else}
+		<div class="text-center py-8 text-muted-foreground">
+			<p class="text-sm">User growth chart will be displayed here</p>
 		</div>
-	</Card.Footer>
-</Card.Root>
+	{/if}
+</Card.Root> 

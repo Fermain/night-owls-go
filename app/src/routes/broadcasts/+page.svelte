@@ -12,6 +12,7 @@
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import { notificationStore } from '$lib/services/notificationService';
 	import type { UserNotification } from '$lib/services/notificationService';
+	import { userSession } from '$lib/stores/authStore';
 
 	// Real notification state
 	let notificationState = $state(notificationStore);
@@ -20,43 +21,69 @@
 	let markingAsRead = $state(new Set<number>());
 
 	onMount(() => {
-		// Load notifications when page loads
-		notificationStore.fetchNotifications();
-
-		// Set up periodic refresh every 10 seconds on the broadcasts page
-		const interval = setInterval(() => {
+		// Only load notifications if user is authenticated
+		if ($userSession.isAuthenticated) {
 			notificationStore.fetchNotifications();
-		}, 10000);
 
-		// Keyboard shortcuts
-		const handleKeydown = (e: KeyboardEvent) => {
-			// Ctrl/Cmd + K to focus search
-			if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-				e.preventDefault();
-				const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
-				searchInput?.focus();
-			}
-			// Escape to clear search
-			if (e.key === 'Escape' && searchQuery) {
-				searchQuery = '';
-			}
-			// Ctrl/Cmd + A to mark all as read
-			if ((e.ctrlKey || e.metaKey) && e.key === 'a' && e.shiftKey) {
-				e.preventDefault();
-				markAllAsRead();
-			}
-		};
+			// Set up periodic refresh every 10 seconds on the broadcasts page
+			const interval = setInterval(() => {
+				if ($userSession.isAuthenticated) {
+					notificationStore.fetchNotifications();
+				}
+			}, 10000);
 
-		document.addEventListener('keydown', handleKeydown);
+			// Keyboard shortcuts
+			const handleKeydown = (e: KeyboardEvent) => {
+				// Ctrl/Cmd + K to focus search
+				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+					e.preventDefault();
+					const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
+					searchInput?.focus();
+				}
+				// Escape to clear search
+				if (e.key === 'Escape' && searchQuery) {
+					searchQuery = '';
+				}
+				// Ctrl/Cmd + A to mark all as read
+				if ((e.ctrlKey || e.metaKey) && e.key === 'a' && e.shiftKey) {
+					e.preventDefault();
+					markAllAsRead();
+				}
+			};
 
-		return () => {
-			clearInterval(interval);
-			document.removeEventListener('keydown', handleKeydown);
-		};
+			document.addEventListener('keydown', handleKeydown);
+
+			return () => {
+				clearInterval(interval);
+				document.removeEventListener('keydown', handleKeydown);
+			};
+		} else {
+			// For unauthenticated users, still set up keyboard shortcuts
+			const handleKeydown = (e: KeyboardEvent) => {
+				// Ctrl/Cmd + K to focus search
+				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+					e.preventDefault();
+					const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
+					searchInput?.focus();
+				}
+				// Escape to clear search
+				if (e.key === 'Escape' && searchQuery) {
+					searchQuery = '';
+				}
+			};
+
+			document.addEventListener('keydown', handleKeydown);
+
+			return () => {
+				document.removeEventListener('keydown', handleKeydown);
+			};
+		}
 	});
 
 	function refreshNotifications() {
-		notificationStore.fetchNotifications(true); // Force refresh
+		if ($userSession.isAuthenticated) {
+			notificationStore.fetchNotifications(true); // Force refresh
+		}
 	}
 
 	// Computed - using real notifications with filtering and search

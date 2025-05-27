@@ -68,7 +68,8 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 }
 
 func main() {
-	err := godotenv.Load()
+	// Use Overload to force .env file values to override any existing environment variables
+	err := godotenv.Overload()
 	if err != nil {
 		// Log this initial finding using standard log before slog is fully set up
 		log.Println("No .env file found, using environment variables or defaults")

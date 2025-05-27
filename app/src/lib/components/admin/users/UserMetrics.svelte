@@ -1,60 +1,21 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import UsersIcon from '@lucide/svelte/icons/users';
-	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import StarIcon from '@lucide/svelte/icons/star';
-	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
-	import type { UserMetrics } from '$lib/utils/userProcessing';
 
-	let { metrics }: { metrics: UserMetrics } = $props();
+	let { isLoading = false, metrics = null }: { isLoading?: boolean; metrics?: any } = $props();
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-	<!-- Total Users -->
-	<Card.Root>
-		<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-3">
-			<Card.Title class="text-sm font-medium">Total Users</Card.Title>
-			<UsersIcon class="h-5 w-5 text-muted-foreground" />
-		</Card.Header>
-		<Card.Content>
-			<div class="text-3xl font-bold">{metrics.totalUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">Registered users in the system</p>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- Admin Users -->
-	<Card.Root>
-		<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-3">
-			<Card.Title class="text-sm font-medium">Administrators</Card.Title>
-			<ShieldIcon class="h-5 w-5 text-muted-foreground" />
-		</Card.Header>
-		<Card.Content>
-			<div class="text-3xl font-bold">{metrics.adminUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">System administrators</p>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- Owl Users -->
-	<Card.Root>
-		<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-3">
-			<Card.Title class="text-sm font-medium">Night Owls</Card.Title>
-			<StarIcon class="h-5 w-5 text-muted-foreground" />
-		</Card.Header>
-		<Card.Content>
-			<div class="text-3xl font-bold">{metrics.owlUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">Active volunteers</p>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- Recent Users -->
-	<Card.Root>
-		<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-3">
-			<Card.Title class="text-sm font-medium">Recent Signups</Card.Title>
-			<UserPlusIcon class="h-5 w-5 text-muted-foreground" />
-		</Card.Header>
-		<Card.Content>
-			<div class="text-3xl font-bold">{metrics.recentUsers}</div>
-			<p class="text-xs text-muted-foreground mt-1">Last 30 days</p>
-		</Card.Content>
-	</Card.Root>
-</div>
+<Card.Root class="p-6">
+	<div class="flex items-center gap-2 mb-4">
+		<UsersIcon class="h-5 w-5 text-muted-foreground" />
+		<h2 class="text-lg font-semibold">User Metrics</h2>
+	</div>
+	{#if isLoading}
+		<Skeleton class="h-32 w-full" />
+	{:else}
+		<div class="text-center py-8 text-muted-foreground">
+			<p class="text-sm">User metrics will be displayed here</p>
+		</div>
+	{/if}
+</Card.Root> 

@@ -1,79 +1,74 @@
 <script lang="ts">
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
-	import type { UserRole } from '$lib/types';
-	import type { UserData } from '$lib/schemas/user';
+	import UserIcon from '@lucide/svelte/icons/user';
 
-	let {
+	let { 
 		open = $bindable(false),
-		user,
-		currentRole = $bindable('guest' as UserRole),
-		onConfirm
-	} = $props<{
+		userName = '',
+		currentRole = $bindable(''),
+		newRole = $bindable(''),
+		onConfirm = () => {},
+		isLoading = false,
+		user = null
+	}: {
 		open?: boolean;
-		user: UserData | undefined | null;
-		currentRole?: UserRole;
-		onConfirm: (newRole: UserRole) => void;
-	}>();
+		userName?: string;
+		currentRole?: string;
+		newRole?: string;
+		onConfirm?: (role: "admin" | "owl" | "guest") => void;
+		isLoading?: boolean;
+		user?: any;
+	} = $props();
 
-	const roleDisplayValues: Record<UserRole, string> = {
-		admin: 'Admin',
-		owl: 'Owl',
-		guest: 'Guest'
-	};
-
-	let selectedRoleInDialog: UserRole = $state(currentRole);
-
-	$effect(() => {
-		selectedRoleInDialog = currentRole;
-	});
-
-	function handleConfirm() {
-		onConfirm(selectedRoleInDialog);
-		open = false;
-	}
-
-	function handleCancel() {
-		selectedRoleInDialog = currentRole;
-		open = false;
-	}
+	const roleOptions = [
+		{ value: 'user', label: 'User' },
+		{ value: 'admin', label: 'Admin' }
+	];
 </script>
 
-<AlertDialog.Root
-	bind:open
-	onOpenChange={(isOpen) => {
-		if (!isOpen) handleCancel();
-	}}
->
+<AlertDialog.Root bind:open>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Change User Role</AlertDialog.Title>
+			<AlertDialog.Title class="flex items-center gap-2">
+				<UserIcon class="h-5 w-5" />
+				Change User Role
+			</AlertDialog.Title>
 			<AlertDialog.Description>
-				Select the new role for {user?.name || 'this user'}.
+				Change the role for {userName} from {currentRole} to a new role.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
-
 		<div class="py-4">
-			<Label for="dialog-role" class="block mb-2">New Role</Label>
-			<Select.Root type="single" bind:value={selectedRoleInDialog}>
-				<Select.Trigger class="w-full" id="dialog-role">
-					{roleDisplayValues[selectedRoleInDialog]}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Group>
-						<Select.GroupHeading>User Role</Select.GroupHeading>
-						<Select.Item value="guest" label="Guest">Guest</Select.Item>
-						<Select.Item value="owl" label="Owl">Owl</Select.Item>
-						<Select.Item value="admin" label="Admin">Admin</Select.Item>
-					</Select.Group>
-				</Select.Content>
-			</Select.Root>
+			<div class="space-y-2">
+				<Label>New Role</Label>
+				<Select.Root type="single" bind:value={newRole}>
+					<Select.Trigger>
+						{roleOptions.find(opt => opt.value === newRole)?.label || 'Select new role'}
+					</Select.Trigger>
+					<Select.Content>
+						{#each roleOptions as option (option.value)}
+							<Select.Item value={option.value} label={option.label}>
+								{option.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
 		</div>
-
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={handleCancel}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={handleConfirm}>Confirm Change</AlertDialog.Action>
+			<AlertDialog.Cancel disabled={isLoading}>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action 
+				onclick={() => onConfirm(newRole as "admin" | "owl" | "guest")}
+				disabled={isLoading || !newRole || newRole === currentRole}
+			>
+				{#if isLoading}
+					Updating...
+				{:else}
+					Update Role
+				{/if}
+			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
-</AlertDialog.Root>
+</AlertDialog.Root> 

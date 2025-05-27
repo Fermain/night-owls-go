@@ -33,8 +33,14 @@
 	// Query for user's bookings (only if authenticated)
 	const userBookingsQuery = createQuery({
 		queryKey: ['user-bookings'],
-		queryFn: () => UserApiService.getMyBookings(),
-		enabled: $userSession.isAuthenticated
+		queryFn: () => {
+			if (!$userSession.isAuthenticated) {
+				throw new Error('User not authenticated');
+			}
+			return UserApiService.getMyBookings();
+		},
+		enabled: $userSession.isAuthenticated,
+		retry: false // Don't retry if user is not authenticated
 	});
 
 	// Derived data

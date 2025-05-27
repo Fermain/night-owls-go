@@ -1,6 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { authenticatedFetch } from '$lib/utils/api';
 import { messageStorage } from './messageStorageService';
+import { userSession } from '$lib/stores/authStore';
 
 interface NotificationData {
 	broadcastId?: number;
@@ -83,6 +84,13 @@ const createNotificationStore = () => {
 		
 		// Actions
 		async fetchNotifications(force = false) {
+			// Check if user is authenticated before making API calls
+			const session = get(userSession);
+			if (!session.isAuthenticated) {
+				console.log('📦 Skipping notification fetch - user not authenticated');
+				return;
+			}
+
 			// Don't fetch if already loading and not forced
 			const currentState: NotificationState = get({ subscribe });
 			if (currentState.isLoading && !force) {
