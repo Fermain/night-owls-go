@@ -10,6 +10,7 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { userSession } from '$lib/stores/authStore';
+	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 	import {
 		UserApiService,
 		type AvailableShiftSlot,
@@ -240,6 +241,9 @@
 					<span class="text-xs">Report Incident</span>
 				</Button>
 			</div>
+
+			<!-- Emergency Contacts -->
+			<EmergencyContacts />
 
 			<!-- Unfilled Shifts -->
 			{#if $availableShiftsQuery.isLoading}

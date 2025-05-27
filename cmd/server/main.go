@@ -116,6 +116,7 @@ func main() {
 	reportArchivingService := service.NewReportArchivingService(querier, logger)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
+	emergencyContactService := service.NewEmergencyContactService(querier, logger)
 
 	// Instantiate PushSender service
 	pushSenderService := service.NewPushSender(querier, cfg, logger)
@@ -226,6 +227,7 @@ func main() {
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 	broadcastAPIHandler := api.NewBroadcastHandler(querier, logger)
 	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
+	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
 
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
@@ -244,6 +246,10 @@ func main() {
 	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
+	
+	// Emergency contacts (public access)
+	fuego.GetStd(s, "/api/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
+	fuego.GetStd(s, "/api/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
 	
 	// Protected routes (require auth)
 	protected := fuego.Group(s, "")
@@ -369,6 +375,14 @@ func main() {
 
 	// Admin Dashboard
 	fuego.GetStd(admin, "/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
+
+	// Admin Emergency Contacts
+	fuego.GetStd(admin, "/emergency-contacts", emergencyContactAPIHandler.AdminGetEmergencyContactsHandler)
+	fuego.PostStd(admin, "/emergency-contacts", emergencyContactAPIHandler.AdminCreateEmergencyContactHandler)
+	fuego.GetStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminGetEmergencyContactHandler)
+	fuego.PutStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminUpdateEmergencyContactHandler)
+	fuego.DeleteStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminDeleteEmergencyContactHandler)
+	fuego.PutStd(admin, "/emergency-contacts/{id}/default", emergencyContactAPIHandler.AdminSetDefaultEmergencyContactHandler)
 
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {

@@ -36,6 +36,18 @@ type Broadcast struct {
 	CreatedAt      sql.NullTime  `json:"created_at"`
 }
 
+type EmergencyContact struct {
+	ContactID    int64          `json:"contact_id"`
+	Name         string         `json:"name"`
+	Number       string         `json:"number"`
+	Description  sql.NullString `json:"description"`
+	IsDefault    bool           `json:"is_default"`
+	IsActive     bool           `json:"is_active"`
+	DisplayOrder int64          `json:"display_order"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
+}
+
 type Outbox struct {
 	OutboxID    int64          `json:"outbox_id"`
 	MessageType string         `json:"message_type"`
@@ -57,19 +69,6 @@ type PushSubscription struct {
 	UserAgent sql.NullString `json:"user_agent"`
 	Platform  sql.NullString `json:"platform"`
 	CreatedAt sql.NullTime   `json:"created_at"`
-}
-
-type RecurringAssignment struct {
-	RecurringAssignmentID int64          `json:"recurring_assignment_id"`
-	UserID                int64          `json:"user_id"`
-	BuddyName             sql.NullString `json:"buddy_name"`
-	DayOfWeek             int64          `json:"day_of_week"`
-	ScheduleID            int64          `json:"schedule_id"`
-	TimeSlot              string         `json:"time_slot"`
-	Description           sql.NullString `json:"description"`
-	IsActive              bool           `json:"is_active"`
-	CreatedAt             sql.NullTime   `json:"created_at"`
-	UpdatedAt             sql.NullTime   `json:"updated_at"`
 }
 
 type Report struct {

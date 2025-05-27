@@ -18,12 +18,12 @@ type Querier interface {
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
+	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
-	CreateRecurringAssignment(ctx context.Context, arg CreateRecurringAssignmentParams) (RecurringAssignment, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteRecurringAssignment(ctx context.Context, recurringAssignmentID int64) error
+	DeleteEmergencyContact(ctx context.Context, contactID int64) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -37,13 +37,14 @@ type Querier interface {
 	// Get all bookings in date range with check-in and report status
 	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
 	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	GetDefaultEmergencyContact(ctx context.Context) (EmergencyContact, error)
+	GetEmergencyContactByID(ctx context.Context, contactID int64) (EmergencyContact, error)
+	GetEmergencyContacts(ctx context.Context) ([]EmergencyContact, error)
 	// Get member contribution analysis for the past month
 	GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
-	GetRecurringAssignmentByID(ctx context.Context, recurringAssignmentID int64) (RecurringAssignment, error)
-	GetRecurringAssignmentsByPattern(ctx context.Context, arg GetRecurringAssignmentsByPatternParams) ([]GetRecurringAssignmentsByPatternRow, error)
 	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
 	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
@@ -57,15 +58,14 @@ type Querier interface {
 	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcastsWithSenderRow, error)
 	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
-	ListRecurringAssignments(ctx context.Context) ([]RecurringAssignment, error)
-	ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]RecurringAssignment, error)
 	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
+	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
 	UnarchiveReport(ctx context.Context, reportID int64) error
 	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
+	UpdateEmergencyContact(ctx context.Context, arg UpdateEmergencyContactParams) (EmergencyContact, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
-	UpdateRecurringAssignment(ctx context.Context, arg UpdateRecurringAssignmentParams) (RecurringAssignment, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error

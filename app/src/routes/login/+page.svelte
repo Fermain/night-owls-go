@@ -12,8 +12,11 @@
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import type { E164Number } from 'svelte-tel-input/types';
 
+	let hasShownAuthToast = false;
+	
 	$effect(() => {
-		if ($isAuthenticated) {
+		if ($isAuthenticated && !hasShownAuthToast) {
+			hasShownAuthToast = true;
 			toast.info(`Already logged in as ${$currentUser?.name || 'user'}. Redirecting...`);
 			goto('/admin', { replaceState: true });
 		}
@@ -111,15 +114,17 @@
 			
 			if (isAuto) {
 				toast.dismiss('auto-verify');
+				toast.success('Login successful!', { id: 'login-success' });
+			} else {
+				toast.success('Login successful!');
 			}
-			toast.success('Login successful!');
 			goto('/admin', { replaceState: true });
 		} catch (error) {
 			const isAuto = !event;
 			if (isAuto) {
 				toast.dismiss('auto-verify');
 				// For auto-verification, show a less intrusive error
-				toast.error('Invalid code. Please check and try again.');
+				toast.error('Invalid code. Please check and try again.', { id: 'auto-verify-error' });
 			} else {
 				toast.error(error instanceof Error ? error.message : 'Verification failed');
 			}
@@ -221,22 +226,24 @@
 			{#if step === 'verify'}
 				<form onsubmit={handleVerification} class="flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
-						<Label>Verification Code</Label>
-						<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading || isAutoVerifying}>
-							{#snippet children({ cells })}
-								<InputOTP.Group class="justify-center">
-									{#each cells.slice(0, 3) as cell, i (i)}
-										<InputOTP.Slot {cell} />
-									{/each}
-								</InputOTP.Group>
-								<InputOTP.Separator />
-								<InputOTP.Group class="justify-center">
-									{#each cells.slice(3, OTP_LENGTH) as cell, i (i)}
-										<InputOTP.Slot {cell} />
-									{/each}
-								</InputOTP.Group>
-							{/snippet}
-						</InputOTP.Root>
+						<Label class="text-center">Verification Code</Label>
+						<div class="flex justify-center">
+							<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading || isAutoVerifying}>
+								{#snippet children({ cells })}
+									<InputOTP.Group>
+										{#each cells.slice(0, 3) as cell, i (i)}
+											<InputOTP.Slot {cell} />
+										{/each}
+									</InputOTP.Group>
+									<InputOTP.Separator />
+									<InputOTP.Group>
+										{#each cells.slice(3, OTP_LENGTH) as cell, i (i)}
+											<InputOTP.Slot {cell} />
+										{/each}
+									</InputOTP.Group>
+								{/snippet}
+							</InputOTP.Root>
+						</div>
 						<p class="text-xs text-muted-foreground text-center">
 							Code will verify automatically when complete
 						</p>

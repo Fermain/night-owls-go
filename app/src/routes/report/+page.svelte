@@ -10,6 +10,7 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { toast } from 'svelte-sonner';
+	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 
 	// Form state
 	let selectedSeverity = $state('');
@@ -254,6 +255,9 @@
 				</Button>
 			</Card.Content>
 		</Card.Root>
+
+		<!-- Emergency Contacts -->
+		<EmergencyContacts />
 
 		<!-- Emergency Notice -->
 		<Card.Root class="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50">

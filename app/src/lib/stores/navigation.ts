@@ -9,6 +9,7 @@ import Calendar from '@lucide/svelte/icons/calendar';
 import MessageCircle from '@lucide/svelte/icons/message-circle';
 import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 import ClipboardList from '@lucide/svelte/icons/clipboard-list';
+import Phone from '@lucide/svelte/icons/phone';
 
 export interface NavItem {
 	title: string;
@@ -39,6 +40,13 @@ const adminNavItems: NavItem[] = [
 		url: '/admin/users',
 		icon: Users,
 		description: 'Manage community members',
+		roles: ['admin']
+	},
+	{
+		title: 'Emergency Contacts',
+		url: '/admin/emergency-contacts',
+		icon: Phone,
+		description: 'Manage emergency contacts',
 		roles: ['admin']
 	},
 	{
