@@ -60,7 +60,7 @@ func (m *MockBookingQuerier) GetBookingByID(ctx context.Context, bookingID int64
 	return args.Get(0).(db.Booking), args.Error(1)
 }
 
-func (m *MockBookingQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) {
+func (m *MockBookingQuerier) UpdateBookingCheckIn(ctx context.Context, arg db.UpdateBookingCheckInParams) (db.Booking, error) {
 	args := m.Called(ctx, arg)
 	return args.Get(0).(db.Booking), args.Error(1)
 }
@@ -96,6 +96,30 @@ func (m *MockBookingQuerier) ListRecurringAssignments(ctx context.Context) ([]db
 func (m *MockBookingQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) { panic("not implemented") }
 func (m *MockBookingQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
 func (m *MockBookingQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) { panic("not implemented") }
+
+// Add missing admin report methods
+func (m *MockBookingQuerier) AdminGetReportWithContext(ctx context.Context, reportID int64) (db.AdminGetReportWithContextRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) AdminListArchivedReportsWithContext(ctx context.Context) ([]db.AdminListArchivedReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) AdminListReportsWithContext(ctx context.Context) ([]db.AdminListReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ArchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+func (m *MockBookingQuerier) BulkArchiveReports(ctx context.Context, reportIds []int64) error { panic("not implemented") }
+func (m *MockBookingQuerier) UnarchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+
+// Add missing booking and broadcast methods
+func (m *MockBookingQuerier) GetBookingMetrics(ctx context.Context, arg db.GetBookingMetricsParams) (db.GetBookingMetricsRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) GetBookingPatternsByTimeSlot(ctx context.Context) ([]db.GetBookingPatternsByTimeSlotRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) GetBookingsInDateRange(ctx context.Context, arg db.GetBookingsInDateRangeParams) ([]db.GetBookingsInDateRangeRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) GetMemberContributions(ctx context.Context) ([]db.GetMemberContributionsRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]db.ListBookingsByUserIDWithScheduleRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) GetReportsForAutoArchiving(ctx context.Context) ([]db.GetReportsForAutoArchivingRow, error) { panic("not implemented") }
+
+// Add missing broadcast methods
+func (m *MockBookingQuerier) CreateBroadcast(ctx context.Context, arg db.CreateBroadcastParams) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockBookingQuerier) GetBroadcastByID(ctx context.Context, broadcastID int64) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListBroadcastsWithSender(ctx context.Context) ([]db.ListBroadcastsWithSenderRow, error) { panic("not implemented") }
+func (m *MockBookingQuerier) ListPendingBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockBookingQuerier) UpdateBroadcastStatus(ctx context.Context, arg db.UpdateBroadcastStatusParams) (db.Broadcast, error) { panic("not implemented") }
 
 
 // Re-define newTestLogger and newTestConfig as they are not in a shared test utility package.
@@ -286,7 +310,7 @@ func TestBookingService_CreateBooking_Conflict(t *testing.T) {
 	mockQuerier.AssertExpectations(t)
 }
 
-func TestBookingService_MarkAttendance_Success(t *testing.T) {
+func TestBookingService_MarkCheckIn_Success(t *testing.T) {
 	mockQuerier := new(MockBookingQuerier)
 	cfg := newBookingTestConfig()
 	testLogger := newBookingTestLogger()
@@ -294,23 +318,25 @@ func TestBookingService_MarkAttendance_Success(t *testing.T) {
 
 	bookingID := int64(100)
 	authUserID := int64(50)
-	attendedStatus := true
 
-	existingBooking := db.Booking{BookingID: bookingID, UserID: authUserID, Attended: false}
+	existingBooking := db.Booking{BookingID: bookingID, UserID: authUserID}
 	mockQuerier.On("GetBookingByID", mock.Anything, bookingID).Return(existingBooking, nil).Once()
 
-	updatedBookingFromDB := db.Booking{BookingID: bookingID, UserID: authUserID, Attended: attendedStatus}
-	mockQuerier.On("UpdateBookingAttendance", mock.Anything, db.UpdateBookingAttendanceParams{BookingID: bookingID, Attended: attendedStatus}).Return(updatedBookingFromDB, nil).Once()
+	checkInTime := time.Now()
+	updatedBookingFromDB := db.Booking{BookingID: bookingID, UserID: authUserID, CheckedInAt: sql.NullTime{Time: checkInTime, Valid: true}}
+	mockQuerier.On("UpdateBookingCheckIn", mock.Anything, mock.MatchedBy(func(params db.UpdateBookingCheckInParams) bool {
+		return params.BookingID == bookingID && params.CheckedInAt.Valid
+	})).Return(updatedBookingFromDB, nil).Once()
 
-	resultBooking, err := bookingService.MarkAttendance(context.Background(), bookingID, authUserID, attendedStatus)
+	resultBooking, err := bookingService.MarkCheckIn(context.Background(), bookingID, authUserID)
 
 	assert.NoError(t, err)
 	assert.Equal(t, updatedBookingFromDB, resultBooking)
-	assert.True(t, resultBooking.Attended)
+	assert.True(t, resultBooking.CheckedInAt.Valid)
 	mockQuerier.AssertExpectations(t)
 }
 
-func TestBookingService_MarkAttendance_BookingNotFound(t *testing.T) {
+func TestBookingService_MarkCheckIn_BookingNotFound(t *testing.T) {
 	mockQuerier := new(MockBookingQuerier)
 	cfg := newBookingTestConfig()
 	testLogger := newBookingTestLogger()
@@ -319,14 +345,14 @@ func TestBookingService_MarkAttendance_BookingNotFound(t *testing.T) {
 	bookingID := int64(101)
 	mockQuerier.On("GetBookingByID", mock.Anything, bookingID).Return(db.Booking{}, sql.ErrNoRows).Once()
 
-	_, err := bookingService.MarkAttendance(context.Background(), bookingID, 50, true)
+	_, err := bookingService.MarkCheckIn(context.Background(), bookingID, 50)
 
 	assert.Error(t, err)
 	assert.Equal(t, service.ErrBookingNotFound, err)
 	mockQuerier.AssertExpectations(t)
 }
 
-func TestBookingService_MarkAttendance_Forbidden(t *testing.T) {
+func TestBookingService_MarkCheckIn_Forbidden(t *testing.T) {
 	mockQuerier := new(MockBookingQuerier)
 	cfg := newBookingTestConfig()
 	testLogger := newBookingTestLogger()
@@ -339,12 +365,12 @@ func TestBookingService_MarkAttendance_Forbidden(t *testing.T) {
 	existingBooking := db.Booking{BookingID: bookingID, UserID: actualOwnerUserID}
 	mockQuerier.On("GetBookingByID", mock.Anything, bookingID).Return(existingBooking, nil).Once()
 
-	_, err := bookingService.MarkAttendance(context.Background(), bookingID, authUserIDTryingToUpdate, true)
+	_, err := bookingService.MarkCheckIn(context.Background(), bookingID, authUserIDTryingToUpdate)
 
 	assert.Error(t, err)
 	assert.Equal(t, service.ErrForbiddenUpdate, err)
 	mockQuerier.AssertExpectations(t)
-	mockQuerier.AssertNotCalled(t, "UpdateBookingAttendance", mock.Anything, mock.Anything)
+	mockQuerier.AssertNotCalled(t, "UpdateBookingCheckIn", mock.Anything, mock.Anything)
 }
 
 // TODO: Add tests for CreateBooking error paths (e.g., GetScheduleByID fails, GetUserByPhone (for buddy) fails not with NoRows, CreateOutboxItem fails).

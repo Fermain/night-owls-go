@@ -30,7 +30,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	// Test 1: Access to protected route without token
 	bookingReqBody, _ := json.Marshal(map[string]interface{}{
 		"schedule_id": 1,
-		"start_time": "2024-11-10T00:00:00Z",
+		"start_time": "2025-01-06T16:00:00Z", // 18:00 Johannesburg time = 16:00 UTC
 		"buddy_name": "Test Buddy",
 	})
 	
@@ -91,20 +91,15 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rr.Code, "Creating booking with valid token should succeed")
 
 	// Test 6: Test middleware properly adds user to context
-	// We'll check this by marking attendance on our own booking
+	// We'll check this by marking check-in on our own booking
 	var booking api.BookingResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &booking)
 	require.NoError(t, err)
 	
-	attendanceReqBody, _ := json.Marshal(map[string]interface{}{
-		"attended": true,
-	})
-	
 	// This should work since the JWT contains the user ID that matches the booking's owner
 	bookingIDStr := fmt.Sprintf("%d", booking.BookingID)
-	rr = app.makeRequest(t, "PATCH", "/bookings/"+bookingIDStr+"/attendance", 
-		bytes.NewBuffer(attendanceReqBody), token)
-	assert.Equal(t, http.StatusOK, rr.Code, "Marking attendance on own booking with valid token should succeed")
+	rr = app.makeRequest(t, "POST", "/bookings/"+bookingIDStr+"/checkin", nil, token)
+	assert.Equal(t, http.StatusOK, rr.Code, "Marking check-in on own booking with valid token should succeed")
 }
 
 func TestAuthMiddleware_ValidToken(t *testing.T) {

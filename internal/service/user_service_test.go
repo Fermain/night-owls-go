@@ -96,7 +96,7 @@ func (m *MockQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]
 	}
 	return get0.([]db.Report), args.Error(1)
 }
-func (m *MockQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) {
+func (m *MockQuerier) UpdateBookingCheckIn(ctx context.Context, arg db.UpdateBookingCheckInParams) (db.Booking, error) {
 	args := m.Called(ctx, arg)
 	return args.Get(0).(db.Booking), args.Error(1)
 }
@@ -184,6 +184,30 @@ func (m *MockQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.Upda
 	args := m.Called(ctx, arg)
 	return args.Get(0).(db.RecurringAssignment), args.Error(1)
 }
+
+// Add missing admin report methods
+func (m *MockQuerier) AdminGetReportWithContext(ctx context.Context, reportID int64) (db.AdminGetReportWithContextRow, error) { panic("not implemented") }
+func (m *MockQuerier) AdminListArchivedReportsWithContext(ctx context.Context) ([]db.AdminListArchivedReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockQuerier) AdminListReportsWithContext(ctx context.Context) ([]db.AdminListReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockQuerier) ArchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+func (m *MockQuerier) BulkArchiveReports(ctx context.Context, reportIds []int64) error { panic("not implemented") }
+func (m *MockQuerier) UnarchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+
+// Add missing booking and broadcast methods
+func (m *MockQuerier) GetBookingMetrics(ctx context.Context, arg db.GetBookingMetricsParams) (db.GetBookingMetricsRow, error) { panic("not implemented") }
+func (m *MockQuerier) GetBookingPatternsByTimeSlot(ctx context.Context) ([]db.GetBookingPatternsByTimeSlotRow, error) { panic("not implemented") }
+func (m *MockQuerier) GetBookingsInDateRange(ctx context.Context, arg db.GetBookingsInDateRangeParams) ([]db.GetBookingsInDateRangeRow, error) { panic("not implemented") }
+func (m *MockQuerier) GetMemberContributions(ctx context.Context) ([]db.GetMemberContributionsRow, error) { panic("not implemented") }
+func (m *MockQuerier) ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]db.ListBookingsByUserIDWithScheduleRow, error) { panic("not implemented") }
+func (m *MockQuerier) GetReportsForAutoArchiving(ctx context.Context) ([]db.GetReportsForAutoArchivingRow, error) { panic("not implemented") }
+
+// Add missing broadcast methods
+func (m *MockQuerier) CreateBroadcast(ctx context.Context, arg db.CreateBroadcastParams) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockQuerier) GetBroadcastByID(ctx context.Context, broadcastID int64) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockQuerier) ListBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockQuerier) ListBroadcastsWithSender(ctx context.Context) ([]db.ListBroadcastsWithSenderRow, error) { panic("not implemented") }
+func (m *MockQuerier) ListPendingBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockQuerier) UpdateBroadcastStatus(ctx context.Context, arg db.UpdateBroadcastStatusParams) (db.Broadcast, error) { panic("not implemented") }
 
 // Helper to create a test logger that discards output
 func newTestLogger() *slog.Logger {

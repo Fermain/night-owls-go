@@ -114,7 +114,6 @@ func main() {
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
 	reportArchivingService := service.NewReportArchivingService(querier, logger)
-	recurringAssignmentService := service.NewRecurringAssignmentService(querier, logger, cfg)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
 
@@ -157,22 +156,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Materialize recurring assignments every hour
-	_, err = cronScheduler.AddFunc("@hourly", func() {
-		ctx := context.Background()
-		now := time.Now().UTC()
-		fromTime := now
-		toTime := now.AddDate(0, 0, 14) // Next 2 weeks
-		
-		err := recurringAssignmentService.MaterializeUpcomingBookings(ctx, scheduleService, fromTime, toTime)
-		if err != nil {
-			slog.Error("Failed to materialize recurring assignment bookings", "error", err)
-		}
-	})
-	if err != nil {
-		slog.Error("Failed to add recurring assignment materialization job to cron", "error", err)
-		os.Exit(1)
-	}
+
 
 	// Auto-archive old reports daily at 2 AM
 	_, err = cronScheduler.AddFunc("0 2 * * *", func() {
@@ -190,7 +174,7 @@ func main() {
 	}
 
 	cronScheduler.Start()
-	slog.Info("Cron scheduler started for outbox processing and recurring assignments.")
+	slog.Info("Cron scheduler started for outbox processing, broadcasts, and report archiving.")
 
 	// --- Setup HTTP Router & Handlers ---
 	s := fuego.NewServer(
@@ -238,7 +222,6 @@ func main() {
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
-	adminRecurringAssignmentAPIHandler := api.NewAdminRecurringAssignmentHandlers(logger, recurringAssignmentService, scheduleService)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 	broadcastAPIHandler := api.NewBroadcastHandler(querier, logger)
@@ -298,12 +281,7 @@ func main() {
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
 
-	// Admin Recurring Assignments
-	fuego.GetStd(admin, "/recurring-assignments", adminRecurringAssignmentAPIHandler.AdminListRecurringAssignments)
-	fuego.PostStd(admin, "/recurring-assignments", adminRecurringAssignmentAPIHandler.AdminCreateRecurringAssignment)
-	fuego.GetStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminGetRecurringAssignment)
-	fuego.PutStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminUpdateRecurringAssignment)
-	fuego.DeleteStd(admin, "/recurring-assignments/{id}", adminRecurringAssignmentAPIHandler.AdminDeleteRecurringAssignment)
+
 
 	// Admin Reports
 	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)

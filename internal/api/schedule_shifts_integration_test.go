@@ -47,33 +47,33 @@ func TestScheduleEndpoints_GetAvailableShifts(t *testing.T) {
 			firstShift.EndTime, firstShift.StartTime)
 	}
 
-	// Test 2: Request with specific date range - Summer schedule (Nov-Apr)
-	// Our seeded summer schedule runs on weekends and Mondays at 00:00 and 02:00
+	// Test 2: Request with specific date range - Daily Evening Patrol (18:00 daily)
+	// Our seeded daily schedule runs every day at 18:00
 	// Let's choose a range with known slots
-	summerQueryParams := url.Values{}
-	summerQueryParams.Add("from", "2024-11-01T00:00:00Z")
-	summerQueryParams.Add("to", "2024-11-04T23:59:59Z") // Monday Nov 4, 2024
+	dailyQueryParams := url.Values{}
+	dailyQueryParams.Add("from", "2025-01-06T00:00:00Z")
+	dailyQueryParams.Add("to", "2025-01-09T23:59:59Z") // Monday Jan 6 to Thursday Jan 9, 2025
 	
-	rr = app.makeRequest(t, "GET", "/shifts/available?"+summerQueryParams.Encode(), nil, "")
+	rr = app.makeRequest(t, "GET", "/shifts/available?"+dailyQueryParams.Encode(), nil, "")
 	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
 	
-	var summerShifts []service.AvailableShiftSlot
-	err = json.Unmarshal(rr.Body.Bytes(), &summerShifts)
+	var dailyShifts []service.AvailableShiftSlot
+	err = json.Unmarshal(rr.Body.Bytes(), &dailyShifts)
 	require.NoError(t, err)
 	
-	// Should have shifts for Fri Nov 1, Sat Nov 2, Sun Nov 3, and Mon Nov 4 (each with slots at 00:00 and 02:00)
+	// Should have shifts for Jan 6, 7, 8, 9 (each with one slot at 18:00)
 	// The actual number may vary based on the cron expression implementation details
-	assert.GreaterOrEqual(t, len(summerShifts), 6, 
-		"Expected at least 6 shifts for the first 4 days of November 2024")
+	assert.GreaterOrEqual(t, len(dailyShifts), 4, 
+		"Expected at least 4 shifts for Jan 6-9, 2025")
 	
 	// Verify all returned shifts are within the requested date range
-	for _, shift := range summerShifts {
-		assert.True(t, shift.StartTime.After(time.Date(2024, 11, 1, 0, 0, 0, 0, time.UTC)) || 
-					shift.StartTime.Equal(time.Date(2024, 11, 1, 0, 0, 0, 0, time.UTC)),
-			"Shift start time %v should be on or after Nov 1, 2024", shift.StartTime)
+	for _, shift := range dailyShifts {
+		assert.True(t, shift.StartTime.After(time.Date(2025, 1, 6, 0, 0, 0, 0, time.UTC)) || 
+					shift.StartTime.Equal(time.Date(2025, 1, 6, 0, 0, 0, 0, time.UTC)),
+			"Shift start time %v should be on or after Jan 6, 2025", shift.StartTime)
 		
-		assert.True(t, shift.StartTime.Before(time.Date(2024, 11, 5, 0, 0, 0, 0, time.UTC)),
-			"Shift start time %v should be before Nov 5, 2024", shift.StartTime)
+		assert.True(t, shift.StartTime.Before(time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC)),
+			"Shift start time %v should be before Jan 10, 2025", shift.StartTime)
 	}
 
 	// Test 3: Request with limit parameter
@@ -146,9 +146,9 @@ func TestScheduleEndpoints_GetAvailableShifts_WithBooking(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	// Check available shifts first
-	fromDate := "2024-12-01T00:00:00Z"
-	toDate := "2024-12-02T23:59:59Z"
+	// Check available shifts first - use a weekday to ensure we get Daily Evening Patrol
+	fromDate := "2025-01-13T00:00:00Z"  // Monday
+	toDate := "2025-01-13T23:59:59Z"    // Monday only
 	qParams := url.Values{}
 	qParams.Add("from", fromDate)
 	qParams.Add("to", toDate)
@@ -159,13 +159,13 @@ func TestScheduleEndpoints_GetAvailableShifts_WithBooking(t *testing.T) {
 	var initialShifts []service.AvailableShiftSlot
 	err = json.Unmarshal(rr.Body.Bytes(), &initialShifts)
 	require.NoError(t, err)
-	require.NotEmpty(t, initialShifts, "Expected some shifts in December 2024")
+	require.NotEmpty(t, initialShifts, "Expected some shifts on Monday Jan 13, 2025")
 	
-	// Book one of the shifts
+	// Book one of the shifts - use the exact time in UTC
 	shiftToBook := initialShifts[0]
 	bookingReqBody, err := json.Marshal(map[string]interface{}{
 		"schedule_id": shiftToBook.ScheduleID,
-		"start_time": shiftToBook.StartTime,
+		"start_time": shiftToBook.StartTime.UTC().Format(time.RFC3339),
 		"buddy_name": "Test Buddy",
 	})
 	require.NoError(t, err)

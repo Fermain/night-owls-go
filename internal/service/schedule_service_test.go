@@ -53,7 +53,7 @@ func (m *MockScheduleQuerier) GetScheduleByID(ctx context.Context, scheduleID in
 func (m *MockScheduleQuerier) GetUserByID(ctx context.Context, userID int64) (db.User, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) ListBookingsByUserID(ctx context.Context, userID int64) ([]db.Booking, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) { panic("not implemented") }
-func (m *MockScheduleQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateBookingCheckIn(ctx context.Context, arg db.UpdateBookingCheckInParams) (db.Booking, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) UpdateOutboxItemStatus(ctx context.Context, arg db.UpdateOutboxItemStatusParams) (db.Outbox, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) { panic("not implemented") }
@@ -79,6 +79,30 @@ func (m *MockScheduleQuerier) ListRecurringAssignments(ctx context.Context) ([]d
 func (m *MockScheduleQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) { panic("not implemented") }
 func (m *MockScheduleQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) { panic("not implemented") }
+
+// Add missing admin report methods
+func (m *MockScheduleQuerier) AdminGetReportWithContext(ctx context.Context, reportID int64) (db.AdminGetReportWithContextRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) AdminListArchivedReportsWithContext(ctx context.Context) ([]db.AdminListArchivedReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) AdminListReportsWithContext(ctx context.Context) ([]db.AdminListReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ArchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) BulkArchiveReports(ctx context.Context, reportIds []int64) error { panic("not implemented") }
+func (m *MockScheduleQuerier) UnarchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+
+// Add missing booking and broadcast methods
+func (m *MockScheduleQuerier) GetBookingMetrics(ctx context.Context, arg db.GetBookingMetricsParams) (db.GetBookingMetricsRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetBookingPatternsByTimeSlot(ctx context.Context) ([]db.GetBookingPatternsByTimeSlotRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetBookingsInDateRange(ctx context.Context, arg db.GetBookingsInDateRangeParams) ([]db.GetBookingsInDateRangeRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetMemberContributions(ctx context.Context) ([]db.GetMemberContributionsRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]db.ListBookingsByUserIDWithScheduleRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetReportsForAutoArchiving(ctx context.Context) ([]db.GetReportsForAutoArchivingRow, error) { panic("not implemented") }
+
+// Add missing broadcast methods
+func (m *MockScheduleQuerier) CreateBroadcast(ctx context.Context, arg db.CreateBroadcastParams) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) GetBroadcastByID(ctx context.Context, broadcastID int64) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListBroadcastsWithSender(ctx context.Context) ([]db.ListBroadcastsWithSenderRow, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) ListPendingBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockScheduleQuerier) UpdateBroadcastStatus(ctx context.Context, arg db.UpdateBroadcastStatusParams) (db.Broadcast, error) { panic("not implemented") }
 
 // Re-define newTestLogger and newTestConfig if they are not in a shared test utility package.
 // For now, assuming they are not, so re-defining for this test file.

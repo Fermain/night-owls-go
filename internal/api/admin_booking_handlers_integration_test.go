@@ -304,7 +304,7 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 	assert.Equal(t, targetUser.UserID, bookingResp.UserID)
 	assert.Equal(t, testSchedule.ScheduleID, bookingResp.ScheduleID)
 	assert.True(t, shiftStartTime.Equal(bookingResp.ShiftStart.In(locUTC)), "ShiftStartTime mismatch. Expected %v (UTC), Got %v (UTC)", shiftStartTime, bookingResp.ShiftStart.In(locUTC))
-	assert.False(t, bookingResp.Attended)
+	assert.Nil(t, bookingResp.CheckedInAt)
 
 	dbBooking, err := app.Querier.GetBookingByID(ctx, bookingResp.BookingID)
 	require.NoError(t, err, "Failed to get booking from DB by ID")

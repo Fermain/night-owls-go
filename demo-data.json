@@ -509,324 +509,217 @@
       {
         "Name": "Daily Evening Patrol",
         "CronExpr": "0 18 * * *",
-        "StartDate": "2024-01-01",
-        "EndDate": "2024-12-31",
+        "StartDate": "2025-01-01",
+        "EndDate": "2025-12-31",
         "DurationMinutes": 120,
         "Timezone": "Africa/Johannesburg"
       },
       {
         "Name": "Weekend Morning Watch",
         "CronExpr": "0 6,10 * * 6,0",
-        "StartDate": "2024-01-01",
-        "EndDate": "2024-12-31",
+        "StartDate": "2025-01-01",
+        "EndDate": "2025-12-31",
         "DurationMinutes": 240,
         "Timezone": "Africa/Johannesburg"
       },
       {
         "Name": "Weekday Lunch Security",
         "CronExpr": "0 12 * * 1-5",
-        "StartDate": "2024-01-01",
-        "EndDate": "2024-12-31",
+        "StartDate": "2025-01-01",
+        "EndDate": "2025-12-31",
         "DurationMinutes": 60,
         "Timezone": "Africa/Johannesburg"
-      }
-    ],
-    "RecurringAssignments": [
-      {
-        "UserPhone": "+27821234569",
-        "ScheduleName": "Weekend Morning Watch",
-        "DayOfWeek": 6,
-        "TimeSlot": "06:00-10:00",
-        "BuddyName": "Diana Scout",
-        "Description": "Regular Saturday morning patrol"
-      },
-      {
-        "UserPhone": "+27821234570",
-        "ScheduleName": "Weekend Morning Watch",
-        "DayOfWeek": 0,
-        "TimeSlot": "10:00-14:00",
-        "BuddyName": "Charlie Volunteer",
-        "Description": "Sunday morning community watch"
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "DayOfWeek": 1,
-        "TimeSlot": "18:00-20:00",
-        "BuddyName": "",
-        "Description": "Monday evening patrol"
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "DayOfWeek": 3,
-        "TimeSlot": "18:00-20:00",
-        "BuddyName": "",
-        "Description": "Wednesday evening patrol"
-      },
-      {
-        "UserPhone": "+27821234572",
-        "ScheduleName": "Weekday Lunch Security",
-        "DayOfWeek": 2,
-        "TimeSlot": "12:00-13:00",
-        "BuddyName": "",
-        "Description": "Tuesday lunch security"
-      },
-      {
-        "UserPhone": "+27821234572",
-        "ScheduleName": "Weekday Lunch Security",
-        "DayOfWeek": 4,
-        "TimeSlot": "12:00-13:00",
-        "BuddyName": "",
-        "Description": "Thursday lunch security"
-      },
-      {
-        "UserPhone": "+27821234573",
-        "ScheduleName": "Summer Patrol (Nov-Apr)",
-        "DayOfWeek": 6,
-        "TimeSlot": "00:00-02:00",
-        "BuddyName": "Henry Security",
-        "Description": "Summer Saturday night patrol"
       }
     ],
     "Bookings": [
       {
         "UserPhone": "+27821234569",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2024-11-25T18:00:00Z",
+        "ShiftStart": "2025-01-25T18:00:00Z",
         "BuddyName": "Diana Scout",
-        "Attended": true
+        "CheckedInAt": "2025-01-25T18:15:00Z"
       },
       {
         "UserPhone": "+27821234570",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2024-11-24T06:00:00Z",
+        "ShiftStart": "2025-01-25T06:00:00Z",
         "BuddyName": "Charlie Volunteer",
-        "Attended": true
+        "CheckedInAt": "2025-01-25T06:10:00Z"
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2024-11-26T18:00:00Z",
+        "ShiftStart": "2025-01-26T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234572",
         "ScheduleName": "Weekday Lunch Security",
-        "ShiftStart": "2024-11-26T12:00:00Z",
+        "ShiftStart": "2025-01-27T12:00:00Z",
         "BuddyName": "",
-        "Attended": true
+        "CheckedInAt": "2025-01-27T12:05:00Z"
       },
       {
         "UserPhone": "+27821234570",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-05-25T06:00:00Z",
+        "ShiftStart": "2025-02-01T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-05-26T18:00:00Z",
+        "ShiftStart": "2025-02-03T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-05-27T18:00:00Z",
+        "ShiftStart": "2025-02-04T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-05-28T18:00:00Z",
+        "ShiftStart": "2025-02-05T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-05-29T18:00:00Z",
+        "ShiftStart": "2025-02-06T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-05-30T18:00:00Z",
+        "ShiftStart": "2025-02-07T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234569",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-05-31T06:00:00Z",
+        "ShiftStart": "2025-02-08T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234570",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-01T06:00:00Z",
+        "ShiftStart": "2025-02-09T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-02T18:00:00Z",
+        "ShiftStart": "2025-02-10T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-03T18:00:00Z",
+        "ShiftStart": "2025-02-11T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-04T18:00:00Z",
+        "ShiftStart": "2025-02-12T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-05T18:00:00Z",
+        "ShiftStart": "2025-02-13T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-06T18:00:00Z",
+        "ShiftStart": "2025-02-14T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234569",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-07T06:00:00Z",
+        "ShiftStart": "2025-02-15T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234570",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-08T06:00:00Z",
+        "ShiftStart": "2025-02-16T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-09T18:00:00Z",
+        "ShiftStart": "2025-02-17T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-10T18:00:00Z",
+        "ShiftStart": "2025-02-18T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-11T18:00:00Z",
+        "ShiftStart": "2025-02-19T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-12T18:00:00Z",
+        "ShiftStart": "2025-02-20T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-13T18:00:00Z",
+        "ShiftStart": "2025-02-21T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234569",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-14T06:00:00Z",
+        "ShiftStart": "2025-02-22T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234570",
         "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-15T06:00:00Z",
+        "ShiftStart": "2025-02-23T06:00:00Z",
         "BuddyName": "Auto-generated buddy",
-        "Attended": false
+        "CheckedInAt": null
       },
       {
         "UserPhone": "+27821234571",
         "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-16T18:00:00Z",
+        "ShiftStart": "2025-02-24T18:00:00Z",
         "BuddyName": "",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-17T18:00:00Z",
-        "BuddyName": "",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-18T18:00:00Z",
-        "BuddyName": "",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-19T18:00:00Z",
-        "BuddyName": "",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-20T18:00:00Z",
-        "BuddyName": "",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234569",
-        "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-21T06:00:00Z",
-        "BuddyName": "Auto-generated buddy",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234570",
-        "ScheduleName": "Weekend Morning Watch",
-        "ShiftStart": "2025-06-22T06:00:00Z",
-        "BuddyName": "Auto-generated buddy",
-        "Attended": false
-      },
-      {
-        "UserPhone": "+27821234571",
-        "ScheduleName": "Daily Evening Patrol",
-        "ShiftStart": "2025-06-23T18:00:00Z",
-        "BuddyName": "",
-        "Attended": false
+        "CheckedInAt": null
       }
     ]
   }

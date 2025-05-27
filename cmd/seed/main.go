@@ -25,10 +25,9 @@ import (
 
 // SeedData represents the data to be seeded
 type SeedData struct {
-	Users               []UserSeed
-	Schedules           []ScheduleSeed
-	RecurringAssignments []RecurringAssignmentSeed
-	Bookings            []BookingSeed
+	Users     []UserSeed
+	Schedules []ScheduleSeed
+	Bookings  []BookingSeed
 }
 
 type UserSeed struct {
@@ -46,14 +45,7 @@ type ScheduleSeed struct {
 	Timezone        string
 }
 
-type RecurringAssignmentSeed struct {
-	UserPhone   string
-	ScheduleName string
-	DayOfWeek   int64
-	TimeSlot    string
-	BuddyName   string
-	Description string
-}
+
 
 type BookingSeed struct {
 	UserPhone    string
@@ -238,50 +230,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 		scheduleMap[schedule.Name] = schedule.ScheduleID
 	}
 
-	// Seed recurring assignments
-	for _, assignmentSeed := range seedData.RecurringAssignments {
-		userID, ok := userMap[assignmentSeed.UserPhone]
-		if !ok {
-			logger.Warn("User not found for recurring assignment", "phone", assignmentSeed.UserPhone)
-			continue
-		}
 
-		scheduleID, ok := scheduleMap[assignmentSeed.ScheduleName]
-		if !ok {
-			logger.Warn("Schedule not found for recurring assignment", "schedule", assignmentSeed.ScheduleName)
-			continue
-		}
-
-		params := db.CreateRecurringAssignmentParams{
-			UserID:     userID,
-			DayOfWeek:  assignmentSeed.DayOfWeek,
-			ScheduleID: scheduleID,
-			TimeSlot:   assignmentSeed.TimeSlot,
-		}
-
-		if assignmentSeed.BuddyName != "" {
-			params.BuddyName = sql.NullString{String: assignmentSeed.BuddyName, Valid: true}
-		}
-
-		if assignmentSeed.Description != "" {
-			params.Description = sql.NullString{String: assignmentSeed.Description, Valid: true}
-		}
-
-		assignment, err := querier.CreateRecurringAssignment(ctx, params)
-		if err != nil {
-			logger.Error("Failed to create recurring assignment", 
-				"user", assignmentSeed.UserPhone, 
-				"schedule", assignmentSeed.ScheduleName, 
-				"error", err)
-			return SeedData{}, err
-		}
-		logger.Info("Created recurring assignment", 
-			"user", assignmentSeed.UserPhone, 
-			"schedule", assignmentSeed.ScheduleName,
-			"day", assignmentSeed.DayOfWeek,
-			"time_slot", assignmentSeed.TimeSlot,
-			"id", assignment.RecurringAssignmentID)
-	}
 
 	// Seed sample bookings
 	for _, bookingSeed := range seedData.Bookings {
@@ -355,18 +304,7 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 			"id", booking.BookingID)
 	}
 
-	// Seed reports after bookings are created
-	logger.Info("Seeding reports...")
-	if err := seedReports(querier); err != nil {
-		logger.Error("Failed to seed reports", "error", err)
-		return SeedData{}, err
-	}
-
-	// Seed some recent critical reports for demo purposes
-	if err := seedRecentCriticalReports(querier); err != nil {
-		logger.Error("Failed to seed recent critical reports", "error", err)
-		return SeedData{}, err
-	}
+	// Reports will be created through the API as needed
 
 	return seedData, nil
 }
@@ -381,203 +319,103 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 	// No additional schedules - rely only on migration schedules
 	schedules := []ScheduleSeed{}
 	
-	recurringAssignments := []RecurringAssignmentSeed{
-		// Charlie on Old schedule
-		{
-			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Old schedule",
-			DayOfWeek:    1, // Monday
-			TimeSlot:     "00:00-02:00",
-			BuddyName:    "Diana Scout",
-			Description:  "Monday midnight shift",
-		},
-		{
-			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Old schedule", 
-			DayOfWeek:    2, // Tuesday
-			TimeSlot:     "00:00-02:00",
-			BuddyName:    "Charlie Volunteer",
-			Description:  "Tuesday midnight shift",
-		},
-
-		// Eve on Old schedule
-		{
-			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Old schedule",
-			DayOfWeek:    3, // Wednesday
-			TimeSlot:     "00:00-02:00",
-			Description:  "Wednesday midnight shift",
-		},
-		{
-			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Old schedule",
-			DayOfWeek:    4, // Thursday
-			TimeSlot:     "00:00-02:00",
-			Description:  "Thursday midnight shift",
-		},
-
-		// Frank on Old schedule
-		{
-			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Old schedule",
-			DayOfWeek:    5, // Friday
-			TimeSlot:     "00:00-02:00",
-			Description:  "Friday midnight shift",
-		},
-		{
-			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Old schedule",
-			DayOfWeek:    6, // Saturday
-			TimeSlot:     "00:00-02:00",
-			Description:  "Saturday midnight shift",
-		},
-
-		// Grace on Old schedule
-		{
-			UserPhone:    "+27821234573", // Grace
-			ScheduleName: "Old schedule",
-			DayOfWeek:    0, // Sunday
-			TimeSlot:     "00:00-02:00",
-			BuddyName:    "Henry Security",
-			Description:  "Sunday midnight shift",
-		},
-	}
-	
-	// Filter recurring assignments based on available users
-	var filteredAssignments []RecurringAssignmentSeed
+	// Create user phone map for filtering bookings
 	userPhones := make(map[string]bool)
 	for _, user := range users {
 		userPhones[user.Phone] = true
 	}
 	
-	for _, assignment := range recurringAssignments {
-		if userPhones[assignment.UserPhone] {
-			filteredAssignments = append(filteredAssignments, assignment)
-		}
-	}
-	
 	historicalBookings := []BookingSeed{
-		// Historical bookings for Old schedule with some reports
+		// Historical bookings for Daily Evening Patrol
 		{
 			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-19T00:00:00Z", // Recent Monday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-20T18:00:00Z", // Recent Monday
 			BuddyName:    "Diana Scout",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-20T00:00:00Z", // Recent Tuesday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-21T18:00:00Z", // Recent Tuesday
 			BuddyName:    "Charlie Volunteer",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-21T00:00:00Z", // Recent Wednesday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-22T18:00:00Z", // Recent Wednesday
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-22T00:00:00Z", // Recent Thursday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-23T18:00:00Z", // Recent Thursday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-23T00:00:00Z", // Recent Friday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-24T18:00:00Z", // Recent Friday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-24T00:00:00Z", // Recent Saturday
+			ScheduleName: "Weekend Morning Watch",
+			ShiftStart:   "2025-01-25T06:00:00Z", // Recent Saturday
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234573", // Grace
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-25T00:00:00Z", // Recent Sunday
+			ScheduleName: "Weekend Morning Watch",
+			ShiftStart:   "2025-01-26T06:00:00Z", // Recent Sunday
 			BuddyName:    "Henry Security",
 			Attended:     true,
 		},
 		// More historical bookings for better report data
 		{
 			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-12T00:00:00Z", // Previous Monday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-13T18:00:00Z", // Previous Monday
 			BuddyName:    "Diana Scout",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-13T00:00:00Z", // Previous Tuesday
+			ScheduleName: "Weekday Lunch Security",
+			ShiftStart:   "2025-01-14T12:00:00Z", // Previous Tuesday
 			BuddyName:    "Charlie Volunteer",
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-14T00:00:00Z", // Previous Wednesday
+			ScheduleName: "Daily Evening Patrol",
+			ShiftStart:   "2025-01-15T18:00:00Z", // Previous Wednesday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234572", // Frank
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-15T00:00:00Z", // Previous Thursday
+			ScheduleName: "Weekday Lunch Security",
+			ShiftStart:   "2025-01-16T12:00:00Z", // Previous Thursday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234573", // Grace
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-16T00:00:00Z", // Previous Friday
+			ScheduleName: "Weekday Lunch Security",
+			ShiftStart:   "2025-01-17T12:00:00Z", // Previous Friday
 			BuddyName:    "Henry Security",
 			Attended:     false, // Missed shift
 		},
 		{
 			UserPhone:    "+27821234574", // Henry
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-17T00:00:00Z", // Previous Saturday
+			ScheduleName: "Weekend Morning Watch",
+			ShiftStart:   "2025-01-18T06:00:00Z", // Previous Saturday
 			Attended:     true,
 		},
 		{
 			UserPhone:    "+27821234577", // Leo
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2025-05-18T00:00:00Z", // Previous Sunday
-			Attended:     true,
-		},
-		// Even older bookings for more data
-		{
-			UserPhone:    "+27821234578", // Zoe
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-11T00:00:00Z",
-			Attended:     true,
-		},
-		{
-			UserPhone:    "+27821234580", // Ivy
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-12T00:00:00Z",
-			Attended:     true,
-		},
-		{
-			UserPhone:    "+27821234581", // Sam
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-13T00:00:00Z",
-			Attended:     false,
-		},
-		{
-			UserPhone:    "+27821234569", // Charlie
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-14T00:00:00Z",
-			Attended:     true,
-		},
-		{
-			UserPhone:    "+27821234570", // Diana
-			ScheduleName: "Old schedule",
-			ShiftStart:   "2024-11-15T00:00:00Z",
+			ScheduleName: "Weekend Morning Watch",
+			ShiftStart:   "2025-01-19T06:00:00Z", // Previous Sunday
 			Attended:     true,
 		},
 	}
@@ -609,10 +447,9 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 	}
 
 	return SeedData{
-		Users:               users,
-		Schedules:           schedules,
-		RecurringAssignments: filteredAssignments,
-		Bookings:            filteredBookings,
+		Users:     users,
+		Schedules: schedules,
+		Bookings:  filteredBookings,
 	}
 }
 
@@ -631,14 +468,7 @@ func showSeedData(logger *slog.Logger, userCount int, futureBookings bool) {
 		logger.Info("  Schedule", "name", schedule.Name, "cron", schedule.CronExpr)
 	}
 	
-	logger.Info("Recurring assignments to be created", "count", len(seedData.RecurringAssignments))
-	for _, assignment := range seedData.RecurringAssignments {
-		logger.Info("  Assignment", 
-			"user", assignment.UserPhone, 
-			"schedule", assignment.ScheduleName,
-			"day", assignment.DayOfWeek,
-			"time", assignment.TimeSlot)
-	}
+
 	
 	logger.Info("Bookings to be created", "count", len(seedData.Bookings))
 	for _, booking := range seedData.Bookings {
@@ -702,18 +532,18 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 		futureDate := now.AddDate(0, 0, i)
 		weekday := int(futureDate.Weekday())
 		
-		// Add Old schedule bookings (continue existing pattern)
+		// Add Daily Evening Patrol bookings (weekdays)
 		if weekday >= 1 && weekday <= 5 { // Monday to Friday
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    "+27821234571", // Eve Patrol
-				ScheduleName: "Old schedule",
-				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
+				ScheduleName: "Daily Evening Patrol",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T18:00:00Z",
 				BuddyName:    "",
 				Attended:     false, // Future bookings default to not attended
 			})
 		}
 		
-		// Add weekend Old schedule bookings
+		// Add Weekend Morning Watch bookings
 		if weekday == 6 || weekday == 0 { // Saturday or Sunday
 			userPhone := "+27821234572" // Frank
 			if weekday == 0 { // Sunday
@@ -722,19 +552,19 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 			
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    userPhone,
-				ScheduleName: "Old schedule",
-				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
+				ScheduleName: "Weekend Morning Watch",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T06:00:00Z",
 				BuddyName:    "Henry Security",
 				Attended:     false,
 			})
 		}
 		
-		// Occasionally add New schedule bookings (for variety)
-		if i%7 == 0 { // Every 7th day
+		// Occasionally add Weekday Lunch Security bookings (for variety)
+		if i%7 == 0 && weekday >= 1 && weekday <= 5 { // Every 7th weekday
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    "+27821234574", // Henry Security
-				ScheduleName: "New schedule",
-				ShiftStart:   futureDate.Format("2006-01-02") + "T00:00:00Z",
+				ScheduleName: "Weekday Lunch Security",
+				ShiftStart:   futureDate.Format("2006-01-02") + "T12:00:00Z",
 				BuddyName:    "",
 				Attended:     false,
 			})

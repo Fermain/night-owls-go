@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"night-owls-go/internal/config"
@@ -63,10 +61,7 @@ type AdminAvailableShiftSlot struct {
 	BookingID                *int64    `json:"booking_id,omitempty"`
 	UserName                 *string   `json:"user_name,omitempty"`
 	UserPhone                *string   `json:"user_phone,omitempty"`
-	IsRecurringReservation   bool      `json:"is_recurring_reservation,omitempty"`
-	RecurringAssignmentID    *int64    `json:"recurring_assignment_id,omitempty"`
 	BuddyName                *string   `json:"buddy_name,omitempty"`
-	RecurringDescription     *string   `json:"recurring_description,omitempty"`
 }
 
 // calculateScheduleBoundaryTimesInLocation determines the effective start and end times
@@ -267,12 +262,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		return []AdminAvailableShiftSlot{}, nil
 	}
 
-	// Get all active recurring assignments upfront for efficient lookup
-	recurringAssignments, err := s.querier.ListRecurringAssignments(ctx)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list recurring assignments for admin slots", "error", err)
-		return nil, ErrInternalServer
-	}
+
 
 	var allSlots []AdminAvailableShiftSlot
 
@@ -359,7 +349,6 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			// Actual booking exists
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-			populatedSlot.IsRecurringReservation = false
 			
 			user, userErr := s.querier.GetUserByID(ctx, booking.UserID)
 			if userErr == nil {
@@ -370,35 +359,13 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 					populatedSlot.UserPhone = &user.Phone
 				}
 			}
-		} else if errors.Is(err, sql.ErrNoRows) {
-			// No actual booking, check for recurring assignment
-			recurringMatch := s.findMatchingRecurringAssignment(slot, recurringAssignments)
-			if recurringMatch != nil {
-				// Reserved by recurring assignment
-				populatedSlot.IsBooked = true
-				populatedSlot.IsRecurringReservation = true
-				populatedSlot.RecurringAssignmentID = &recurringMatch.RecurringAssignmentID
-				
-				user, userErr := s.querier.GetUserByID(ctx, recurringMatch.UserID)
-				if userErr == nil {
-					if user.Name.Valid {
-						populatedSlot.UserName = &user.Name.String
-					}
-					if user.Phone != "" {
-						populatedSlot.UserPhone = &user.Phone
-					}
-				}
-				
-				if recurringMatch.BuddyName.Valid {
-					populatedSlot.BuddyName = &recurringMatch.BuddyName.String
-				}
-				
-				if recurringMatch.Description.Valid {
-					populatedSlot.RecurringDescription = &recurringMatch.Description.String
-				}
-			} else {
-				populatedSlot.IsBooked = false
+			
+			if booking.BuddyName.Valid {
+				populatedSlot.BuddyName = &booking.BuddyName.String
 			}
+		} else if errors.Is(err, sql.ErrNoRows) {
+			// No booking exists
+			populatedSlot.IsBooked = false
 		} else {
 			// Database error
 			s.logger.ErrorContext(ctx, "Error checking booking for admin slot", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
@@ -419,71 +386,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 	return populatedSlots, nil
 }
 
-// findMatchingRecurringAssignment checks if a slot matches any recurring assignment
-func (s *ScheduleService) findMatchingRecurringAssignment(slot AdminAvailableShiftSlot, assignments []db.RecurringAssignment) *db.RecurringAssignment {
-	// Use the slot's StartTime which is already in the schedule's local timezone
-	// This ensures we match the day of week as it appears locally, not in UTC
-	dayOfWeek := int64(slot.StartTime.Weekday())
-	
-	for _, assignment := range assignments {
-		if assignment.ScheduleID != slot.ScheduleID {
-			continue
-		}
-		
-		if assignment.DayOfWeek != dayOfWeek {
-			continue
-		}
-		
-		// Parse the time slot from recurring assignment
-		if s.timeSlotMatches(assignment.TimeSlot, slot.StartTime, slot.EndTime) {
-			return &assignment
-		}
-	}
-	
-	return nil
-}
 
-// timeSlotMatches checks if a time slot string matches the actual slot times
-func (s *ScheduleService) timeSlotMatches(timeSlot string, startTime, endTime time.Time) bool {
-	// Parse time slot format like "18:00-20:00"
-	parts := strings.Split(timeSlot, "-")
-	if len(parts) != 2 {
-		return false
-	}
-	
-	// Parse start time
-	startParts := strings.Split(parts[0], ":")
-	if len(startParts) != 2 {
-		return false
-	}
-	
-	// Parse end time
-	endParts := strings.Split(parts[1], ":")
-	if len(endParts) != 2 {
-		return false
-	}
-	
-	// Convert to integers for comparison
-	startHour, startHourErr := strconv.Atoi(startParts[0])
-	startMin, startMinErr := strconv.Atoi(startParts[1])
-	endHour, endHourErr := strconv.Atoi(endParts[0])
-	endMin, endMinErr := strconv.Atoi(endParts[1])
-	
-	if startHourErr != nil || startMinErr != nil || endHourErr != nil || endMinErr != nil {
-		return false
-	}
-	
-	// Compare with actual slot times
-	actualStartHour := startTime.Hour()
-	actualStartMin := startTime.Minute()
-	actualEndHour := endTime.Hour()
-	actualEndMin := endTime.Minute()
-	
-	return startHour == actualStartHour && 
-		   startMin == actualStartMin && 
-		   endHour == actualEndHour && 
-		   endMin == actualEndMin
-}
 
 // Add the ListAllSchedules method to retrieve all schedules
 func (s *ScheduleService) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) {

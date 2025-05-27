@@ -149,7 +149,7 @@ func newTestApp(t *testing.T) *testApp {
 	router.Group(func(r chi.Router) {
 		r.Use(api.AuthMiddleware(cfg, logger))
 		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
-		r.Patch("/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
+		r.Post("/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
 		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	})
 

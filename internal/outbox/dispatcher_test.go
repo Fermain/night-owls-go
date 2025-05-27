@@ -43,7 +43,7 @@ func (m *MockOutboxQuerier) GetUserByID(ctx context.Context, userID int64) (db.U
 func (m *MockOutboxQuerier) ListActiveSchedules(ctx context.Context, arg db.ListActiveSchedulesParams) ([]db.Schedule, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) ListBookingsByUserID(ctx context.Context, userID int64) ([]db.Booking, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) ListReportsByUserID(ctx context.Context, userID int64) ([]db.Report, error) {panic("not impl")} 
-func (m *MockOutboxQuerier) UpdateBookingAttendance(ctx context.Context, arg db.UpdateBookingAttendanceParams) (db.Booking, error) {panic("not impl")} 
+func (m *MockOutboxQuerier) UpdateBookingCheckIn(ctx context.Context, arg db.UpdateBookingCheckInParams) (db.Booking, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) CreateReport(ctx context.Context, arg db.CreateReportParams) (db.Report, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) CreateSchedule(ctx context.Context, arg db.CreateScheduleParams) (db.Schedule, error) {panic("not impl")} 
 func (m *MockOutboxQuerier) GetBookingByScheduleAndStartTime(ctx context.Context, arg db.GetBookingByScheduleAndStartTimeParams) (db.Booking, error) {panic("not impl")}
@@ -66,6 +66,30 @@ func (m *MockOutboxQuerier) ListRecurringAssignments(ctx context.Context) ([]db.
 func (m *MockOutboxQuerier) ListRecurringAssignmentsByUserID(ctx context.Context, userID int64) ([]db.RecurringAssignment, error) {panic("not impl")}
 func (m *MockOutboxQuerier) UpdateRecurringAssignment(ctx context.Context, arg db.UpdateRecurringAssignmentParams) (db.RecurringAssignment, error) {panic("not impl")}
 func (m *MockOutboxQuerier) GetRecentOutboxItemsByRecipient(ctx context.Context, arg db.GetRecentOutboxItemsByRecipientParams) ([]db.Outbox, error) {panic("not impl")}
+
+// Add missing admin report methods
+func (m *MockOutboxQuerier) AdminGetReportWithContext(ctx context.Context, reportID int64) (db.AdminGetReportWithContextRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) AdminListArchivedReportsWithContext(ctx context.Context) ([]db.AdminListArchivedReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) AdminListReportsWithContext(ctx context.Context) ([]db.AdminListReportsWithContextRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) ArchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+func (m *MockOutboxQuerier) BulkArchiveReports(ctx context.Context, reportIds []int64) error { panic("not implemented") }
+func (m *MockOutboxQuerier) UnarchiveReport(ctx context.Context, reportID int64) error { panic("not implemented") }
+
+// Add missing booking and broadcast methods
+func (m *MockOutboxQuerier) GetBookingMetrics(ctx context.Context, arg db.GetBookingMetricsParams) (db.GetBookingMetricsRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) GetBookingPatternsByTimeSlot(ctx context.Context) ([]db.GetBookingPatternsByTimeSlotRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) GetBookingsInDateRange(ctx context.Context, arg db.GetBookingsInDateRangeParams) ([]db.GetBookingsInDateRangeRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) GetMemberContributions(ctx context.Context) ([]db.GetMemberContributionsRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]db.ListBookingsByUserIDWithScheduleRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) GetReportsForAutoArchiving(ctx context.Context) ([]db.GetReportsForAutoArchivingRow, error) { panic("not implemented") }
+
+// Add missing broadcast methods
+func (m *MockOutboxQuerier) CreateBroadcast(ctx context.Context, arg db.CreateBroadcastParams) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) GetBroadcastByID(ctx context.Context, broadcastID int64) (db.Broadcast, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) ListBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) ListBroadcastsWithSender(ctx context.Context) ([]db.ListBroadcastsWithSenderRow, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) ListPendingBroadcasts(ctx context.Context) ([]db.Broadcast, error) { panic("not implemented") }
+func (m *MockOutboxQuerier) UpdateBroadcastStatus(ctx context.Context, arg db.UpdateBroadcastStatusParams) (db.Broadcast, error) { panic("not implemented") }
 
 // MockMessageSender is a mock implementation of the MessageSender interface.
 type MockMessageSender struct {

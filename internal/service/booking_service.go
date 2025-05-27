@@ -61,6 +61,21 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 		return db.Booking{}, ErrShiftTimeInvalid
 	}
 
+	// Handle timezone for cron expression validation
+	// Load the schedule's timezone, or default to UTC if not specified or invalid
+	loc := time.UTC
+	if schedule.Timezone.Valid && schedule.Timezone.String != "" {
+		loadedLoc, locErr := time.LoadLocation(schedule.Timezone.String)
+		if locErr == nil {
+			loc = loadedLoc
+		} else {
+			s.logger.WarnContext(ctx, "Failed to load timezone for schedule during booking, using UTC",
+				"schedule_id", schedule.ScheduleID, "timezone_str", schedule.Timezone.String, "error", locErr)
+		}
+	}
+	// Convert the startTime to the schedule's local time for cron validation
+	localStartTimeForCron := startTime.In(loc)
+
 	// Validate startTime against the schedule's cron expression
 	cronExpression, err := cronexpr.Parse(schedule.CronExpr)
 	if err != nil {
@@ -69,14 +84,12 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	}
 
 	// Check if the provided startTime is an actual occurrence of the cron expression.
-	// We find the next occurrence *from one second before* the startTime.
-	// If this next occurrence is not exactly startTime, then startTime is not a valid point.
-	// This also implicitly handles that startTime must not be in the past relative to cron's cycle if not careful,
-	// but GetAvailableSlots should prevent past times.
-	nextOccurrenceFromAlmostStartTime := cronExpression.Next(startTime.Add(-1 * time.Second))
-	if nextOccurrenceFromAlmostStartTime.IsZero() || !nextOccurrenceFromAlmostStartTime.Equal(startTime) {
-		s.logger.WarnContext(ctx, "Requested start_time does not match a cron expression occurrence", 
-			"schedule_id", scheduleID, "start_time", startTime, "cron_expr", schedule.CronExpr, "calculated_next", nextOccurrenceFromAlmostStartTime)
+	// We find the next occurrence *from one second before* the localStartTimeForCron.
+	// If this next occurrence is not exactly localStartTimeForCron, then startTime is not a valid point.
+	nextOccurrenceFromAlmostStartTime := cronExpression.Next(localStartTimeForCron.Add(-1 * time.Second))
+	if nextOccurrenceFromAlmostStartTime.IsZero() || !nextOccurrenceFromAlmostStartTime.Equal(localStartTimeForCron) {
+		s.logger.WarnContext(ctx, "Requested start_time does not match a cron expression occurrence in schedule's timezone", 
+			"schedule_id", scheduleID, "start_time_utc", startTime, "start_time_local", localStartTimeForCron, "cron_expr", schedule.CronExpr, "calculated_next_local", nextOccurrenceFromAlmostStartTime)
 		return db.Booking{}, ErrShiftTimeInvalid
 	}
 
