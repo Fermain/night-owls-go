@@ -162,6 +162,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
+	adminDashboardAPIHandler := api.NewAdminDashboardHandler(nil, logger) // Using nil service for simple implementation
 	// pushAPIHandler := api.NewPushHandler(querier, cfg, logger) // If needed
 
 	// Public routes
@@ -211,6 +212,8 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 			br.Post("/", adminBroadcastAPIHandler.AdminCreateBroadcast)
 			br.Get("/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
 		})
+		// Admin Dashboard
+		r.Get("/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
 	})
 	
 	// Also register protected user routes if admin might interact with them or if setup requires it
