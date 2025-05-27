@@ -161,6 +161,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
+	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 	// pushAPIHandler := api.NewPushHandler(querier, cfg, logger) // If needed
 
 	// Public routes
@@ -203,6 +204,12 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 			rr.Put("/{id}/archive", adminReportAPIHandler.AdminArchiveReportHandler)
 			rr.Put("/{id}/unarchive", adminReportAPIHandler.AdminUnarchiveReportHandler)
 			rr.Get("/archived", adminReportAPIHandler.AdminListArchivedReportsHandler)
+		})
+		// Admin Broadcasts
+		r.Route("/broadcasts", func(br chi.Router) {
+			br.Get("/", adminBroadcastAPIHandler.AdminListBroadcasts)
+			br.Post("/", adminBroadcastAPIHandler.AdminCreateBroadcast)
+			br.Get("/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
 		})
 	})
 	
