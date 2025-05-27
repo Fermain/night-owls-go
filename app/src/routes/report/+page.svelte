@@ -143,7 +143,7 @@
 		</div>
 	</header>
 
-	<div class="px-4 py-6 space-y-6">
+	<div class="px-4 py-4 space-y-4">
 		<!-- Current Shift Context -->
 		{#if mockCurrentShift}
 			<Card.Root class="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
@@ -208,12 +208,12 @@
 				<!-- Quick Templates -->
 				<div class="space-y-3">
 					<Label class="text-base font-medium">Quick Templates</Label>
-					<div class="grid grid-cols-1 gap-2">
+					<div class="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
 						{#each quickTemplates as template}
 							<Button
 								variant="outline"
 								size="sm"
-								class="h-auto p-3 text-left text-xs justify-start whitespace-normal"
+								class="h-auto p-2 text-left text-xs justify-start whitespace-normal"
 								onclick={() => useTemplate(template)}
 							>
 								{template}

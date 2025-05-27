@@ -160,7 +160,7 @@
 		</div>
 	{/if}
 
-	<div class="px-4 py-3">
+	<div class="px-4 py-3 pb-20 md:pb-6">
 		<ShiftsList 
 			shifts={filteredShifts}
 			{isLoading}
@@ -172,8 +172,5 @@
 			onRetry={loadShifts}
 			onShowAllShifts={handleShowAllShifts}
 		/>
-
-		<!-- Bottom spacing for mobile navigation -->
-		<div class="h-6"></div>
 	</div>
 </div>

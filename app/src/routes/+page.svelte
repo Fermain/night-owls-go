@@ -172,10 +172,10 @@
 			</div>
 		</div>
 
-		<div class="p-4">
+		<div class="p-4 space-y-4">
 			<!-- My Next Shift -->
 			{#if nextShift}
-				<Card.Root>
+				<Card.Root class="border-l-4 border-l-primary">
 					<Card.Header class="pb-3">
 						<div class="flex items-center justify-between">
 							<Card.Title class="text-base">My next shift</Card.Title>
@@ -184,12 +184,12 @@
 							</Badge>
 						</div>
 					</Card.Header>
-					<Card.Content class="pt-0">
-						<div class="text-sm text-muted-foreground mb-3">
+					<Card.Content class="pt-0 space-y-3">
+						<div class="text-sm text-muted-foreground">
 							{nextShift.schedule_name} • {nextShift.location}
 						</div>
 
-						<div class="flex items-center text-sm mb-4">
+						<div class="flex items-center text-sm">
 							<ClockIcon class="h-4 w-4 mr-2 text-muted-foreground" />
 							<span>{formatTime(nextShift.start_time)} - {formatTime(nextShift.end_time)}</span>
 						</div>
@@ -220,30 +220,25 @@
 				</Card.Root>
 			{:else}
 				<Card.Root>
-					<Card.Content class="text-center py-8">
+					<Card.Content class="text-center py-6">
 						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 						<h3 class="text-sm font-medium mb-1">No upcoming shifts</h3>
-						<p class="text-xs text-muted-foreground">Check available shifts below</p>
+						<p class="text-xs text-muted-foreground mb-3">Check available shifts below</p>
+						<Button size="sm" href="/shifts" variant="outline">Browse Shifts</Button>
 					</Card.Content>
 				</Card.Root>
 			{/if}
 
 			<!-- Quick Actions -->
-			<div class="grid grid-cols-2 gap-2 my-4">
-				<a
-					href="/shifts"
-					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-				>
-					<CalendarIcon class="h-4 w-4 mr-2" />
-					Browse Shifts
-				</a>
-				<a
-					href="/report"
-					class="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-				>
-					<AlertTriangleIcon class="h-4 w-4 mr-2" />
-					Report Incident
-				</a>
+			<div class="grid grid-cols-2 gap-3">
+				<Button href="/shifts" variant="outline" class="h-auto py-3 flex-col gap-1">
+					<CalendarIcon class="h-5 w-5" />
+					<span class="text-xs">Browse Shifts</span>
+				</Button>
+				<Button href="/report" variant="outline" class="h-auto py-3 flex-col gap-1">
+					<AlertTriangleIcon class="h-5 w-5" />
+					<span class="text-xs">Report Incident</span>
+				</Button>
 			</div>
 
 			<!-- Unfilled Shifts -->

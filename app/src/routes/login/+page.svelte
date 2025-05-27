@@ -143,7 +143,7 @@
 </svelte:head>
 
 {#if !$isAuthenticated}
-	<div class="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+	<div class="flex min-h-svh flex-col items-center justify-center gap-6 p-4 md:p-10">
 		<div class="flex w-full max-w-sm flex-col gap-6">
 			<!-- Header -->
 			<div class="flex flex-col gap-2 text-center">

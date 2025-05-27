@@ -70,7 +70,7 @@
 	<title>My Bookings - Night Owls</title>
 </svelte:head>
 
-<div class="container mx-auto p-4 space-y-6">
+	<div class="container mx-auto p-4 pb-20 md:pb-6 space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">My Bookings</h1>
 		<Button href="/shifts" variant="outline">
