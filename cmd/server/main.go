@@ -259,6 +259,7 @@ func main() {
 	// Admin routes
 	admin := fuego.Group(s, "/api/admin")
 	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
+	fuego.Use(admin, api.AdminMiddleware(logger))
 
 	// Admin Schedules
 	fuego.GetStd(admin, "/schedules", adminScheduleAPIHandler.AdminListSchedules)
