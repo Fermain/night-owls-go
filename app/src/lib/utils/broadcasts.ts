@@ -1,4 +1,10 @@
-import { formatDistanceToNow, parseISO, isValid, differenceInHours, differenceInDays } from 'date-fns';
+import {
+	formatDistanceToNow,
+	parseISO,
+	isValid,
+	differenceInHours,
+	differenceInDays
+} from 'date-fns';
 
 /**
  * Audience options for broadcast targeting
@@ -27,21 +33,21 @@ export const BROADCAST_STATUS = {
 export function formatRelativeTime(dateString: string): string {
 	try {
 		const date = parseISO(dateString);
-		
+
 		if (!isValid(date)) {
 			return 'Invalid Date';
 		}
-		
+
 		const now = new Date();
 		const hoursAgo = differenceInHours(now, date);
-		
+
 		if (hoursAgo < 1) return 'Just now';
 		if (hoursAgo < 24) return `${hoursAgo}h ago`;
-		
+
 		const daysAgo = differenceInDays(now, date);
 		if (daysAgo === 1) return 'Yesterday';
 		if (daysAgo < 7) return `${daysAgo}d ago`;
-		
+
 		// For older broadcasts, use the full distance format
 		return formatDistanceToNow(date, { addSuffix: true });
 	} catch {
@@ -55,11 +61,11 @@ export function formatRelativeTime(dateString: string): string {
 export function formatDetailedRelativeTime(dateString: string): string {
 	try {
 		const date = parseISO(dateString);
-		
+
 		if (!isValid(date)) {
 			return 'Invalid Date';
 		}
-		
+
 		return formatDistanceToNow(date, { addSuffix: true });
 	} catch {
 		return 'Invalid Date';
@@ -98,8 +104,9 @@ export function hasDeliveryIssues(broadcast: {
 	sent_count: number;
 	recipient_count: number;
 }): boolean {
-	return broadcast.status === BROADCAST_STATUS.SENT && 
-		   broadcast.sent_count !== broadcast.recipient_count;
+	return (
+		broadcast.status === BROADCAST_STATUS.SENT && broadcast.sent_count !== broadcast.recipient_count
+	);
 }
 
 /**

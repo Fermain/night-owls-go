@@ -11,15 +11,11 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
 	import { useQueryClient } from '@tanstack/svelte-query';
-
-	interface EmergencyContact {
-		id: number;
-		name: string;
-		number: string;
-		description: string;
-		is_default: boolean;
-		display_order: number;
-	}
+	import type {
+		EmergencyContact,
+		CreateEmergencyContactRequest
+	} from '$lib/utils/emergencyContacts';
+	import { validateEmergencyContact, canDeleteContact } from '$lib/utils/emergencyContacts';
 
 	interface Props {
 		contact?: EmergencyContact;
@@ -30,22 +26,22 @@
 
 	const queryClient = useQueryClient();
 
-	// Form state
-	let formName = $state(contact?.name || '');
-	let formNumber = $state(contact?.number || '');
-	let formDescription = $state(contact?.description || '');
-	let formIsDefault = $state(contact?.is_default || false);
-	let formDisplayOrder = $state(contact?.display_order || 1);
+	// Form state - handle optional properties from OpenAPI types
+	let formName = $state(contact?.name ?? '');
+	let formNumber = $state(contact?.number ?? '');
+	let formDescription = $state(contact?.description ?? '');
+	let formIsDefault = $state(contact?.is_default ?? false);
+	let formDisplayOrder = $state(contact?.display_order ?? 1);
 	let formSubmitting = $state(false);
 
 	// Update form fields when contact prop changes
 	$effect(() => {
 		if (contact) {
-			formName = contact.name;
-			formNumber = contact.number;
-			formDescription = contact.description;
-			formIsDefault = contact.is_default;
-			formDisplayOrder = contact.display_order;
+			formName = contact.name ?? '';
+			formNumber = contact.number ?? '';
+			formDescription = contact.description ?? '';
+			formIsDefault = contact.is_default ?? false;
+			formDisplayOrder = contact.display_order ?? 1;
 		} else {
 			// Reset form for new contact creation
 			formName = '';
@@ -63,8 +59,18 @@
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 
-		if (!formName.trim() || !formNumber.trim()) {
-			toast.error('Name and number are required');
+		// Validate form data using centralized validation
+		const formData: CreateEmergencyContactRequest = {
+			name: formName,
+			number: formNumber,
+			description: formDescription,
+			is_default: formIsDefault,
+			display_order: formDisplayOrder
+		};
+
+		const validation = validateEmergencyContact(formData);
+		if (!validation.isValid) {
+			toast.error(validation.errors.join(', '));
 			return;
 		}
 
@@ -72,7 +78,7 @@
 
 		try {
 			const url =
-				isEditing && contact
+				isEditing && contact?.id
 					? `/api/admin/emergency-contacts/${contact.id}`
 					: '/api/admin/emergency-contacts';
 
@@ -84,11 +90,11 @@
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					name: formName.trim(),
-					number: formNumber.trim(),
-					description: formDescription.trim(),
-					is_default: formIsDefault,
-					display_order: formDisplayOrder
+					name: formData.name?.trim(),
+					number: formData.number?.trim(),
+					description: formData.description?.trim(),
+					is_default: formData.is_default,
+					display_order: formData.display_order
 				})
 			});
 
@@ -121,9 +127,9 @@
 	}
 
 	async function handleDelete() {
-		if (!isEditing || !contact) return;
+		if (!isEditing || !contact?.id) return;
 
-		if (!confirm(`Are you sure you want to delete "${contact.name}"?`)) {
+		if (!confirm(`Are you sure you want to delete "${contact.name ?? 'this contact'}"?`)) {
 			return;
 		}
 
@@ -151,7 +157,7 @@
 	}
 
 	async function handleSetDefault() {
-		if (!isEditing || !contact) return;
+		if (!isEditing || !contact?.id) return;
 
 		try {
 			const response = await authenticatedFetch(
@@ -166,7 +172,7 @@
 				throw new Error(errorData.error || 'Failed to set default contact');
 			}
 
-			toast.success(`${contact.name} set as default emergency contact`);
+			toast.success(`${contact.name ?? 'Contact'} set as default emergency contact`);
 
 			// Invalidate the query to refresh the sidebar list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });

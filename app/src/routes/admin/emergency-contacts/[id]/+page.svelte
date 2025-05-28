@@ -4,15 +4,7 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import EmergencyContactForm from '$lib/components/admin/emergency-contacts/EmergencyContactForm.svelte';
 	import * as Card from '$lib/components/ui/card';
-
-	interface EmergencyContact {
-		id: number;
-		name: string;
-		number: string;
-		description: string;
-		is_default: boolean;
-		display_order: number;
-	}
+	import type { EmergencyContact } from '$lib/utils/emergencyContacts';
 
 	const contactId = $derived(parseInt(page.params.id, 10));
 

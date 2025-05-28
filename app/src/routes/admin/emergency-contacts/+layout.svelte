@@ -1,24 +1,15 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import PlusIcon from '@lucide/svelte/icons/plus-circle';
-	import PhoneIcon from '@lucide/svelte/icons/phone';
-	import StarIcon from '@lucide/svelte/icons/star';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { authenticatedFetch } from '$lib/utils/api';
-
-	interface EmergencyContact {
-		id: number;
-		name: string;
-		number: string;
-		description: string;
-		is_default: boolean;
-		display_order: number;
-	}
+	import EmergencyContactThumbnail from '$lib/components/admin/emergency-contacts/EmergencyContactThumbnail.svelte';
+	import type { EmergencyContact } from '$lib/utils/emergencyContacts';
+	import { filterContacts } from '$lib/utils/emergencyContacts';
 
 	let searchTerm = $state('');
 
@@ -51,17 +42,7 @@
 	// Filtered contacts for display in sidebar
 	const filteredContacts = $derived.by(() => {
 		const contacts = $contactsQuery.data ?? [];
-		if (!searchTerm) return contacts.sort((a, b) => a.display_order - b.display_order);
-
-		const term = searchTerm.toLowerCase();
-		return contacts
-			.filter(
-				(contact) =>
-					contact.name.toLowerCase().includes(term) ||
-					contact.number.includes(term) ||
-					contact.description.toLowerCase().includes(term)
-			)
-			.sort((a, b) => a.display_order - b.display_order);
+		return filterContacts(contacts, searchTerm);
 	});
 
 	// Handle selecting a contact for editing
@@ -106,38 +87,11 @@
 				</div>
 			{:else if filteredContacts && filteredContacts.length > 0}
 				{#each filteredContacts as contact (contact.id)}
-					<div
-						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedContactId() ===
-						contact.id
-							? 'active'
-							: ''}"
-					>
-						<a
-							href={`/admin/emergency-contacts/${contact.id}`}
-							class="flex items-center gap-2 w-full"
-							onclick={(event) => {
-								event.preventDefault();
-								selectContactForEditing(contact);
-							}}
-						>
-							<PhoneIcon class="h-4 w-4 flex-shrink-0" />
-							<div class="flex-grow min-w-0">
-								<div class="flex items-center gap-2">
-									<span class="truncate font-medium">{contact.name}</span>
-									{#if contact.is_default}
-										<Badge variant="default" class="text-xs">
-											<StarIcon class="h-2 w-2 mr-1" />
-											Default
-										</Badge>
-									{/if}
-								</div>
-								<div class="text-xs text-muted-foreground truncate">{contact.number}</div>
-								{#if contact.description}
-									<div class="text-xs text-muted-foreground truncate">{contact.description}</div>
-								{/if}
-							</div>
-						</a>
-					</div>
+					<EmergencyContactThumbnail
+						{contact}
+						isSelected={currentSelectedContactId() === contact.id}
+						onSelect={selectContactForEditing}
+					/>
 				{/each}
 			{:else if $contactsQuery.data}
 				<div class="p-4 text-sm text-muted-foreground">
