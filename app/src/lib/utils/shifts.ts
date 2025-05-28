@@ -98,10 +98,10 @@ export function isShiftSoon(startTime: string): boolean {
 	try {
 		const start = parseISO(startTime);
 		if (!isValid(start)) return false;
-		
+
 		const now = new Date();
 		const hoursUntilShift = differenceInHours(start, now);
-		
+
 		return hoursUntilShift <= 2 && hoursUntilShift >= 0;
 	} catch {
 		return false;

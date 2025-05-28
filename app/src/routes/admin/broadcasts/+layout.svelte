@@ -3,21 +3,13 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle';
-	import UsersIcon from '@lucide/svelte/icons/users';
-	import ClockIcon from '@lucide/svelte/icons/clock';
 	import { getBroadcasts } from '$lib/queries/admin/broadcasts';
 	import type { BroadcastData } from '$lib/schemas/broadcast';
+	import BroadcastThumbnail from '$lib/components/admin/broadcasts/BroadcastThumbnail.svelte';
+	import { AUDIENCE_OPTIONS } from '$lib/utils/broadcasts';
 
 	let searchTerm = $state('');
 	let { children } = $props();
-
-	// Audience options for display
-	const audienceOptions = [
-		{ value: 'all', label: 'All Users' },
-		{ value: 'admins', label: 'Admins Only' },
-		{ value: 'owls', label: 'Owls Only' },
-		{ value: 'active', label: 'Active Users (last 30 days)' }
-	];
 
 	// Recent broadcasts query
 	const recentBroadcastsQuery = $derived(
@@ -27,17 +19,6 @@
 		})
 	);
 
-	function formatRelativeTime(dateString: string) {
-		const date = new Date(dateString);
-		const now = new Date();
-		const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-		if (diffInHours < 1) return 'Just now';
-		if (diffInHours < 24) return `${diffInHours}h ago`;
-		if (diffInHours < 48) return 'Yesterday';
-		return `${Math.floor(diffInHours / 24)}d ago`;
-	}
-
 	// Filter broadcasts based on search term
 	const filteredBroadcasts = $derived.by(() => {
 		const broadcasts = $recentBroadcastsQuery.data ?? [];
@@ -46,11 +27,17 @@
 		return broadcasts.filter(
 			(broadcast) =>
 				broadcast.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				(audienceOptions.find((opt) => opt.value === broadcast.audience)?.label || '')
+				(AUDIENCE_OPTIONS.find((opt) => opt.value === broadcast.audience)?.label || '')
 					.toLowerCase()
 					.includes(searchTerm.toLowerCase())
 		);
 	});
+
+	// Navigation function for broadcast selection
+	function handleBroadcastSelect(broadcast: BroadcastData) {
+		// Future: Navigate to broadcast detail view
+		console.log('Selected broadcast:', broadcast.broadcast_id);
+	}
 </script>
 
 {#snippet broadcastsListContent()}
@@ -82,51 +69,7 @@
 			{:else}
 				<div>
 					{#each filteredBroadcasts as broadcast (broadcast.broadcast_id)}
-						<div
-							class="p-3 border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer group"
-						>
-							<div class="space-y-2">
-								<p class="text-sm font-medium line-clamp-2">{broadcast.message}</p>
-								<div class="flex items-center justify-between text-xs text-muted-foreground">
-									<div class="flex items-center gap-2">
-										<span class="flex items-center gap-1">
-											<UsersIcon class="h-3 w-3" />
-											{broadcast.recipient_count}
-										</span>
-										<span class="flex items-center gap-1">
-											<ClockIcon class="h-3 w-3" />
-											{formatRelativeTime(broadcast.created_at)}
-										</span>
-									</div>
-									{#if broadcast.push_enabled}
-										<span class="text-blue-600 font-medium">SMS</span>
-									{/if}
-								</div>
-								<div class="text-xs text-muted-foreground">
-									{audienceOptions.find((opt) => opt.value === broadcast.audience)?.label ??
-										'Unknown'}
-								</div>
-								<div class="text-xs">
-									<span
-										class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-										{broadcast.status === 'sent'
-											? 'bg-green-100 text-green-800'
-											: broadcast.status === 'pending'
-												? 'bg-yellow-100 text-yellow-800'
-												: broadcast.status === 'sending'
-													? 'bg-blue-100 text-blue-800'
-													: 'bg-red-100 text-red-800'}"
-									>
-										{broadcast.status}
-									</span>
-									{#if broadcast.status === 'sent' && broadcast.sent_count !== broadcast.recipient_count}
-										<span class="ml-2 text-orange-600 text-xs">
-											{broadcast.sent_count}/{broadcast.recipient_count} delivered
-										</span>
-									{/if}
-								</div>
-							</div>
-						</div>
+						<BroadcastThumbnail {broadcast} onSelect={handleBroadcastSelect} />
 					{/each}
 				</div>
 			{/if}
