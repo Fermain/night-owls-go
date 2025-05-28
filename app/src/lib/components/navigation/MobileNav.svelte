@@ -103,7 +103,7 @@
 						<div class="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center">
 							<span class="text-primary-foreground text-sm font-bold">NO</span>
 						</div>
-						<span class="font-semibold">Night Owls</span>
+						<span class="font-semibold">Mount Moreland Night Owls</span>
 					</div>
 					<Button variant="ghost" size="icon" onclick={closeMenu}>
 						<XIcon class="h-5 w-5" />

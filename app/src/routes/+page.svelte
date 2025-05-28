@@ -147,10 +147,10 @@
 </script>
 
 <svelte:head>
-	<title>Night Owls</title>
+	<title>Mount Moreland Night Owls</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background">
+<div class="bg-background">
 	{#if currentUser.isAuthenticated}
 		<!-- Authenticated Dashboard -->
 		<!-- Header -->
@@ -162,7 +162,7 @@
 							{#if currentUser.name}
 								Evening, {currentUser.name.split(' ')[0]}
 							{:else}
-								Night Owls Patrol
+								Mount Moreland Night Owls
 							{/if}
 						</h1>
 						<p class="text-sm text-muted-foreground">Ready for patrol</p>
@@ -299,123 +299,38 @@
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->
-		<div class="min-h-screen flex flex-col bg-patrol-gradient">
-			<!-- Enhanced Header with better branding -->
-			<header class="border-b border-border/50 bg-card/95 backdrop-blur-sm">
-				<div class="container mx-auto px-4 py-5 flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<div
-							class="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-lg"
-						>
-							<AlertTriangleIcon class="size-5" />
-						</div>
-						<div>
-							<span class="font-bold text-xl text-foreground">Night Owls Patrol</span>
-							<p class="text-xs text-muted-foreground">Community Watch</p>
-						</div>
-					</div>
-					<div class="flex gap-3">
-						<Button variant="ghost" href="/login" class="interactive-scale">Sign In</Button>
-						<Button href="/register" class="interactive-scale">Join Us</Button>
-					</div>
-				</div>
-			</header>
-
-			<!-- Enhanced Hero Section -->
+		<div class="flex flex-col">
+			<!-- Hero Section -->
 			<main class="flex-1 flex items-center justify-center px-4 py-16">
-				<div class="text-center max-w-4xl animate-in">
-					<div class="mb-6">
-						<div class="bg-primary/10 p-4 rounded-2xl w-fit mx-auto mb-6">
-							<AlertTriangleIcon class="h-16 w-16 text-primary" />
+				<div class="text-center max-w-4xl">
+					<div class="mb-8">
+						<div class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-8">
+							<AlertTriangleIcon class="h-20 w-20 text-primary" />
 						</div>
 					</div>
-					<h1
-						class="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text"
-					>
-						Protecting Our Community Together
+					
+					<h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-4">
+						Mount Moreland Night Owls
 					</h1>
-					<p
-						class="text-xl md:text-2xl text-muted-foreground mb-10 leading-relaxed max-w-3xl mx-auto"
-					>
-						Join your neighbors in keeping our community safe through coordinated patrols, real-time
-						communication, and shared vigilance.
+					
+					<h2 class="text-3xl md:text-4xl font-semibold text-primary mb-6">
+						Digital Control Centre
+					</h2>
+					
+					<p class="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto">
+						View and book shifts, send emergency alerts and help keep our community secure
 					</p>
-					<div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-						<Button size="lg" href="/register" class="text-lg px-8 py-6 interactive-scale">
-							Join the Watch
+					
+					<div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+						<Button size="lg" href="/register" class="text-lg px-8 py-6">
+							Become an Owl
 						</Button>
-						<Button
-							variant="outline"
-							size="lg"
-							href="/login"
-							class="text-lg px-8 py-6 interactive-scale"
-						>
-							Sign In
+						<Button variant="outline" size="lg" href="/login" class="text-lg px-8 py-6">
+							Sign in
 						</Button>
 					</div>
 				</div>
 			</main>
-
-			<!-- Enhanced Features Section -->
-			<section class="py-20 bg-card/30 border-t border-border/50">
-				<div class="container mx-auto px-4">
-					<div class="text-center mb-16">
-						<h2 class="text-3xl md:text-4xl font-bold mb-4">How We Keep Our Community Safe</h2>
-						<p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-							Our coordinated approach ensures comprehensive neighborhood protection
-						</p>
-					</div>
-					<div class="grid md:grid-cols-3 gap-8 lg:gap-12">
-						<div class="text-center group">
-							<div
-								class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-6 group-hover:bg-primary/20 transition-colors"
-							>
-								<CalendarIcon class="h-12 w-12 text-primary" />
-							</div>
-							<h3 class="text-xl font-bold mb-3">Coordinate Patrols</h3>
-							<p class="text-muted-foreground leading-relaxed">
-								Schedule and join community patrol shifts with your neighbors for comprehensive
-								coverage
-							</p>
-						</div>
-						<div class="text-center group">
-							<div
-								class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-6 group-hover:bg-primary/20 transition-colors"
-							>
-								<AlertTriangleIcon class="h-12 w-12 text-primary" />
-							</div>
-							<h3 class="text-xl font-bold mb-3">Report Incidents</h3>
-							<p class="text-muted-foreground leading-relaxed">
-								Quickly report and track community incidents with real-time alerts to all members
-							</p>
-						</div>
-						<div class="text-center group">
-							<div
-								class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-6 group-hover:bg-primary/20 transition-colors"
-							>
-								<ClockIcon class="h-12 w-12 text-primary" />
-							</div>
-							<h3 class="text-xl font-bold mb-3">Real-time Updates</h3>
-							<p class="text-muted-foreground leading-relaxed">
-								Stay informed with instant notifications and coordinate responses effectively
-							</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- Call to Action Section -->
-			<section class="py-16 bg-primary/5 border-t border-border/50">
-				<div class="container mx-auto px-4 text-center">
-					<h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to Make a Difference?</h2>
-					<p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-						Join hundreds of neighbors who are already making our community safer
-					</p>
-					<Button size="lg" href="/register" class="text-lg px-8 py-6 interactive-scale">
-						Start Your Watch Today
-					</Button>
-				</div>
-			</section>
 		</div>
 	{/if}
 </div>

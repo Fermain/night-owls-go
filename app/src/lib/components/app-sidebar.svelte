@@ -45,7 +45,7 @@
 									<img src="/logo.png" alt="Night Owls" class="w-full h-full object-contain" />
 								</div>
 								<div class="grid flex-1 text-left text-sm leading-tight">
-									<span class="truncate font-semibold">Night Owls</span>
+									<span class="truncate font-semibold">Mount Moreland Night Owls</span>
 									<span class="truncate text-xs">Admin</span>
 								</div>
 							</a>

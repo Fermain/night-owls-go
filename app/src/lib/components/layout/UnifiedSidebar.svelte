@@ -108,9 +108,9 @@
 	// Get app title based on context
 	const appTitle = $derived.by(() => {
 		if (mode === 'admin' || (mode === 'adaptive' && page.url.pathname.startsWith('/admin'))) {
-			return { main: 'Night Owls', sub: 'Admin' };
+			return { main: 'Mount Moreland Night Owls', sub: 'Admin' };
 		}
-		return { main: 'Night Owls', sub: 'Community' };
+		return { main: 'Mount Moreland Night Owls', sub: 'Community' };
 	});
 </script>
 

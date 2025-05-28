@@ -49,14 +49,14 @@
 		}
 		
 		// Public routes
-		if (pathname === '/') return 'Night Owls';
+		if (pathname === '/') return 'Mount Moreland Night Owls';
 		if (pathname === '/bookings') return 'My Shifts';
 		if (pathname === '/broadcasts') return 'Messages';
 		if (pathname === '/report') return 'Report Incident';
 		if (pathname === '/login') return 'Sign In';
 		if (pathname === '/register') return 'Join Community';
 		
-		return 'Night Owls';
+		return 'Mount Moreland Night Owls';
 	});
 
 	// Generate breadcrumbs for admin pages
@@ -227,11 +227,17 @@
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{:else}
-				<!-- Show login button if not authenticated -->
-				<Button variant="ghost" size="sm" onclick={() => window.location.href = '/login'}>
-					<UserIcon class="h-4 w-4 mr-2" />
-					<span class="hidden sm:inline">Sign in</span>
-				</Button>
+				<!-- Show register and login buttons if not authenticated -->
+				<div class="flex items-center gap-2">
+					<Button variant="ghost" size="sm" onclick={() => window.location.href = '/login'}>
+						<span class="hidden sm:inline">Sign in</span>
+						<span class="sm:hidden">Sign in</span>
+					</Button>
+					<Button size="sm" onclick={() => window.location.href = '/register'}>
+						<span class="hidden sm:inline">Register</span>
+						<span class="sm:hidden">Join</span>
+					</Button>
+				</div>
 			{/if}
 
 			<!-- Mobile menu button (optional) -->
