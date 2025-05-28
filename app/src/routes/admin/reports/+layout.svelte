@@ -1,17 +1,19 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
+	import ReportThumbnail from '$lib/components/admin/reports/ReportThumbnail.svelte';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import InfoIcon from '@lucide/svelte/icons/info';
-	import ClockIcon from '@lucide/svelte/icons/clock';
-	import UserIcon from '@lucide/svelte/icons/user';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import { authenticatedFetch } from '$lib/utils/api';
+	import { getSeverityLabel } from '$lib/utils/reports';
+	import type { components } from '$lib/types/api';
+
+	type ReportResponse = components['schemas']['api.ReportResponse'] & {
+		user_name: string;
+		schedule_name: string;
+	};
 
 	let searchTerm = $state('');
 	let { children } = $props();
@@ -40,15 +42,7 @@
 					throw new Error(`Failed to fetch reports: ${response.status}`);
 				}
 				const data = await response.json();
-				return data as Array<{
-					report_id: number;
-					severity: number;
-					created_at: string;
-					message: string;
-					user_name: string;
-					schedule_name: string;
-					[key: string]: any;
-				}>;
+				return data as ReportResponse[];
 			}
 		})
 	);
@@ -57,23 +51,25 @@
 	const filteredReports = $derived.by(() => {
 		const reports = $reportsQuery.data ?? [];
 		if (!searchTerm.trim()) return reports;
-		
+
 		const query = searchTerm.toLowerCase();
 		return reports.filter((report) => {
 			const searchableText = [
 				report.message,
 				report.user_name,
 				report.schedule_name,
-				getSeverityLabel(report.severity),
+				getSeverityLabel(report.severity ?? 0),
 				`#${report.report_id}`
-			].join(' ').toLowerCase();
-			
+			]
+				.join(' ')
+				.toLowerCase();
+
 			return searchableText.includes(query);
 		});
 	});
 
 	// Handle selecting a report from the dynamic list
-	const selectReportForViewing = (report: any) => {
+	const selectReportForViewing = (report: ReportResponse) => {
 		goto(`/admin/reports?reportId=${report.report_id}`);
 	};
 
@@ -82,56 +78,6 @@
 		const reportIdFromUrl = page.url.searchParams.get('reportId');
 		return reportIdFromUrl ? parseInt(reportIdFromUrl, 10) : undefined;
 	});
-
-	function getSeverityIcon(severity: number) {
-		switch (severity) {
-			case 0:
-				return InfoIcon;
-			case 1:
-				return AlertTriangleIcon;
-			case 2:
-				return ShieldAlertIcon;
-			default:
-				return InfoIcon;
-		}
-	}
-
-	function getSeverityColor(severity: number) {
-		switch (severity) {
-			case 0:
-				return 'text-blue-600';
-			case 1:
-				return 'text-orange-600';
-			case 2:
-				return 'text-red-600';
-			default:
-				return 'text-gray-600';
-		}
-	}
-
-	function getSeverityLabel(severity: number) {
-		switch (severity) {
-			case 0:
-				return 'Normal';
-			case 1:
-				return 'Suspicion';
-			case 2:
-				return 'Incident';
-			default:
-				return 'Unknown';
-		}
-	}
-
-	function formatRelativeTime(dateString: string) {
-		const date = new Date(dateString);
-		const now = new Date();
-		const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-		if (diffInHours < 1) return 'Just now';
-		if (diffInHours < 24) return `${diffInHours}h ago`;
-		if (diffInHours < 48) return 'Yesterday';
-		return `${Math.floor(diffInHours / 24)}d ago`;
-	}
 </script>
 
 {#snippet reportsListContent()}
@@ -160,29 +106,11 @@
 				</div>
 			{:else if filteredReports && filteredReports.length > 0}
 				{#each filteredReports as report (report.report_id)}
-					{@const SeverityIcon = getSeverityIcon(report.severity)}
-					<div
-						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedReportId === report.report_id ? 'active' : ''}"
-					>
-						<a
-							href={`/admin/reports?reportId=${report.report_id}`}
-							class="flex items-center gap-2 w-full"
-							onclick={(event) => {
-								event.preventDefault();
-								selectReportForViewing(report);
-							}}
-						>
-							<div class="p-1 rounded {getSeverityColor(report.severity)} bg-opacity-10">
-								<SeverityIcon class="h-3 w-3 {getSeverityColor(report.severity)}" />
-							</div>
-							<div class="flex-1 min-w-0">
-								<div class="font-medium truncate">Report #{report.report_id}</div>
-								<div class="text-xs text-muted-foreground truncate">
-									{report.user_name} • {formatRelativeTime(report.created_at)}
-								</div>
-							</div>
-						</a>
-					</div>
+					<ReportThumbnail
+						{report}
+						isSelected={currentSelectedReportId === report.report_id}
+						onSelect={selectReportForViewing}
+					/>
 				{/each}
 			{:else if $reportsQuery.data}
 				<div class="p-4 text-sm text-muted-foreground">
