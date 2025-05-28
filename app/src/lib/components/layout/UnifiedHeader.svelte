@@ -16,6 +16,8 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import StarIcon from '@lucide/svelte/icons/star';
+	import PhoneIcon from '@lucide/svelte/icons/phone';
+	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 
 	// Props for customization
 	let {
@@ -30,6 +32,9 @@
 
 	// Determine if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
+	
+	// Determine if we're on the report page
+	const isReportPage = $derived(page.url.pathname === '/report');
 
 	// Get current page title based on route and context
 	const pageTitle = $derived.by(() => {
@@ -77,6 +82,13 @@
 	function handleLogout() {
 		toast.success('Logged out successfully');
 		logout();
+	}
+
+	// Handle emergency call
+	function handleEmergency() {
+		if (confirm('This will call emergency services immediately. Continue?')) {
+			window.location.href = 'tel:999';
+		}
 	}
 
 	// Get user initials for avatar
@@ -156,6 +168,30 @@
 
 	<!-- Right side: User actions -->
 	<div class="flex flex-1 items-center justify-end space-x-2">
+			<!-- Report button (only for authenticated users, not on report page) -->
+			{#if $isAuthenticated && !isReportPage}
+				<Button variant="outline" size="sm" onclick={() => window.location.href = '/report'} class="hidden sm:flex">
+					<AlertTriangleIcon class="h-4 w-4 mr-2" />
+					Report
+				</Button>
+				<Button variant="outline" size="sm" onclick={() => window.location.href = '/report'} class="sm:hidden h-9 w-9 p-0">
+					<AlertTriangleIcon class="h-4 w-4" />
+					<span class="sr-only">Report</span>
+				</Button>
+			{/if}
+
+			<!-- Emergency button (only for authenticated users) -->
+			{#if $isAuthenticated}
+				<Button variant="destructive" size="sm" onclick={handleEmergency} class="hidden sm:flex">
+					<PhoneIcon class="h-4 w-4 mr-2" />
+					Emergency
+				</Button>
+				<Button variant="destructive" size="sm" onclick={handleEmergency} class="sm:hidden h-9 w-9 p-0">
+					<PhoneIcon class="h-4 w-4" />
+					<span class="sr-only">Emergency</span>
+				</Button>
+			{/if}
+
 			<!-- Notifications (only for authenticated users) -->
 			{#if $isAuthenticated}
 				<NotificationDropdown />

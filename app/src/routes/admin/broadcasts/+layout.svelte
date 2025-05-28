@@ -55,14 +55,6 @@
 
 {#snippet broadcastsListContent()}
 	<div class="flex flex-col h-full">
-		<!-- Header -->
-		<div class="p-3 border-b bg-muted/50">
-			<div class="flex items-center gap-2">
-				<MessageCircleIcon class="h-4 w-4" />
-				<span class="text-sm font-medium">Recent Broadcasts</span>
-			</div>
-			<p class="text-xs text-muted-foreground">Previously sent messages</p>
-		</div>
 
 		<!-- Broadcasts List -->
 		<div class="flex-grow overflow-y-auto">
@@ -89,9 +81,9 @@
 					</p>
 				</div>
 			{:else}
-				<div class="p-2">
+				<div>
 					{#each filteredBroadcasts as broadcast (broadcast.broadcast_id)}
-						<div class="border rounded-lg p-3 mb-2 hover:bg-accent transition-colors">
+						<div class="p-3 border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer group">
 							<div class="space-y-2">
 								<p class="text-sm font-medium line-clamp-2">{broadcast.message}</p>
 								<div class="flex items-center justify-between text-xs text-muted-foreground">

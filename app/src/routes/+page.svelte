@@ -153,31 +153,6 @@
 <div class="bg-background">
 	{#if currentUser.isAuthenticated}
 		<!-- Authenticated Dashboard -->
-		<!-- Header -->
-		<div class="bg-card border-b">
-			<div class="px-4 py-3">
-				<div class="flex items-center justify-between">
-					<div>
-						<h1 class="text-lg font-semibold">
-							{#if currentUser.name}
-								Evening, {currentUser.name.split(' ')[0]}
-							{:else}
-								Mount Moreland Night Owls
-							{/if}
-						</h1>
-						<p class="text-sm text-muted-foreground">Ready for patrol</p>
-					</div>
-					<div class="flex gap-2">
-						<Button variant="outline" size="sm" href="/report">
-							<AlertTriangleIcon class="h-4 w-4 mr-2" />
-							Report
-						</Button>
-						<Button variant="destructive" size="sm" onclick={handleEmergency}>Emergency</Button>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<div class="p-4 space-y-4">
 			<!-- My Next Shift -->
 			{#if nextShift}

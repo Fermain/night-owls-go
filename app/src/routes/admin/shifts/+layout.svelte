@@ -8,9 +8,7 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
-	import { createQuery } from '@tanstack/svelte-query';
-	import { page } from '$app/stores';
-	import type { AdminShiftSlot } from '$lib/types';
+	import { page } from '$app/state';
 	import { normalizeDateRange } from '$lib/utils/dateFormatting';
 	import { SchedulesApiService } from '$lib/services/api';
 
@@ -41,7 +39,7 @@
 	];
 
 	// Get selected shift from URL
-	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
+	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
 	// Data Fetching using API service - hardcoded to 2 weeks
 	async function fetchShiftSlots() {
@@ -53,25 +51,6 @@
 			throw error;
 		}
 	}
-
-	// Main query for shift slots with filtering
-	const shiftsQuery = $derived.by(() => {
-		return createQuery<AdminShiftSlot[], Error>({
-			queryKey: ['adminShiftSlots', showFilled, showUnfilled],
-			queryFn: fetchShiftSlots,
-			staleTime: 1000 * 60 * 5
-		});
-	});
-
-	// Filtered shifts for display
-	const filteredShifts = $derived.by(() => {
-		const shifts = $shiftsQuery.data ?? [];
-		return shifts.filter((shift) => {
-			if (showFilled && shift.is_booked) return true;
-			if (showUnfilled && !shift.is_booked) return true;
-			return false;
-		});
-	});
 
 	function clearFilters() {
 		showFilled = true;
@@ -88,7 +67,7 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={$page.url.pathname === item.url && !shiftStartTimeFromUrl}
+				class:active={page.url.pathname === item.url && !shiftStartTimeFromUrl}
 			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
@@ -130,8 +109,6 @@
 			<UpcomingShifts 
 				maxItems={15}
 				className="h-full"
-				hideHeading={true}
-				compactStyle={true}
 			/>
 		</div>
 	</div>

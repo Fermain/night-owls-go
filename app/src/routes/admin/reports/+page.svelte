@@ -68,7 +68,16 @@
 	// Fetch shift reports from the real API
 	const reportsQuery = $derived(
 		createQuery({
-			queryKey: ['adminReports', showArchived, searchQuery, severityFilter, scheduleFilter, dateRangeStart, dateRangeEnd, sortBy],
+			queryKey: [
+				'adminReports',
+				showArchived,
+				searchQuery,
+				severityFilter,
+				scheduleFilter,
+				dateRangeStart,
+				dateRangeEnd,
+				sortBy
+			],
 			queryFn: async () => {
 				const endpoint = showArchived ? '/api/admin/reports/archived' : '/api/admin/reports';
 				const response = await authenticatedFetch(endpoint);
@@ -99,8 +108,10 @@
 							report.user_name,
 							report.schedule_name,
 							getSeverityLabel(report.severity)
-						].join(' ').toLowerCase();
-						
+						]
+							.join(' ')
+							.toLowerCase();
+
 						if (!searchableText.includes(query)) {
 							return false;
 						}
@@ -121,7 +132,7 @@
 						const reportDate = new Date(report.created_at);
 						const startDate = new Date(dateRangeStart + 'T00:00:00Z');
 						const endDate = new Date(dateRangeEnd + 'T23:59:59Z');
-						
+
 						if (reportDate < startDate || reportDate > endDate) {
 							return false;
 						}
@@ -237,7 +248,8 @@
 			info: reports.filter((r) => r.severity === 0).length,
 			last24h: reports.filter((r) => new Date(r.created_at) >= last24h).length,
 			last7d: reports.filter((r) => new Date(r.created_at) >= last7d).length,
-			criticalLast24h: reports.filter((r) => r.severity === 2 && new Date(r.created_at) >= last24h).length
+			criticalLast24h: reports.filter((r) => r.severity === 2 && new Date(r.created_at) >= last24h)
+				.length
 		};
 	});
 
@@ -262,12 +274,14 @@
 
 	// Check if any filters are active
 	const hasActiveFilters = $derived.by(() => {
-		return searchQuery.trim() !== '' || 
-			   severityFilter !== 'all' || 
-			   scheduleFilter !== 'all' || 
-			   dateRangeStart !== null || 
-			   dateRangeEnd !== null ||
-			   sortBy !== 'newest';
+		return (
+			searchQuery.trim() !== '' ||
+			severityFilter !== 'all' ||
+			scheduleFilter !== 'all' ||
+			dateRangeStart !== null ||
+			dateRangeEnd !== null ||
+			sortBy !== 'newest'
+		);
 	});
 </script>
 
@@ -283,29 +297,29 @@
 	<div class="p-6">
 		<div class="max-w-7xl mx-auto">
 			<div class="mb-6">
-				<div class="flex items-center justify-between">
-					<AdminPageHeader 
+				<AdminPageHeader
 						icon={FileTextIcon}
 						heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
-						subheading="{showArchived 
-							? 'View and manage archived incident reports' 
-							: 'Monitor and analyze incident reports submitted by volunteers during shifts'
-						}"
+						subheading={showArchived
+							? 'View and manage archived incident reports'
+							: 'Monitor and analyze incident reports submitted by volunteers during shifts'}
 					/>
+				<div class="flex items-center justify-between">
+					
 					<div class="flex gap-2">
 						<div class="flex border rounded-lg p-1">
-							<Button 
-								variant={!showArchived ? 'default' : 'ghost'} 
+							<Button
+								variant={!showArchived ? 'default' : 'ghost'}
 								size="sm"
-								onclick={() => showArchived = false}
+								onclick={() => (showArchived = false)}
 							>
 								<FileTextIcon class="h-4 w-4 mr-2" />
 								Active
 							</Button>
-							<Button 
-								variant={showArchived ? 'default' : 'ghost'} 
+							<Button
+								variant={showArchived ? 'default' : 'ghost'}
 								size="sm"
-								onclick={() => showArchived = true}
+								onclick={() => (showArchived = true)}
 							>
 								<ArchiveIcon class="h-4 w-4 mr-2" />
 								Archived
@@ -313,18 +327,18 @@
 						</div>
 						{#if !showArchived}
 							<div class="flex border rounded-lg p-1">
-								<Button 
-									variant={viewMode === 'list' ? 'default' : 'ghost'} 
+								<Button
+									variant={viewMode === 'list' ? 'default' : 'ghost'}
 									size="sm"
-									onclick={() => viewMode = 'list'}
+									onclick={() => (viewMode = 'list')}
 								>
 									<FileTextIcon class="h-4 w-4 mr-2" />
 									List
 								</Button>
-								<Button 
-									variant={viewMode === 'map' ? 'default' : 'ghost'} 
+								<Button
+									variant={viewMode === 'map' ? 'default' : 'ghost'}
 									size="sm"
-									onclick={() => viewMode = 'map'}
+									onclick={() => (viewMode = 'map')}
 								>
 									<MapPinIcon class="h-4 w-4 mr-2" />
 									Map
@@ -394,9 +408,7 @@
 						<div>
 							<p class="text-sm font-medium text-muted-foreground">Weekly Activity</p>
 							<p class="text-2xl font-bold text-green-600">{reportStats.last7d}</p>
-							<p class="text-xs text-muted-foreground">
-								Reports this week
-							</p>
+							<p class="text-xs text-muted-foreground">Reports this week</p>
 						</div>
 					</div>
 				</Card.Root>
@@ -410,14 +422,16 @@
 						<h3 class="text-lg font-semibold">Filters & Search</h3>
 						{#if hasActiveFilters}
 							<Badge variant="secondary" class="ml-2">
-								{($reportsQuery.data?.length ?? 0)} results
+								{$reportsQuery.data?.length ?? 0} results
 							</Badge>
 						{/if}
 					</div>
 
 					<!-- Search Bar -->
 					<div class="relative">
-						<SearchIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<SearchIcon
+							class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+						/>
 						<Input
 							bind:value={searchQuery}
 							placeholder="Search reports by message, user, schedule, or severity..."
@@ -434,7 +448,7 @@
 									{#if severityFilter === 'all'}
 										All Severities
 									{:else}
-										{@const option = severityOptions.find(opt => opt.value === severityFilter)}
+										{@const option = severityOptions.find((opt) => opt.value === severityFilter)}
 										{#if option}
 											<div class="flex items-center gap-2">
 												<option.icon class="h-4 w-4 {option.color}" />
@@ -460,11 +474,14 @@
 							<Label>Schedule</Label>
 							<Select.Root type="single" bind:value={scheduleFilter}>
 								<Select.Trigger>
-									{scheduleOptions.find((opt) => opt.value === scheduleFilter)?.label ?? 'Select schedule'}
+									{scheduleOptions.find((opt) => opt.value === scheduleFilter)?.label ??
+										'Select schedule'}
 								</Select.Trigger>
 								<Select.Content>
 									{#each scheduleOptions as option (option.value)}
-										<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+										<Select.Item value={option.value} label={option.label}
+											>{option.label}</Select.Item
+										>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -478,7 +495,9 @@
 								</Select.Trigger>
 								<Select.Content>
 									{#each sortOptions as option (option.value)}
-										<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+										<Select.Item value={option.value} label={option.label}
+											>{option.label}</Select.Item
+										>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -516,13 +535,11 @@
 							<MapPinIcon class="h-5 w-5" />
 							Reports Map Overview
 						</Card.Title>
-						<Card.Description>
-							Click on markers to view report details
-						</Card.Description>
+						<Card.Description>Click on markers to view report details</Card.Description>
 					</Card.Header>
 					<Card.Content class="px-0 pb-0">
 						<div class="h-96">
-							<ReportsMapOverview 
+							<ReportsMapOverview
 								reports={$reportsQuery.data ?? []}
 								className="h-full"
 								onReportClick={(reportId) => viewReportDetail(reportId)}
@@ -533,136 +550,149 @@
 			{:else}
 				<!-- Reports List -->
 				<div class="space-y-4">
-				{#if $reportsQuery.isLoading}
-					{#each Array(3) as _, i (i)}
-						<Card.Root class="p-6">
-							<div class="space-y-3">
-								<div class="flex items-center justify-between">
-									<Skeleton class="h-6 w-32" />
-									<Skeleton class="h-6 w-16" />
+					{#if $reportsQuery.isLoading}
+						{#each Array(3) as _, i (i)}
+							<Card.Root class="p-6">
+								<div class="space-y-3">
+									<div class="flex items-center justify-between">
+										<Skeleton class="h-6 w-32" />
+										<Skeleton class="h-6 w-16" />
+									</div>
+									<Skeleton class="h-4 w-full" />
+									<Skeleton class="h-4 w-3/4" />
+									<div class="flex gap-4">
+										<Skeleton class="h-4 w-24" />
+										<Skeleton class="h-4 w-24" />
+										<Skeleton class="h-4 w-24" />
+									</div>
 								</div>
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-3/4" />
-								<div class="flex gap-4">
-									<Skeleton class="h-4 w-24" />
-									<Skeleton class="h-4 w-24" />
-									<Skeleton class="h-4 w-24" />
-								</div>
+							</Card.Root>
+						{/each}
+					{:else if $reportsQuery.isError}
+						<Card.Root class="p-8">
+							<div class="text-center">
+								<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<h3 class="text-lg font-semibold mb-2">Error Loading Reports</h3>
+								<p class="text-muted-foreground">
+									{$reportsQuery.error?.message || 'Failed to load reports'}
+								</p>
 							</div>
 						</Card.Root>
-					{/each}
-				{:else if $reportsQuery.isError}
-					<Card.Root class="p-8">
-						<div class="text-center">
-							<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-							<h3 class="text-lg font-semibold mb-2">Error Loading Reports</h3>
-							<p class="text-muted-foreground">
-								{$reportsQuery.error?.message || 'Failed to load reports'}
-							</p>
-						</div>
-					</Card.Root>
-				{:else if ($reportsQuery.data?.length ?? 0) === 0}
-					<Card.Root class="p-8">
-						<div class="text-center">
-							<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-							<h3 class="text-lg font-semibold mb-2">
-								{hasActiveFilters ? 'No Reports Match Your Filters' : 'No Reports Found'}
-							</h3>
-							<p class="text-muted-foreground">
-								{hasActiveFilters 
-									? 'Try adjusting your search criteria or clearing filters.' 
-									: 'No incident reports have been submitted yet.'}
-							</p>
-							{#if hasActiveFilters}
-								<Button variant="outline" onclick={clearFilters} class="mt-4">
-									Clear All Filters
-								</Button>
-							{/if}
-						</div>
-					</Card.Root>
-				{:else}
-					{#each $reportsQuery.data ?? [] as report (report.report_id)}
-						<Card.Root class="p-6 hover:shadow-md transition-all duration-200 cursor-pointer" onclick={() => viewReportDetail(report.report_id)}>
-							<div class="space-y-4">
-								<!-- Header -->
-								<div class="flex items-start justify-between">
-									{#snippet reportHeader()}
-										{@const SeverityIcon = getSeverityIcon(report.severity)}
-										<div class="flex items-center gap-3">
-											<div class="p-2 rounded-lg {getSeverityColor(report.severity)}">
-												<SeverityIcon class="h-5 w-5" />
+					{:else if ($reportsQuery.data?.length ?? 0) === 0}
+						<Card.Root class="p-8">
+							<div class="text-center">
+								<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<h3 class="text-lg font-semibold mb-2">
+									{hasActiveFilters ? 'No Reports Match Your Filters' : 'No Reports Found'}
+								</h3>
+								<p class="text-muted-foreground">
+									{hasActiveFilters
+										? 'Try adjusting your search criteria or clearing filters.'
+										: 'No incident reports have been submitted yet.'}
+								</p>
+								{#if hasActiveFilters}
+									<Button variant="outline" onclick={clearFilters} class="mt-4">
+										Clear All Filters
+									</Button>
+								{/if}
+							</div>
+						</Card.Root>
+					{:else}
+						{#each $reportsQuery.data ?? [] as report (report.report_id)}
+							<Card.Root
+								class="p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+								onclick={() => viewReportDetail(report.report_id)}
+							>
+								<div class="space-y-4">
+									<!-- Header -->
+									<div class="flex items-start justify-between">
+										{#snippet reportHeader()}
+											{@const SeverityIcon = getSeverityIcon(report.severity)}
+											<div class="flex items-center gap-3">
+												<div class="p-2 rounded-lg {getSeverityColor(report.severity)}">
+													<SeverityIcon class="h-5 w-5" />
+												</div>
+												<div>
+													<h3 class="font-semibold text-lg">Report #{report.report_id}</h3>
+													<p class="text-sm text-muted-foreground">
+														{formatFullDateTime(report.created_at)}
+													</p>
+												</div>
 											</div>
+										{/snippet}
+										{@render reportHeader()}
+
+										<div class="flex items-center gap-2">
+											<Badge class="{getSeverityColor(report.severity)} border">
+												{getSeverityLabel(report.severity)}
+											</Badge>
+											<Button variant="ghost" size="sm" class="h-8 w-8 p-0">
+												<EyeIcon class="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
+
+									<!-- Message -->
+									<div
+										class="bg-muted/30 rounded-lg p-4 border-l-4 {report.severity === 2
+											? 'border-l-red-500'
+											: report.severity === 1
+												? 'border-l-orange-500'
+												: 'border-l-blue-500'}"
+									>
+										<p class="text-sm leading-relaxed">{report.message}</p>
+									</div>
+
+									<!-- Enhanced Details -->
+									<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
+											<UserIcon class="h-4 w-4 text-muted-foreground" />
 											<div>
-												<h3 class="font-semibold text-lg">Report #{report.report_id}</h3>
-												<p class="text-sm text-muted-foreground">
-													{formatFullDateTime(report.created_at)}
-												</p>
+												<p class="font-medium">{report.user_name}</p>
+												<p class="text-xs text-muted-foreground">{report.user_phone}</p>
 											</div>
 										</div>
-									{/snippet}
-									{@render reportHeader()}
-									
-									<div class="flex items-center gap-2">
-										<Badge class="{getSeverityColor(report.severity)} border">
-											{getSeverityLabel(report.severity)}
-										</Badge>
-										<Button variant="ghost" size="sm" class="h-8 w-8 p-0">
-											<EyeIcon class="h-4 w-4" />
-										</Button>
-									</div>
-								</div>
 
-								<!-- Message -->
-								<div class="bg-muted/30 rounded-lg p-4 border-l-4 {
-									report.severity === 2 ? 'border-l-red-500' :
-									report.severity === 1 ? 'border-l-orange-500' : 'border-l-blue-500'
-								}">
-									<p class="text-sm leading-relaxed">{report.message}</p>
-								</div>
+										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
+											<CalendarIcon class="h-4 w-4 text-muted-foreground" />
+											<div>
+												<p class="font-medium">{report.schedule_name}</p>
+												<p class="text-xs text-muted-foreground">Schedule</p>
+											</div>
+										</div>
 
-								<!-- Enhanced Details -->
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-									<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-										<UserIcon class="h-4 w-4 text-muted-foreground" />
-										<div>
-											<p class="font-medium">{report.user_name}</p>
-											<p class="text-xs text-muted-foreground">{report.user_phone}</p>
+										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
+											<ClockIcon class="h-4 w-4 text-muted-foreground" />
+											<div>
+												<p class="font-medium">{formatShiftTime(report.shift_start)}</p>
+												<p class="text-xs text-muted-foreground">Shift Time</p>
+											</div>
 										</div>
 									</div>
-									
-									<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-										<CalendarIcon class="h-4 w-4 text-muted-foreground" />
-										<div>
-											<p class="font-medium">{report.schedule_name}</p>
-											<p class="text-xs text-muted-foreground">Schedule</p>
+
+									<!-- Quick Actions -->
+									<div class="flex items-center justify-between pt-2 border-t">
+										<div class="flex items-center gap-2 text-xs text-muted-foreground">
+											<span>Reported {formatRelativeTime(report.created_at)}</span>
 										</div>
-									</div>
-									
-									<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-										<ClockIcon class="h-4 w-4 text-muted-foreground" />
-										<div>
-											<p class="font-medium">{formatShiftTime(report.shift_start)}</p>
-											<p class="text-xs text-muted-foreground">Shift Time</p>
+										<div class="flex items-center gap-2">
+											<Button
+												variant="outline"
+												size="sm"
+												onclick={(e) => {
+													e.stopPropagation();
+													viewReportDetail(report.report_id);
+												}}
+											>
+												<EyeIcon class="h-4 w-4 mr-2" />
+												View Details
+											</Button>
 										</div>
 									</div>
 								</div>
-
-								<!-- Quick Actions -->
-								<div class="flex items-center justify-between pt-2 border-t">
-									<div class="flex items-center gap-2 text-xs text-muted-foreground">
-										<span>Reported {formatRelativeTime(report.created_at)}</span>
-									</div>
-									<div class="flex items-center gap-2">
-										<Button variant="outline" size="sm" onclick={(e) => { e.stopPropagation(); viewReportDetail(report.report_id); }}>
-											<EyeIcon class="h-4 w-4 mr-2" />
-											View Details
-										</Button>
-									</div>
-								</div>
-							</div>
-						</Card.Root>
-					{/each}
-				{/if}
+							</Card.Root>
+						{/each}
+					{/if}
 				</div>
 			{/if}
 		</div>

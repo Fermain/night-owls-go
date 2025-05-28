@@ -160,161 +160,134 @@
 	<title>Report Incident - Night Owls</title>
 </svelte:head>
 
-<div
-	class="min-h-screen "
->
-	<!-- Header -->
-	<header
-		class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40"
-	>
-		<div class="px-4 py-3">
-			<div class="flex items-center justify-between">
-				<div>
-					<h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Report Incident</h1>
-					<p class="text-sm text-slate-600 dark:text-slate-400">Document patrol observations</p>
+<div class="px-4 py-4 space-y-4">
+	<!-- Current Shift Context -->
+	{#if mockCurrentShift && mockCurrentShift.schedule_name && mockCurrentShift.location}
+		<Card.Root class="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3 mb-2">
+					<ClockIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+					<div>
+						<h3 class="font-medium text-slate-900 dark:text-slate-100">Current Shift</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							{mockCurrentShift.schedule_name} • {mockCurrentShift.location}
+						</p>
+					</div>
 				</div>
-				<Button variant="destructive" size="sm" class="gap-2" onclick={handleEmergency}>
-					<PhoneIcon class="h-4 w-4" />
-					Emergency
-				</Button>
-			</div>
-		</div>
-	</header>
+				<div class="text-xs text-slate-500 dark:text-slate-400">
+					Report time: {getCurrentTime()}
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
-	<div class="px-4 py-4 space-y-4">
-		<!-- Current Shift Context -->
-		{#if mockCurrentShift && mockCurrentShift.schedule_name && mockCurrentShift.location}
-			<Card.Root class="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
-				<Card.Content class="p-4">
-					<div class="flex items-center gap-3 mb-2">
-						<ClockIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
-						<div>
-							<h3 class="font-medium text-slate-900 dark:text-slate-100">Current Shift</h3>
-							<p class="text-sm text-slate-600 dark:text-slate-400">
-								{mockCurrentShift.schedule_name} • {mockCurrentShift.location}
-							</p>
-						</div>
-					</div>
-					<div class="text-xs text-slate-500 dark:text-slate-400">
-						Report time: {getCurrentTime()}
-					</div>
-				</Card.Content>
-			</Card.Root>
-		{/if}
-
-		<!-- Report Form -->
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Incident Details</Card.Title>
-			</Card.Header>
-			<Card.Content class="space-y-6">
-				<!-- Severity Selection -->
-				<div class="space-y-3">
-					<Label class="text-base font-medium">Incident Severity *</Label>
-					<div class="space-y-2">
-						{#each severityOptions as severity}
-							{@const IconComponent = severity.icon}
-							<button
-								type="button"
-								class="w-full p-4 rounded-lg border-2 text-left transition-all
-									{selectedSeverity === severity.value
-									? severity.color
-									: severity.value === '0' 
-										? 'border-slate-200 dark:border-slate-700 hover:border-green-300 dark:hover:border-green-600'
-										: severity.value === '1'
-										? 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-600'
-										: 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-600'}"
-								onclick={() => (selectedSeverity = severity.value)}
-							>
-								<div class="flex items-start gap-3">
-									<IconComponent
-										class="h-5 w-5 mt-0.5 {selectedSeverity === severity.value
-											? ''
-											: 'text-slate-400'}"
-									/>
-									<div class="flex-1">
-										<div class="font-medium text-sm">{severity.label}</div>
-										<div class="text-xs text-slate-600 dark:text-slate-400 mt-1">
-											{severity.description}
-										</div>
+	<!-- Report Form -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="text-base">Incident Details</Card.Title>
+		</Card.Header>
+		<Card.Content class="space-y-6">
+			<!-- Severity Selection -->
+			<div class="space-y-3">
+				<Label class="text-base font-medium">Incident Severity *</Label>
+				<div class="space-y-2">
+					{#each severityOptions as severity}
+						{@const IconComponent = severity.icon}
+						<button
+							type="button"
+							class="w-full p-4 rounded-lg border-2 text-left transition-all
+								{selectedSeverity === severity.value
+								? severity.color
+								: severity.value === '0' 
+									? 'border-slate-200 dark:border-slate-700 hover:border-green-300 dark:hover:border-green-600'
+									: severity.value === '1'
+									? 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-600'
+									: 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-600'}"
+							onclick={() => (selectedSeverity = severity.value)}
+						>
+							<div class="flex items-start gap-3">
+								<IconComponent
+									class="h-5 w-5 mt-0.5 {selectedSeverity === severity.value
+										? ''
+										: 'text-slate-400'}"
+								/>
+								<div class="flex-1">
+									<div class="font-medium text-sm">{severity.label}</div>
+									<div class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+										{severity.description}
 									</div>
-									{#if selectedSeverity === severity.value}
-										<CheckCircleIcon class="h-5 w-5 text-current" />
-									{/if}
 								</div>
-							</button>
-						{/each}
-					</div>
+								{#if selectedSeverity === severity.value}
+									<CheckCircleIcon class="h-5 w-5 text-current" />
+								{/if}
+							</div>
+						</button>
+					{/each}
 				</div>
+			</div>
 
-				<!-- Message Input -->
-				<div class="space-y-2">
-					<Label for="message" class="text-base font-medium">Incident Description *</Label>
-					<Textarea
-						id="message"
-						bind:value={reportMessage}
-						placeholder="Describe what happened, where, and any relevant details..."
-						rows={6}
-						class="resize-none"
-					/>
-					<div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-						<span>Be specific about location, time, and circumstances</span>
-						<span>{reportMessage.length}/1000</span>
-					</div>
+			<!-- Message Input -->
+			<div class="space-y-2">
+				<Label for="message" class="text-base font-medium">Incident Description *</Label>
+				<Textarea
+					id="message"
+					bind:value={reportMessage}
+					placeholder="Describe what happened, where, and any relevant details..."
+					rows={6}
+					class="resize-none"
+				/>
+				<div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+					<span>Be specific about location, time, and circumstances</span>
+					<span>{reportMessage.length}/1000</span>
 				</div>
+			</div>
 
-				<!-- GPS Location Capture -->
-				<div class="space-y-2">
-					<Label class="text-base font-medium">Location Information (Optional)</Label>
-					<GPSCapture
-						autoCapture={false}
-						onLocationCaptured={handleLocationCaptured}
-						onError={handleLocationError}
-						className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
-					/>
-					<p class="text-xs text-slate-500 dark:text-slate-400">
-						Location data helps emergency services and improves incident response. If GPS fails, you can enter coordinates manually or submit without location data.
+			<!-- GPS Location Capture -->
+			<div class="space-y-2">
+				<Label class="text-base font-medium">Location Information (Optional)</Label>
+				<GPSCapture
+					autoCapture={false}
+					onLocationCaptured={handleLocationCaptured}
+					onError={handleLocationError}
+					className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
+				/>
+				<p class="text-xs text-slate-500 dark:text-slate-400">
+					Location data helps emergency services and improves incident response. If GPS fails, you can enter coordinates manually or submit without location data.
+				</p>
+			</div>
+
+			<!-- Submit Button -->
+			<Button
+				onclick={handleSubmit}
+				disabled={isSubmitting || !selectedSeverity || !reportMessage.trim()}
+				class="w-full"
+				size="lg"
+			>
+				{#if isSubmitting}
+					Submitting...
+				{:else}
+					<SendIcon class="h-4 w-4 mr-2" />
+					Submit Report
+				{/if}
+			</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Emergency Contacts -->
+	<EmergencyContacts />
+
+	<!-- Emergency Notice -->
+	<Card.Root class="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50">
+		<Card.Content class="p-4">
+			<div class="flex items-start gap-3">
+				<AlertTriangleIcon class="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+				<div class="flex-1">
+					<h3 class="font-medium text-red-900 dark:text-red-100 text-sm">Emergency Situations</h3>
+					<p class="text-xs text-red-700 dark:text-red-300 mt-1">
+						For immediate threats or emergencies requiring police, medical, or fire response, use the Emergency button in the header to call 999 directly rather than submitting a report.
 					</p>
 				</div>
-
-				<!-- Submit Button -->
-				<Button
-					onclick={handleSubmit}
-					disabled={isSubmitting || !selectedSeverity || !reportMessage.trim()}
-					class="w-full"
-					size="lg"
-				>
-					{#if isSubmitting}
-						Submitting...
-					{:else}
-						<SendIcon class="h-4 w-4 mr-2" />
-						Submit Report
-					{/if}
-				</Button>
-			</Card.Content>
-		</Card.Root>
-
-		<!-- Emergency Contacts -->
-		<EmergencyContacts />
-
-		<!-- Emergency Notice -->
-		<Card.Root class="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50">
-			<Card.Content class="p-4">
-				<div class="flex items-start gap-3">
-					<AlertTriangleIcon class="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
-					<div class="flex-1">
-						<h3 class="font-medium text-red-900 dark:text-red-100 text-sm">Emergency Situations</h3>
-						<p class="text-xs text-red-700 dark:text-red-300 mt-1">
-							For immediate threats or emergencies requiring police, medical, or fire response, call
-							999 directly rather than submitting a report.
-						</p>
-						<Button variant="destructive" size="sm" class="mt-2" onclick={handleEmergency}>
-							<PhoneIcon class="h-4 w-4 mr-2" />
-							Call Emergency Services
-						</Button>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-	</div>
+			</div>
+		</Card.Content>
+	</Card.Root>
 </div>
