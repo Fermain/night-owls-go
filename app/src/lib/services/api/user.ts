@@ -18,7 +18,7 @@ export interface UserBooking {
 	shift_end: string;
 	buddy_user_id?: number;
 	buddy_name?: string;
-	attended?: boolean;
+	checked_in_at?: string;
 	created_at: string;
 }
 
@@ -85,20 +85,19 @@ export class UserApiService {
 	}
 
 	/**
-	 * Mark attendance for a booking
+	 * Mark check-in for a booking
 	 */
-	static async markAttendance(bookingId: number, attended: boolean): Promise<UserBooking> {
-		const response = await authenticatedFetch(`/bookings/${bookingId}/attendance`, {
+	static async markCheckIn(bookingId: number): Promise<UserBooking> {
+		const response = await authenticatedFetch(`/bookings/${bookingId}/checkin`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ attended })
+			}
 		});
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			throw new Error(`Failed to mark attendance: ${errorText}`);
+			throw new Error(`Failed to check in: ${errorText}`);
 		}
 		return response.json();
 	}

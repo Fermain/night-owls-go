@@ -27,6 +27,22 @@ export default defineConfig(() => {
 						'/bookings': {
 							target: 'http://localhost:5888',
 							changeOrigin: true
+						},
+						'/reports': {
+							target: 'http://localhost:5888',
+							changeOrigin: true
+						},
+						'/broadcasts': {
+							target: 'http://localhost:5888',
+							changeOrigin: true
+						},
+						'/push': {
+							target: 'http://localhost:5888',
+							changeOrigin: true
+						},
+						'/schedules': {
+							target: 'http://localhost:5888',
+							changeOrigin: true
 						}
 					}
 		}

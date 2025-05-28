@@ -72,8 +72,7 @@
 			buddy_name: booking.buddy_name,
 			schedule_name: booking.schedule_name,
 			can_checkin: canCheckin,
-			is_active: isActive,
-			location: 'Main Street Area' // TODO: Add location to schedule data
+			is_active: isActive
 		};
 	});
 
@@ -187,7 +186,7 @@
 					</Card.Header>
 					<Card.Content class="pt-0 space-y-3">
 						<div class="text-sm text-muted-foreground">
-							{nextShift.schedule_name} • {nextShift.location}
+							{nextShift.schedule_name}
 						</div>
 
 						<div class="flex items-center text-sm">
@@ -209,11 +208,6 @@
 								<Button onclick={handleCheckIn} class="flex-1">
 									<PlayIcon class="h-4 w-4 mr-2" />
 									Check In
-								</Button>
-							{:else}
-								<Button disabled class="flex-1">
-									<ClockIcon class="h-4 w-4 mr-2" />
-									Too Early
 								</Button>
 							{/if}
 						</div>

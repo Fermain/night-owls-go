@@ -112,11 +112,11 @@
 	function getSeverityLabel(severity: number) {
 		switch (severity) {
 			case 0:
-				return 'Info';
+				return 'Normal';
 			case 1:
-				return 'Warning';
+				return 'Suspicion';
 			case 2:
-				return 'Critical';
+				return 'Incident';
 			default:
 				return 'Unknown';
 		}

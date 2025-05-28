@@ -13,7 +13,7 @@ import (
 
 // Sample report messages for different severity levels
 var reportMessages = map[int][]string{
-	0: { // Info level
+	0: { // Normal level
 		"All quiet on the patrol. No incidents to report.",
 		"Routine patrol completed. Checked all designated areas.",
 		"Minor maintenance issue noted - streetlight flickering on Oak Street.",
@@ -25,7 +25,7 @@ var reportMessages = map[int][]string{
 		"Community cat spotted in usual location - residents feeding regularly.",
 		"Shift completed without incident. All areas secure.",
 	},
-	1: { // Warning level
+	1: { // Suspicion level
 		"Suspicious vehicle parked for extended period on Maple Avenue. License plate noted.",
 		"Loud party reported by residents. Spoke with organizers - volume reduced.",
 		"Broken fence noticed at community park. Potential security concern.",
@@ -37,7 +37,7 @@ var reportMessages = map[int][]string{
 		"Minor vehicle accident witnessed. Assisted until emergency services arrived.",
 		"Vandalism discovered on community notice board. Photos taken for evidence.",
 	},
-	2: { // Critical level
+	2: { // Incident level
 		"Break-in attempt observed at local business. Police contacted immediately.",
 		"Medical emergency - elderly resident found collapsed. Ambulance called.",
 		"Fire spotted in abandoned building. Fire department notified urgently.",
@@ -86,15 +86,15 @@ func seedReports(querier db.Querier) error {
 		}
 
 		// Determine severity based on realistic distribution
-		// 60% info, 30% warning, 10% critical
+		// 60% normal, 30% suspicion, 10% incident
 		var severity int64
 		randVal := rand.Float32()
 		if randVal < 0.6 {
-			severity = 0 // Info
+			severity = 0 // Normal
 		} else if randVal < 0.9 {
-			severity = 1 // Warning
+			severity = 1 // Suspicion
 		} else {
-			severity = 2 // Critical
+			severity = 2 // Incident
 		}
 
 		// Select a random message for this severity level

@@ -46,9 +46,9 @@
 	// Filter options
 	const severityOptions = [
 		{ value: 'all', label: 'All Severities', icon: FileTextIcon, color: 'text-gray-600' },
-		{ value: '0', label: 'Info', icon: InfoIcon, color: 'text-blue-600' },
-		{ value: '1', label: 'Warning', icon: AlertTriangleIcon, color: 'text-orange-600' },
-		{ value: '2', label: 'Critical', icon: ShieldAlertIcon, color: 'text-red-600' }
+		{ value: '0', label: 'Normal', icon: InfoIcon, color: 'text-blue-600' },
+		{ value: '1', label: 'Suspicion', icon: AlertTriangleIcon, color: 'text-orange-600' },
+		{ value: '2', label: 'Incident', icon: ShieldAlertIcon, color: 'text-red-600' }
 	];
 
 	const scheduleOptions = [
@@ -178,11 +178,11 @@
 	function getSeverityLabel(severity: number) {
 		switch (severity) {
 			case 0:
-				return 'Info';
+				return 'Normal';
 			case 1:
-				return 'Warning';
+				return 'Suspicion';
 			case 2:
-				return 'Critical';
+				return 'Incident';
 			default:
 				return 'Unknown';
 		}

@@ -369,22 +369,15 @@
 											{/if}
 										</div>
 										<div class="flex items-center gap-2">
-											{#if booking.attended === true}
+											{#if booking.checked_in_at}
 												<div
 													class="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded"
 												>
 													<CheckCircleIcon class="h-3 w-3" />
-													Attended
-												</div>
-											{:else if booking.attended === false}
-												<div
-													class="flex items-center gap-1 text-xs text-red-600 bg-red-100 px-2 py-1 rounded"
-												>
-													<XCircleIcon class="h-3 w-3" />
-													No-show
+													Checked In
 												</div>
 											{:else}
-												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">Past</div>
+												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">No Check-in</div>
 											{/if}
 										</div>
 									</div>
@@ -408,13 +401,13 @@
 						{upcomingBookings.length}
 						| <strong>Past:</strong>
 						{pastBookings.length}
-						{#if pastBookings.some((b: BookingResponse) => b.attended === true)}
-							| <strong>Attended:</strong>
-							{pastBookings.filter((b: BookingResponse) => b.attended === true).length}
+						{#if pastBookings.some((b: BookingResponse) => b.checked_in_at)}
+							| <strong>Checked In:</strong>
+							{pastBookings.filter((b: BookingResponse) => b.checked_in_at).length}
 						{/if}
-						{#if pastBookings.some((b: BookingResponse) => b.attended === false)}
-							| <strong>No-shows:</strong>
-							{pastBookings.filter((b: BookingResponse) => b.attended === false).length}
+						{#if pastBookings.some((b: BookingResponse) => !b.checked_in_at)}
+							| <strong>No Check-ins:</strong>
+							{pastBookings.filter((b: BookingResponse) => !b.checked_in_at).length}
 						{/if}
 					</div>
 				</div>

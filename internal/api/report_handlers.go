@@ -34,6 +34,12 @@ type CreateReportRequest struct {
 	Message  string `json:"message,omitempty"`
 }
 
+// CreateOffShiftReportRequest is the expected JSON for POST /reports/off-shift.
+type CreateOffShiftReportRequest struct {
+	Severity int32  `json:"severity"` // 0, 1, or 2
+	Message  string `json:"message,omitempty"`
+}
+
 // CreateReportHandler handles POST /bookings/{id}/report
 // @Summary Create a report for a booking
 // @Description Submits an incident report for a specific booking
@@ -132,4 +138,55 @@ func (h *ReportHandler) ListReportsHandler(w http.ResponseWriter, r *http.Reques
 	// Implementation would involve calling a service method like h.reportService.ListReportsByUser(r.Context(), userIDFromAuth)
 	// and then RespondWithJSON.
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Listing reports - TBD"}, h.logger)
+}
+
+// CreateOffShiftReportHandler handles POST /reports/off-shift
+// @Summary Create an off-shift report
+// @Description Submits an incident report when not on a scheduled shift
+// @Tags reports
+// @Accept json
+// @Produce json
+// @Param request body CreateOffShiftReportRequest true "Report details"
+// @Success 201 {object} ReportResponse "Report created successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request format or severity out of range"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /reports/off-shift [post]
+func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *http.Request) {
+	userIDVal := r.Context().Value(UserIDKey)
+	userID, ok := userIDVal.(int64)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "User ID not found in context or invalid type", h.logger)
+		return
+	}
+
+	var req CreateOffShiftReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	// Create a NullString for message
+	var messageSQL sql.NullString
+	if strings.TrimSpace(req.Message) != "" {
+		messageSQL.String = strings.TrimSpace(req.Message)
+		messageSQL.Valid = true
+	}
+
+	report, err := h.reportService.CreateOffShiftReport(r.Context(), userID, req.Severity, messageSQL.String)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrSeverityOutOfRange):
+			RespondWithError(w, http.StatusBadRequest, "Severity must be 0, 1, or 2", h.logger, "severity", req.Severity)
+		default:
+			RespondWithError(w, http.StatusInternalServerError, "Failed to create off-shift report", h.logger, "error", err.Error())
+		}
+		return
+	}
+
+	// Convert to API response format
+	reportResponse := ToReportResponse(report)
+	RespondWithJSON(w, http.StatusCreated, reportResponse, h.logger)
 } 

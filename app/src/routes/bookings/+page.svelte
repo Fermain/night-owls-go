@@ -21,16 +21,15 @@
 		enabled: $userSession.isAuthenticated
 	});
 
-	// Mutation for marking attendance
-	const markAttendanceMutation = createMutation({
-		mutationFn: ({ bookingId, attended }: { bookingId: number; attended: boolean }) =>
-			UserApiService.markAttendance(bookingId, attended),
+	// Mutation for checking in
+	const checkInMutation = createMutation({
+		mutationFn: (bookingId: number) => UserApiService.markCheckIn(bookingId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
-			toast.success('Attendance updated successfully!');
+			toast.success('Checked in successfully!');
 		},
 		onError: (error) => {
-			toast.error(`Failed to update attendance: ${error.message}`);
+			toast.error(`Failed to check in: ${error.message}`);
 		}
 	});
 
@@ -49,20 +48,20 @@
 		});
 	}
 
-	function getShiftStatus(startTime: string, endTime: string, attended?: boolean) {
+	function getShiftStatus(startTime: string, endTime: string, checkedInAt?: string) {
 		const now = new Date();
 		const start = new Date(startTime);
 		const end = new Date(endTime);
 
 		if (now < start) return 'upcoming';
 		if (now >= start && now <= end) return 'active';
-		if (attended === true) return 'completed';
-		if (attended === false) return 'missed';
+		if (checkedInAt) return 'completed'; // User checked in
+		if (now > end) return 'missed'; // Past shift, no check-in
 		return 'pending'; // Past shift, attendance not marked
 	}
 
-	function handleMarkAttendance(bookingId: number, attended: boolean) {
-		$markAttendanceMutation.mutate({ bookingId, attended });
+	function handleCheckIn(bookingId: number) {
+		$checkInMutation.mutate(bookingId);
 	}
 </script>
 
@@ -125,7 +124,7 @@
 	{:else}
 		<div class="space-y-4">
 			{#each bookings as booking (booking.booking_id)}
-				{@const status = getShiftStatus(booking.shift_start, booking.shift_end, booking.attended)}
+				{@const status = getShiftStatus(booking.shift_start, booking.shift_end, booking.checked_in_at)}
 				<Card.Root>
 					<Card.Header>
 						<div class="flex items-center justify-between">
@@ -173,25 +172,16 @@
 						{#if status === 'pending'}
 							<Separator />
 							<div class="flex items-center justify-between">
-								<p class="text-sm text-muted-foreground">Mark your attendance for this shift</p>
+								<p class="text-sm text-muted-foreground">Check in for this completed shift</p>
 								<div class="flex gap-2">
 									<Button
 										size="sm"
 										variant="outline"
-										disabled={$markAttendanceMutation.isPending}
-										onclick={() => handleMarkAttendance(booking.booking_id, true)}
+										disabled={$checkInMutation.isPending}
+										onclick={() => handleCheckIn(booking.booking_id)}
 									>
 										<CheckCircleIcon class="h-4 w-4 mr-1" />
-										Attended
-									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={$markAttendanceMutation.isPending}
-										onclick={() => handleMarkAttendance(booking.booking_id, false)}
-									>
-										<XCircleIcon class="h-4 w-4 mr-1" />
-										Missed
+										Check In
 									</Button>
 								</div>
 							</div>
@@ -203,8 +193,8 @@
 									<Button
 										size="sm"
 										variant="outline"
-										disabled={$markAttendanceMutation.isPending}
-										onclick={() => handleMarkAttendance(booking.booking_id, true)}
+										disabled={$checkInMutation.isPending}
+										onclick={() => handleCheckIn(booking.booking_id)}
 									>
 										<CheckCircleIcon class="h-4 w-4 mr-1" />
 										Check In

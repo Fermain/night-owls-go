@@ -64,9 +64,15 @@ func ToReportResponse(report db.Report) ReportResponse {
 		createdAt = time.Now() // Fallback, though this shouldn't happen
 	}
 
+	// Handle nullable BookingID
+	var bookingID int64
+	if report.BookingID.Valid {
+		bookingID = report.BookingID.Int64
+	}
+
 	return ReportResponse{
 		ReportID:  report.ReportID,
-		BookingID: report.BookingID,
+		BookingID: bookingID,
 		Severity:  report.Severity,
 		Message:   message,
 		CreatedAt: createdAt,

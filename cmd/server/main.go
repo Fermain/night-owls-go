@@ -258,6 +258,7 @@ func main() {
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
 	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
@@ -441,6 +442,7 @@ func main() {
 		hasSchedulesPrefix := strings.HasPrefix(r.URL.Path, "/schedules")
 		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
 		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
+		hasReportsPrefix := strings.HasPrefix(r.URL.Path, "/reports/")
 		
 		logger.Info("Path prefix checks", 
 			"path", r.URL.Path,
@@ -449,10 +451,11 @@ func main() {
 			"broadcasts", hasBroadcastsPrefix,
 			"schedules", hasSchedulesPrefix,
 			"shifts", hasShiftsPrefix,
-			"push", hasPushPrefix)
+			"push", hasPushPrefix,
+			"reports", hasReportsPrefix)
 		
 		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
-		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix {
+		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix || hasReportsPrefix {
 			logger.Info("Returning 404 for API route", "path", r.URL.Path)
 			http.NotFound(w, r)
 			return

@@ -65,6 +65,25 @@ export class ReportsApiService {
 	}
 
 	/**
+	 * Create an off-shift report (when not on a scheduled shift)
+	 */
+	static async createOffShift(payload: {
+		message: string;
+		severity: number;
+	}): Promise<ReportResponse> {
+		const response = await authenticatedFetch('/reports/off-shift', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		});
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ message: 'Failed to create off-shift report' }));
+			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+		}
+		return response.json();
+	}
+
+	/**
 	 * Update an existing report (admin only)
 	 */
 	static async update(

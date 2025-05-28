@@ -73,7 +73,8 @@ type PushSubscription struct {
 
 type Report struct {
 	ReportID     int64           `json:"report_id"`
-	BookingID    int64           `json:"booking_id"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
 	Severity     int64           `json:"severity"`
 	Message      sql.NullString  `json:"message"`
 	CreatedAt    sql.NullTime    `json:"created_at"`
@@ -81,7 +82,7 @@ type Report struct {
 	Longitude    sql.NullFloat64 `json:"longitude"`
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
-	ArchivedAt   interface{}     `json:"archived_at"`
+	ArchivedAt   sql.NullTime    `json:"archived_at"`
 }
 
 type Schedule struct {

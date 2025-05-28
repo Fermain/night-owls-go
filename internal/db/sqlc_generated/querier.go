@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
@@ -19,6 +20,7 @@ type Querier interface {
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
+	CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
@@ -45,7 +47,7 @@ type Querier interface {
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
-	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
+	GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error)
 	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
@@ -58,7 +60,7 @@ type Querier interface {
 	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcastsWithSenderRow, error)
 	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
-	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
+	ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
 	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
 	UnarchiveReport(ctx context.Context, reportID int64) error

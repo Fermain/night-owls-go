@@ -9,7 +9,7 @@ export interface BookingResponse {
 	shift_end: string;
 	buddy_user_id?: number;
 	buddy_name?: string;
-	attended?: boolean;
+	checked_in_at?: string;
 	created_at: string;
 }
 

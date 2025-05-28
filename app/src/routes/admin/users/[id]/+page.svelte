@@ -44,16 +44,16 @@
 		});
 	}
 
-	function getShiftStatus(startTime: string, endTime: string, attended?: boolean) {
+	function getShiftStatus(startTime: string, endTime: string, checkedInAt?: string) {
 		const now = new Date();
 		const start = new Date(startTime);
 		const end = new Date(endTime);
 
 		if (now < start) return 'upcoming';
 		if (now >= start && now <= end) return 'active';
-		if (attended === true) return 'completed';
-		if (attended === false) return 'missed';
-		return 'pending';
+		if (checkedInAt) return 'completed'; // User checked in
+		if (now > end) return 'missed'; // Past shift, no check-in
+		return 'pending'; // Past shift, attendance not marked
 	}
 </script>
 
@@ -150,7 +150,7 @@
 							{@const status = getShiftStatus(
 								booking.shift_start,
 								booking.shift_end,
-								booking.attended
+								booking.checked_in_at
 							)}
 							<div class="border rounded-lg p-4 space-y-3">
 								<div class="flex items-center justify-between">

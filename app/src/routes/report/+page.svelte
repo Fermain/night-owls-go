@@ -11,25 +11,32 @@
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { toast } from 'svelte-sonner';
 	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
+	import { UserApiService } from '$lib/services/api/user';
+	import { ReportsApiService } from '$lib/services/api/reports';
+	import { goto } from '$app/navigation';
 
 	// Form state
-	let selectedSeverity = $state('');
-	let message = $state('');
+	let selectedSeverity = $state('0'); // Default to Normal (severity 0)
+	let reportMessage = $state('');
 	let isSubmitting = $state(false);
 
+	// Current shift interface
+	interface CurrentShift {
+		id: number;
+		schedule_name: string;
+		start_time: string;
+		end_time: string;
+		location: string;
+	}
+
 	// Mock current shift data (would come from user session)
-	const mockCurrentShift = {
-		id: 1,
-		schedule_name: 'Night Patrol',
-		start_time: '2025-05-25T00:00:00Z',
-		end_time: '2025-05-25T02:00:00Z',
-		location: 'Main Street Area'
-	};
+	// Set to null to simulate no active shift - in real implementation this would be determined by checking user's active bookings
+	const mockCurrentShift = $state<CurrentShift | null>(null);
 
 	const severityOptions = [
 		{
 			value: '0',
-			label: 'Low Priority',
+			label: 'Normal',
 			description: 'Routine patrol notes, minor observations',
 			color:
 				'text-green-700 bg-green-50 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
@@ -37,29 +44,20 @@
 		},
 		{
 			value: '1',
-			label: 'Normal',
+			label: 'Suspicion',
 			description: 'General incidents, noise complaints, suspicious activity',
 			color:
-				'text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+				'text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
 			icon: InfoIcon
 		},
 		{
 			value: '2',
-			label: 'High Priority',
+			label: 'Incident',
 			description: 'Security threats, property damage, immediate attention needed',
 			color:
 				'text-red-700 bg-red-50 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 			icon: AlertTriangleIcon
 		}
-	];
-
-	const quickTemplates = [
-		'All quiet during patrol. No incidents observed.',
-		'Routine patrol completed. No issues to report.',
-		'Minor disturbance resolved peacefully.',
-		'Suspicious activity observed - [describe details]',
-		'Property damage discovered - [describe location and extent]',
-		'Noise complaint from residents - [provide details]'
 	];
 
 	// Get current time formatted
@@ -77,35 +75,49 @@
 		return severityOptions.find((opt) => opt.value === value);
 	}
 
-	function useTemplate(template: string) {
-		message = template;
-	}
-
 	async function handleSubmit() {
-		if (!selectedSeverity) {
-			toast.error('Please select incident severity');
-			return;
-		}
-
-		if (!message.trim()) {
-			toast.error('Please enter incident details');
+		if (!selectedSeverity || !reportMessage.trim()) {
+			toast.error('Please select severity and provide a message');
 			return;
 		}
 
 		isSubmitting = true;
 
-		// Simulate API call
 		try {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			const payload = {
+				severity: parseInt(selectedSeverity),
+				message: reportMessage.trim()
+			};
 
-			// Mock successful submission
-			toast.success('Incident report submitted successfully');
+			// Check if user is currently on shift by looking for active bookings
+			const userBookings = await UserApiService.getMyBookings();
+			const now = new Date();
+			const activeBooking = userBookings.find(booking => {
+				const shiftStart = new Date(booking.shift_start);
+				const shiftEnd = new Date(booking.shift_end);
+				return now >= shiftStart && now <= shiftEnd && booking.checked_in_at;
+			});
 
+			let report;
+			if (activeBooking) {
+				// User is on shift - create regular report
+				report = await ReportsApiService.create(activeBooking.booking_id, payload);
+			} else {
+				// User is off shift - create off-shift report
+				report = await ReportsApiService.createOffShift(payload);
+			}
+
+			toast.success('Report submitted successfully');
+			
 			// Reset form
-			selectedSeverity = '';
-			message = '';
+			selectedSeverity = '0'; // Reset to default Normal severity
+			reportMessage = '';
+			
+			// Navigate back to home
+			goto('/');
 		} catch (error) {
-			toast.error('Failed to submit report. Please try again.');
+			console.error('Failed to submit report:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to submit report');
 		} finally {
 			isSubmitting = false;
 		}
@@ -146,7 +158,7 @@
 
 	<div class="px-4 py-4 space-y-4">
 		<!-- Current Shift Context -->
-		{#if mockCurrentShift}
+		{#if mockCurrentShift && mockCurrentShift.schedule_name && mockCurrentShift.location}
 			<Card.Root class="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
 				<Card.Content class="p-4">
 					<div class="flex items-center gap-3 mb-2">
@@ -182,7 +194,11 @@
 								class="w-full p-4 rounded-lg border-2 text-left transition-all
 									{selectedSeverity === severity.value
 									? severity.color
-									: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}"
+									: severity.value === '0' 
+										? 'border-slate-200 dark:border-slate-700 hover:border-green-300 dark:hover:border-green-600'
+										: severity.value === '1'
+										? 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-600'
+										: 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-600'}"
 								onclick={() => (selectedSeverity = severity.value)}
 							>
 								<div class="flex items-start gap-3">
@@ -206,43 +222,26 @@
 					</div>
 				</div>
 
-				<!-- Quick Templates -->
-				<div class="space-y-3">
-					<Label class="text-base font-medium">Quick Templates</Label>
-					<div class="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
-						{#each quickTemplates as template}
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-auto p-2 text-left text-xs justify-start whitespace-normal"
-								onclick={() => useTemplate(template)}
-							>
-								{template}
-							</Button>
-						{/each}
-					</div>
-				</div>
-
 				<!-- Message Input -->
 				<div class="space-y-2">
 					<Label for="message" class="text-base font-medium">Incident Description *</Label>
 					<Textarea
 						id="message"
-						bind:value={message}
+						bind:value={reportMessage}
 						placeholder="Describe what happened, where, and any relevant details..."
 						rows={6}
 						class="resize-none"
 					/>
 					<div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
 						<span>Be specific about location, time, and circumstances</span>
-						<span>{message.length}/1000</span>
+						<span>{reportMessage.length}/1000</span>
 					</div>
 				</div>
 
 				<!-- Submit Button -->
 				<Button
 					onclick={handleSubmit}
-					disabled={isSubmitting || !selectedSeverity || !message.trim()}
+					disabled={isSubmitting || !selectedSeverity || !reportMessage.trim()}
 					class="w-full"
 					size="lg"
 				>

@@ -96,9 +96,9 @@
 
 		// Severity distribution
 		const severityDistribution = [
-			{ severity: 0, label: 'Info', count: info, color: 'bg-blue-500' },
-			{ severity: 1, label: 'Warning', count: warning, color: 'bg-orange-500' },
-			{ severity: 2, label: 'Critical', count: critical, color: 'bg-red-500' }
+			{ severity: 0, label: 'Normal', count: info, color: 'bg-blue-500' },
+			{ severity: 1, label: 'Suspicion', count: warning, color: 'bg-orange-500' },
+			{ severity: 2, label: 'Incident', count: critical, color: 'bg-red-500' }
 		];
 
 		// Daily breakdown

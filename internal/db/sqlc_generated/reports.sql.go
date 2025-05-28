@@ -9,45 +9,44 @@ import (
 	"context"
 	"database/sql"
 	"strings"
-	"time"
 )
 
 const adminGetReportWithContext = `-- name: AdminGetReportWithContext :one
 SELECT 
     r.report_id,
     r.booking_id,
+    r.user_id,
     r.severity,
     r.message,
     r.created_at,
     r.archived_at,
-    b.user_id,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
-    b.schedule_id,
-    s.name as schedule_name,
-    b.shift_start,
-    b.shift_end
+    COALESCE(b.schedule_id, 0) as schedule_id,
+    COALESCE(s.name, 'Off-Shift Report') as schedule_name,
+    COALESCE(datetime(b.shift_start), datetime(r.created_at)) as shift_start,
+    COALESCE(datetime(b.shift_end), datetime(r.created_at)) as shift_end
 FROM reports r
-JOIN bookings b ON r.booking_id = b.booking_id
-JOIN users u ON b.user_id = u.user_id
-JOIN schedules s ON b.schedule_id = s.schedule_id
+JOIN users u ON r.user_id = u.user_id
+LEFT JOIN bookings b ON r.booking_id = b.booking_id
+LEFT JOIN schedules s ON b.schedule_id = s.schedule_id
 WHERE r.report_id = ?
 `
 
 type AdminGetReportWithContextRow struct {
 	ReportID     int64          `json:"report_id"`
-	BookingID    int64          `json:"booking_id"`
+	BookingID    sql.NullInt64  `json:"booking_id"`
+	UserID       sql.NullInt64  `json:"user_id"`
 	Severity     int64          `json:"severity"`
 	Message      sql.NullString `json:"message"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   interface{}    `json:"archived_at"`
-	UserID       int64          `json:"user_id"`
+	ArchivedAt   sql.NullTime   `json:"archived_at"`
 	UserName     string         `json:"user_name"`
 	UserPhone    string         `json:"user_phone"`
 	ScheduleID   int64          `json:"schedule_id"`
 	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   time.Time      `json:"shift_start"`
-	ShiftEnd     time.Time      `json:"shift_end"`
+	ShiftStart   interface{}    `json:"shift_start"`
+	ShiftEnd     interface{}    `json:"shift_end"`
 }
 
 func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error) {
@@ -56,11 +55,11 @@ func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64)
 	err := row.Scan(
 		&i.ReportID,
 		&i.BookingID,
+		&i.UserID,
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
 		&i.ArchivedAt,
-		&i.UserID,
 		&i.UserName,
 		&i.UserPhone,
 		&i.ScheduleID,
@@ -75,39 +74,39 @@ const adminListArchivedReportsWithContext = `-- name: AdminListArchivedReportsWi
 SELECT 
     r.report_id,
     r.booking_id,
+    r.user_id,
     r.severity,
     r.message,
     r.created_at,
     r.archived_at,
-    b.user_id,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
-    b.schedule_id,
-    s.name as schedule_name,
-    b.shift_start,
-    b.shift_end
+    COALESCE(b.schedule_id, 0) as schedule_id,
+    COALESCE(s.name, 'Off-Shift Report') as schedule_name,
+    COALESCE(datetime(b.shift_start), datetime(r.created_at)) as shift_start,
+    COALESCE(datetime(b.shift_end), datetime(r.created_at)) as shift_end
 FROM reports r
-JOIN bookings b ON r.booking_id = b.booking_id
-JOIN users u ON b.user_id = u.user_id
-JOIN schedules s ON b.schedule_id = s.schedule_id
+JOIN users u ON r.user_id = u.user_id
+LEFT JOIN bookings b ON r.booking_id = b.booking_id
+LEFT JOIN schedules s ON b.schedule_id = s.schedule_id
 WHERE r.archived_at IS NOT NULL
 ORDER BY r.archived_at DESC
 `
 
 type AdminListArchivedReportsWithContextRow struct {
 	ReportID     int64          `json:"report_id"`
-	BookingID    int64          `json:"booking_id"`
+	BookingID    sql.NullInt64  `json:"booking_id"`
+	UserID       sql.NullInt64  `json:"user_id"`
 	Severity     int64          `json:"severity"`
 	Message      sql.NullString `json:"message"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   interface{}    `json:"archived_at"`
-	UserID       int64          `json:"user_id"`
+	ArchivedAt   sql.NullTime   `json:"archived_at"`
 	UserName     string         `json:"user_name"`
 	UserPhone    string         `json:"user_phone"`
 	ScheduleID   int64          `json:"schedule_id"`
 	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   time.Time      `json:"shift_start"`
-	ShiftEnd     time.Time      `json:"shift_end"`
+	ShiftStart   interface{}    `json:"shift_start"`
+	ShiftEnd     interface{}    `json:"shift_end"`
 }
 
 func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error) {
@@ -122,11 +121,11 @@ func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]Ad
 		if err := rows.Scan(
 			&i.ReportID,
 			&i.BookingID,
+			&i.UserID,
 			&i.Severity,
 			&i.Message,
 			&i.CreatedAt,
 			&i.ArchivedAt,
-			&i.UserID,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,
@@ -151,39 +150,39 @@ const adminListReportsWithContext = `-- name: AdminListReportsWithContext :many
 SELECT 
     r.report_id,
     r.booking_id,
+    r.user_id,
     r.severity,
     r.message,
     r.created_at,
     r.archived_at,
-    b.user_id,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
-    b.schedule_id,
-    s.name as schedule_name,
-    b.shift_start,
-    b.shift_end
+    COALESCE(b.schedule_id, 0) as schedule_id,
+    COALESCE(s.name, 'Off-Shift Report') as schedule_name,
+    COALESCE(datetime(b.shift_start), datetime(r.created_at)) as shift_start,
+    COALESCE(datetime(b.shift_end), datetime(r.created_at)) as shift_end
 FROM reports r
-JOIN bookings b ON r.booking_id = b.booking_id
-JOIN users u ON b.user_id = u.user_id
-JOIN schedules s ON b.schedule_id = s.schedule_id
+JOIN users u ON r.user_id = u.user_id
+LEFT JOIN bookings b ON r.booking_id = b.booking_id
+LEFT JOIN schedules s ON b.schedule_id = s.schedule_id
 WHERE r.archived_at IS NULL
 ORDER BY r.created_at DESC
 `
 
 type AdminListReportsWithContextRow struct {
 	ReportID     int64          `json:"report_id"`
-	BookingID    int64          `json:"booking_id"`
+	BookingID    sql.NullInt64  `json:"booking_id"`
+	UserID       sql.NullInt64  `json:"user_id"`
 	Severity     int64          `json:"severity"`
 	Message      sql.NullString `json:"message"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   interface{}    `json:"archived_at"`
-	UserID       int64          `json:"user_id"`
+	ArchivedAt   sql.NullTime   `json:"archived_at"`
 	UserName     string         `json:"user_name"`
 	UserPhone    string         `json:"user_phone"`
 	ScheduleID   int64          `json:"schedule_id"`
 	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   time.Time      `json:"shift_start"`
-	ShiftEnd     time.Time      `json:"shift_end"`
+	ShiftStart   interface{}    `json:"shift_start"`
+	ShiftEnd     interface{}    `json:"shift_end"`
 }
 
 func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error) {
@@ -198,11 +197,11 @@ func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListR
 		if err := rows.Scan(
 			&i.ReportID,
 			&i.BookingID,
+			&i.UserID,
 			&i.Severity,
 			&i.Message,
 			&i.CreatedAt,
 			&i.ArchivedAt,
-			&i.UserID,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,
@@ -255,9 +254,9 @@ func (q *Queries) BulkArchiveReports(ctx context.Context, reportIds []int64) err
 	return err
 }
 
-const createReport = `-- name: CreateReport :one
+const createOffShiftReport = `-- name: CreateOffShiftReport :one
 INSERT INTO reports (
-    booking_id,
+    user_id,
     severity,
     message,
     archived_at
@@ -267,21 +266,70 @@ INSERT INTO reports (
     ?,
     NULL
 )
-RETURNING report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at
+RETURNING report_id, booking_id, user_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at
+`
+
+type CreateOffShiftReportParams struct {
+	UserID   sql.NullInt64  `json:"user_id"`
+	Severity int64          `json:"severity"`
+	Message  sql.NullString `json:"message"`
+}
+
+func (q *Queries) CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error) {
+	row := q.db.QueryRowContext(ctx, createOffShiftReport, arg.UserID, arg.Severity, arg.Message)
+	var i Report
+	err := row.Scan(
+		&i.ReportID,
+		&i.BookingID,
+		&i.UserID,
+		&i.Severity,
+		&i.Message,
+		&i.CreatedAt,
+		&i.Latitude,
+		&i.Longitude,
+		&i.GpsAccuracy,
+		&i.GpsTimestamp,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
+const createReport = `-- name: CreateReport :one
+INSERT INTO reports (
+    booking_id,
+    user_id,
+    severity,
+    message,
+    archived_at
+) VALUES (
+    ?,
+    ?,
+    ?,
+    ?,
+    NULL
+)
+RETURNING report_id, booking_id, user_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at
 `
 
 type CreateReportParams struct {
-	BookingID int64          `json:"booking_id"`
+	BookingID sql.NullInt64  `json:"booking_id"`
+	UserID    sql.NullInt64  `json:"user_id"`
 	Severity  int64          `json:"severity"`
 	Message   sql.NullString `json:"message"`
 }
 
 func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Report, error) {
-	row := q.db.QueryRowContext(ctx, createReport, arg.BookingID, arg.Severity, arg.Message)
+	row := q.db.QueryRowContext(ctx, createReport,
+		arg.BookingID,
+		arg.UserID,
+		arg.Severity,
+		arg.Message,
+	)
 	var i Report
 	err := row.Scan(
 		&i.ReportID,
 		&i.BookingID,
+		&i.UserID,
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
@@ -295,16 +343,17 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Rep
 }
 
 const getReportByBookingID = `-- name: GetReportByBookingID :one
-SELECT report_id, booking_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at FROM reports
+SELECT report_id, booking_id, user_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at FROM reports
 WHERE booking_id = ? AND archived_at IS NULL
 `
 
-func (q *Queries) GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error) {
+func (q *Queries) GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error) {
 	row := q.db.QueryRowContext(ctx, getReportByBookingID, bookingID)
 	var i Report
 	err := row.Scan(
 		&i.ReportID,
 		&i.BookingID,
+		&i.UserID,
 		&i.Severity,
 		&i.Message,
 		&i.CreatedAt,
@@ -322,12 +371,12 @@ SELECT report_id, severity, created_at
 FROM reports 
 WHERE archived_at IS NULL 
 AND (
-    -- Info reports older than 1 month
+    -- Normal reports older than 1 month
     (severity = 0 AND created_at < datetime('now', '-1 month'))
     OR
-    -- Warning reports older than 1 year  
+    -- Suspicion reports older than 1 year  
     (severity = 1 AND created_at < datetime('now', '-1 year'))
-    -- Critical reports (severity = 2) are never auto-archived
+    -- Incident reports (severity = 2) are never auto-archived
 )
 `
 
@@ -361,14 +410,13 @@ func (q *Queries) GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsF
 }
 
 const listReportsByUserID = `-- name: ListReportsByUserID :many
-SELECT r.report_id, r.booking_id, r.severity, r.message, r.created_at, r.latitude, r.longitude, r.gps_accuracy, r.gps_timestamp, r.archived_at 
+SELECT r.report_id, r.booking_id, r.user_id, r.severity, r.message, r.created_at, r.latitude, r.longitude, r.gps_accuracy, r.gps_timestamp, r.archived_at 
 FROM reports r
-JOIN bookings b ON r.booking_id = b.booking_id
-WHERE b.user_id = ? AND r.archived_at IS NULL
+WHERE r.user_id = ? AND r.archived_at IS NULL
 ORDER BY r.created_at DESC
 `
 
-func (q *Queries) ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error) {
+func (q *Queries) ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error) {
 	rows, err := q.db.QueryContext(ctx, listReportsByUserID, userID)
 	if err != nil {
 		return nil, err
@@ -380,6 +428,7 @@ func (q *Queries) ListReportsByUserID(ctx context.Context, userID int64) ([]Repo
 		if err := rows.Scan(
 			&i.ReportID,
 			&i.BookingID,
+			&i.UserID,
 			&i.Severity,
 			&i.Message,
 			&i.CreatedAt,

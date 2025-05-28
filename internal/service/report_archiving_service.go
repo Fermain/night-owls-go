@@ -23,9 +23,9 @@ func NewReportArchivingService(querier db.Querier, logger *slog.Logger) *ReportA
 }
 
 // ArchiveOldReports automatically archives reports based on retention policies:
-// - Info reports (severity 0): archived after 1 month
-// - Warning reports (severity 1): archived after 1 year
-// - Critical reports (severity 2): never auto-archived
+// - Normal reports (severity 0): archived after 1 month
+// - Suspicion reports (severity 1): archived after 1 year
+// - Incident reports (severity 2): never auto-archived
 func (s *ReportArchivingService) ArchiveOldReports(ctx context.Context) (int, error) {
 	s.logger.InfoContext(ctx, "Starting automatic report archiving process")
 
@@ -62,9 +62,9 @@ func (s *ReportArchivingService) ArchiveOldReports(ctx context.Context) (int, er
 
 	s.logger.InfoContext(ctx, "Successfully auto-archived reports", 
 		"total_archived", len(reportIDs),
-		"info_reports", severityCounts[0],
-		"warning_reports", severityCounts[1],
-		"critical_reports", severityCounts[2])
+		"normal_reports", severityCounts[0],
+		"suspicion_reports", severityCounts[1],
+		"incident_reports", severityCounts[2])
 
 	return len(reportIDs), nil
 }
@@ -79,9 +79,9 @@ func (s *ReportArchivingService) GetArchivingStats(ctx context.Context) (map[str
 	stats := map[string]interface{}{
 		"total_archivable": len(reportsToArchive),
 		"by_severity": map[string]int{
-			"info":     0,
-			"warning":  0,
-			"critical": 0,
+			"normal":     0,
+			"suspicion":  0,
+			"incident":   0,
 		},
 		"oldest_archivable": nil,
 	}
@@ -96,11 +96,11 @@ func (s *ReportArchivingService) GetArchivingStats(ctx context.Context) (map[str
 	for _, report := range reportsToArchive {
 		switch report.Severity {
 		case 0:
-			severityMap["info"]++
+			severityMap["normal"]++
 		case 1:
-			severityMap["warning"]++
+			severityMap["suspicion"]++
 		case 2:
-			severityMap["critical"]++
+			severityMap["incident"]++
 		}
 
 		if report.CreatedAt.Valid {

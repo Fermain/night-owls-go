@@ -79,15 +79,35 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 	for _, report := range reports {
 		apiReport := AdminReportResponse{
 			ReportID:     report.ReportID,
-			BookingID:    report.BookingID,
 			Severity:     report.Severity,
-			UserID:       report.UserID,
 			UserName:     report.UserName,
 			UserPhone:    report.UserPhone,
 			ScheduleID:   report.ScheduleID,
 			ScheduleName: report.ScheduleName,
-			ShiftStart:   report.ShiftStart,
-			ShiftEnd:     report.ShiftEnd,
+		}
+
+		// Handle nullable BookingID field
+		if report.BookingID.Valid {
+			apiReport.BookingID = report.BookingID.Int64
+		}
+
+		// Handle nullable UserID field
+		if report.UserID.Valid {
+			apiReport.UserID = report.UserID.Int64
+		}
+
+		// Handle interface{} ShiftStart field
+		if shiftStartStr, ok := report.ShiftStart.(string); ok {
+			if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftStartStr); err == nil {
+				apiReport.ShiftStart = parsedTime
+			}
+		}
+
+		// Handle interface{} ShiftEnd field
+		if shiftEndStr, ok := report.ShiftEnd.(string); ok {
+			if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftEndStr); err == nil {
+				apiReport.ShiftEnd = parsedTime
+			}
 		}
 
 		// Handle nullable CreatedAt field
@@ -95,15 +115,9 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 			apiReport.CreatedAt = report.CreatedAt.Time
 		}
 
-		// Handle nullable ArchivedAt field (interface{} from SQLite)
-		if report.ArchivedAt != nil {
-			if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
-				apiReport.ArchivedAt = &archivedTime
-			} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
-				if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
-					apiReport.ArchivedAt = &parsedTime
-				}
-			}
+		// Handle nullable ArchivedAt field
+		if report.ArchivedAt.Valid {
+			apiReport.ArchivedAt = &report.ArchivedAt.Time
 		}
 
 		// Handle nullable message field
@@ -164,15 +178,35 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 	// Convert to API response format
 	apiReport := AdminReportResponse{
 		ReportID:     report.ReportID,
-		BookingID:    report.BookingID,
 		Severity:     report.Severity,
-		UserID:       report.UserID,
 		UserName:     report.UserName,
 		UserPhone:    report.UserPhone,
 		ScheduleID:   report.ScheduleID,
 		ScheduleName: report.ScheduleName,
-		ShiftStart:   report.ShiftStart,
-		ShiftEnd:     report.ShiftEnd,
+	}
+
+	// Handle nullable BookingID field
+	if report.BookingID.Valid {
+		apiReport.BookingID = report.BookingID.Int64
+	}
+
+	// Handle nullable UserID field
+	if report.UserID.Valid {
+		apiReport.UserID = report.UserID.Int64
+	}
+
+	// Handle interface{} ShiftStart field
+	if shiftStartStr, ok := report.ShiftStart.(string); ok {
+		if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftStartStr); err == nil {
+			apiReport.ShiftStart = parsedTime
+		}
+	}
+
+	// Handle interface{} ShiftEnd field
+	if shiftEndStr, ok := report.ShiftEnd.(string); ok {
+		if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftEndStr); err == nil {
+			apiReport.ShiftEnd = parsedTime
+		}
 	}
 
 	// Handle nullable CreatedAt field
@@ -180,15 +214,9 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 		apiReport.CreatedAt = report.CreatedAt.Time
 	}
 
-	// Handle nullable ArchivedAt field (interface{} from SQLite)
-	if report.ArchivedAt != nil {
-		if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
-			apiReport.ArchivedAt = &archivedTime
-		} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
-			if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
-				apiReport.ArchivedAt = &parsedTime
-			}
-		}
+	// Handle nullable ArchivedAt field
+	if report.ArchivedAt.Valid {
+		apiReport.ArchivedAt = &report.ArchivedAt.Time
 	}
 
 	// Handle nullable message field
@@ -292,15 +320,35 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 	for _, report := range reports {
 		apiReport := AdminReportResponse{
 			ReportID:     report.ReportID,
-			BookingID:    report.BookingID,
 			Severity:     report.Severity,
-			UserID:       report.UserID,
 			UserName:     report.UserName,
 			UserPhone:    report.UserPhone,
 			ScheduleID:   report.ScheduleID,
 			ScheduleName: report.ScheduleName,
-			ShiftStart:   report.ShiftStart,
-			ShiftEnd:     report.ShiftEnd,
+		}
+
+		// Handle nullable BookingID field
+		if report.BookingID.Valid {
+			apiReport.BookingID = report.BookingID.Int64
+		}
+
+		// Handle nullable UserID field
+		if report.UserID.Valid {
+			apiReport.UserID = report.UserID.Int64
+		}
+
+		// Handle interface{} ShiftStart field
+		if shiftStartStr, ok := report.ShiftStart.(string); ok {
+			if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftStartStr); err == nil {
+				apiReport.ShiftStart = parsedTime
+			}
+		}
+
+		// Handle interface{} ShiftEnd field
+		if shiftEndStr, ok := report.ShiftEnd.(string); ok {
+			if parsedTime, err := time.Parse("2006-01-02 15:04:05", shiftEndStr); err == nil {
+				apiReport.ShiftEnd = parsedTime
+			}
 		}
 
 		// Handle nullable CreatedAt field
@@ -308,15 +356,9 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 			apiReport.CreatedAt = report.CreatedAt.Time
 		}
 
-		// Handle nullable ArchivedAt field (interface{} from SQLite)
-		if report.ArchivedAt != nil {
-			if archivedTime, ok := report.ArchivedAt.(time.Time); ok {
-				apiReport.ArchivedAt = &archivedTime
-			} else if archivedStr, ok := report.ArchivedAt.(string); ok && archivedStr != "" {
-				if parsedTime, err := time.Parse("2006-01-02 15:04:05", archivedStr); err == nil {
-					apiReport.ArchivedAt = &parsedTime
-				}
-			}
+		// Handle nullable ArchivedAt field
+		if report.ArchivedAt.Valid {
+			apiReport.ArchivedAt = &report.ArchivedAt.Time
 		}
 
 		// Handle nullable message field
