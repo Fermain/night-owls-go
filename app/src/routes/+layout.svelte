@@ -28,7 +28,7 @@
 			notificationStore.fetchNotifications();
 		}
 	});
-	
+
 	// Import unified header and mobile navigation
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
@@ -48,14 +48,14 @@
 		// try {
 		// 	const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
 		// 	const registered = await serviceWorkerService.register();
-		// 	
+		//
 		// 	if (registered) {
 		// 		console.log('🔧 Service worker registered successfully');
-		// 		
+		//
 		// 		// Listen for service worker messages
 		// 		navigator.serviceWorker.addEventListener('message', (event) => {
 		// 			console.log('📨 Message from service worker:', event.data);
-		// 			
+		//
 		// 			if (event.data.type === 'SW_ACTIVATED') {
 		// 				console.log('🎉 ' + event.data.message);
 		// 			}
@@ -76,10 +76,7 @@
 			{@render children()}
 		{:else}
 			<!-- Public layout with header + mobile nav -->
-			<UnifiedHeader 
-				showBreadcrumbs={false}
-				showMobileMenu={true}
-			/>
+			<UnifiedHeader showBreadcrumbs={false} showMobileMenu={true} />
 			<main class="pb-16 md:pb-0">
 				{@render children()}
 			</main>

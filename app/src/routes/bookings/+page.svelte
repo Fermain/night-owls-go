@@ -63,7 +63,7 @@
 
 	// Mutation for booking a shift
 	const bookShiftMutation = createMutation({
-		mutationFn: (params: { schedule_id: number; start_time: string }) => 
+		mutationFn: (params: { schedule_id: number; start_time: string }) =>
 			UserApiService.createBooking(params),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
@@ -192,7 +192,11 @@
 			{:else}
 				<div class="space-y-4">
 					{#each bookings as booking (booking.booking_id)}
-						{@const status = getShiftStatus(booking.shift_start, booking.shift_end, booking.checked_in_at)}
+						{@const status = getShiftStatus(
+							booking.shift_start,
+							booking.shift_end,
+							booking.checked_in_at
+						)}
 						{@const canCancel = canCancelBooking(booking.shift_start)}
 						<Card.Root>
 							<Card.Header>
@@ -277,7 +281,9 @@
 									<Separator />
 									<div class="flex items-center justify-between">
 										<p class="text-sm text-muted-foreground">
-											{canCancel ? 'Upcoming shift' : 'Upcoming shift (cannot cancel - too close to start time)'}
+											{canCancel
+												? 'Upcoming shift'
+												: 'Upcoming shift (cannot cancel - too close to start time)'}
 										</p>
 										<div class="flex gap-2">
 											{#if canCancel}
@@ -307,7 +313,9 @@
 		<div class="space-y-4">
 			<div class="flex items-center justify-between">
 				<h2 class="text-xl font-semibold">Available Shifts</h2>
-				<Badge variant="outline">{availableShifts.filter(s => !s.is_booked).length} available</Badge>
+				<Badge variant="outline"
+					>{availableShifts.filter((s) => !s.is_booked).length} available</Badge
+				>
 			</div>
 
 			{#if isLoadingShifts}
@@ -332,7 +340,7 @@
 						</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if availableShifts.filter(s => !s.is_booked).length === 0}
+			{:else if availableShifts.filter((s) => !s.is_booked).length === 0}
 				<Card.Root>
 					<Card.Content class="pt-6 text-center space-y-4">
 						<CalendarIcon class="h-12 w-12 mx-auto text-muted-foreground" />
@@ -346,15 +354,13 @@
 				</Card.Root>
 			{:else}
 				<div class="space-y-4">
-					{#each availableShifts.filter(s => !s.is_booked) as shift (shift.schedule_id + shift.start_time)}
+					{#each availableShifts.filter((s) => !s.is_booked) as shift (shift.schedule_id + shift.start_time)}
 						<Card.Root>
 							<Card.Header>
 								<div class="flex items-center justify-between">
 									<div>
 										<Card.Title class="text-lg">{shift.schedule_name}</Card.Title>
-										<Card.Description>
-											Available shift slot
-										</Card.Description>
+										<Card.Description>Available shift slot</Card.Description>
 									</div>
 									<Badge variant="secondary">Available</Badge>
 								</div>

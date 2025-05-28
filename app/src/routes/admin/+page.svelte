@@ -21,13 +21,8 @@
 	{#snippet listContent()}
 		<UpcomingShifts maxItems={8} />
 	{/snippet}
-	
+
 	{#snippet children()}
-		<AdminDashboard
-			{isLoading}
-			{isError}
-			{error}
-			data={dashboardData}
-		/>
+		<AdminDashboard {isLoading} {isError} {error} data={dashboardData} />
 	{/snippet}
 </SidebarPage>

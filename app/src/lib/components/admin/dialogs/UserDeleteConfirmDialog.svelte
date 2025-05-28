@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
 
-	let { 
+	let {
 		open = $bindable(false),
 		userName = '',
 		onConfirm = () => {},
@@ -24,4 +24,4 @@
 	description="Are you sure you want to delete {userName}? This will permanently remove their account and all associated data. This action cannot be undone."
 	{onConfirm}
 	{isLoading}
-/> 
+/>

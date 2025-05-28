@@ -12,11 +12,11 @@ export function createUpcomingShiftsQuery(enabled: boolean = true) {
 		queryFn: async () => {
 			const { from, to } = createDateRange(14); // 14 days (2 weeks)
 			const shifts = await SchedulesApiService.getAllSlots({ from, to });
-			
+
 			// Filter to only upcoming shifts (from now onwards) and sort by start time
 			const now = new Date();
 			return shifts
-				.filter(shift => new Date(shift.start_time) >= now)
+				.filter((shift) => new Date(shift.start_time) >= now)
 				.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 				.slice(0, 10); // Limit to 10 most upcoming shifts for sidebar
 		},
@@ -25,4 +25,4 @@ export function createUpcomingShiftsQuery(enabled: boolean = true) {
 		gcTime: 1000 * 60 * 5, // 5 minutes
 		retry: 2
 	});
-} 
+}

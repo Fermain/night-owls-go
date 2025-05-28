@@ -35,7 +35,7 @@
 
 	onMount(async () => {
 		await refreshStatus();
-		
+
 		// Initialize the service
 		await pushNotificationService.initialize();
 		await refreshStatus();
@@ -56,7 +56,7 @@
 
 	async function handleToggle() {
 		isLoading = true;
-		
+
 		try {
 			if (subscribed) {
 				await pushNotificationService.unsubscribe();
@@ -86,14 +86,14 @@
 		if (!supported) {
 			return 'Push notifications are not supported on this browser or device.';
 		}
-		
+
 		switch (permission) {
 			case 'denied':
 				return 'Push notifications are blocked. Please enable them in your browser settings and refresh the page.';
 			case 'default':
 				return 'Enable push notifications to receive alerts about upcoming shifts and important messages.';
 			case 'granted':
-				return subscribed 
+				return subscribed
 					? 'You will receive push notifications for shifts and messages.'
 					: 'Permission granted. Toggle the switch to subscribe.';
 			default:
@@ -116,9 +116,7 @@
 			{/if}
 			<div>
 				<Card.Title class="text-lg">Push Notifications</Card.Title>
-				<Card.Description>
-					Receive alerts for shifts and important messages
-				</Card.Description>
+				<Card.Description>Receive alerts for shifts and important messages</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -131,13 +129,11 @@
 				<p class="text-sm {statusColor}">{statusText}</p>
 			</div>
 			{#if isLoading}
-				<div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+				<div
+					class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
+				></div>
 			{:else if supported && permission !== 'denied'}
-				<Switch 
-					checked={subscribed} 
-					onCheckedChange={handleToggle}
-					disabled={isLoading}
-				/>
+				<Switch checked={subscribed} onCheckedChange={handleToggle} disabled={isLoading} />
 			{/if}
 		</div>
 
@@ -149,22 +145,12 @@
 		<!-- Actions -->
 		{#if supported && subscribed}
 			<div class="flex gap-2">
-				<Button 
-					variant="outline" 
-					size="sm" 
-					onclick={handleTest}
-					class="flex items-center gap-2"
-				>
+				<Button variant="outline" size="sm" onclick={handleTest} class="flex items-center gap-2">
 					<TestTubeIcon class="h-4 w-4" />
 					Test Notification
 				</Button>
-				
-				<Button 
-					variant="ghost" 
-					size="sm" 
-					onclick={() => refreshStatus()}
-					disabled={isLoading}
-				>
+
+				<Button variant="ghost" size="sm" onclick={() => refreshStatus()} disabled={isLoading}>
 					Refresh Status
 				</Button>
 			</div>
@@ -190,4 +176,4 @@
 	<div class="mt-6">
 		<ServiceWorkerDebug />
 	</div>
-{/if} 
+{/if}

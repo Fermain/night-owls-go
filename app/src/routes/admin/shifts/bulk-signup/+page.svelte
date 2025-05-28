@@ -33,27 +33,27 @@
 	function formatShiftTitle(startTime: string, endTime: string): string {
 		const start = new Date(startTime);
 		const end = new Date(endTime);
-		
+
 		// Get the previous day for the "Night" reference
 		const previousDay = new Date(start);
 		previousDay.setDate(previousDay.getDate() - 1);
-		
+
 		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-		
+
 		// Format time as condensed AM/PM (e.g., "1-3AM")
 		const startHour = start.getUTCHours();
 		const endHour = end.getUTCHours();
-		
+
 		// Convert to 12-hour format
-		const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-		const getAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
-		
+		const formatHour = (hour: number) => (hour === 0 ? 12 : hour > 12 ? hour - 12 : hour);
+		const getAmPm = (hour: number) => (hour < 12 ? 'AM' : 'PM');
+
 		const startHour12 = formatHour(startHour);
 		const endHour12 = formatHour(endHour);
 		const endAmPm = getAmPm(endHour);
-		
+
 		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
-		
+
 		return `${dayName} Night ${timeRange}`;
 	}
 
@@ -661,7 +661,11 @@
 												{/if}
 
 												<div class="flex-1 min-w-0">
-													<div class="font-medium text-sm text-card-foreground truncate group-hover:text-accent-foreground transition-colors">{formatShiftTitle(shift.start_time, shift.end_time)}</div>
+													<div
+														class="font-medium text-sm text-card-foreground truncate group-hover:text-accent-foreground transition-colors"
+													>
+														{formatShiftTitle(shift.start_time, shift.end_time)}
+													</div>
 													<div class="flex items-center gap-2 mt-1">
 														<Badge variant="secondary" class="text-xs">{shift.schedule_name}</Badge>
 													</div>
@@ -672,18 +676,28 @@
 																weekday: 'short'
 															})}
 															{#if isPatternMatch}
-																<Badge variant="secondary" class="text-xs ml-1 bg-primary/20 text-primary border-primary/30">Pattern Match</Badge
+																<Badge
+																	variant="secondary"
+																	class="text-xs ml-1 bg-primary/20 text-primary border-primary/30"
+																	>Pattern Match</Badge
 																>
 															{/if}
 														</div>
 													{/if}
 
 													{#if shift.is_booked}
-														<div class="text-xs flex items-center gap-1 mt-1" style="color: hsl(var(--safety-green))">
+														<div
+															class="text-xs flex items-center gap-1 mt-1"
+															style="color: hsl(var(--safety-green))"
+														>
 															<UsersIcon class="h-3 w-3" />
 															{shift.user_name || 'Assigned'}
 															{#if shift.is_recurring_reservation}
-																<Badge variant="secondary" class="text-xs bg-primary/20 text-primary border-primary/30">Recurring</Badge>
+																<Badge
+																	variant="secondary"
+																	class="text-xs bg-primary/20 text-primary border-primary/30"
+																	>Recurring</Badge
+																>
 															{/if}
 														</div>
 													{:else if !patternMode}

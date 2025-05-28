@@ -24,4 +24,4 @@
 			{subheading}
 		</p>
 	{/if}
-</div> 
+</div>

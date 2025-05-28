@@ -37,7 +37,9 @@
 				// Ctrl/Cmd + K to focus search
 				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
 					e.preventDefault();
-					const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
+					const searchInput = document.querySelector(
+						'input[placeholder="Search messages..."]'
+					) as HTMLInputElement;
 					searchInput?.focus();
 				}
 				// Escape to clear search
@@ -63,7 +65,9 @@
 				// Ctrl/Cmd + K to focus search
 				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
 					e.preventDefault();
-					const searchInput = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
+					const searchInput = document.querySelector(
+						'input[placeholder="Search messages..."]'
+					) as HTMLInputElement;
 					searchInput?.focus();
 				}
 				// Escape to clear search
@@ -89,21 +93,20 @@
 	// Computed - using real notifications with filtering and search
 	const filteredNotifications = $derived.by(() => {
 		let notifications = $notificationState.notifications;
-		
+
 		// Filter by read status
 		if (showUnreadOnly) {
 			notifications = notifications.filter((n) => !n.read);
 		}
-		
+
 		// Filter by search query
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase().trim();
-			notifications = notifications.filter((n) => 
-				n.message.toLowerCase().includes(query) ||
-				n.title.toLowerCase().includes(query)
+			notifications = notifications.filter(
+				(n) => n.message.toLowerCase().includes(query) || n.title.toLowerCase().includes(query)
 			);
 		}
-		
+
 		return notifications;
 	});
 
@@ -167,13 +170,15 @@
 				<div>
 					<h1 class="text-lg font-semibold text-foreground">Messages</h1>
 					<p class="text-sm text-muted-foreground">
-						{$notificationState.notifications.length} total, {unreadCount > 0 ? `${unreadCount} unread` : 'all read'}
+						{$notificationState.notifications.length} total, {unreadCount > 0
+							? `${unreadCount} unread`
+							: 'all read'}
 					</p>
 				</div>
 				<div class="flex items-center gap-1">
-					<Button 
-						variant="ghost" 
-						size="sm" 
+					<Button
+						variant="ghost"
+						size="sm"
 						onclick={refreshNotifications}
 						disabled={isLoading}
 						class="h-8 px-2"
@@ -186,7 +191,7 @@
 						</Button>
 					{/if}
 					<Button
-						variant={showUnreadOnly ? "default" : "outline"}
+						variant={showUnreadOnly ? 'default' : 'outline'}
 						size="sm"
 						onclick={toggleShowUnread}
 						class="h-8 px-2"
@@ -202,7 +207,9 @@
 		<!-- Search -->
 		<div class="mb-3">
 			<div class="relative">
-				<SearchIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+				<SearchIcon
+					class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+				/>
 				<input
 					type="text"
 					placeholder="Search messages..."
@@ -211,7 +218,7 @@
 				/>
 				{#if searchQuery}
 					<button
-						onclick={() => searchQuery = ''}
+						onclick={() => (searchQuery = '')}
 						class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
 						aria-label="Clear search"
 					>
@@ -238,12 +245,8 @@
 			{#if isLoading && $notificationState.notifications.length === 0}
 				<div class="p-6 text-center">
 					<LoaderCircleIcon class="h-8 w-8 text-muted-foreground mx-auto mb-3 animate-spin" />
-					<h3 class="text-base font-medium text-foreground mb-2">
-						Loading messages...
-					</h3>
-					<p class="text-sm text-muted-foreground">
-						Fetching your latest messages and updates.
-					</p>
+					<h3 class="text-base font-medium text-foreground mb-2">Loading messages...</h3>
+					<p class="text-sm text-muted-foreground">Fetching your latest messages and updates.</p>
 				</div>
 			{:else if filteredNotifications.length === 0}
 				<div class="p-6 text-center">
@@ -279,7 +282,9 @@
 			{:else}
 				{#each filteredNotifications as notification, index (notification.id)}
 					<div
-						class="p-3 {!notification.read ? 'bg-muted/30' : 'bg-background'} {index > 0 ? 'border-t border-border' : ''}"
+						class="p-3 {!notification.read ? 'bg-muted/30' : 'bg-background'} {index > 0
+							? 'border-t border-border'
+							: ''}"
 					>
 						<div class="flex items-start gap-3">
 							<!-- Status indicator -->

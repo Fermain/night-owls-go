@@ -15,7 +15,7 @@ export const formStore = persisted<FormData>('form-data', initialFormData);
 
 // Helper functions
 export function saveUserData(phoneNumber: string, name?: string) {
-	formStore.update(data => ({
+	formStore.update((data) => ({
 		...data,
 		lastPhoneNumber: phoneNumber,
 		lastName: name?.trim() || data.lastName
@@ -24,4 +24,4 @@ export function saveUserData(phoneNumber: string, name?: string) {
 
 export function clearUserData() {
 	formStore.set(initialFormData);
-} 
+}

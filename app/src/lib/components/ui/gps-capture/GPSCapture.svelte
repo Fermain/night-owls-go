@@ -34,10 +34,10 @@
 		timestamp: string;
 	}
 
-	let { 
-		onLocationCaptured, 
-		onError, 
-		autoCapture = false, 
+	let {
+		onLocationCaptured,
+		onError,
+		autoCapture = false,
 		showMap = false,
 		className = ''
 	}: Props = $props();
@@ -68,7 +68,7 @@
 
 	async function captureLocation() {
 		console.log('🔍 GPS Capture: Starting location capture process...');
-		
+
 		if (!navigator.geolocation) {
 			const errorMsg = 'Geolocation is not supported by this browser';
 			console.error('❌ GPS Capture: Geolocation not supported');
@@ -83,19 +83,22 @@
 		console.log('🔒 GPS Capture: Secure context (HTTPS):', window.isSecureContext);
 		console.log('🌍 GPS Capture: Online status:', navigator.onLine);
 		console.log('🕐 GPS Capture: Current time:', new Date().toISOString());
-		
+
 		// Check if we're in localhost (which should work for geolocation)
 		console.log('🏠 GPS Capture: Hostname:', window.location.hostname);
 		console.log('🔗 GPS Capture: Protocol:', window.location.protocol);
-		
+
 		// Check for any blocking extensions or privacy settings
 		console.log('🍪 GPS Capture: Cookies enabled:', navigator.cookieEnabled);
 		console.log('🔍 GPS Capture: Do Not Track:', navigator.doNotTrack);
-		
+
 		// Check if there are any other location-related APIs
-		console.log('🧭 GPS Capture: DeviceOrientationEvent:', typeof DeviceOrientationEvent !== 'undefined');
+		console.log(
+			'🧭 GPS Capture: DeviceOrientationEvent:',
+			typeof DeviceOrientationEvent !== 'undefined'
+		);
 		console.log('📱 GPS Capture: DeviceMotionEvent:', typeof DeviceMotionEvent !== 'undefined');
-		
+
 		// Check permissions API if available
 		if ('permissions' in navigator) {
 			try {
@@ -108,7 +111,7 @@
 		} else {
 			console.log('⚠️ GPS Capture: Permissions API not available');
 		}
-		
+
 		// Try to get cached location first (very permissive)
 		console.log('🗂️ GPS Capture: Attempting to get cached location first...');
 		try {
@@ -129,7 +132,7 @@
 					}
 				);
 			});
-			
+
 			// If we got cached data, use it
 			const locationData: GeolocationData = {
 				latitude: cachedPosition.coords.latitude,
@@ -154,7 +157,7 @@
 		try {
 			const position = await new Promise<GeolocationPosition>((resolve, reject) => {
 				console.log('📍 GPS Capture: Calling navigator.geolocation.getCurrentPosition...');
-				
+
 				navigator.geolocation.getCurrentPosition(
 					(pos) => {
 						console.log('✅ GPS Capture: Success callback triggered');
@@ -166,11 +169,11 @@
 						console.error('❌ GPS Capture: Error object:', err);
 						console.error('❌ GPS Capture: Error code:', err.code);
 						console.error('❌ GPS Capture: Error message:', err.message);
-						
+
 						if (err.code === err.POSITION_UNAVAILABLE) {
 							console.error('📍 GPS Capture: POSITION_UNAVAILABLE - CoreLocation framework issue');
 						}
-						
+
 						reject(err);
 					},
 					{
@@ -191,13 +194,12 @@
 			console.log('📊 GPS Capture: Processed location data:', locationData);
 			capturedLocation = locationData;
 			onLocationCaptured?.(locationData);
-			
 		} catch (err) {
 			console.error('💥 GPS Capture: Location capture failed:', err);
-			
+
 			let errorMsg = 'Location capture failed';
 			let fallbackSuggestion = '';
-			
+
 			if (err instanceof GeolocationPositionError) {
 				switch (err.code) {
 					case err.PERMISSION_DENIED:
@@ -206,7 +208,8 @@
 						break;
 					case err.POSITION_UNAVAILABLE:
 						errorMsg = 'Location unavailable';
-						fallbackSuggestion = 'This appears to be a macOS CoreLocation framework issue. You can submit the report without location data or use manual entry.';
+						fallbackSuggestion =
+							'This appears to be a macOS CoreLocation framework issue. You can submit the report without location data or use manual entry.';
 						break;
 					case err.TIMEOUT:
 						errorMsg = 'Location request timed out';
@@ -282,17 +285,17 @@
 	function handleManualLocationSubmit() {
 		const lat = parseFloat(manualLat);
 		const lng = parseFloat(manualLng);
-		
+
 		if (isNaN(lat) || isNaN(lng)) {
 			onError?.('Please enter valid latitude and longitude coordinates');
 			return;
 		}
-		
+
 		if (lat < -90 || lat > 90) {
 			onError?.('Latitude must be between -90 and 90 degrees');
 			return;
 		}
-		
+
 		if (lng < -180 || lng > 180) {
 			onError?.('Longitude must be between -180 and 180 degrees');
 			return;
@@ -335,7 +338,7 @@
 			<MapPinIcon class="h-5 w-5" />
 			<h3 class="font-medium">Location</h3>
 		</div>
-		
+
 		{#if capturedLocation}
 			<Badge class="{getAccuracyColor(capturedLocation.accuracy)} border text-xs">
 				{formatAccuracy(capturedLocation.accuracy)} accuracy
@@ -358,11 +361,15 @@
 			<div class="flex-1">
 				<p class="text-sm font-medium text-orange-900">Location capture failed</p>
 				<p class="text-xs text-orange-700">{error}</p>
-				<p class="text-xs text-orange-600 mt-1">💡 You can submit the report without location data or enter coordinates manually.</p>
+				<p class="text-xs text-orange-600 mt-1">
+					💡 You can submit the report without location data or enter coordinates manually.
+				</p>
 			</div>
 		</div>
 	{:else if capturedLocation}
-		<div class="p-3 bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-lg">
+		<div
+			class="p-3 bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-lg"
+		>
 			<div class="flex items-start gap-2">
 				<CheckCircleIcon class="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
 				<div class="flex-1 min-w-0">
@@ -401,7 +408,9 @@
 
 	<!-- Manual Location Input -->
 	{#if showManualInput}
-		<div class="p-4 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg">
+		<div
+			class="p-4 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg"
+		>
 			<div class="flex items-center justify-between mb-3">
 				<h4 class="text-sm font-medium text-blue-900 dark:text-blue-100">Manual Location Entry</h4>
 				<Button variant="ghost" size="sm" onclick={toggleManualInput}>
@@ -412,21 +421,11 @@
 				<div class="grid grid-cols-2 gap-3">
 					<div>
 						<Label for="manual-lat" class="text-xs">Latitude</Label>
-						<Input
-							id="manual-lat"
-							bind:value={manualLat}
-							placeholder="-33.9249"
-							class="text-sm"
-						/>
+						<Input id="manual-lat" bind:value={manualLat} placeholder="-33.9249" class="text-sm" />
 					</div>
 					<div>
 						<Label for="manual-lng" class="text-xs">Longitude</Label>
-						<Input
-							id="manual-lng"
-							bind:value={manualLng}
-							placeholder="18.4241"
-							class="text-sm"
-						/>
+						<Input id="manual-lng" bind:value={manualLng} placeholder="18.4241" class="text-sm" />
 					</div>
 				</div>
 				<p class="text-xs text-blue-700 dark:text-blue-300">
@@ -473,11 +472,7 @@
 				{/if}
 			</Button>
 			{#if error}
-				<Button
-					variant="ghost"
-					onclick={toggleManualInput}
-					class="flex-shrink-0"
-				>
+				<Button variant="ghost" onclick={toggleManualInput} class="flex-shrink-0">
 					<EditIcon class="h-4 w-4 mr-2" />
 					Manual Entry
 				</Button>
@@ -487,20 +482,14 @@
 				<RefreshCwIcon class="h-4 w-4 mr-2" />
 				Refresh
 			</Button>
-			
+
 			{#if watchId === null}
-				<Button variant="outline" onclick={startWatching}>
-					Track Live
-				</Button>
+				<Button variant="outline" onclick={startWatching}>Track Live</Button>
 			{:else}
-				<Button variant="outline" onclick={stopWatching}>
-					Stop Tracking
-				</Button>
+				<Button variant="outline" onclick={stopWatching}>Stop Tracking</Button>
 			{/if}
-			
-			<Button variant="ghost" onclick={clearLocation}>
-				Clear
-			</Button>
+
+			<Button variant="ghost" onclick={clearLocation}>Clear</Button>
 		{:else if error}
 			<Button
 				variant="outline"
@@ -516,11 +505,7 @@
 					Try Again
 				{/if}
 			</Button>
-			<Button
-				variant="ghost"
-				onclick={toggleManualInput}
-				class="flex-shrink-0"
-			>
+			<Button variant="ghost" onclick={toggleManualInput} class="flex-shrink-0">
 				<EditIcon class="h-4 w-4 mr-2" />
 				Manual Entry
 			</Button>
@@ -552,9 +537,15 @@
 				<div class="space-y-1">
 					<p class="font-medium">Quick Solutions:</p>
 					<ul class="list-disc list-inside space-y-1 text-muted-foreground">
-						<li><strong>Use Manual Entry:</strong> Click "Manual Entry" to input coordinates directly</li>
-						<li><strong>Submit Without Location:</strong> Reports can be submitted without location data</li>
-						<li><strong>Find Coordinates:</strong> Use Google Maps or Apple Maps to get your coordinates</li>
+						<li>
+							<strong>Use Manual Entry:</strong> Click "Manual Entry" to input coordinates directly
+						</li>
+						<li>
+							<strong>Submit Without Location:</strong> Reports can be submitted without location data
+						</li>
+						<li>
+							<strong>Find Coordinates:</strong> Use Google Maps or Apple Maps to get your coordinates
+						</li>
 					</ul>
 				</div>
 				<div class="space-y-1">
@@ -568,4 +559,4 @@
 			</div>
 		</details>
 	{/if}
-</div> 
+</div>

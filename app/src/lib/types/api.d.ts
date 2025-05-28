@@ -4,2591 +4,2591 @@
  */
 
 export interface paths {
-    "/api/admin/bookings/assign": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Assign a user to a specific shift slot (Admin)
-         * @description Allows an admin to book a specific user for a given schedule ID and start time.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Assignment details (schedule_id, start_time, user_id) */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.AssignUserToShiftRequest"];
-                };
-            };
-            responses: {
-                /** @description Booking created successfully for the user */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.BookingResponse"];
-                    };
-                };
-                /** @description Invalid request format or data (e.g., missing fields, invalid user/schedule) */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - admin authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - user does not have admin privileges */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User or Schedule not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Slot already booked or other conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/dashboard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get admin dashboard metrics
-         * @description Returns comprehensive dashboard metrics including unfilled shifts, member contributions, and quality metrics
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Dashboard metrics */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["service.AdminDashboard"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/emergency-contacts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Admin: Get emergency contacts
-         * @description Returns all emergency contacts for admin management
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of emergency contacts */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Admin: Create emergency contact
-         * @description Creates a new emergency contact
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Emergency contact data */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.CreateEmergencyContactRequest"];
-                };
-            };
-            responses: {
-                /** @description Created emergency contact */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"];
-                    };
-                };
-                /** @description Invalid request data */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/emergency-contacts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Admin: Get emergency contact by ID
-         * @description Returns a specific emergency contact by ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Emergency Contact ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Emergency contact details */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"];
-                    };
-                };
-                /** @description Invalid contact ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Emergency contact not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        /**
-         * Admin: Update emergency contact
-         * @description Updates an existing emergency contact
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Emergency Contact ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            /** @description Emergency contact data */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.UpdateEmergencyContactRequest"];
-                };
-            };
-            responses: {
-                /** @description Updated emergency contact */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"];
-                    };
-                };
-                /** @description Invalid request data */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Emergency contact not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        /**
-         * Admin: Delete emergency contact
-         * @description Deletes an emergency contact (cannot delete default contact)
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Emergency Contact ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Emergency contact deleted successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Invalid contact ID or cannot delete default contact */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Emergency contact not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/emergency-contacts/{id}/default": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Admin: Set default emergency contact
-         * @description Sets a specific emergency contact as the default
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Emergency Contact ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default emergency contact updated successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Invalid contact ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Emergency contact not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/reports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List all reports (Admin)
-         * @description Get all incident reports with full context including user and schedule information
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Start date (YYYY-MM-DD) */
-                    from?: string;
-                    /** @description End date (YYYY-MM-DD) */
-                    to?: string;
-                    /** @description Filter by severity (0=info, 1=warning, 2=critical) */
-                    severity?: number;
-                    /** @description Filter by schedule ID */
-                    schedule_id?: number;
-                    /** @description Filter by user ID */
-                    user_id?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of reports with full context */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.AdminReportResponse"][];
-                    };
-                };
-                /** @description Invalid query parameters */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/reports/archived": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List archived reports (Admin)
-         * @description Get all archived reports with full context
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of archived reports */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.AdminReportResponse"][];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/reports/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a specific report (Admin)
-         * @description Get a specific report with full context by ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Report ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Report with full context */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.AdminReportResponse"];
-                    };
-                };
-                /** @description Invalid report ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Report not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/reports/{id}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Archive a report (Admin)
-         * @description Archive a specific report by ID (soft delete)
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Report ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Success message */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": {
-                            [key: string]: string;
-                        };
-                    };
-                };
-                /** @description Invalid report ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Report not found or already archived */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/reports/{id}/unarchive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Unarchive a report (Admin)
-         * @description Unarchive a specific report by ID
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Report ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Success message */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": {
-                            [key: string]: string;
-                        };
-                    };
-                };
-                /** @description Invalid report ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "*/*": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List all users (Admin)
-         * @description Get a list of all users in the system. Requires admin authentication.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Search term to filter users by name or phone */
-                    search?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of users */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.UserAPIResponse"][];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Create a new user (Admin)
-         * @description Create a new user in the system. Requires admin authentication.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description User information */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.createUserRequest"];
-                };
-            };
-            responses: {
-                /** @description Created user */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.UserAPIResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/users/bulk-delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Bulk delete users (Admin)
-         * @description Delete multiple users by their IDs. Requires admin authentication.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description List of user IDs to delete */
-            requestBody: {
-                content: {
-                    "application/json": {
-                        user_ids?: number[];
-                    };
-                };
-            };
-            responses: {
-                /** @description Success message */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: string;
-                        };
-                    };
-                };
-                /** @description Invalid request or no user IDs provided */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a user by ID (Admin)
-         * @description Get a specific user's details by their ID. Requires admin authentication.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description User details */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.UserAPIResponse"];
-                    };
-                };
-                /** @description Invalid user ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        /**
-         * Update a user (Admin)
-         * @description Update a user's details by their ID. Requires admin authentication.
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            /** @description User information */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.updateUserRequest"];
-                };
-            };
-            responses: {
-                /** @description Updated user */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.UserAPIResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        /**
-         * Delete a user (Admin)
-         * @description Deletes a user by their ID. Requires admin authentication.
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Success message */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: string;
-                        };
-                    };
-                };
-                /** @description Invalid user ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/users/{userId}/bookings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get all bookings for a specific user (Admin)
-         * @description Allows an admin to view all bookings (past and future) for a specific user.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /**
-                     * @description User ID
-                     * @example 42
-                     */
-                    userId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of bookings for the user with schedule names */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.BookingWithScheduleResponse"][];
-                    };
-                };
-                /** @description Invalid user ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - admin authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - user does not have admin privileges */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/emergency-contacts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get emergency contacts
-         * @description Returns all active emergency contacts for public use
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of emergency contacts */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"][];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/emergency-contacts/default": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get default emergency contact
-         * @description Returns the default emergency contact (usually RUSA)
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default emergency contact */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.EmergencyContactResponse"];
-                    };
-                };
-                /** @description No default emergency contact found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/dev-login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Development-only direct login endpoint
-         * @description Bypasses OTP and directly generates JWT token for testing (DEV MODE ONLY)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Phone number for dev login */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.DevLoginRequest"];
-                };
-            };
-            responses: {
-                /** @description JWT token generated successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.DevLoginResponse"];
-                    };
-                };
-                /** @description Invalid request or dev mode disabled */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Register a new user or request OTP for existing user
-         * @description Registers a new user with phone number or starts login flow for existing user
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description User registration details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.RegisterRequest"];
-                };
-            };
-            responses: {
-                /** @description OTP sent successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.RegisterResponse"];
-                    };
-                };
-                /** @description Invalid phone number or request format */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify OTP and get authentication token
-         * @description Verifies the one-time password (OTP) and returns a JWT token on success
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Verification details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.VerifyRequest"];
-                };
-            };
-            responses: {
-                /** @description Verified successfully, returns JWT token */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.VerifyResponse"];
-                    };
-                };
-                /** @description Invalid request format */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Invalid OTP or verification failed */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bookings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a new booking
-         * @description Books a shift slot for a user
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Booking details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.CreateBookingRequest"];
-                };
-            };
-            responses: {
-                /** @description Booking created successfully */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.BookingResponse"];
-                    };
-                };
-                /** @description Invalid request format or data */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Schedule not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Slot already booked (conflict) */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bookings/my": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get current user's bookings
-         * @description Returns all bookings for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of user's bookings with schedule names */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.BookingWithScheduleResponse"][];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bookings/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Cancel a booking
-         * @description Cancel a user's booking if it's not too close to the shift start time
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Booking ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Booking cancelled successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Invalid booking ID or booking cannot be cancelled */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Not authorized to cancel this booking */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Booking not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bookings/{id}/checkin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check in to a booking
-         * @description Mark the user as checked in to their booked shift with a timestamp
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Booking ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Check-in marked successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.BookingResponse"];
-                    };
-                };
-                /** @description Invalid booking ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Not authorized to check in to this booking */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Booking not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bookings/{id}/report": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a report for a booking
-         * @description Submits an incident report for a specific booking
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Booking ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            /** @description Report details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.CreateReportRequest"];
-                };
-            };
-            responses: {
-                /** @description Report created successfully */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ReportResponse"];
-                    };
-                };
-                /** @description Invalid request format or severity out of range */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden - not authorized to report on this booking */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Booking not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/examples": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create example with validation
-         * @description Creates an example resource with comprehensive request validation
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Example data */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.ExampleRequest"];
-                };
-            };
-            responses: {
-                /** @description Example created successfully */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ExampleResponse"];
-                    };
-                };
-                /** @description Validation error with detailed field information */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.APIError"];
-                    };
-                };
-                /** @description Internal server error with request tracking */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.APIError"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reports/off-shift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create an off-shift report
-         * @description Submits an incident report when not on a scheduled shift
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Report details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["api.CreateOffShiftReportRequest"];
-                };
-            };
-            responses: {
-                /** @description Report created successfully */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ReportResponse"];
-                    };
-                };
-                /** @description Invalid request format or severity out of range */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized - authentication required */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List all schedules
-         * @description Returns a list of all defined schedules
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of schedules */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ScheduleResponse"][];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/shifts/available": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List available shift slots
-         * @description Returns a list of available shift slots based on schedule definitions
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Start date for shift window (RFC3339 format) */
-                    from?: string;
-                    /** @description End date for shift window (RFC3339 format) */
-                    to?: string;
-                    /** @description Maximum number of shifts to return */
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of available shift slots */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["service.AvailableShiftSlot"][];
-                    };
-                };
-                /** @description Invalid query parameters */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["api.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+	'/api/admin/bookings/assign': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Assign a user to a specific shift slot (Admin)
+		 * @description Allows an admin to book a specific user for a given schedule ID and start time.
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Assignment details (schedule_id, start_time, user_id) */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.AssignUserToShiftRequest'];
+				};
+			};
+			responses: {
+				/** @description Booking created successfully for the user */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.BookingResponse'];
+					};
+				};
+				/** @description Invalid request format or data (e.g., missing fields, invalid user/schedule) */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - admin authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - user does not have admin privileges */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User or Schedule not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Slot already booked or other conflict */
+				409: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/dashboard': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get admin dashboard metrics
+		 * @description Returns comprehensive dashboard metrics including unfilled shifts, member contributions, and quality metrics
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Dashboard metrics */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['service.AdminDashboard'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/emergency-contacts': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Admin: Get emergency contacts
+		 * @description Returns all emergency contacts for admin management
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of emergency contacts */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'][];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		/**
+		 * Admin: Create emergency contact
+		 * @description Creates a new emergency contact
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Emergency contact data */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.CreateEmergencyContactRequest'];
+				};
+			};
+			responses: {
+				/** @description Created emergency contact */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'];
+					};
+				};
+				/** @description Invalid request data */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/emergency-contacts/{id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Admin: Get emergency contact by ID
+		 * @description Returns a specific emergency contact by ID
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Emergency Contact ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Emergency contact details */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'];
+					};
+				};
+				/** @description Invalid contact ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Emergency contact not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		/**
+		 * Admin: Update emergency contact
+		 * @description Updates an existing emergency contact
+		 */
+		put: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Emergency Contact ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			/** @description Emergency contact data */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.UpdateEmergencyContactRequest'];
+				};
+			};
+			responses: {
+				/** @description Updated emergency contact */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'];
+					};
+				};
+				/** @description Invalid request data */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Emergency contact not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		post?: never;
+		/**
+		 * Admin: Delete emergency contact
+		 * @description Deletes an emergency contact (cannot delete default contact)
+		 */
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Emergency Contact ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Emergency contact deleted successfully */
+				204: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content?: never;
+				};
+				/** @description Invalid contact ID or cannot delete default contact */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Emergency contact not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/emergency-contacts/{id}/default': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		/**
+		 * Admin: Set default emergency contact
+		 * @description Sets a specific emergency contact as the default
+		 */
+		put: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Emergency Contact ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Default emergency contact updated successfully */
+				204: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content?: never;
+				};
+				/** @description Invalid contact ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - admin access required */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Emergency contact not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/reports': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * List all reports (Admin)
+		 * @description Get all incident reports with full context including user and schedule information
+		 */
+		get: {
+			parameters: {
+				query?: {
+					/** @description Start date (YYYY-MM-DD) */
+					from?: string;
+					/** @description End date (YYYY-MM-DD) */
+					to?: string;
+					/** @description Filter by severity (0=info, 1=warning, 2=critical) */
+					severity?: number;
+					/** @description Filter by schedule ID */
+					schedule_id?: number;
+					/** @description Filter by user ID */
+					user_id?: number;
+				};
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of reports with full context */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.AdminReportResponse'][];
+					};
+				};
+				/** @description Invalid query parameters */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/reports/archived': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * List archived reports (Admin)
+		 * @description Get all archived reports with full context
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of archived reports */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.AdminReportResponse'][];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/reports/{id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get a specific report (Admin)
+		 * @description Get a specific report with full context by ID
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Report ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Report with full context */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.AdminReportResponse'];
+					};
+				};
+				/** @description Invalid report ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Report not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/reports/{id}/archive': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		/**
+		 * Archive a report (Admin)
+		 * @description Archive a specific report by ID (soft delete)
+		 */
+		put: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Report ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Success message */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': {
+							[key: string]: string;
+						};
+					};
+				};
+				/** @description Invalid report ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Report not found or already archived */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/reports/{id}/unarchive': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		/**
+		 * Unarchive a report (Admin)
+		 * @description Unarchive a specific report by ID
+		 */
+		put: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Report ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Success message */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': {
+							[key: string]: string;
+						};
+					};
+				};
+				/** @description Invalid report ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'*/*': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/users': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * List all users (Admin)
+		 * @description Get a list of all users in the system. Requires admin authentication.
+		 */
+		get: {
+			parameters: {
+				query?: {
+					/** @description Search term to filter users by name or phone */
+					search?: string;
+				};
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of users */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.UserAPIResponse'][];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		/**
+		 * Create a new user (Admin)
+		 * @description Create a new user in the system. Requires admin authentication.
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description User information */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.createUserRequest'];
+				};
+			};
+			responses: {
+				/** @description Created user */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.UserAPIResponse'];
+					};
+				};
+				/** @description Invalid request */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/users/bulk-delete': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Bulk delete users (Admin)
+		 * @description Delete multiple users by their IDs. Requires admin authentication.
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description List of user IDs to delete */
+			requestBody: {
+				content: {
+					'application/json': {
+						user_ids?: number[];
+					};
+				};
+			};
+			responses: {
+				/** @description Success message */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': {
+							[key: string]: string;
+						};
+					};
+				};
+				/** @description Invalid request or no user IDs provided */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/users/{id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get a user by ID (Admin)
+		 * @description Get a specific user's details by their ID. Requires admin authentication.
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description User ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description User details */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.UserAPIResponse'];
+					};
+				};
+				/** @description Invalid user ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		/**
+		 * Update a user (Admin)
+		 * @description Update a user's details by their ID. Requires admin authentication.
+		 */
+		put: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description User ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			/** @description User information */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.updateUserRequest'];
+				};
+			};
+			responses: {
+				/** @description Updated user */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.UserAPIResponse'];
+					};
+				};
+				/** @description Invalid request */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		post?: never;
+		/**
+		 * Delete a user (Admin)
+		 * @description Deletes a user by their ID. Requires admin authentication.
+		 */
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description User ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Success message */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': {
+							[key: string]: string;
+						};
+					};
+				};
+				/** @description Invalid user ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/admin/users/{userId}/bookings': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get all bookings for a specific user (Admin)
+		 * @description Allows an admin to view all bookings (past and future) for a specific user.
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/**
+					 * @description User ID
+					 * @example 42
+					 */
+					userId: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of bookings for the user with schedule names */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.BookingWithScheduleResponse'][];
+					};
+				};
+				/** @description Invalid user ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - admin authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - user does not have admin privileges */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/emergency-contacts': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get emergency contacts
+		 * @description Returns all active emergency contacts for public use
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of emergency contacts */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'][];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/emergency-contacts/default': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get default emergency contact
+		 * @description Returns the default emergency contact (usually RUSA)
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Default emergency contact */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.EmergencyContactResponse'];
+					};
+				};
+				/** @description No default emergency contact found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/dev-login': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Development-only direct login endpoint
+		 * @description Bypasses OTP and directly generates JWT token for testing (DEV MODE ONLY)
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Phone number for dev login */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.DevLoginRequest'];
+				};
+			};
+			responses: {
+				/** @description JWT token generated successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.DevLoginResponse'];
+					};
+				};
+				/** @description Invalid request or dev mode disabled */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description User not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/register': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Register a new user or request OTP for existing user
+		 * @description Registers a new user with phone number or starts login flow for existing user
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description User registration details */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.RegisterRequest'];
+				};
+			};
+			responses: {
+				/** @description OTP sent successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.RegisterResponse'];
+					};
+				};
+				/** @description Invalid phone number or request format */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/verify': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Verify OTP and get authentication token
+		 * @description Verifies the one-time password (OTP) and returns a JWT token on success
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Verification details */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.VerifyRequest'];
+				};
+			};
+			responses: {
+				/** @description Verified successfully, returns JWT token */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.VerifyResponse'];
+					};
+				};
+				/** @description Invalid request format */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Invalid OTP or verification failed */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/bookings': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Create a new booking
+		 * @description Books a shift slot for a user
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Booking details */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.CreateBookingRequest'];
+				};
+			};
+			responses: {
+				/** @description Booking created successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.BookingResponse'];
+					};
+				};
+				/** @description Invalid request format or data */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Schedule not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Slot already booked (conflict) */
+				409: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/bookings/my': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get current user's bookings
+		 * @description Returns all bookings for the authenticated user
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of user's bookings with schedule names */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.BookingWithScheduleResponse'][];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/bookings/{id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		/**
+		 * Cancel a booking
+		 * @description Cancel a user's booking if it's not too close to the shift start time
+		 */
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Booking ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Booking cancelled successfully */
+				204: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content?: never;
+				};
+				/** @description Invalid booking ID or booking cannot be cancelled */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Not authorized to cancel this booking */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Booking not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/bookings/{id}/checkin': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Check in to a booking
+		 * @description Mark the user as checked in to their booked shift with a timestamp
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Booking ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Check-in marked successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.BookingResponse'];
+					};
+				};
+				/** @description Invalid booking ID */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Not authorized to check in to this booking */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Booking not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/bookings/{id}/report': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Create a report for a booking
+		 * @description Submits an incident report for a specific booking
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					/** @description Booking ID */
+					id: number;
+				};
+				cookie?: never;
+			};
+			/** @description Report details */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.CreateReportRequest'];
+				};
+			};
+			responses: {
+				/** @description Report created successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ReportResponse'];
+					};
+				};
+				/** @description Invalid request format or severity out of range */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Forbidden - not authorized to report on this booking */
+				403: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Booking not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/examples': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Create example with validation
+		 * @description Creates an example resource with comprehensive request validation
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Example data */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.ExampleRequest'];
+				};
+			};
+			responses: {
+				/** @description Example created successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ExampleResponse'];
+					};
+				};
+				/** @description Validation error with detailed field information */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.APIError'];
+					};
+				};
+				/** @description Internal server error with request tracking */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.APIError'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/reports/off-shift': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Create an off-shift report
+		 * @description Submits an incident report when not on a scheduled shift
+		 */
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			/** @description Report details */
+			requestBody: {
+				content: {
+					'application/json': components['schemas']['api.CreateOffShiftReportRequest'];
+				};
+			};
+			responses: {
+				/** @description Report created successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ReportResponse'];
+					};
+				};
+				/** @description Invalid request format or severity out of range */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Unauthorized - authentication required */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/schedules': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * List all schedules
+		 * @description Returns a list of all defined schedules
+		 */
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of schedules */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ScheduleResponse'][];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/shifts/available': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * List available shift slots
+		 * @description Returns a list of available shift slots based on schedule definitions
+		 */
+		get: {
+			parameters: {
+				query?: {
+					/** @description Start date for shift window (RFC3339 format) */
+					from?: string;
+					/** @description End date for shift window (RFC3339 format) */
+					to?: string;
+					/** @description Maximum number of shifts to return */
+					limit?: number;
+				};
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of available shift slots */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['service.AvailableShiftSlot'][];
+					};
+				};
+				/** @description Invalid query parameters */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+				/** @description Internal server error */
+				500: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						'application/json': components['schemas']['api.ErrorResponse'];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        "api.APIError": {
-            code?: string;
-            /** @description Detailed error information (development only) */
-            details?: components["schemas"]["api.ErrorDetails"];
-            /** @description Core error information */
-            error?: string;
-            message?: string;
-            method?: string;
-            path?: string;
-            /** @description Request context for debugging */
-            request_id?: string;
-            timestamp?: string;
-            /** @description Validation errors (for input validation failures) */
-            validation_errors?: components["schemas"]["api.ValidationError"][];
-        };
-        "api.AdminReportResponse": {
-            archived_at?: string;
-            booking_id?: number;
-            created_at?: string;
-            gps_accuracy?: number;
-            gps_timestamp?: string;
-            latitude?: number;
-            longitude?: number;
-            message?: string;
-            report_id?: number;
-            schedule_id?: number;
-            schedule_name?: string;
-            severity?: number;
-            shift_end?: string;
-            shift_start?: string;
-            user_id?: number;
-            user_name?: string;
-            user_phone?: string;
-        };
-        "api.AssignUserToShiftRequest": {
-            schedule_id?: number;
-            start_time?: string;
-            user_id?: number;
-        };
-        "api.BookingResponse": {
-            booking_id?: number;
-            buddy_name?: string;
-            buddy_user_id?: number;
-            checked_in_at?: string;
-            created_at?: string;
-            schedule_id?: number;
-            shift_end?: string;
-            shift_start?: string;
-            user_id?: number;
-        };
-        "api.BookingWithScheduleResponse": {
-            booking_id?: number;
-            buddy_name?: string;
-            buddy_user_id?: number;
-            checked_in_at?: string;
-            created_at?: string;
-            schedule_id?: number;
-            schedule_name?: string;
-            shift_end?: string;
-            shift_start?: string;
-            user_id?: number;
-        };
-        "api.CreateBookingRequest": {
-            buddy_name?: string;
-            buddy_phone?: string;
-            schedule_id?: number;
-            start_time?: string;
-        };
-        "api.CreateEmergencyContactRequest": {
-            description?: string;
-            display_order?: number;
-            is_default?: boolean;
-            name?: string;
-            number?: string;
-        };
-        "api.CreateOffShiftReportRequest": {
-            accuracy?: number;
-            latitude?: number;
-            location_timestamp?: string;
-            longitude?: number;
-            message?: string;
-            /** @description 0, 1, or 2 */
-            severity?: number;
-        };
-        "api.CreateReportRequest": {
-            accuracy?: number;
-            latitude?: number;
-            location_timestamp?: string;
-            longitude?: number;
-            message?: string;
-            /** @description 0, 1, or 2 */
-            severity?: number;
-        };
-        "api.DevLoginRequest": {
-            phone?: string;
-        };
-        "api.DevLoginResponse": {
-            token?: string;
-            user?: {
-                id?: number;
-                name?: string;
-                phone?: string;
-                role?: string;
-            };
-        };
-        "api.EmergencyContactResponse": {
-            description?: string;
-            display_order?: number;
-            id?: number;
-            is_default?: boolean;
-            name?: string;
-            number?: string;
-        };
-        "api.ErrorDetails": {
-            context?: {
-                [key: string]: unknown;
-            };
-            internal_message?: string;
-            stack_trace?: string;
-            type?: string;
-        };
-        "api.ErrorResponse": {
-            error?: string;
-        };
-        "api.ExampleRequest": {
-            age?: number;
-            email?: string;
-            name?: string;
-            phone?: string;
-        };
-        "api.ExampleResponse": {
-            age?: number;
-            created_at?: string;
-            email?: string;
-            id?: string;
-            name?: string;
-            phone?: string;
-            request_id?: string;
-        };
-        "api.RegisterRequest": {
-            name?: string;
-            phone?: string;
-        };
-        "api.RegisterResponse": {
-            /** @description Development only - include OTP for easier testing */
-            dev_otp?: string;
-            message?: string;
-        };
-        "api.ReportResponse": {
-            booking_id?: number;
-            created_at?: string;
-            message?: string;
-            report_id?: number;
-            severity?: number;
-        };
-        "api.ScheduleResponse": {
-            cron_expr?: string;
-            duration_minutes?: number;
-            end_date?: string;
-            name?: string;
-            schedule_id?: number;
-            start_date?: string;
-            timezone?: string;
-        };
-        "api.UpdateEmergencyContactRequest": {
-            description?: string;
-            display_order?: number;
-            is_default?: boolean;
-            name?: string;
-            number?: string;
-        };
-        "api.UserAPIResponse": {
-            created_at?: string;
-            id?: number;
-            name?: string;
-            phone?: string;
-            /** @description Added role */
-            role?: string;
-        };
-        "api.ValidationError": {
-            code?: string;
-            field?: string;
-            message?: string;
-            value?: string;
-        };
-        "api.VerifyRequest": {
-            code?: string;
-            phone?: string;
-        };
-        "api.VerifyResponse": {
-            token?: string;
-        };
-        "api.createUserRequest": {
-            name?: string;
-            phone?: string;
-            /** @description Optional role */
-            role?: string;
-        };
-        "api.updateUserRequest": {
-            name?: string;
-            phone?: string;
-            /** @description Make role required since frontend always sends it */
-            role?: string;
-        };
-        "service.AdminDashboard": {
-            generated_at?: string;
-            member_contributions?: components["schemas"]["service.MemberContribution"][];
-            metrics?: components["schemas"]["service.DashboardMetrics"];
-            problematic_slots?: components["schemas"]["service.TimeSlotPattern"][];
-            quality_metrics?: components["schemas"]["service.QualityMetrics"];
-        };
-        "service.AvailableShiftSlot": {
-            end_time?: string;
-            /** @description Should always be false when returned by GetUpcomingAvailableSlots */
-            is_booked?: boolean;
-            schedule_id?: number;
-            schedule_name?: string;
-            start_time?: string;
-            timezone?: string;
-        };
-        "service.DashboardMetrics": {
-            booked_shifts?: number;
-            check_in_rate?: number;
-            checked_in_shifts?: number;
-            completed_shifts?: number;
-            completion_rate?: number;
-            fill_rate?: number;
-            next_week_unfilled?: number;
-            this_weekend_status?: string;
-            total_shifts?: number;
-            unfilled_shifts?: number;
-        };
-        "service.MemberContribution": {
-            attendance_rate?: number;
-            completion_rate?: number;
-            contribution_category?: string;
-            last_shift_date?: string;
-            name?: string;
-            phone?: string;
-            shifts_attended?: number;
-            shifts_booked?: number;
-            shifts_completed?: number;
-            user_id?: number;
-        };
-        "service.QualityMetrics": {
-            incomplete_rate?: number;
-            no_show_rate?: number;
-            reliability_score?: number;
-        };
-        "service.TimeSlotPattern": {
-            check_in_rate?: number;
-            completion_rate?: number;
-            day_of_week?: string;
-            hour_of_day?: string;
-            total_bookings?: number;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+	schemas: {
+		'api.APIError': {
+			code?: string;
+			/** @description Detailed error information (development only) */
+			details?: components['schemas']['api.ErrorDetails'];
+			/** @description Core error information */
+			error?: string;
+			message?: string;
+			method?: string;
+			path?: string;
+			/** @description Request context for debugging */
+			request_id?: string;
+			timestamp?: string;
+			/** @description Validation errors (for input validation failures) */
+			validation_errors?: components['schemas']['api.ValidationError'][];
+		};
+		'api.AdminReportResponse': {
+			archived_at?: string;
+			booking_id?: number;
+			created_at?: string;
+			gps_accuracy?: number;
+			gps_timestamp?: string;
+			latitude?: number;
+			longitude?: number;
+			message?: string;
+			report_id?: number;
+			schedule_id?: number;
+			schedule_name?: string;
+			severity?: number;
+			shift_end?: string;
+			shift_start?: string;
+			user_id?: number;
+			user_name?: string;
+			user_phone?: string;
+		};
+		'api.AssignUserToShiftRequest': {
+			schedule_id?: number;
+			start_time?: string;
+			user_id?: number;
+		};
+		'api.BookingResponse': {
+			booking_id?: number;
+			buddy_name?: string;
+			buddy_user_id?: number;
+			checked_in_at?: string;
+			created_at?: string;
+			schedule_id?: number;
+			shift_end?: string;
+			shift_start?: string;
+			user_id?: number;
+		};
+		'api.BookingWithScheduleResponse': {
+			booking_id?: number;
+			buddy_name?: string;
+			buddy_user_id?: number;
+			checked_in_at?: string;
+			created_at?: string;
+			schedule_id?: number;
+			schedule_name?: string;
+			shift_end?: string;
+			shift_start?: string;
+			user_id?: number;
+		};
+		'api.CreateBookingRequest': {
+			buddy_name?: string;
+			buddy_phone?: string;
+			schedule_id?: number;
+			start_time?: string;
+		};
+		'api.CreateEmergencyContactRequest': {
+			description?: string;
+			display_order?: number;
+			is_default?: boolean;
+			name?: string;
+			number?: string;
+		};
+		'api.CreateOffShiftReportRequest': {
+			accuracy?: number;
+			latitude?: number;
+			location_timestamp?: string;
+			longitude?: number;
+			message?: string;
+			/** @description 0, 1, or 2 */
+			severity?: number;
+		};
+		'api.CreateReportRequest': {
+			accuracy?: number;
+			latitude?: number;
+			location_timestamp?: string;
+			longitude?: number;
+			message?: string;
+			/** @description 0, 1, or 2 */
+			severity?: number;
+		};
+		'api.DevLoginRequest': {
+			phone?: string;
+		};
+		'api.DevLoginResponse': {
+			token?: string;
+			user?: {
+				id?: number;
+				name?: string;
+				phone?: string;
+				role?: string;
+			};
+		};
+		'api.EmergencyContactResponse': {
+			description?: string;
+			display_order?: number;
+			id?: number;
+			is_default?: boolean;
+			name?: string;
+			number?: string;
+		};
+		'api.ErrorDetails': {
+			context?: {
+				[key: string]: unknown;
+			};
+			internal_message?: string;
+			stack_trace?: string;
+			type?: string;
+		};
+		'api.ErrorResponse': {
+			error?: string;
+		};
+		'api.ExampleRequest': {
+			age?: number;
+			email?: string;
+			name?: string;
+			phone?: string;
+		};
+		'api.ExampleResponse': {
+			age?: number;
+			created_at?: string;
+			email?: string;
+			id?: string;
+			name?: string;
+			phone?: string;
+			request_id?: string;
+		};
+		'api.RegisterRequest': {
+			name?: string;
+			phone?: string;
+		};
+		'api.RegisterResponse': {
+			/** @description Development only - include OTP for easier testing */
+			dev_otp?: string;
+			message?: string;
+		};
+		'api.ReportResponse': {
+			booking_id?: number;
+			created_at?: string;
+			message?: string;
+			report_id?: number;
+			severity?: number;
+		};
+		'api.ScheduleResponse': {
+			cron_expr?: string;
+			duration_minutes?: number;
+			end_date?: string;
+			name?: string;
+			schedule_id?: number;
+			start_date?: string;
+			timezone?: string;
+		};
+		'api.UpdateEmergencyContactRequest': {
+			description?: string;
+			display_order?: number;
+			is_default?: boolean;
+			name?: string;
+			number?: string;
+		};
+		'api.UserAPIResponse': {
+			created_at?: string;
+			id?: number;
+			name?: string;
+			phone?: string;
+			/** @description Added role */
+			role?: string;
+		};
+		'api.ValidationError': {
+			code?: string;
+			field?: string;
+			message?: string;
+			value?: string;
+		};
+		'api.VerifyRequest': {
+			code?: string;
+			phone?: string;
+		};
+		'api.VerifyResponse': {
+			token?: string;
+		};
+		'api.createUserRequest': {
+			name?: string;
+			phone?: string;
+			/** @description Optional role */
+			role?: string;
+		};
+		'api.updateUserRequest': {
+			name?: string;
+			phone?: string;
+			/** @description Make role required since frontend always sends it */
+			role?: string;
+		};
+		'service.AdminDashboard': {
+			generated_at?: string;
+			member_contributions?: components['schemas']['service.MemberContribution'][];
+			metrics?: components['schemas']['service.DashboardMetrics'];
+			problematic_slots?: components['schemas']['service.TimeSlotPattern'][];
+			quality_metrics?: components['schemas']['service.QualityMetrics'];
+		};
+		'service.AvailableShiftSlot': {
+			end_time?: string;
+			/** @description Should always be false when returned by GetUpcomingAvailableSlots */
+			is_booked?: boolean;
+			schedule_id?: number;
+			schedule_name?: string;
+			start_time?: string;
+			timezone?: string;
+		};
+		'service.DashboardMetrics': {
+			booked_shifts?: number;
+			check_in_rate?: number;
+			checked_in_shifts?: number;
+			completed_shifts?: number;
+			completion_rate?: number;
+			fill_rate?: number;
+			next_week_unfilled?: number;
+			this_weekend_status?: string;
+			total_shifts?: number;
+			unfilled_shifts?: number;
+		};
+		'service.MemberContribution': {
+			attendance_rate?: number;
+			completion_rate?: number;
+			contribution_category?: string;
+			last_shift_date?: string;
+			name?: string;
+			phone?: string;
+			shifts_attended?: number;
+			shifts_booked?: number;
+			shifts_completed?: number;
+			user_id?: number;
+		};
+		'service.QualityMetrics': {
+			incomplete_rate?: number;
+			no_show_rate?: number;
+			reliability_score?: number;
+		};
+		'service.TimeSlotPattern': {
+			check_in_rate?: number;
+			completion_rate?: number;
+			day_of_week?: string;
+			hour_of_day?: string;
+			total_bookings?: number;
+		};
+	};
+	responses: never;
+	parameters: never;
+	requestBodies: never;
+	headers: never;
+	pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

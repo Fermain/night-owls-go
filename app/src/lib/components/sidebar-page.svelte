@@ -23,19 +23,16 @@
 {/snippet}
 
 <Sidebar.Provider style="--sidebar-width: 350px;">
-	<UnifiedSidebar 
-		mode="admin" 
+	<UnifiedSidebar
+		mode="admin"
 		showSecondSidebar={!!listContent}
-		{listContent} 
+		{listContent}
 		{title}
-		bind:searchTerm 
+		bind:searchTerm
 	/>
 	<Sidebar.Inset>
 		<!-- Header inside the inset to avoid overlap -->
-		<UnifiedHeader 
-			showBreadcrumbs={isAdminRoute}
-			showMobileMenu={false}
-		/>
+		<UnifiedHeader showBreadcrumbs={isAdminRoute} showMobileMenu={false} />
 		<main class="flex-1 overflow-auto">
 			{@render mainContent()}
 		</main>

@@ -13,7 +13,7 @@
 	import type { E164Number } from 'svelte-tel-input/types';
 
 	let hasShownAuthToast = false;
-	
+
 	$effect(() => {
 		if ($isAuthenticated && !hasShownAuthToast) {
 			hasShownAuthToast = true;
@@ -82,14 +82,15 @@
 	// Step 2: Verify OTP and get JWT token
 	async function handleVerification(event?: SubmitEvent) {
 		event?.preventDefault();
-		
+
 		// Prevent manual verification if auto-verification is in progress
 		if (isAutoVerifying && event) {
 			return;
 		}
-		
+
 		if (otpValue.length !== OTP_LENGTH) {
-			if (event) { // Only show error if manually submitted
+			if (event) {
+				// Only show error if manually submitted
 				toast.error('Please enter the complete OTP.');
 			}
 			isAutoVerifying = false;
@@ -109,9 +110,9 @@
 			if (isAuto) {
 				toast.loading('Verifying code...', { id: 'auto-verify' });
 			}
-			
+
 			await authService.login(phoneNumber, name, otpValue);
-			
+
 			if (isAuto) {
 				toast.dismiss('auto-verify');
 				toast.success('Login successful!', { id: 'login-success' });
@@ -189,8 +190,8 @@
 							{#if $formStore.lastPhoneNumber && phoneNumber === $formStore.lastPhoneNumber}
 								<br />
 								<span class="text-primary">Using saved phone number</span>
-								<button 
-									type="button" 
+								<button
+									type="button"
 									class="text-xs text-muted-foreground hover:text-foreground underline ml-2"
 									onclick={() => {
 										clearUserData();
@@ -203,9 +204,7 @@
 							{/if}
 						</p>
 						{#if !phoneValid && phoneNumber}
-							<p class="text-xs text-destructive mt-1">
-								Please enter a valid phone number
-							</p>
+							<p class="text-xs text-destructive mt-1">Please enter a valid phone number</p>
 						{/if}
 					</div>
 
@@ -228,7 +227,11 @@
 					<div class="flex flex-col gap-2">
 						<Label class="text-center">Verification Code</Label>
 						<div class="flex justify-center">
-							<InputOTP.Root maxlength={OTP_LENGTH} bind:value={otpValue} disabled={isLoading || isAutoVerifying}>
+							<InputOTP.Root
+								maxlength={OTP_LENGTH}
+								bind:value={otpValue}
+								disabled={isLoading || isAutoVerifying}
+							>
 								{#snippet children({ cells })}
 									<InputOTP.Group>
 										{#each cells.slice(0, 3) as cell, i (i)}
@@ -311,5 +314,3 @@
 		</div>
 	</div>
 {/if}
-
-

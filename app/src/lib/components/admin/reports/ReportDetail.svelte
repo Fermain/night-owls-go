@@ -38,7 +38,7 @@
 				if (!response.ok) {
 					throw new Error(`Failed to fetch report: ${response.status}`);
 				}
-				return await response.json() as {
+				return (await response.json()) as {
 					report_id: number;
 					severity: number;
 					message: string;
@@ -131,7 +131,7 @@
 			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/archive`, {
 				method: 'PUT'
 			});
-			
+
 			if (response.ok) {
 				// Refresh the report data
 				$reportQuery.refetch();
@@ -148,7 +148,7 @@
 			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/unarchive`, {
 				method: 'PUT'
 			});
-			
+
 			if (response.ok) {
 				// Refresh the report data
 				$reportQuery.refetch();
@@ -209,7 +209,7 @@
 	const gpsData = $derived.by(() => {
 		const report = $reportQuery.data;
 		if (!report) return null;
-		
+
 		// Check if GPS data is available
 		if (report.latitude && report.longitude) {
 			return {
@@ -219,7 +219,7 @@
 				timestamp: report.gps_timestamp || report.created_at
 			};
 		}
-		
+
 		return null;
 	});
 </script>
@@ -236,7 +236,7 @@
 				<ArrowLeftIcon class="h-4 w-4 mr-2" />
 				Back to Reports
 			</Button>
-			
+
 			{#if $reportQuery.isLoading}
 				<Skeleton class="h-8 w-48 mb-2" />
 				<Skeleton class="h-4 w-96" />
@@ -308,10 +308,13 @@
 							</Card.Title>
 						</Card.Header>
 						<Card.Content class="px-0 pb-0">
-							<div class="bg-muted/30 rounded-lg p-4 border-l-4 {
-								report.severity === 2 ? 'border-l-red-500' :
-								report.severity === 1 ? 'border-l-orange-500' : 'border-l-blue-500'
-							}">
+							<div
+								class="bg-muted/30 rounded-lg p-4 border-l-4 {report.severity === 2
+									? 'border-l-red-500'
+									: report.severity === 1
+										? 'border-l-orange-500'
+										: 'border-l-blue-500'}"
+							>
 								<p class="text-sm leading-relaxed">{report.message}</p>
 							</div>
 						</Card.Content>
@@ -331,12 +334,18 @@
 									{#each timelineEvents as event, index (index)}
 										<div class="flex items-start gap-4">
 											<div class="flex flex-col items-center">
-												<div class="p-2 rounded-full bg-background border-2 {
-													event.color === 'text-green-600' ? 'border-green-200' :
-													event.color === 'text-red-600' ? 'border-red-200' :
-													event.color === 'text-orange-600' ? 'border-orange-200' :
-													event.color === 'text-blue-600' ? 'border-blue-200' : 'border-gray-200'
-												}">
+												<div
+													class="p-2 rounded-full bg-background border-2 {event.color ===
+													'text-green-600'
+														? 'border-green-200'
+														: event.color === 'text-red-600'
+															? 'border-red-200'
+															: event.color === 'text-orange-600'
+																? 'border-orange-200'
+																: event.color === 'text-blue-600'
+																	? 'border-blue-200'
+																	: 'border-gray-200'}"
+												>
 													<event.icon class="h-4 w-4 {event.color}" />
 												</div>
 												{#if index < timelineEvents.length - 1}
@@ -347,8 +356,8 @@
 												<div class="flex items-center justify-between">
 													<h4 class="font-medium">{event.title}</h4>
 													<span class="text-sm text-muted-foreground">
-														{event.time.toLocaleTimeString('en-ZA', { 
-															hour: '2-digit', 
+														{event.time.toLocaleTimeString('en-ZA', {
+															hour: '2-digit',
 															minute: '2-digit',
 															timeZone: 'UTC'
 														})}
@@ -463,7 +472,9 @@
 									</div>
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Duration</span>
-										<p class="text-sm">{formatShiftDuration(report.shift_start, report.shift_end)}</p>
+										<p class="text-sm">
+											{formatShiftDuration(report.shift_start, report.shift_end)}
+										</p>
 									</div>
 								</div>
 							</Card.Content>
@@ -478,11 +489,15 @@
 								</Card.Title>
 							</Card.Header>
 							<Card.Content class="px-0 pb-0">
-								<div class="p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg">
+								<div
+									class="p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg"
+								>
 									<div class="flex items-center gap-2">
 										<InfoIcon class="h-4 w-4 text-blue-600 dark:text-blue-400" />
 										<div>
-											<p class="text-sm font-medium text-blue-900 dark:text-blue-100">Off-Shift Report</p>
+											<p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+												Off-Shift Report
+											</p>
 											<p class="text-xs text-blue-700 dark:text-blue-300">
 												This report was submitted outside of a scheduled shift
 											</p>
@@ -522,9 +537,7 @@
 										<PhoneIcon class="h-4 w-4 mr-2" />
 										Call
 									</Button>
-									<Button variant="outline" size="sm" class="flex-1">
-										View Profile
-									</Button>
+									<Button variant="outline" size="sm" class="flex-1">View Profile</Button>
 								</div>
 							</div>
 						</Card.Content>
@@ -541,8 +554,8 @@
 									<FileTextIcon class="h-4 w-4 mr-2" />
 									Export Report
 								</Button>
-								<Button 
-									variant="outline" 
+								<Button
+									variant="outline"
 									class="w-full justify-start"
 									onclick={() => {
 										// Open in a new window with a larger map
@@ -559,10 +572,10 @@
 									<UserIcon class="h-4 w-4 mr-2" />
 									Contact Reporter
 								</Button>
-								
+
 								{#if report.archived_at}
-									<Button 
-										variant="outline" 
+									<Button
+										variant="outline"
 										class="w-full justify-start text-green-600 hover:text-green-700"
 										onclick={handleUnarchive}
 									>
@@ -570,8 +583,8 @@
 										Unarchive Report
 									</Button>
 								{:else}
-									<Button 
-										variant="outline" 
+									<Button
+										variant="outline"
 										class="w-full justify-start text-orange-600 hover:text-orange-700"
 										onclick={handleArchive}
 									>
@@ -586,4 +599,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>

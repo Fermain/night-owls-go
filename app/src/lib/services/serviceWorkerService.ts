@@ -21,11 +21,11 @@ class ServiceWorkerService {
 		try {
 			// Try to register the service worker from different possible locations
 			const possiblePaths = ['/sw.js', '/service-worker.js'];
-			
+
 			for (const swPath of possiblePaths) {
 				try {
 					console.log(`Attempting to register service worker at: ${swPath}`);
-					
+
 					this.registration = await navigator.serviceWorker.register(swPath, {
 						scope: '/'
 					});
@@ -71,11 +71,11 @@ class ServiceWorkerService {
 
 		try {
 			const registrations = await navigator.serviceWorker.getRegistrations();
-			
+
 			for (const registration of registrations) {
 				await registration.unregister();
 			}
-			
+
 			console.log('✅ Service worker unregistered');
 			this.registration = null;
 			this.isRegistered = false;
@@ -110,7 +110,7 @@ class ServiceWorkerService {
 		registration: ServiceWorkerRegistration | null;
 	}> {
 		const supported = browser && 'serviceWorker' in navigator;
-		
+
 		if (!supported) {
 			return {
 				supported: false,
@@ -135,4 +135,4 @@ class ServiceWorkerService {
 
 // Export singleton instance
 export const serviceWorkerService = new ServiceWorkerService();
-export default serviceWorkerService; 
+export default serviceWorkerService;

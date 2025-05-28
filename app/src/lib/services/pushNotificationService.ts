@@ -38,20 +38,20 @@ class PushNotificationService {
 				// Import and use our service worker registration service
 				const { serviceWorkerService } = await import('./serviceWorkerService');
 				const registered = await serviceWorkerService.register();
-				
+
 				if (!registered) {
 					throw new Error('Failed to register service worker');
 				}
-				
+
 				this.registration = await navigator.serviceWorker.ready;
 			}
-			
+
 			// Get VAPID public key from server
 			await this.fetchVAPIDPublicKey();
-			
+
 			// Check for existing subscription
 			this.subscription = await this.registration.pushManager.getSubscription();
-			
+
 			return true;
 		} catch (error) {
 			console.error('Failed to initialize push notification service:', error);
@@ -68,7 +68,7 @@ class PushNotificationService {
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
-			
+
 			const data: VAPIDKeyResponse = await response.json();
 			this.vapidPublicKey = data.vapid_public;
 		} catch (error) {
@@ -102,10 +102,10 @@ class PushNotificationService {
 
 			// Send subscription to server
 			await this.sendSubscriptionToServer();
-			
+
 			// Set up listener for push messages
 			this.setupPushMessageListener();
-			
+
 			toast.success('Push notifications enabled successfully!');
 			return true;
 		} catch (error) {
@@ -126,10 +126,10 @@ class PushNotificationService {
 
 			// Unsubscribe from browser
 			await this.subscription.unsubscribe();
-			
+
 			// Remove subscription from server
 			await this.removeSubscriptionFromServer();
-			
+
 			this.subscription = null;
 			toast.success('Push notifications disabled');
 			return true;
@@ -157,7 +157,7 @@ class PushNotificationService {
 	}> {
 		const supported = 'serviceWorker' in navigator && 'PushManager' in window;
 		const permission = supported ? Notification.permission : 'denied';
-		
+
 		return {
 			supported,
 			permission,
@@ -173,10 +173,12 @@ class PushNotificationService {
 			throw new Error('No subscription available');
 		}
 
-		const keys = this.subscription.getKey ? {
-			p256dh: this.subscription.getKey('p256dh'),
-			auth: this.subscription.getKey('auth')
-		} : { p256dh: null, auth: null };
+		const keys = this.subscription.getKey
+			? {
+					p256dh: this.subscription.getKey('p256dh'),
+					auth: this.subscription.getKey('auth')
+				}
+			: { p256dh: null, auth: null };
 
 		const subscriptionData: PushSubscriptionData = {
 			endpoint: this.subscription.endpoint,
@@ -221,10 +223,8 @@ class PushNotificationService {
 	 * Convert VAPID public key to Uint8Array
 	 */
 	private urlBase64ToUint8Array(base64String: string): Uint8Array {
-		const padding = '='.repeat((4 - base64String.length % 4) % 4);
-		const base64 = (base64String + padding)
-			.replace(/-/g, '+')
-			.replace(/_/g, '/');
+		const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+		const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
 		const rawData = window.atob(base64);
 		const outputArray = new Uint8Array(rawData.length);
@@ -295,4 +295,4 @@ class PushNotificationService {
 
 // Export singleton instance
 export const pushNotificationService = new PushNotificationService();
-export default pushNotificationService; 
+export default pushNotificationService;

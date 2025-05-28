@@ -17,6 +17,7 @@
 
 {#if humanizedCron}
 	<div class="text-sm text-muted-foreground bg-muted/50 p-2 rounded border">
-		<span class="font-medium">Schedule:</span> {humanizedCron}
+		<span class="font-medium">Schedule:</span>
+		{humanizedCron}
 	</div>
-{/if} 
+{/if}

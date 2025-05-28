@@ -105,23 +105,20 @@ export const adminNavigation = readable(adminNavItems);
 export const publicNavigation = readable(publicNavItems);
 
 // Dynamic navigation based on user role and context
-export const contextualNavigation = derived(
-	[userSession],
-	([$userSession]) => {
-		const userRole = $userSession.role || 'guest';
-		
-		// Filter items based on user role
-		const filterByRole = (items: NavItem[]) => 
-			items.filter(item => {
-				if (!item.roles) return true;
-				return item.roles.includes(userRole as 'admin' | 'owl' | 'guest');
-			});
+export const contextualNavigation = derived([userSession], ([$userSession]) => {
+	const userRole = $userSession.role || 'guest';
 
-		return {
-			admin: filterByRole(adminNavItems),
-			public: filterByRole(publicNavItems),
-			userRole,
-			isAuthenticated: $userSession.isAuthenticated
-		};
-	}
-);
+	// Filter items based on user role
+	const filterByRole = (items: NavItem[]) =>
+		items.filter((item) => {
+			if (!item.roles) return true;
+			return item.roles.includes(userRole as 'admin' | 'owl' | 'guest');
+		});
+
+	return {
+		admin: filterByRole(adminNavItems),
+		public: filterByRole(publicNavItems),
+		userRole,
+		isAuthenticated: $userSession.isAuthenticated
+	};
+});

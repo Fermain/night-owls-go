@@ -6,4 +6,4 @@
 	<title>Create Emergency Contact - Admin</title>
 </svelte:head>
 
-<EmergencyContactForm /> 
+<EmergencyContactForm />

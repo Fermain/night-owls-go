@@ -55,7 +55,6 @@
 
 {#snippet broadcastsListContent()}
 	<div class="flex flex-col h-full">
-
 		<!-- Broadcasts List -->
 		<div class="flex-grow overflow-y-auto">
 			{#if $recentBroadcastsQuery.isLoading}
@@ -83,7 +82,9 @@
 			{:else}
 				<div>
 					{#each filteredBroadcasts as broadcast (broadcast.broadcast_id)}
-						<div class="p-3 border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer group">
+						<div
+							class="p-3 border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer group"
+						>
 							<div class="space-y-2">
 								<p class="text-sm font-medium line-clamp-2">{broadcast.message}</p>
 								<div class="flex items-center justify-between text-xs text-muted-foreground">

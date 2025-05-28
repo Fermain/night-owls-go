@@ -102,12 +102,10 @@ self.addEventListener('push', (event: PushEvent) => {
 				options.title = data.title || 'Night Owls';
 		}
 
-		event.waitUntil(
-			self.registration.showNotification(options.title || 'Night Owls', options)
-		);
+		event.waitUntil(self.registration.showNotification(options.title || 'Night Owls', options));
 	} catch (error) {
 		console.error('Error processing push notification:', error);
-		
+
 		// Fallback notification
 		event.waitUntil(
 			self.registration.showNotification('Night Owls', {
@@ -173,7 +171,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 self.addEventListener('sync', (event: Event) => {
 	const syncEvent = event as SyncEvent;
 	console.log('Background sync:', syncEvent.tag);
-	
+
 	if (syncEvent.tag === 'background-sync') {
 		syncEvent.waitUntil(
 			// Handle offline actions when back online
@@ -192,4 +190,4 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 self.addEventListener('activate', (event: ExtendableEvent) => {
 	console.log('Service worker activating');
 	event.waitUntil(self.clients.claim());
-}); 
+});

@@ -60,7 +60,7 @@
 		}
 
 		// Check schedule balance
-		const imbalancedSchedules = metrics.scheduleBreakdown.filter(s => s.fillRate < 40);
+		const imbalancedSchedules = metrics.scheduleBreakdown.filter((s) => s.fillRate < 40);
 		if (imbalancedSchedules.length > 1) {
 			warnings.push(`${imbalancedSchedules.length} schedules have low fill rates`);
 		}
@@ -77,24 +77,24 @@
 	function formatShiftTitle(startTime: string, endTime: string): string {
 		const start = new Date(startTime);
 		const end = new Date(endTime);
-		
+
 		const previousDay = new Date(start);
 		previousDay.setDate(previousDay.getDate() - 1);
-		
+
 		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-		
+
 		const startHour = start.getUTCHours();
 		const endHour = end.getUTCHours();
-		
-		const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-		const getAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
-		
+
+		const formatHour = (hour: number) => (hour === 0 ? 12 : hour > 12 ? hour - 12 : hour);
+		const getAmPm = (hour: number) => (hour < 12 ? 'AM' : 'PM');
+
 		const startHour12 = formatHour(startHour);
 		const endHour12 = formatHour(endHour);
 		const endAmPm = getAmPm(endHour);
-		
+
 		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
-		
+
 		return `${dayName} Night ${timeRange}`;
 	}
 
@@ -202,9 +202,11 @@
 				<!-- Urgent Unfilled -->
 				<Card.Root class="p-6">
 					<div class="flex items-center gap-3">
-						<div class="p-2 rounded-lg {(metrics?.urgentUnfilled || 0) > 0 
-							? 'bg-red-100 dark:bg-red-900/20' 
-							: 'bg-green-100 dark:bg-green-900/20'}">
+						<div
+							class="p-2 rounded-lg {(metrics?.urgentUnfilled || 0) > 0
+								? 'bg-red-100 dark:bg-red-900/20'
+								: 'bg-green-100 dark:bg-green-900/20'}"
+						>
 							{#if (metrics?.urgentUnfilled || 0) > 0}
 								<AlertTriangleIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
 							{:else}
@@ -213,7 +215,13 @@
 						</div>
 						<div>
 							<p class="text-sm font-medium text-muted-foreground">Urgent (24h)</p>
-							<p class="text-2xl font-bold {(metrics?.urgentUnfilled || 0) > 0 ? 'text-red-600 dark:text-red-400' : ''}">{metrics?.urgentUnfilled || 0}</p>
+							<p
+								class="text-2xl font-bold {(metrics?.urgentUnfilled || 0) > 0
+									? 'text-red-600 dark:text-red-400'
+									: ''}"
+							>
+								{metrics?.urgentUnfilled || 0}
+							</p>
 							<p class="text-xs text-muted-foreground">Unfilled shifts</p>
 						</div>
 					</div>
@@ -343,20 +351,14 @@
 				<Card.Root class="p-6">
 					<div class="flex items-center justify-between mb-4">
 						<h2 class="text-lg font-semibold">Urgent Assignments Needed</h2>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={handleBulkAssignment}
-						>
-							Assign
-						</Button>
+						<Button variant="ghost" size="sm" onclick={handleBulkAssignment}>Assign</Button>
 					</div>
 					<div class="space-y-3">
 						{#if metrics?.upcomingShifts}
-							{@const urgentShifts = metrics.upcomingShifts.filter(s => !s.is_booked).slice(0, 8)}
+							{@const urgentShifts = metrics.upcomingShifts.filter((s) => !s.is_booked).slice(0, 8)}
 							{#if urgentShifts.length > 0}
 								{#each urgentShifts as shift (shift.schedule_id + '-' + shift.start_time)}
-									<div 
+									<div
 										class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer group"
 										onclick={() => navigateToShiftDetail(shift)}
 										onkeydown={(e) => {
@@ -372,23 +374,34 @@
 										<div class="flex-shrink-0">
 											<div
 												class="w-8 h-8 rounded-full flex items-center justify-center
-												{getUrgencyColor(shift) === 'red' 
+												{getUrgencyColor(shift) === 'red'
 													? 'bg-red-100 dark:bg-red-900/20'
 													: getUrgencyColor(shift) === 'orange'
 														? 'bg-orange-100 dark:bg-orange-900/20'
 														: 'bg-green-100 dark:bg-green-900/20'}"
 											>
-												<UserXIcon class="h-4 w-4 text-{getUrgencyColor(shift)}-600 dark:text-{getUrgencyColor(shift)}-400" />
+												<UserXIcon
+													class="h-4 w-4 text-{getUrgencyColor(
+														shift
+													)}-600 dark:text-{getUrgencyColor(shift)}-400"
+												/>
 											</div>
 										</div>
 										<div class="flex-grow min-w-0">
-											<p class="font-medium text-sm truncate group-hover:text-primary transition-colors">{formatShiftTitle(shift.start_time, shift.end_time)}</p>
+											<p
+												class="font-medium text-sm truncate group-hover:text-primary transition-colors"
+											>
+												{formatShiftTitle(shift.start_time, shift.end_time)}
+											</p>
 											<p class="text-xs text-muted-foreground">
 												{shift.schedule_name}
 											</p>
 										</div>
 										<div class="flex-shrink-0 text-right">
-											<Badge variant={getUrgencyColor(shift) === 'red' ? 'destructive' : 'secondary'} class="text-xs">
+											<Badge
+												variant={getUrgencyColor(shift) === 'red' ? 'destructive' : 'secondary'}
+												class="text-xs"
+											>
 												{getUrgencyText(shift)}
 											</Badge>
 											<p class="text-xs text-muted-foreground mt-1">
@@ -411,13 +424,7 @@
 				<Card.Root class="p-6">
 					<div class="flex items-center justify-between mb-4">
 						<h2 class="text-lg font-semibold">Schedule Performance</h2>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={handleViewSchedules}
-						>
-							View All
-						</Button>
+						<Button variant="ghost" size="sm" onclick={handleViewSchedules}>View All</Button>
 					</div>
 					<div class="space-y-3">
 						{#if metrics?.scheduleBreakdown && metrics.scheduleBreakdown.length > 0}
@@ -426,13 +433,23 @@
 									<div class="flex-shrink-0">
 										<div
 											class="w-8 h-8 rounded-full flex items-center justify-center
-											{schedule.fillRate >= 75 
+											{schedule.fillRate >= 75
 												? 'bg-green-100 dark:bg-green-900/20'
 												: schedule.fillRate >= 50
 													? 'bg-yellow-100 dark:bg-yellow-900/20'
 													: 'bg-red-100 dark:bg-red-900/20'}"
 										>
-											<CalendarIcon class="h-4 w-4 text-{schedule.fillRate >= 75 ? 'green' : schedule.fillRate >= 50 ? 'yellow' : 'red'}-600 dark:text-{schedule.fillRate >= 75 ? 'green' : schedule.fillRate >= 50 ? 'yellow' : 'red'}-400" />
+											<CalendarIcon
+												class="h-4 w-4 text-{schedule.fillRate >= 75
+													? 'green'
+													: schedule.fillRate >= 50
+														? 'yellow'
+														: 'red'}-600 dark:text-{schedule.fillRate >= 75
+													? 'green'
+													: schedule.fillRate >= 50
+														? 'yellow'
+														: 'red'}-400"
+											/>
 										</div>
 									</div>
 									<div class="flex-grow min-w-0">
@@ -498,4 +515,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>

@@ -2,19 +2,18 @@
 // Basic service worker for push notifications and caching
 
 const CACHE_NAME = 'night-owls-v1';
-const CACHE_URLS = [
-	'/'
-];
+const CACHE_URLS = ['/'];
 
 // Install event
 self.addEventListener('install', (event) => {
 	console.log('🔧 Service worker installing');
-	
+
 	event.waitUntil(
-		caches.open(CACHE_NAME)
+		caches
+			.open(CACHE_NAME)
 			.then(async (cache) => {
 				console.log('💾 Caching app shell');
-				
+
 				// Cache URLs individually with error handling
 				const cachePromises = CACHE_URLS.map(async (url) => {
 					try {
@@ -25,7 +24,7 @@ self.addEventListener('install', (event) => {
 						// Don't fail the whole installation for individual cache errors
 					}
 				});
-				
+
 				await Promise.allSettled(cachePromises);
 				console.log('📦 Cache initialization completed');
 			})
@@ -43,36 +42,40 @@ self.addEventListener('install', (event) => {
 // Activate event
 self.addEventListener('activate', (event) => {
 	console.log('🚀 Service worker activating');
-	
+
 	event.waitUntil(
-		caches.keys().then((cacheNames) => {
-			return Promise.all(
-				cacheNames
-					.filter((cacheName) => {
-						return cacheName !== CACHE_NAME;
-					})
-					.map((cacheName) => {
-						console.log('🗑️ Deleting old cache:', cacheName);
-						return caches.delete(cacheName);
-					})
-			);
-		}).then(() => {
-			console.log('📡 Service worker claiming clients');
-			return self.clients.claim();
-		}).then(() => {
-			console.log('✅ Service worker is now ACTIVE and ready!');
-			console.log('🎯 Service worker can now handle push notifications and caching');
-			
-			// Notify all clients that SW is ready
-			return self.clients.matchAll().then(clients => {
-				clients.forEach(client => {
-					client.postMessage({
-						type: 'SW_ACTIVATED',
-						message: 'Service worker is now active and ready!'
+		caches
+			.keys()
+			.then((cacheNames) => {
+				return Promise.all(
+					cacheNames
+						.filter((cacheName) => {
+							return cacheName !== CACHE_NAME;
+						})
+						.map((cacheName) => {
+							console.log('🗑️ Deleting old cache:', cacheName);
+							return caches.delete(cacheName);
+						})
+				);
+			})
+			.then(() => {
+				console.log('📡 Service worker claiming clients');
+				return self.clients.claim();
+			})
+			.then(() => {
+				console.log('✅ Service worker is now ACTIVE and ready!');
+				console.log('🎯 Service worker can now handle push notifications and caching');
+
+				// Notify all clients that SW is ready
+				return self.clients.matchAll().then((clients) => {
+					clients.forEach((client) => {
+						client.postMessage({
+							type: 'SW_ACTIVATED',
+							message: 'Service worker is now active and ready!'
+						});
 					});
 				});
-			});
-		})
+			})
 	);
 });
 
@@ -89,7 +92,8 @@ self.addEventListener('fetch', (event) => {
 	}
 
 	event.respondWith(
-		caches.match(event.request)
+		caches
+			.match(event.request)
 			.then((response) => {
 				// Return cached version or fetch from network
 				return response || fetch(event.request);
@@ -175,8 +179,8 @@ self.addEventListener('push', (event) => {
 	event.waitUntil(
 		self.registration.showNotification(options.title, options).then(() => {
 			// Notify all clients about the new push notification
-			return self.clients.matchAll().then(clients => {
-				clients.forEach(client => {
+			return self.clients.matchAll().then((clients) => {
+				clients.forEach((client) => {
 					client.postMessage({
 						type: 'PUSH_RECEIVED',
 						notificationType: data.type,
@@ -243,7 +247,7 @@ self.addEventListener('notificationclick', (event) => {
 // Background sync for offline actions (future enhancement)
 self.addEventListener('sync', (event) => {
 	console.log('Background sync:', event.tag);
-	
+
 	if (event.tag === 'background-sync') {
 		event.waitUntil(
 			// Handle offline actions when back online
@@ -255,10 +259,10 @@ self.addEventListener('sync', (event) => {
 // Message handler for communication with main thread
 self.addEventListener('message', (event) => {
 	console.log('📨 Service worker received message:', event.data);
-	
+
 	if (event.data.type === 'TEST_MESSAGE') {
 		console.log('🧪 Test message received:', event.data.payload);
-		
+
 		// Send response back to client
 		event.source.postMessage({
 			type: 'TEST_RESPONSE',
@@ -268,4 +272,4 @@ self.addEventListener('message', (event) => {
 	}
 });
 
-console.log('Service worker loaded and ready!'); 
+console.log('Service worker loaded and ready!');

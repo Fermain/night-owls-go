@@ -201,10 +201,12 @@
 </svelte:head>
 
 <div class="container mr-auto p-4">
-	<AdminPageHeader 
+	<AdminPageHeader
 		icon={UserIcon}
 		heading="{user?.id !== undefined ? 'Edit' : 'Create New'} User"
-		subheading="{user?.id !== undefined ? 'Update user information and manage their account' : 'Add a new user to the community watch system'}"
+		subheading={user?.id !== undefined
+			? 'Update user information and manage their account'
+			: 'Add a new user to the community watch system'}
 	/>
 
 	<form
@@ -229,9 +231,7 @@
 			{#if zodErrors.phone}
 				<p class="text-sm text-destructive mt-1">{zodErrors.phone}</p>
 			{:else if !phoneInputValid && formData.phone !== ''}
-				<p class="text-xs text-destructive mt-1">
-					Please enter a valid phone number
-				</p>
+				<p class="text-xs text-destructive mt-1">Please enter a valid phone number</p>
 			{/if}
 		</div>
 
@@ -382,7 +382,9 @@
 													Checked In
 												</div>
 											{:else}
-												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">No Check-in</div>
+												<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+													No Check-in
+												</div>
 											{/if}
 										</div>
 									</div>
@@ -433,5 +435,3 @@
 		onConfirm={handleRoleConfirm}
 	/>
 {/if}
-
-

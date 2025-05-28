@@ -3,7 +3,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 
-	let { isLoading = false, distribution = null }: { isLoading?: boolean; distribution?: any } = $props();
+	let { isLoading = false, distribution = null }: { isLoading?: boolean; distribution?: any } =
+		$props();
 </script>
 
 <Card.Root class="p-6">
@@ -18,4 +19,4 @@
 			<p class="text-sm">Shift distribution chart will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

@@ -57,7 +57,7 @@
 
 <div class="p-8">
 	<div class="max-w-full mx-auto">
-		<AdminPageHeader 
+		<AdminPageHeader
 			icon={UsersIcon}
 			heading="Users Dashboard"
 			subheading="Overview of user registrations, roles, and shift distribution"

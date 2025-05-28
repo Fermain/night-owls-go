@@ -283,23 +283,23 @@
 							<AlertTriangleIcon class="h-20 w-20 text-primary" />
 						</div>
 					</div>
-					
+
 					<h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-4">
 						Mount Moreland Night Owls
 					</h1>
-					
+
 					<h2 class="text-3xl md:text-4xl font-semibold text-primary mb-6">
 						Digital Control Centre
 					</h2>
-					
-					<p class="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto">
+
+					<p
+						class="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto"
+					>
 						View and book shifts, send emergency alerts and help keep our community secure
 					</p>
-					
+
 					<div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-						<Button size="lg" href="/register" class="text-lg px-8 py-6">
-							Become an Owl
-						</Button>
+						<Button size="lg" href="/register" class="text-lg px-8 py-6">Become an Owl</Button>
 						<Button variant="outline" size="lg" href="/login" class="text-lg px-8 py-6">
 							Sign in
 						</Button>

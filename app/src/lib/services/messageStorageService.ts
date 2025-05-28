@@ -17,7 +17,7 @@ class MessageDatabase extends Dexie {
 
 	constructor() {
 		super('NightOwlsMessages');
-		
+
 		this.version(1).stores({
 			messages: 'id, timestamp, read, audience, lastSeen'
 		});
@@ -31,11 +31,11 @@ class MessageStorageService {
 		try {
 			// Use Dexie's bulkPut with conflict resolution
 			const messagesToStore: StoredMessage[] = [];
-			
+
 			for (const notification of notifications) {
 				// Check if message already exists to preserve read state
 				const existing = await this.db.messages.get(notification.id);
-				
+
 				const storedMessage: StoredMessage = {
 					id: notification.id,
 					message: notification.message,
@@ -46,10 +46,10 @@ class MessageStorageService {
 					readAt: existing?.readAt,
 					lastSeen: new Date().toISOString()
 				};
-				
+
 				messagesToStore.push(storedMessage);
 			}
-			
+
 			await this.db.messages.bulkPut(messagesToStore);
 		} catch (error) {
 			console.error('Failed to store messages:', error);
@@ -60,10 +60,7 @@ class MessageStorageService {
 	async getMessages(): Promise<StoredMessage[]> {
 		try {
 			// Get all messages ordered by timestamp (newest first)
-			return await this.db.messages
-				.orderBy('timestamp')
-				.reverse()
-				.toArray();
+			return await this.db.messages.orderBy('timestamp').reverse().toArray();
 		} catch (error) {
 			console.error('Failed to get messages:', error);
 			return [];
@@ -86,7 +83,7 @@ class MessageStorageService {
 		try {
 			const now = new Date().toISOString();
 			await this.db.messages
-				.filter(msg => !msg.read)
+				.filter((msg) => !msg.read)
 				.modify({
 					read: true,
 					readAt: now
@@ -99,9 +96,7 @@ class MessageStorageService {
 
 	async getUnreadCount(): Promise<number> {
 		try {
-			return await this.db.messages
-				.filter(msg => !msg.read)
-				.count();
+			return await this.db.messages.filter((msg) => !msg.read).count();
 		} catch (error) {
 			console.error('Failed to get unread count:', error);
 			return 0;
@@ -114,10 +109,7 @@ class MessageStorageService {
 			cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 			const cutoffTimestamp = cutoffDate.toISOString();
 
-			await this.db.messages
-				.where('timestamp')
-				.below(cutoffTimestamp)
-				.delete();
+			await this.db.messages.where('timestamp').below(cutoffTimestamp).delete();
 		} catch (error) {
 			console.error('Failed to clear old messages:', error);
 			// Don't throw - this is a cleanup operation
@@ -141,9 +133,10 @@ class MessageStorageService {
 		try {
 			const lowerQuery = query.toLowerCase();
 			return await this.db.messages
-				.filter(message => 
-					message.message.toLowerCase().includes(lowerQuery) ||
-					message.title.toLowerCase().includes(lowerQuery)
+				.filter(
+					(message) =>
+						message.message.toLowerCase().includes(lowerQuery) ||
+						message.title.toLowerCase().includes(lowerQuery)
 				)
 				.reverse()
 				.sortBy('timestamp');
@@ -169,7 +162,7 @@ class MessageStorageService {
 
 			// Group by audience
 			const byAudience: Record<string, number> = {};
-			allMessages.forEach(msg => {
+			allMessages.forEach((msg) => {
 				byAudience[msg.audience] = (byAudience[msg.audience] || 0) + 1;
 			});
 
@@ -207,4 +200,4 @@ class MessageStorageService {
 	}
 }
 
-export const messageStorage = new MessageStorageService(); 
+export const messageStorage = new MessageStorageService();

@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import UserIcon from '@lucide/svelte/icons/user';
 
-	let { 
+	let {
 		open = $bindable(false),
 		userName = '',
 		currentRole = $bindable(''),
@@ -18,7 +18,7 @@
 		userName?: string;
 		currentRole?: string;
 		newRole?: string;
-		onConfirm?: (role: "admin" | "owl" | "guest") => void;
+		onConfirm?: (role: 'admin' | 'owl' | 'guest') => void;
 		isLoading?: boolean;
 		user?: any;
 	} = $props();
@@ -45,7 +45,7 @@
 				<Label>New Role</Label>
 				<Select.Root type="single" bind:value={newRole}>
 					<Select.Trigger>
-						{roleOptions.find(opt => opt.value === newRole)?.label || 'Select new role'}
+						{roleOptions.find((opt) => opt.value === newRole)?.label || 'Select new role'}
 					</Select.Trigger>
 					<Select.Content>
 						{#each roleOptions as option (option.value)}
@@ -59,8 +59,8 @@
 		</div>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={isLoading}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action 
-				onclick={() => onConfirm(newRole as "admin" | "owl" | "guest")}
+			<AlertDialog.Action
+				onclick={() => onConfirm(newRole as 'admin' | 'owl' | 'guest')}
 				disabled={isLoading || !newRole || newRole === currentRole}
 			>
 				{#if isLoading}
@@ -71,4 +71,4 @@
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
-</AlertDialog.Root> 
+</AlertDialog.Root>

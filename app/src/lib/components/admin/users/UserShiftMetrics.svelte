@@ -18,4 +18,4 @@
 			<p class="text-sm">User shift metrics will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

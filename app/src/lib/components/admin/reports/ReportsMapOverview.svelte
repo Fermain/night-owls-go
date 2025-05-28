@@ -29,11 +29,10 @@
 		sources: {
 			'osm-tiles': {
 				type: 'raster' as const,
-				tiles: [
-					'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-				],
+				tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
 				tileSize: 256,
-				attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+				attribution:
+					'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 			}
 		},
 		layers: [
@@ -63,28 +62,28 @@
 			return { center: [18.4241, -33.9249] as [number, number], zoom: 12 }; // Default to Cape Town
 		}
 
-		const lats = reportsWithLocation.map(r => r.latitude!);
-		const lngs = reportsWithLocation.map(r => r.longitude!);
-		
+		const lats = reportsWithLocation.map((r) => r.latitude!);
+		const lngs = reportsWithLocation.map((r) => r.longitude!);
+
 		const minLat = Math.min(...lats);
 		const maxLat = Math.max(...lats);
 		const minLng = Math.min(...lngs);
 		const maxLng = Math.max(...lngs);
-		
+
 		const centerLat = (minLat + maxLat) / 2;
 		const centerLng = (minLng + maxLng) / 2;
-		
+
 		// Calculate zoom level based on bounds
 		const latDiff = maxLat - minLat;
 		const lngDiff = maxLng - minLng;
 		const maxDiff = Math.max(latDiff, lngDiff);
-		
+
 		let zoom = 12;
 		if (maxDiff < 0.01) zoom = 15;
 		else if (maxDiff < 0.05) zoom = 13;
 		else if (maxDiff < 0.1) zoom = 11;
 		else zoom = 10;
-		
+
 		return { center: [centerLng, centerLat] as [number, number], zoom };
 	});
 
@@ -147,7 +146,7 @@
 			</Marker>
 		{/each}
 	</MapLibre>
-	
+
 	{#if reportsWithLocation.length === 0}
 		<div class="absolute inset-0 flex items-center justify-center bg-muted/50">
 			<div class="text-center">
@@ -201,4 +200,4 @@
 	.marker-pin :global(svg) {
 		transform: rotate(45deg);
 	}
-</style> 
+</style>

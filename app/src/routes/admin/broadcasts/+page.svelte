@@ -112,7 +112,7 @@
 
 <div class="p-6">
 	<div class="max-w-6xl mx-auto">
-		<AdminPageHeader 
+		<AdminPageHeader
 			icon={MessageSquareIcon}
 			heading="Send Broadcast"
 			subheading="Compose and send a message to your users"

@@ -44,7 +44,9 @@
 </script>
 
 <div class="relative">
-	<div class="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-sm text-muted-foreground pointer-events-none z-10">
+	<div
+		class="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-sm text-muted-foreground pointer-events-none z-10"
+	>
 		<span class="text-base">🇿🇦</span>
 		<span class="font-mono">+27</span>
 	</div>
@@ -68,8 +70,8 @@
 		padding-left: 4.5rem !important; /* Make room for flag and country code */
 		padding-right: 0.75rem !important;
 	}
-	
+
 	:global(.phone-input-invalid) {
 		@apply border-destructive focus-visible:ring-destructive;
 	}
-</style> 
+</style>

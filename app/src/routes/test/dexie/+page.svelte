@@ -55,7 +55,7 @@
 	async function testDexieOperations() {
 		isLoading = true;
 		testResults = [];
-		
+
 		try {
 			// Test 1: Basic storage
 			addTestResult('Testing basic message storage...');
@@ -68,7 +68,7 @@
 				read: false,
 				data: { audience: 'test' }
 			};
-			
+
 			await messageStorage.storeMessages([testMessage]);
 			addTestResult('✅ Message stored successfully');
 
@@ -94,7 +94,6 @@
 
 			// Refresh debug info
 			await loadDebugInfo();
-			
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 			addTestResult(`❌ Error: ${errorMessage}`);
@@ -104,10 +103,13 @@
 	}
 
 	function addTestResult(message: string) {
-		testResults = [...testResults, { 
-			message, 
-			timestamp: new Date().toLocaleTimeString() 
-		}];
+		testResults = [
+			...testResults,
+			{
+				message,
+				timestamp: new Date().toLocaleTimeString()
+			}
+		];
 	}
 
 	async function clearDatabase() {
@@ -119,10 +121,10 @@
 				for (const msg of messages) {
 					await messageStorage.markAsRead(msg.id); // This will help test the delete
 				}
-				
+
 				// Clear old messages (all of them)
 				await messageStorage.clearOldMessages(0);
-				
+
 				addTestResult('✅ Database cleared');
 				await loadDebugInfo();
 			} catch (error) {
@@ -143,22 +145,18 @@
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Dexie.js Debug Page</h1>
 		<div class="flex gap-2">
-			<Button onclick={loadDebugInfo} disabled={isLoading}>
-				Refresh Info
-			</Button>
-			<Button onclick={testDexieOperations} disabled={isLoading}>
-				Run Tests
-			</Button>
-			<Button variant="destructive" onclick={clearDatabase} disabled={isLoading}>
-				Clear DB
-			</Button>
+			<Button onclick={loadDebugInfo} disabled={isLoading}>Refresh Info</Button>
+			<Button onclick={testDexieOperations} disabled={isLoading}>Run Tests</Button>
+			<Button variant="destructive" onclick={clearDatabase} disabled={isLoading}>Clear DB</Button>
 		</div>
 	</div>
 
 	{#if isLoading}
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
-				<div class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+				<div
+					class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
+				></div>
 				<p>Loading...</p>
 			</Card.Content>
 		</Card.Root>
@@ -183,13 +181,17 @@
 					<div class="flex justify-between">
 						<span>Oldest Message:</span>
 						<span class="font-mono text-xs">
-							{debugInfo.database.oldestMessage ? new Date(debugInfo.database.oldestMessage).toLocaleString() : 'None'}
+							{debugInfo.database.oldestMessage
+								? new Date(debugInfo.database.oldestMessage).toLocaleString()
+								: 'None'}
 						</span>
 					</div>
 					<div class="flex justify-between">
 						<span>Newest Message:</span>
 						<span class="font-mono text-xs">
-							{debugInfo.database.newestMessage ? new Date(debugInfo.database.newestMessage).toLocaleString() : 'None'}
+							{debugInfo.database.newestMessage
+								? new Date(debugInfo.database.newestMessage).toLocaleString()
+								: 'None'}
 						</span>
 					</div>
 				</Card.Content>
@@ -212,7 +214,9 @@
 					<div class="flex justify-between">
 						<span>Last Fetched:</span>
 						<span class="font-mono text-xs">
-							{debugInfo.memory.lastFetched ? new Date(debugInfo.memory.lastFetched).toLocaleString() : 'Never'}
+							{debugInfo.memory.lastFetched
+								? new Date(debugInfo.memory.lastFetched).toLocaleString()
+								: 'Never'}
 						</span>
 					</div>
 					<div class="flex justify-between">
@@ -252,13 +256,17 @@
 			<Card.Content>
 				<div class="flex items-center justify-between p-4 bg-muted rounded-lg">
 					<span>Memory ↔ Database Sync:</span>
-					<span class="font-mono {debugInfo.performance.memoryVsDatabase.synced ? 'text-green-600' : 'text-red-600'}">
+					<span
+						class="font-mono {debugInfo.performance.memoryVsDatabase.synced
+							? 'text-green-600'
+							: 'text-red-600'}"
+					>
 						{debugInfo.performance.memoryVsDatabase.synced ? '✅ Synced' : '❌ Out of Sync'}
 					</span>
 				</div>
 				<div class="mt-2 text-sm text-muted-foreground">
-					Memory: {debugInfo.performance.memoryVsDatabase.memory} | 
-					Database: {debugInfo.performance.memoryVsDatabase.database}
+					Memory: {debugInfo.performance.memoryVsDatabase.memory} | Database: {debugInfo.performance
+						.memoryVsDatabase.database}
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -282,4 +290,4 @@
 			</Card.Content>
 		</Card.Root>
 	{/if}
-</div> 
+</div>

@@ -13,7 +13,7 @@ export default defineConfig(() => {
 			// SvelteKitPWA({...})
 		],
 		server: {
-							proxy: isE2ETesting
+			proxy: isE2ETesting
 				? undefined
 				: {
 						'/api': {

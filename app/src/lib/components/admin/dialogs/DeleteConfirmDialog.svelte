@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import TrashIcon from '@lucide/svelte/icons/trash';
 
-	let { 
+	let {
 		open = $bindable(false),
 		title = 'Delete Item',
 		description = 'Are you sure you want to delete this item? This action cannot be undone.',
@@ -37,7 +37,7 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={isLoading}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action 
+			<AlertDialog.Action
 				onclick={onConfirm}
 				disabled={isLoading}
 				class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -50,4 +50,4 @@
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
-</AlertDialog.Root> 
+</AlertDialog.Root>

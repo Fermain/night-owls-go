@@ -41,7 +41,7 @@
 				if (!response.ok) {
 					throw new Error(`Failed to fetch reports: ${response.status}`);
 				}
-				return await response.json() as Array<{
+				return (await response.json()) as Array<{
 					report_id: number;
 					severity: number;
 					message: string;
@@ -60,17 +60,17 @@
 	const analytics = $derived.by(() => {
 		const reports = $reportsQuery.data ?? [];
 		const now = new Date();
-		
+
 		// Filter by timeframe
 		let filteredReports = reports;
 		if (timeframe !== 'custom') {
 			const days = parseInt(timeframe.replace('d', ''));
 			const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-			filteredReports = reports.filter(r => new Date(r.created_at) >= cutoff);
+			filteredReports = reports.filter((r) => new Date(r.created_at) >= cutoff);
 		} else if (dateRangeStart && dateRangeEnd) {
 			const start = new Date(dateRangeStart + 'T00:00:00Z');
 			const end = new Date(dateRangeEnd + 'T23:59:59Z');
-			filteredReports = reports.filter(r => {
+			filteredReports = reports.filter((r) => {
 				const date = new Date(r.created_at);
 				return date >= start && date <= end;
 			});
@@ -78,16 +78,16 @@
 
 		// Basic stats
 		const total = filteredReports.length;
-		const critical = filteredReports.filter(r => r.severity === 2).length;
-		const warning = filteredReports.filter(r => r.severity === 1).length;
-		const info = filteredReports.filter(r => r.severity === 0).length;
+		const critical = filteredReports.filter((r) => r.severity === 2).length;
+		const warning = filteredReports.filter((r) => r.severity === 1).length;
+		const info = filteredReports.filter((r) => r.severity === 0).length;
 
 		// Trends (compare with previous period)
 		const periodDays = timeframe === 'custom' ? 30 : parseInt(timeframe.replace('d', ''));
 		const previousPeriodStart = new Date(now.getTime() - 2 * periodDays * 24 * 60 * 60 * 1000);
 		const previousPeriodEnd = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
-		
-		const previousReports = reports.filter(r => {
+
+		const previousReports = reports.filter((r) => {
 			const date = new Date(r.created_at);
 			return date >= previousPeriodStart && date < previousPeriodEnd;
 		});
@@ -106,25 +106,28 @@
 		const dailyBreakdown = [];
 		for (let i = periodDays - 1; i >= 0; i--) {
 			const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-			const dayReports = filteredReports.filter(r => {
+			const dayReports = filteredReports.filter((r) => {
 				const reportDate = new Date(r.created_at);
 				return reportDate.toDateString() === date.toDateString();
 			});
-			
+
 			dailyBreakdown.push({
 				date: date.toISOString().split('T')[0],
 				total: dayReports.length,
-				critical: dayReports.filter(r => r.severity === 2).length,
-				warning: dayReports.filter(r => r.severity === 1).length,
-				info: dayReports.filter(r => r.severity === 0).length
+				critical: dayReports.filter((r) => r.severity === 2).length,
+				warning: dayReports.filter((r) => r.severity === 1).length,
+				info: dayReports.filter((r) => r.severity === 0).length
 			});
 		}
 
 		// Top reporters
-		const reporterCounts = filteredReports.reduce((acc, report) => {
-			acc[report.user_name] = (acc[report.user_name] || 0) + 1;
-			return acc;
-		}, {} as Record<string, number>);
+		const reporterCounts = filteredReports.reduce(
+			(acc, report) => {
+				acc[report.user_name] = (acc[report.user_name] || 0) + 1;
+				return acc;
+			},
+			{} as Record<string, number>
+		);
 
 		const topReporters = Object.entries(reporterCounts)
 			.map(([name, count]) => ({ name, count }))
@@ -132,10 +135,13 @@
 			.slice(0, 5);
 
 		// Schedule breakdown
-		const scheduleCounts = filteredReports.reduce((acc, report) => {
-			acc[report.schedule_name] = (acc[report.schedule_name] || 0) + 1;
-			return acc;
-		}, {} as Record<string, number>);
+		const scheduleCounts = filteredReports.reduce(
+			(acc, report) => {
+				acc[report.schedule_name] = (acc[report.schedule_name] || 0) + 1;
+				return acc;
+			},
+			{} as Record<string, number>
+		);
 
 		const scheduleBreakdown = Object.entries(scheduleCounts)
 			.map(([name, count]) => ({ name, count }))
@@ -143,7 +149,7 @@
 
 		// Time of day analysis
 		const hourCounts = new Array(24).fill(0);
-		filteredReports.forEach(report => {
+		filteredReports.forEach((report) => {
 			const hour = new Date(report.created_at).getHours();
 			hourCounts[hour]++;
 		});
@@ -194,7 +200,7 @@
 
 <div class="p-6">
 	<div class="max-w-7xl mx-auto">
-		<AdminPageHeader 
+		<AdminPageHeader
 			icon={BarChartIcon}
 			heading="Reports Analytics"
 			subheading="Analyze incident report patterns and trends"
@@ -207,7 +213,7 @@
 					<Label>Time Period</Label>
 					<Select.Root type="single" bind:value={timeframe}>
 						<Select.Trigger class="w-40">
-							{timeframeOptions.find(opt => opt.value === timeframe)?.label ?? 'Select period'}
+							{timeframeOptions.find((opt) => opt.value === timeframe)?.label ?? 'Select period'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each timeframeOptions as option (option.value)}
@@ -269,7 +275,9 @@
 							<p class="text-sm font-medium text-muted-foreground">Critical Reports</p>
 							<p class="text-3xl font-bold text-red-600">{analytics.critical}</p>
 							<p class="text-sm text-muted-foreground mt-1">
-								{analytics.total > 0 ? Math.round((analytics.critical / analytics.total) * 100) : 0}% of total
+								{analytics.total > 0
+									? Math.round((analytics.critical / analytics.total) * 100)
+									: 0}% of total
 							</p>
 						</div>
 						<ShieldAlertIcon class="h-8 w-8 text-red-600" />
@@ -282,7 +290,8 @@
 							<p class="text-sm font-medium text-muted-foreground">Warning Reports</p>
 							<p class="text-3xl font-bold text-orange-600">{analytics.warning}</p>
 							<p class="text-sm text-muted-foreground mt-1">
-								{analytics.total > 0 ? Math.round((analytics.warning / analytics.total) * 100) : 0}% of total
+								{analytics.total > 0 ? Math.round((analytics.warning / analytics.total) * 100) : 0}%
+								of total
 							</p>
 						</div>
 						<AlertTriangleIcon class="h-8 w-8 text-orange-600" />
@@ -318,9 +327,11 @@
 										<span class="text-sm text-muted-foreground">{item.count}</span>
 									</div>
 									<div class="w-full bg-muted rounded-full h-2">
-										<div 
+										<div
 											class="{item.color} h-2 rounded-full transition-all duration-300"
-											style="width: {analytics.total > 0 ? (item.count / analytics.total) * 100 : 0}%"
+											style="width: {analytics.total > 0
+												? (item.count / analytics.total) * 100
+												: 0}%"
 										></div>
 									</div>
 								</div>
@@ -339,7 +350,11 @@
 							{#each analytics.dailyBreakdown.slice(-7) as day (day.date)}
 								<div class="flex items-center justify-between">
 									<span class="text-sm">
-										{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+										{new Date(day.date).toLocaleDateString('en-US', {
+											weekday: 'short',
+											month: 'short',
+											day: 'numeric'
+										})}
 									</span>
 									<div class="flex items-center gap-2">
 										{#if day.critical > 0}
@@ -375,7 +390,9 @@
 								{#each analytics.topReporters as reporter, index (reporter.name)}
 									<div class="flex items-center justify-between">
 										<div class="flex items-center gap-3">
-											<div class="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+											<div
+												class="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium"
+											>
 												{index + 1}
 											</div>
 											<span class="font-medium">{reporter.name}</span>
@@ -408,9 +425,11 @@
 											<span class="text-sm text-muted-foreground">{schedule.count}</span>
 										</div>
 										<div class="w-full bg-muted rounded-full h-2">
-											<div 
+											<div
 												class="bg-primary h-2 rounded-full transition-all duration-300"
-												style="width: {analytics.total > 0 ? (schedule.count / analytics.total) * 100 : 0}%"
+												style="width: {analytics.total > 0
+													? (schedule.count / analytics.total) * 100
+													: 0}%"
 											></div>
 										</div>
 									</div>
@@ -424,4 +443,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>

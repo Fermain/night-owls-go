@@ -18,4 +18,4 @@
 			<p class="text-sm">Role distribution chart will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

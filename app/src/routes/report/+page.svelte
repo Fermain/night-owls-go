@@ -82,7 +82,12 @@
 		return severityOptions.find((opt) => opt.value === value);
 	}
 
-	function handleLocationCaptured(location: { latitude: number; longitude: number; accuracy: number; timestamp: string }) {
+	function handleLocationCaptured(location: {
+		latitude: number;
+		longitude: number;
+		accuracy: number;
+		timestamp: string;
+	}) {
 		gpsLocation = location;
 		toast.success('Location captured successfully');
 	}
@@ -116,7 +121,7 @@
 			// Check if user is currently on shift by looking for active bookings
 			const userBookings = await UserApiService.getMyBookings();
 			const now = new Date();
-			const activeBooking = userBookings.find(booking => {
+			const activeBooking = userBookings.find((booking) => {
 				const shiftStart = new Date(booking.shift_start);
 				const shiftEnd = new Date(booking.shift_end);
 				return now >= shiftStart && now <= shiftEnd && booking.checked_in_at;
@@ -132,12 +137,12 @@
 			}
 
 			toast.success('Report submitted successfully');
-			
+
 			// Reset form
 			selectedSeverity = '0'; // Reset to default Normal severity
 			reportMessage = '';
 			gpsLocation = null;
-			
+
 			// Navigate back to home
 			goto('/');
 		} catch (error) {
@@ -198,11 +203,11 @@
 							class="w-full p-4 rounded-lg border-2 text-left transition-all
 								{selectedSeverity === severity.value
 								? severity.color
-								: severity.value === '0' 
+								: severity.value === '0'
 									? 'border-slate-200 dark:border-slate-700 hover:border-green-300 dark:hover:border-green-600'
 									: severity.value === '1'
-									? 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-600'
-									: 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-600'}"
+										? 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-600'
+										: 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-600'}"
 							onclick={() => (selectedSeverity = severity.value)}
 						>
 							<div class="flex items-start gap-3">
@@ -252,7 +257,8 @@
 					className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
 				/>
 				<p class="text-xs text-slate-500 dark:text-slate-400">
-					Location data helps emergency services and improves incident response. If GPS fails, you can enter coordinates manually or submit without location data.
+					Location data helps emergency services and improves incident response. If GPS fails, you
+					can enter coordinates manually or submit without location data.
 				</p>
 			</div>
 
@@ -284,7 +290,8 @@
 				<div class="flex-1">
 					<h3 class="font-medium text-red-900 dark:text-red-100 text-sm">Emergency Situations</h3>
 					<p class="text-xs text-red-700 dark:text-red-300 mt-1">
-						For immediate threats or emergencies requiring police, medical, or fire response, use the Emergency button in the header to call 999 directly rather than submitting a report.
+						For immediate threats or emergencies requiring police, medical, or fire response, use
+						the Emergency button in the header to call 999 directly rather than submitting a report.
 					</p>
 				</div>
 			</div>

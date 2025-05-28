@@ -3,7 +3,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import AwardIcon from '@lucide/svelte/icons/award';
 
-	let { isLoading = false, volunteers = null }: { isLoading?: boolean; volunteers?: any } = $props();
+	let { isLoading = false, volunteers = null }: { isLoading?: boolean; volunteers?: any } =
+		$props();
 </script>
 
 <Card.Root class="p-6">
@@ -18,4 +19,4 @@
 			<p class="text-sm">Top volunteers will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

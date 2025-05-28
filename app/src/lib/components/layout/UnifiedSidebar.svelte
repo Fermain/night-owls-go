@@ -10,7 +10,7 @@
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
 	import type { ComponentProps, Snippet } from 'svelte';
-	
+
 	// Icons
 	import UserIcon from '@lucide/svelte/icons/user';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
@@ -60,7 +60,7 @@
 		if (!$currentUser?.name) return 'U';
 		return $currentUser.name
 			.split(' ')
-			.map(n => n[0])
+			.map((n) => n[0])
 			.join('')
 			.toUpperCase()
 			.slice(0, 2);
@@ -133,7 +133,9 @@
 									<div
 										class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
 									>
-										<div class="h-6 w-6 bg-gradient-to-br from-primary-foreground to-primary-foreground/80 rounded flex items-center justify-center">
+										<div
+											class="h-6 w-6 bg-gradient-to-br from-primary-foreground to-primary-foreground/80 rounded flex items-center justify-center"
+										>
 											<span class="text-primary text-xs font-bold">NO</span>
 										</div>
 									</div>
@@ -147,7 +149,7 @@
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
 			</Sidebar.Header>
-			
+
 			<Sidebar.Content>
 				<Sidebar.Group>
 					<Sidebar.GroupContent class="px-1.5 md:px-0">
@@ -159,7 +161,7 @@
 											hidden: false
 										}}
 										onclick={() => goto(item.url)}
-										isActive={page.url.pathname === item.url || 
+										isActive={page.url.pathname === item.url ||
 											(item.url !== '/' && page.url.pathname.startsWith(item.url))}
 										class="px-2.5 md:px-2"
 									>
@@ -175,7 +177,7 @@
 					</Sidebar.GroupContent>
 				</Sidebar.Group>
 			</Sidebar.Content>
-			
+
 			<Sidebar.Footer>
 				<!-- User Menu -->
 				{#if $isAuthenticated}
@@ -202,7 +204,7 @@
 										</Sidebar.MenuButton>
 									{/snippet}
 								</DropdownMenu.Trigger>
-								
+
 								<DropdownMenu.Content
 									class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
 									side={sidebar.isMobile ? 'bottom' : 'right'}
@@ -230,18 +232,18 @@
 											</div>
 										</div>
 									</DropdownMenu.Label>
-									
+
 									<DropdownMenu.Separator />
-									
+
 									<DropdownMenu.Group>
 										<DropdownMenu.Item class="cursor-pointer">
 											<SettingsIcon class="mr-2 h-4 w-4" />
 											Settings
 										</DropdownMenu.Item>
 									</DropdownMenu.Group>
-									
+
 									<DropdownMenu.Separator />
-									
+
 									<DropdownMenu.Item
 										class="cursor-pointer text-destructive focus:text-destructive"
 										onclick={handleLogout}
@@ -284,12 +286,7 @@
 	</Sidebar.Root>
 {:else}
 	<!-- Single Sidebar Layout (Public) -->
-	<Sidebar.Root
-		bind:ref
-		collapsible="icon"
-		class="border-r"
-		{...restProps}
-	>
+	<Sidebar.Root bind:ref collapsible="icon" class="border-r" {...restProps}>
 		<Sidebar.Header>
 			<Sidebar.Menu>
 				<Sidebar.MenuItem>
@@ -299,7 +296,9 @@
 								<div
 									class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
 								>
-									<div class="h-6 w-6 bg-gradient-to-br from-primary-foreground to-primary-foreground/80 rounded flex items-center justify-center">
+									<div
+										class="h-6 w-6 bg-gradient-to-br from-primary-foreground to-primary-foreground/80 rounded flex items-center justify-center"
+									>
 										<span class="text-primary text-xs font-bold">NO</span>
 									</div>
 								</div>
@@ -313,7 +312,7 @@
 				</Sidebar.MenuItem>
 			</Sidebar.Menu>
 		</Sidebar.Header>
-		
+
 		<Sidebar.Content>
 			<Sidebar.Group>
 				<Sidebar.GroupContent class="px-1.5 md:px-0">
@@ -325,7 +324,7 @@
 										hidden: false
 									}}
 									onclick={() => goto(item.url)}
-									isActive={page.url.pathname === item.url || 
+									isActive={page.url.pathname === item.url ||
 										(item.url !== '/' && page.url.pathname.startsWith(item.url))}
 									class="px-2.5 md:px-2"
 								>
@@ -341,7 +340,7 @@
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
 		</Sidebar.Content>
-		
+
 		<Sidebar.Footer>
 			<!-- User Menu -->
 			{#if $isAuthenticated}
@@ -368,7 +367,7 @@
 									</Sidebar.MenuButton>
 								{/snippet}
 							</DropdownMenu.Trigger>
-							
+
 							<DropdownMenu.Content
 								class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
 								side={sidebar.isMobile ? 'bottom' : 'right'}
@@ -396,18 +395,18 @@
 										</div>
 									</div>
 								</DropdownMenu.Label>
-								
+
 								<DropdownMenu.Separator />
-								
+
 								<DropdownMenu.Group>
 									<DropdownMenu.Item class="cursor-pointer">
 										<SettingsIcon class="mr-2 h-4 w-4" />
 										Settings
 									</DropdownMenu.Item>
 								</DropdownMenu.Group>
-								
+
 								<DropdownMenu.Separator />
-								
+
 								<DropdownMenu.Item
 									class="cursor-pointer text-destructive focus:text-destructive"
 									onclick={handleLogout}
@@ -423,11 +422,7 @@
 				<!-- Login prompt for unauthenticated users -->
 				<Sidebar.Menu>
 					<Sidebar.MenuItem>
-						<Sidebar.MenuButton
-							onclick={() => goto('/login')}
-							size="lg"
-							class="md:h-8 md:p-0"
-						>
+						<Sidebar.MenuButton onclick={() => goto('/login')} size="lg" class="md:h-8 md:p-0">
 							<Avatar.Root class="h-8 w-8 rounded-lg">
 								<Avatar.Fallback class="rounded-lg text-xs">
 									<UserIcon class="h-4 w-4" />
@@ -443,4 +438,4 @@
 			{/if}
 		</Sidebar.Footer>
 	</Sidebar.Root>
-{/if} 
+{/if}

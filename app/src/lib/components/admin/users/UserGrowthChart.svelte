@@ -18,4 +18,4 @@
 			<p class="text-sm">User growth chart will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

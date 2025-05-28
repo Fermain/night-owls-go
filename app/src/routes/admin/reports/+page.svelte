@@ -298,14 +298,13 @@
 		<div class="max-w-7xl mx-auto">
 			<div class="mb-6">
 				<AdminPageHeader
-						icon={FileTextIcon}
-						heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
-						subheading={showArchived
-							? 'View and manage archived incident reports'
-							: 'Monitor and analyze incident reports submitted by volunteers during shifts'}
-					/>
+					icon={FileTextIcon}
+					heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
+					subheading={showArchived
+						? 'View and manage archived incident reports'
+						: 'Monitor and analyze incident reports submitted by volunteers during shifts'}
+				/>
 				<div class="flex items-center justify-between">
-					
 					<div class="flex gap-2">
 						<div class="flex border rounded-lg p-1">
 							<Button

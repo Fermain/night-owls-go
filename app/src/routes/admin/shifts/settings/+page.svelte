@@ -97,7 +97,7 @@
 
 <div class="p-6">
 	<div class="max-w-6xl mx-auto">
-		<AdminPageHeader 
+		<AdminPageHeader
 			icon={SettingsIcon}
 			heading="Schedule Settings"
 			subheading="Manage shift schedules, timing, and recurring patterns"
@@ -223,4 +223,4 @@
 	name={scheduleToDelete?.name ?? ''}
 	id={scheduleToDelete?.schedule_id ?? 0}
 	mutation={deleteScheduleMutation}
-/> 
+/>

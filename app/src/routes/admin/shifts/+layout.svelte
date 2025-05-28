@@ -1,16 +1,11 @@
 <script lang="ts">
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import UpcomingShifts from '$lib/components/admin/shifts/UpcomingShifts.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Switch } from '$lib/components/ui/switch';
-	import { Label } from '$lib/components/ui/label';
+	import ShiftFilters from '$lib/components/admin/shifts/ShiftFilters.svelte';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
-	import FilterIcon from '@lucide/svelte/icons/filter';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import { page } from '$app/state';
-	import { normalizeDateRange } from '$lib/utils/dateFormatting';
-	import { SchedulesApiService } from '$lib/services/api';
 
 	// Filters state - active by default with both selected, hardcoded to 2 weeks
 	let showFilled = $state(true);
@@ -41,22 +36,6 @@
 	// Get selected shift from URL
 	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
-	// Data Fetching using API service - hardcoded to 2 weeks
-	async function fetchShiftSlots() {
-		try {
-			const { from: fromDate, to: toDate } = normalizeDateRange(null, null, 14); // 2 weeks
-			return await SchedulesApiService.getAllSlots({ from: fromDate, to: toDate });
-		} catch (error) {
-			console.error('Error fetching shift slots:', error);
-			throw error;
-		}
-	}
-
-	function clearFilters() {
-		showFilled = true;
-		showUnfilled = true;
-	}
-
 	let { children } = $props();
 </script>
 
@@ -76,40 +55,12 @@
 			</a>
 		{/each}
 
-		<!-- Inline Filters Section -->
-		<div class="p-4 border-b">
-			<div class="flex items-center gap-4">
-				<div class="flex items-center gap-2">
-					<FilterIcon class="h-4 w-4" />
-					<Label class="text-sm font-medium">Filters:</Label>
-				</div>
-				
-				<div class="flex items-center gap-4">
-					<div class="flex items-center space-x-2">
-						<Switch id="filled-filter" bind:checked={showFilled} />
-						<Label for="filled-filter" class="text-sm cursor-pointer">Filled</Label>
-					</div>
-					<div class="flex items-center space-x-2">
-						<Switch id="unfilled-filter" bind:checked={showUnfilled} />
-						<Label for="unfilled-filter" class="text-sm cursor-pointer">Unfilled</Label>
-					</div>
-				</div>
+		<!-- Filters Section -->
+		<ShiftFilters bind:showFilled bind:showUnfilled />
 
-				{#if !showFilled || !showUnfilled}
-					<Button variant="outline" size="sm" onclick={clearFilters}>
-						<FilterIcon class="h-4 w-4 mr-2" />
-						Reset
-					</Button>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Shifts List (no heading, no rounded edges, no gaps) -->
+		<!-- Shifts List -->
 		<div class="flex-grow overflow-y-auto">
-			<UpcomingShifts 
-				maxItems={15}
-				className="h-full"
-			/>
+			<UpcomingShifts maxItems={15} className="h-full" />
 		</div>
 	</div>
 {/snippet}
@@ -117,4 +68,3 @@
 <SidebarPage listContent={shiftsListContent}>
 	{@render children()}
 </SidebarPage>
-

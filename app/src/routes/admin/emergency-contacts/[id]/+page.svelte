@@ -32,7 +32,7 @@
 
 	const contact = $derived(() => {
 		const contacts = $contactsQuery.data;
-		return contacts?.find(c => c.id === contactId);
+		return contacts?.find((c) => c.id === contactId);
 	});
 </script>
 
@@ -68,4 +68,4 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
-{/if} 
+{/if}

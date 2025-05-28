@@ -3,7 +3,21 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 
-	let { isLoading = false, latitude = 0, longitude = 0, accuracy = 0, severity = 0, className = '' }: { isLoading?: boolean; latitude?: number; longitude?: number; accuracy?: number; severity?: number; className?: string } = $props();
+	let {
+		isLoading = false,
+		latitude = 0,
+		longitude = 0,
+		accuracy = 0,
+		severity = 0,
+		className = ''
+	}: {
+		isLoading?: boolean;
+		latitude?: number;
+		longitude?: number;
+		accuracy?: number;
+		severity?: number;
+		className?: string;
+	} = $props();
 </script>
 
 <Card.Root class="p-6">
@@ -19,4 +33,4 @@
 			<p class="text-sm">Interactive map will be displayed here</p>
 		</div>
 	{/if}
-</Card.Root> 
+</Card.Root>

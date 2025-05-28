@@ -47,16 +47,16 @@ const createNotificationStore = () => {
 
 	return {
 		subscribe,
-		
+
 		// Initialize from IndexedDB
 		async init() {
 			try {
 				// Dexie handles database initialization automatically
 				const storedMessages = await messageStorage.getMessages();
 				const unreadCount = await messageStorage.getUnreadCount();
-				
+
 				// Convert stored messages to UserNotification format
-				const notifications: UserNotification[] = storedMessages.map(stored => ({
+				const notifications: UserNotification[] = storedMessages.map((stored) => ({
 					id: stored.id,
 					type: 'broadcast' as const,
 					title: stored.title,
@@ -69,19 +69,19 @@ const createNotificationStore = () => {
 					}
 				}));
 
-				update(state => ({
+				update((state) => ({
 					...state,
 					notifications,
 					unreadCount,
 					lastFetched: storedMessages.length > 0 ? new Date().toISOString() : null
 				}));
-				
+
 				console.log('📦 Notification service initialized with', notifications.length, 'messages');
 			} catch (error) {
 				console.error('Failed to initialize notifications from storage:', error);
 			}
 		},
-		
+
 		// Actions
 		async fetchNotifications(force = false) {
 			// Check if user is authenticated before making API calls
@@ -100,23 +100,24 @@ const createNotificationStore = () => {
 			// Don't fetch too frequently unless forced
 			if (!force && currentState.lastFetched) {
 				const timeSinceLastFetch = Date.now() - new Date(currentState.lastFetched).getTime();
-				if (timeSinceLastFetch < 5000) { // 5 seconds minimum between fetches
+				if (timeSinceLastFetch < 5000) {
+					// 5 seconds minimum between fetches
 					return;
 				}
 			}
 
-			update(state => ({ ...state, isLoading: true }));
-			
+			update((state) => ({ ...state, isLoading: true }));
+
 			try {
 				// Fetch broadcasts from API
 				const response = await authenticatedFetch('/api/broadcasts');
-				
+
 				if (!response.ok) {
 					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 				}
-				
+
 				const broadcasts: BroadcastResponse[] = await response.json();
-				
+
 				// Transform broadcasts into notifications
 				const apiNotifications: UserNotification[] = broadcasts.map((broadcast) => ({
 					id: broadcast.id,
@@ -133,12 +134,12 @@ const createNotificationStore = () => {
 
 				// Store new messages in IndexedDB (preserves read state)
 				await messageStorage.storeMessages(apiNotifications);
-				
+
 				// Get all messages from IndexedDB (with persisted read state)
 				const storedMessages = await messageStorage.getMessages();
-				
+
 				// Convert stored messages back to UserNotification format
-				const notifications: UserNotification[] = storedMessages.map(stored => ({
+				const notifications: UserNotification[] = storedMessages.map((stored) => ({
 					id: stored.id,
 					type: 'broadcast' as const,
 					title: stored.title,
@@ -154,7 +155,7 @@ const createNotificationStore = () => {
 				// Get unread count from IndexedDB
 				const unreadCount = await messageStorage.getUnreadCount();
 
-				update(state => ({
+				update((state) => ({
 					...state,
 					notifications,
 					unreadCount,
@@ -164,10 +165,9 @@ const createNotificationStore = () => {
 
 				// Clean up old messages (keep last 30 days)
 				await messageStorage.clearOldMessages(30);
-
 			} catch (error) {
 				console.error('Failed to fetch notifications:', error);
-				update(state => ({ ...state, isLoading: false }));
+				update((state) => ({ ...state, isLoading: false }));
 			}
 		},
 
@@ -176,12 +176,12 @@ const createNotificationStore = () => {
 			try {
 				// Update in IndexedDB
 				await messageStorage.markAsRead(notificationId);
-				
+
 				// Update in memory state
 				const unreadCount = await messageStorage.getUnreadCount();
-				update(state => ({
+				update((state) => ({
 					...state,
-					notifications: state.notifications.map(n => 
+					notifications: state.notifications.map((n) =>
 						n.id === notificationId ? { ...n, read: true } : n
 					),
 					unreadCount
@@ -196,11 +196,11 @@ const createNotificationStore = () => {
 			try {
 				// Update in IndexedDB
 				await messageStorage.markAllAsRead();
-				
+
 				// Update in memory state
-				update(state => ({
+				update((state) => ({
 					...state,
-					notifications: state.notifications.map(n => ({ ...n, read: true })),
+					notifications: state.notifications.map((n) => ({ ...n, read: true })),
 					unreadCount: 0
 				}));
 			} catch (error) {
@@ -210,7 +210,7 @@ const createNotificationStore = () => {
 
 		// Add new notification (e.g., from push notification)
 		addNotification(notification: Omit<UserNotification, 'id'>) {
-			update(state => {
+			update((state) => {
 				const newNotification: UserNotification = {
 					...notification,
 					id: Date.now() // Simple ID generation
@@ -234,7 +234,7 @@ const createNotificationStore = () => {
 			try {
 				const stats = await messageStorage.getStats();
 				const currentState = get({ subscribe });
-				
+
 				return {
 					database: stats,
 					memory: {
@@ -263,5 +263,5 @@ const createNotificationStore = () => {
 export const notificationStore = createNotificationStore();
 
 // Derived stores for convenience
-export const unreadCount = derived(notificationStore, $store => $store.unreadCount);
-export const hasUnread = derived(unreadCount, $count => $count > 0); 
+export const unreadCount = derived(notificationStore, ($store) => $store.unreadCount);
+export const hasUnread = derived(unreadCount, ($count) => $count > 0);

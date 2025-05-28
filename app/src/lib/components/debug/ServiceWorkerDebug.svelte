@@ -20,7 +20,7 @@
 
 	async function checkServiceWorkerStatus() {
 		isLoading = true;
-		
+
 		try {
 			const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
 			swStatus = await serviceWorkerService.getStatus();
@@ -35,7 +35,7 @@
 		try {
 			const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
 			const success = await serviceWorkerService.register();
-			
+
 			if (success) {
 				console.log('✅ Service worker registered');
 				await checkServiceWorkerStatus();
@@ -51,7 +51,7 @@
 		try {
 			const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
 			const success = await serviceWorkerService.unregister();
-			
+
 			if (success) {
 				console.log('✅ Service worker unregistered');
 				await checkServiceWorkerStatus();
@@ -66,7 +66,7 @@
 	async function testServiceWorker() {
 		try {
 			const registration = await navigator.serviceWorker.getRegistration();
-			
+
 			if (!registration || !registration.active) {
 				console.error('❌ No active service worker found');
 				return;
@@ -112,12 +112,8 @@
 
 <Card.Root class="w-full max-w-md">
 	<Card.Header>
-		<Card.Title class="flex items-center gap-2">
-			🔧 Service Worker Debug
-		</Card.Title>
-		<Card.Description>
-			Debug information for the service worker registration
-		</Card.Description>
+		<Card.Title class="flex items-center gap-2">🔧 Service Worker Debug</Card.Title>
+		<Card.Description>Debug information for the service worker registration</Card.Description>
 	</Card.Header>
 
 	<Card.Content class="space-y-4">
@@ -158,41 +154,30 @@
 			</div>
 
 			<div class="flex gap-2 flex-wrap">
-				<Button 
-					variant="outline" 
-					size="sm" 
+				<Button
+					variant="outline"
+					size="sm"
 					onclick={registerServiceWorker}
 					disabled={swStatus.registered}
 				>
 					Register
 				</Button>
-				
-				<Button 
-					variant="outline" 
-					size="sm" 
+
+				<Button
+					variant="outline"
+					size="sm"
 					onclick={unregisterServiceWorker}
 					disabled={!swStatus.registered}
 				>
 					Unregister
 				</Button>
-				
-				<Button 
-					variant="ghost" 
-					size="sm" 
-					onclick={checkServiceWorkerStatus}
-				>
-					Refresh
-				</Button>
 
-				<Button 
-					variant="default" 
-					size="sm" 
-					onclick={testServiceWorker}
-					disabled={!swStatus.active}
-				>
+				<Button variant="ghost" size="sm" onclick={checkServiceWorkerStatus}>Refresh</Button>
+
+				<Button variant="default" size="sm" onclick={testServiceWorker} disabled={!swStatus.active}>
 					🧪 Test
 				</Button>
 			</div>
 		{/if}
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

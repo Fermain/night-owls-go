@@ -119,8 +119,8 @@
 									{#if $formStore.lastPhoneNumber && phoneNumber === $formStore.lastPhoneNumber}
 										<br />
 										<span class="text-primary">Using saved phone number</span>
-										<button 
-											type="button" 
+										<button
+											type="button"
 											class="text-xs text-muted-foreground hover:text-foreground underline ml-2"
 											onclick={() => {
 												clearUserData();
@@ -133,9 +133,7 @@
 									{/if}
 								</p>
 								{#if !phoneValid && phoneNumber}
-									<p class="text-xs text-destructive mt-1">
-										Please enter a valid phone number
-									</p>
+									<p class="text-xs text-destructive mt-1">Please enter a valid phone number</p>
 								{/if}
 							</div>
 
@@ -198,5 +196,3 @@
 		</div>
 	</div>
 {/if}
-
-

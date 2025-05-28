@@ -237,9 +237,9 @@
 		<!-- Header with shift title -->
 		<div class="mb-6">
 			<div class="flex items-center justify-between">
-				<AdminPageHeader 
+				<AdminPageHeader
 					icon={ClockIcon}
-					heading="{getShiftTitle(selectedShift.start_time, selectedShift.end_time)}"
+					heading={getShiftTitle(selectedShift.start_time, selectedShift.end_time)}
 					subheading="Manage shift assignment and team details"
 				/>
 				<Button variant="outline" onclick={handleBackToCalendar}>← Back</Button>

@@ -62,7 +62,7 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		
+
 		if (!formName.trim() || !formNumber.trim()) {
 			toast.error('Name and number are required');
 			return;
@@ -71,10 +71,11 @@
 		formSubmitting = true;
 
 		try {
-			const url = isEditing && contact
-				? `/api/admin/emergency-contacts/${contact.id}`
-				: '/api/admin/emergency-contacts';
-			
+			const url =
+				isEditing && contact
+					? `/api/admin/emergency-contacts/${contact.id}`
+					: '/api/admin/emergency-contacts';
+
 			const method = isEditing ? 'PUT' : 'POST';
 
 			const response = await authenticatedFetch(url, {
@@ -97,10 +98,10 @@
 			}
 
 			toast.success(isEditing ? 'Contact updated successfully' : 'Contact created successfully');
-			
+
 			// Invalidate the query to refresh the sidebar list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
-			
+
 			if (onSuccess) {
 				onSuccess();
 			} else if (!isEditing) {
@@ -121,7 +122,7 @@
 
 	async function handleDelete() {
 		if (!isEditing || !contact) return;
-		
+
 		if (!confirm(`Are you sure you want to delete "${contact.name}"?`)) {
 			return;
 		}
@@ -137,10 +138,10 @@
 			}
 
 			toast.success('Contact deleted successfully');
-			
+
 			// Invalidate the query to refresh the sidebar list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
-			
+
 			// Navigate back to the create form
 			goto('/admin/emergency-contacts');
 		} catch (err) {
@@ -153,9 +154,12 @@
 		if (!isEditing || !contact) return;
 
 		try {
-			const response = await authenticatedFetch(`/api/admin/emergency-contacts/${contact.id}/default`, {
-				method: 'PUT'
-			});
+			const response = await authenticatedFetch(
+				`/api/admin/emergency-contacts/${contact.id}/default`,
+				{
+					method: 'PUT'
+				}
+			);
 
 			if (!response.ok) {
 				const errorData = await response.json();
@@ -163,7 +167,7 @@
 			}
 
 			toast.success(`${contact.name} set as default emergency contact`);
-			
+
 			// Invalidate the query to refresh the sidebar list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
 		} catch (err) {
@@ -174,35 +178,25 @@
 </script>
 
 <div class="container mx-auto p-6 max-w-6xl">
-	<AdminPageHeader 
+	<AdminPageHeader
 		icon={PhoneIcon}
-		heading="{title}"
-		subheading="{isEditing 
-			? 'Update the emergency contact information' 
-			: 'Add a new emergency contact for the community'}"
+		heading={title}
+		subheading={isEditing
+			? 'Update the emergency contact information'
+			: 'Add a new emergency contact for the community'}
 	/>
-	
+
 	<Card.Root>
 		<Card.Content class="p-6">
 			<form onsubmit={handleSubmit} class="space-y-4">
 				<div class="space-y-2">
 					<Label for="name">Name *</Label>
-					<Input
-						id="name"
-						bind:value={formName}
-						placeholder="e.g., RUSA, SAPS, ER24"
-						required
-					/>
+					<Input id="name" bind:value={formName} placeholder="e.g., RUSA, SAPS, ER24" required />
 				</div>
 
 				<div class="space-y-2">
 					<Label for="number">Phone Number *</Label>
-					<Input
-						id="number"
-						bind:value={formNumber}
-						placeholder="e.g., 086 123 4333"
-						required
-					/>
+					<Input id="number" bind:value={formNumber} placeholder="e.g., 086 123 4333" required />
 				</div>
 
 				<div class="space-y-2">
@@ -217,19 +211,11 @@
 
 				<div class="space-y-2">
 					<Label for="display-order">Display Order</Label>
-					<Input
-						id="display-order"
-						type="number"
-						bind:value={formDisplayOrder}
-						min="1"
-					/>
+					<Input id="display-order" type="number" bind:value={formDisplayOrder} min="1" />
 				</div>
 
 				<div class="flex items-center space-x-2">
-					<Checkbox
-						id="is-default"
-						bind:checked={formIsDefault}
-					/>
+					<Checkbox id="is-default" bind:checked={formIsDefault} />
 					<Label for="is-default" class="text-sm">Set as default emergency contact</Label>
 				</div>
 
@@ -237,22 +223,20 @@
 					<Button type="submit" disabled={formSubmitting} class="flex-1">
 						{formSubmitting ? 'Saving...' : submitText}
 					</Button>
-					
+
 					{#if isEditing && contact}
 						{#if !contact.is_default}
 							<Button type="button" variant="outline" onclick={handleSetDefault}>
 								Set as Default
 							</Button>
 						{/if}
-						
+
 						{#if !contact.is_default}
-							<Button type="button" variant="destructive" onclick={handleDelete}>
-								Delete
-							</Button>
+							<Button type="button" variant="destructive" onclick={handleDelete}>Delete</Button>
 						{/if}
 					{/if}
 				</div>
 			</form>
 		</Card.Content>
 	</Card.Root>
-</div> 
+</div>

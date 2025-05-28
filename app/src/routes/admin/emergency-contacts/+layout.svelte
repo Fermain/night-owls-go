@@ -52,13 +52,14 @@
 	const filteredContacts = $derived.by(() => {
 		const contacts = $contactsQuery.data ?? [];
 		if (!searchTerm) return contacts.sort((a, b) => a.display_order - b.display_order);
-		
+
 		const term = searchTerm.toLowerCase();
 		return contacts
-			.filter(contact => 
-				contact.name.toLowerCase().includes(term) ||
-				contact.number.includes(term) ||
-				contact.description.toLowerCase().includes(term)
+			.filter(
+				(contact) =>
+					contact.name.toLowerCase().includes(term) ||
+					contact.number.includes(term) ||
+					contact.description.toLowerCase().includes(term)
 			)
 			.sort((a, b) => a.display_order - b.display_order);
 	});
@@ -85,7 +86,8 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={page.url.pathname === '/admin/emergency-contacts' && !currentSelectedContactId()}
+				class:active={page.url.pathname === '/admin/emergency-contacts' &&
+					!currentSelectedContactId()}
 			>
 				{#if item.icon}
 					<item.icon class="h-4 w-4" />
@@ -105,7 +107,10 @@
 			{:else if filteredContacts && filteredContacts.length > 0}
 				{#each filteredContacts as contact (contact.id)}
 					<div
-						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedContactId() === contact.id ? 'active' : ''}"
+						class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 {currentSelectedContactId() ===
+						contact.id
+							? 'active'
+							: ''}"
 					>
 						<a
 							href={`/admin/emergency-contacts/${contact.id}`}
@@ -136,7 +141,9 @@
 				{/each}
 			{:else if $contactsQuery.data}
 				<div class="p-4 text-sm text-muted-foreground">
-					{searchTerm ? `No contacts found matching "${searchTerm}".` : 'No emergency contacts found.'}
+					{searchTerm
+						? `No contacts found matching "${searchTerm}".`
+						: 'No emergency contacts found.'}
 				</div>
 			{/if}
 		</div>
@@ -146,7 +153,9 @@
 			<Button
 				href="/admin/emergency-contacts"
 				class="w-full"
-				variant={page.url.pathname === '/admin/emergency-contacts' && !currentSelectedContactId() ? 'default' : 'outline'}
+				variant={page.url.pathname === '/admin/emergency-contacts' && !currentSelectedContactId()
+					? 'default'
+					: 'outline'}
 			>
 				<PlusIcon class="h-4 w-4 mr-2" />
 				Create Contact
@@ -157,4 +166,4 @@
 
 <SidebarPage listContent={contactListContent} title="Emergency Contacts" bind:searchTerm>
 	{@render children()}
-</SidebarPage> 
+</SidebarPage>

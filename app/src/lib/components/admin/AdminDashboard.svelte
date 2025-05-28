@@ -39,22 +39,32 @@
 	const weekendStatusColor = $derived.by(() => {
 		if (!metrics?.this_weekend_status) return 'gray';
 		switch (metrics.this_weekend_status) {
-			case 'fully_covered': return 'green';
-			case 'partial_coverage': return 'yellow';
-			case 'critical': return 'red';
-			case 'no_shifts': return 'gray';
-			default: return 'gray';
+			case 'fully_covered':
+				return 'green';
+			case 'partial_coverage':
+				return 'yellow';
+			case 'critical':
+				return 'red';
+			case 'no_shifts':
+				return 'gray';
+			default:
+				return 'gray';
 		}
 	});
 
 	const weekendStatusText = $derived.by(() => {
 		if (!metrics?.this_weekend_status) return 'Unknown';
 		switch (metrics.this_weekend_status) {
-			case 'fully_covered': return 'Fully Covered';
-			case 'partial_coverage': return 'Partial Coverage';
-			case 'critical': return 'Critical';
-			case 'no_shifts': return 'No Shifts';
-			default: return 'Unknown';
+			case 'fully_covered':
+				return 'Fully Covered';
+			case 'partial_coverage':
+				return 'Partial Coverage';
+			case 'critical':
+				return 'Critical';
+			case 'no_shifts':
+				return 'No Shifts';
+			default:
+				return 'Unknown';
 		}
 	});
 
@@ -112,7 +122,7 @@
 	const topContributors = $derived.by(() => {
 		if (!memberContributions) return [];
 		const contributors = [...memberContributions]
-			.filter(c => c.shifts_booked > 0)
+			.filter((c) => c.shifts_booked > 0)
 			.sort((a, b) => b.shifts_booked - a.shifts_booked)
 			.slice(0, 5);
 		return contributors;
@@ -121,7 +131,7 @@
 	// Non-contributors who need encouragement
 	const nonContributors = $derived.by(() => {
 		if (!memberContributions) return [];
-		return memberContributions.filter(c => c.contribution_category === 'non_contributor');
+		return memberContributions.filter((c) => c.contribution_category === 'non_contributor');
 	});
 
 	// Quick action handlers
@@ -143,28 +153,38 @@
 
 	function formatContributionCategory(category: string): string {
 		switch (category) {
-			case 'non_contributor': return 'Not Contributing';
-			case 'minimum_contributor': return 'Minimal';
-			case 'fair_contributor': return 'Fair Share';
-			case 'heavy_lifter': return 'Heavy Lifter';
-			default: return category;
+			case 'non_contributor':
+				return 'Not Contributing';
+			case 'minimum_contributor':
+				return 'Minimal';
+			case 'fair_contributor':
+				return 'Fair Share';
+			case 'heavy_lifter':
+				return 'Heavy Lifter';
+			default:
+				return category;
 		}
 	}
 
 	function getContributionColor(category: string): string {
 		switch (category) {
-			case 'non_contributor': return 'text-red-600 dark:text-red-400';
-			case 'minimum_contributor': return 'text-yellow-600 dark:text-yellow-400';
-			case 'fair_contributor': return 'text-green-600 dark:text-green-400';
-			case 'heavy_lifter': return 'text-blue-600 dark:text-blue-400';
-			default: return 'text-gray-600 dark:text-gray-400';
+			case 'non_contributor':
+				return 'text-red-600 dark:text-red-400';
+			case 'minimum_contributor':
+				return 'text-yellow-600 dark:text-yellow-400';
+			case 'fair_contributor':
+				return 'text-green-600 dark:text-green-400';
+			case 'heavy_lifter':
+				return 'text-blue-600 dark:text-blue-400';
+			default:
+				return 'text-gray-600 dark:text-gray-400';
 		}
 	}
 </script>
 
 <div class="p-8">
 	<div class="max-w-full mx-auto">
-		<AdminPageHeader 
+		<AdminPageHeader
 			icon={LayoutDashboardIcon}
 			heading="Admin Dashboard"
 			subheading="Central hub for managing volunteers, schedules, and community watch operations"
@@ -235,17 +255,21 @@
 				<!-- Weekend Status -->
 				<Card.Root class="p-6">
 					<div class="flex items-center gap-3">
-						<div class="p-2 rounded-lg {weekendStatusColor === 'green' 
-							? 'bg-green-100 dark:bg-green-900/20'
-							: weekendStatusColor === 'yellow'
-								? 'bg-yellow-100 dark:bg-yellow-900/20'
-								: weekendStatusColor === 'red'
-									? 'bg-red-100 dark:bg-red-900/20'
-									: 'bg-gray-100 dark:bg-gray-900/20'}">
+						<div
+							class="p-2 rounded-lg {weekendStatusColor === 'green'
+								? 'bg-green-100 dark:bg-green-900/20'
+								: weekendStatusColor === 'yellow'
+									? 'bg-yellow-100 dark:bg-yellow-900/20'
+									: weekendStatusColor === 'red'
+										? 'bg-red-100 dark:bg-red-900/20'
+										: 'bg-gray-100 dark:bg-gray-900/20'}"
+						>
 							{#if weekendStatusColor === 'green'}
 								<CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
 							{:else}
-								<AlertTriangleIcon class="h-6 w-6 text-{weekendStatusColor}-600 dark:text-{weekendStatusColor}-400" />
+								<AlertTriangleIcon
+									class="h-6 w-6 text-{weekendStatusColor}-600 dark:text-{weekendStatusColor}-400"
+								/>
 							{/if}
 						</div>
 						<div>
@@ -381,7 +405,8 @@
 									<div class="flex-grow min-w-0">
 										<p class="font-medium text-sm truncate">{contributor.name}</p>
 										<p class="text-xs {getContributionColor(contributor.contribution_category)}">
-											{formatContributionCategory(contributor.contribution_category)} • {contributor.shifts_booked} shifts
+											{formatContributionCategory(contributor.contribution_category)} • {contributor.shifts_booked}
+											shifts
 										</p>
 									</div>
 									<div class="flex-shrink-0 text-right">
@@ -424,7 +449,10 @@
 										</div>
 									</div>
 									<div class="flex-grow min-w-0">
-										<p class="font-medium text-sm truncate">{slot.day_of_week} {slot.hour_of_day}</p>
+										<p class="font-medium text-sm truncate">
+											{slot.day_of_week}
+											{slot.hour_of_day}
+										</p>
 										<p class="text-xs text-muted-foreground">
 											{slot.total_bookings} bookings
 										</p>

@@ -23,27 +23,27 @@
 	function formatShiftTitle(startTime: string, endTime: string): string {
 		const start = new Date(startTime);
 		const end = new Date(endTime);
-		
+
 		// Get the previous day for the "Night" reference
 		const previousDay = new Date(start);
 		previousDay.setDate(previousDay.getDate() - 1);
-		
+
 		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-		
+
 		// Format time as condensed AM/PM (e.g., "1-3AM")
 		const startHour = start.getUTCHours();
 		const endHour = end.getUTCHours();
-		
+
 		// Convert to 12-hour format
-		const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-		const getAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
-		
+		const formatHour = (hour: number) => (hour === 0 ? 12 : hour > 12 ? hour - 12 : hour);
+		const getAmPm = (hour: number) => (hour < 12 ? 'AM' : 'PM');
+
 		const startHour12 = formatHour(startHour);
 		const endHour12 = formatHour(endHour);
 		const endAmPm = getAmPm(endHour);
-		
+
 		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
-		
+
 		return `${dayName} Night ${timeRange}`;
 	}
 
@@ -367,7 +367,9 @@
 						>
 							<div class="space-y-1">
 								<div class="flex items-center justify-between">
-									<h3 class="font-medium text-sm truncate">{formatShiftTitle(shift.start_time, shift.end_time)}</h3>
+									<h3 class="font-medium text-sm truncate">
+										{formatShiftTitle(shift.start_time, shift.end_time)}
+									</h3>
 									{#if shift.is_booked}
 										{#if shift.is_recurring_reservation}
 											<div class="flex items-center gap-1">

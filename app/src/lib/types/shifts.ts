@@ -14,4 +14,4 @@ export interface ProcessedShift extends Shift {
 	total_slots: number;
 }
 
-export type FilterOption = 'all' | 'tonight' | 'available' | 'urgent'; 
+export type FilterOption = 'all' | 'tonight' | 'available' | 'urgent';
