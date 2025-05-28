@@ -47,14 +47,13 @@
 
 	// Handle selecting a contact for editing
 	const selectContactForEditing = (contact: EmergencyContact) => {
-		goto(`/admin/emergency-contacts/${contact.id}`);
+		goto(`/admin/emergency-contacts?contactId=${contact.id}`);
 	};
 
-	// Get current selected contact ID from URL
+	// Get current selected contact ID from URL query parameters
 	const currentSelectedContactId = $derived(() => {
-		const pathParts = page.url.pathname.split('/');
-		const contactId = pathParts[pathParts.length - 1];
-		return contactId && !isNaN(Number(contactId)) ? Number(contactId) : undefined;
+		const contactId = page.url.searchParams.get('contactId');
+		return contactId ? Number(contactId) : undefined;
 	});
 
 	let { children } = $props();

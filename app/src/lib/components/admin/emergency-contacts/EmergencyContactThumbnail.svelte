@@ -22,7 +22,7 @@
 		: ''}"
 >
 	<a
-		href={`/admin/emergency-contacts/${contact.id}`}
+		href={`/admin/emergency-contacts?contactId=${contact.id}`}
 		class="flex items-center gap-2 w-full"
 		onclick={(event) => {
 			event.preventDefault();
