@@ -167,7 +167,13 @@
 						</h1>
 						<p class="text-sm text-muted-foreground">Ready for patrol</p>
 					</div>
-					<Button variant="destructive" size="sm" onclick={handleEmergency}>Emergency</Button>
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" href="/report">
+							<AlertTriangleIcon class="h-4 w-4 mr-2" />
+							Report
+						</Button>
+						<Button variant="destructive" size="sm" onclick={handleEmergency}>Emergency</Button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -219,25 +225,10 @@
 						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 						<h3 class="text-sm font-medium mb-1">No upcoming shifts</h3>
 						<p class="text-xs text-muted-foreground mb-3">Check available shifts below</p>
-						<Button size="sm" href="/shifts" variant="outline">Browse Shifts</Button>
+						<Button size="sm" href="/bookings" variant="outline">Browse Shifts</Button>
 					</Card.Content>
 				</Card.Root>
 			{/if}
-
-			<!-- Quick Actions -->
-			<div class="grid grid-cols-2 gap-3">
-				<Button href="/shifts" variant="outline" class="h-auto py-3 flex-col gap-1">
-					<CalendarIcon class="h-5 w-5" />
-					<span class="text-xs">Browse Shifts</span>
-				</Button>
-				<Button href="/report" variant="outline" class="h-auto py-3 flex-col gap-1">
-					<AlertTriangleIcon class="h-5 w-5" />
-					<span class="text-xs">Report Incident</span>
-				</Button>
-			</div>
-
-			<!-- Emergency Contacts -->
-			<EmergencyContacts />
 
 			<!-- Unfilled Shifts -->
 			{#if $availableShiftsQuery.isLoading}
@@ -286,7 +277,7 @@
 						{/each}
 						{#if availableShifts.length > 3}
 							<div class="mt-4 text-center">
-								<a href="/shifts" class="text-sm text-primary hover:underline">
+								<a href="/bookings" class="text-sm text-primary hover:underline">
 									View all {availableShifts.length} available shifts →
 								</a>
 							</div>
@@ -302,6 +293,9 @@
 					</Card.Content>
 				</Card.Root>
 			{/if}
+
+			<!-- Emergency Contacts -->
+			<EmergencyContacts />
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->

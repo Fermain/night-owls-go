@@ -50,10 +50,11 @@
 		
 		// Public routes
 		if (pathname === '/') return 'Night Owls';
-		if (pathname.startsWith('/shifts')) return 'Shifts';
-		if (pathname.startsWith('/broadcasts')) return 'Messages';
-		if (pathname.startsWith('/report')) return 'Report Incident';
-		if (pathname.startsWith('/bookings')) return 'My Bookings';
+		if (pathname === '/bookings') return 'My Shifts';
+		if (pathname === '/broadcasts') return 'Messages';
+		if (pathname === '/report') return 'Report Incident';
+		if (pathname === '/login') return 'Sign In';
+		if (pathname === '/register') return 'Join Community';
 		
 		return 'Night Owls';
 	});

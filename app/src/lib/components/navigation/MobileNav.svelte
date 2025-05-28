@@ -23,9 +23,9 @@
 			badge: null
 		},
 		{
-			href: '/shifts',
+			href: '/bookings',
 			icon: CalendarIcon,
-			label: 'Shifts',
+			label: 'My Shifts',
 			badge: null
 		},
 		{
@@ -38,12 +38,6 @@
 			href: '/report',
 			icon: AlertTriangleIcon,
 			label: 'Report',
-			badge: null
-		},
-		{
-			href: '/bookings',
-			icon: UserIcon,
-			label: 'My Shifts',
 			badge: null
 		}
 	];
@@ -135,7 +129,7 @@
 						<span>Join Community</span>
 					</a>
 					<a 
-						href="/shifts" 
+						href="/bookings" 
 						class="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
 						onclick={closeMenu}
 					>

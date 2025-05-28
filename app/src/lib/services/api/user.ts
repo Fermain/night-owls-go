@@ -103,6 +103,20 @@ export class UserApiService {
 	}
 
 	/**
+	 * Cancel a booking
+	 */
+	static async cancelBooking(bookingId: number): Promise<void> {
+		const response = await authenticatedFetch(`/bookings/${bookingId}`, {
+			method: 'DELETE'
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Failed to cancel booking: ${errorText}`);
+		}
+	}
+
+	/**
 	 * Submit an incident report for a booking
 	 */
 	static async submitReport(
