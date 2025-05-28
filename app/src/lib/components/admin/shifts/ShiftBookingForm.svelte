@@ -21,6 +21,7 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 
 	interface Props {
 		selectedShift: AdminShiftSlot;
@@ -234,27 +235,29 @@
 <div class="p-6">
 	<div class="max-w-2xl mx-auto">
 		<!-- Header with shift title -->
-		<div class="flex items-center justify-between mb-6">
-			<div>
-				<h1 class="text-2xl font-bold">
-					{getShiftTitle(selectedShift.start_time, selectedShift.end_time)}
-				</h1>
-				<div class="flex items-center gap-4 mt-2">
-					<div class="flex items-center gap-2 text-sm text-muted-foreground">
-						<ClockIcon class="h-4 w-4" />
-						{formatTimeSlot(selectedShift.start_time, selectedShift.end_time)}
-					</div>
-					<Badge
-						variant={isAssigned ? 'default' : 'secondary'}
-						class={isAssigned
-							? 'bg-green-100 text-green-700 border-green-200'
-							: 'bg-orange-100 text-orange-700 border-orange-200'}
-					>
-						{isAssigned ? 'Assigned' : 'Available'}
-					</Badge>
-				</div>
+		<div class="mb-6">
+			<div class="flex items-center justify-between">
+				<AdminPageHeader 
+					icon={ClockIcon}
+					heading="{getShiftTitle(selectedShift.start_time, selectedShift.end_time)}"
+					subheading="Manage shift assignment and team details"
+				/>
+				<Button variant="outline" onclick={handleBackToCalendar}>← Back</Button>
 			</div>
-			<Button variant="outline" onclick={handleBackToCalendar}>← Back</Button>
+			<div class="flex items-center gap-4 mt-4">
+				<div class="flex items-center gap-2 text-sm text-muted-foreground">
+					<ClockIcon class="h-4 w-4" />
+					{formatTimeSlot(selectedShift.start_time, selectedShift.end_time)}
+				</div>
+				<Badge
+					variant={isAssigned ? 'default' : 'secondary'}
+					class={isAssigned
+						? 'bg-green-100 text-green-700 border-green-200'
+						: 'bg-orange-100 text-orange-700 border-orange-200'}
+				>
+					{isAssigned ? 'Assigned' : 'Available'}
+				</Badge>
+			</div>
 		</div>
 
 		<!-- Current Assignment Display -->

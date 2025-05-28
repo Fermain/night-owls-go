@@ -14,12 +14,16 @@
 		maxItems = 10,
 		className = '',
 		showTitle = true,
-		title = 'Upcoming Shifts'
+		title = 'Upcoming Shifts',
+		hideHeading = false,
+		compactStyle = false
 	}: {
 		maxItems?: number;
 		className?: string;
 		showTitle?: boolean;
 		title?: string;
+		hideHeading?: boolean;
+		compactStyle?: boolean;
 	} = $props();
 
 	// Query for upcoming shifts
@@ -50,7 +54,7 @@
 </script>
 
 <div class="space-y-3 {className}">
-	{#if showTitle}
+	{#if showTitle && !hideHeading}
 		<div class="flex items-center gap-2">
 			<CalendarIcon class="h-4 w-4 text-muted-foreground" />
 			<h3 class="font-medium text-sm">{title}</h3>
@@ -59,9 +63,9 @@
 
 	{#if isLoading}
 		<!-- Loading skeletons -->
-		<div class="space-y-2">
+		<div class={compactStyle ? "space-y-0" : "space-y-2"}>
 			{#each Array(3) as _}
-				<div class="space-y-2 p-3 border rounded-lg">
+				<div class={compactStyle ? "space-y-2 p-3 border-b" : "space-y-2 p-3 border rounded-lg"}>
 					<Skeleton class="h-4 w-3/4" />
 					<Skeleton class="h-3 w-1/2" />
 					<Skeleton class="h-3 w-2/3" />
@@ -70,20 +74,22 @@
 		</div>
 	{:else if isError}
 		<!-- Error state -->
-		<div class="text-sm text-muted-foreground p-3 border rounded-lg border-destructive/20 bg-destructive/5">
+		<div class={compactStyle ? "text-sm text-muted-foreground p-3 border-b border-destructive/20 bg-destructive/5" : "text-sm text-muted-foreground p-3 border rounded-lg border-destructive/20 bg-destructive/5"}>
 			Failed to load upcoming shifts
 		</div>
 	{:else if shifts.length === 0}
 		<!-- Empty state -->
-		<div class="text-sm text-muted-foreground p-3 border rounded-lg text-center">
+		<div class={compactStyle ? "text-sm text-muted-foreground p-3 border-b text-center" : "text-sm text-muted-foreground p-3 border rounded-lg text-center"}>
 			No upcoming shifts in the next 2 weeks
 		</div>
 	{:else}
 		<!-- Shifts list -->
-		<div class="space-y-2">
+		<div class={compactStyle ? "space-y-0" : "space-y-2"}>
 			{#each shifts as shift (shift.schedule_id + shift.start_time)}
 				<div 
-					class="p-3 border rounded-lg hover:bg-muted/50 hover:border-muted-foreground/20 transition-all duration-200 cursor-pointer group"
+					class={compactStyle 
+						? "p-3 border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer group"
+						: "p-3 border rounded-lg hover:bg-muted/50 hover:border-muted-foreground/20 transition-all duration-200 cursor-pointer group"}
 					onclick={() => navigateToShiftDetail(shift)}
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {

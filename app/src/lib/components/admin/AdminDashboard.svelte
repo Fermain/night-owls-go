@@ -13,6 +13,8 @@
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import UserXIcon from '@lucide/svelte/icons/user-x';
 	import TrendingDownIcon from '@lucide/svelte/icons/trending-down';
+	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import type { AdminDashboardData } from '$lib/queries/admin/dashboard';
 
 	let {
@@ -162,12 +164,12 @@
 
 <div class="p-8">
 	<div class="max-w-full mx-auto">
-		<div class="mb-8">
-			<h1 class="text-3xl font-semibold mb-3">Admin Dashboard</h1>
-			<p class="text-muted-foreground text-lg">
-				Central hub for managing volunteers, schedules, and community watch operations
-			</p>
-		</div>
+		<AdminPageHeader 
+			icon={LayoutDashboardIcon}
+			heading="Admin Dashboard"
+			subheading="Central hub for managing volunteers, schedules, and community watch operations"
+			className="mb-8"
+		/>
 
 		{#if isLoading}
 			<!-- Loading Dashboard Skeletons -->

@@ -52,6 +52,10 @@ SET checked_in_at = ?
 WHERE booking_id = ?
 RETURNING *;
 
+-- name: DeleteBooking :exec
+DELETE FROM bookings
+WHERE booking_id = ?;
+
 -- Admin Dashboard Metrics Queries
 
 -- name: GetBookingMetrics :one

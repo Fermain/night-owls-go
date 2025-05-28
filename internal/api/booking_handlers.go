@@ -195,4 +195,56 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 
 	bookingResponse := ToBookingResponse(updatedBooking)
 	RespondWithJSON(w, http.StatusOK, bookingResponse, h.logger)
+}
+
+// CancelBookingHandler handles DELETE /bookings/{id}
+// @Summary Cancel a booking
+// @Description Cancel a user's booking if it's not too close to the shift start time
+// @Tags bookings
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Success 204 "Booking cancelled successfully"
+// @Failure 400 {object} ErrorResponse "Invalid booking ID or booking cannot be cancelled"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 403 {object} ErrorResponse "Not authorized to cancel this booking"
+// @Failure 404 {object} ErrorResponse "Booking not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bookings/{id} [delete]
+func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from JWT context
+	userID, ok := r.Context().Value(UserIDKey).(int64)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "User not authenticated", h.logger)
+		return
+	}
+
+	// Extract booking ID from URL
+	bookingIDStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "CancelBookingHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
+	
+	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
+	if err != nil || bookingID <= 0 {
+		h.logger.ErrorContext(r.Context(), "Failed to parse booking ID", "id_param", bookingIDStr, "error", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid booking ID", h.logger, "booking_id", bookingIDStr)
+		return
+	}
+
+	err = h.bookingService.CancelBooking(r.Context(), bookingID, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrBookingNotFound):
+			RespondWithError(w, http.StatusNotFound, "Booking not found", h.logger, "booking_id", bookingID, "error", err.Error())
+		case errors.Is(err, service.ErrForbiddenUpdate):
+			RespondWithError(w, http.StatusForbidden, "Not authorized to cancel this booking", h.logger, "booking_id", bookingID, "user_id", userID, "error", err.Error())
+		case errors.Is(err, service.ErrBookingCannotBeCancelled):
+			RespondWithError(w, http.StatusBadRequest, "Booking cannot be cancelled - shift has already started or is too close to start time", h.logger, "booking_id", bookingID, "error", err.Error())
+		default:
+			RespondWithError(w, http.StatusInternalServerError, "Failed to cancel booking", h.logger, "error", err.Error())
+		}
+		return
+	}
+
+	// Return 204 No Content for successful deletion
+	w.WriteHeader(http.StatusNoContent)
 } 

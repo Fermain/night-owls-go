@@ -63,6 +63,16 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (B
 	return i, err
 }
 
+const deleteBooking = `-- name: DeleteBooking :exec
+DELETE FROM bookings
+WHERE booking_id = ?
+`
+
+func (q *Queries) DeleteBooking(ctx context.Context, bookingID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteBooking, bookingID)
+	return err
+}
+
 const getBookingByID = `-- name: GetBookingByID :one
 SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
 WHERE booking_id = ?

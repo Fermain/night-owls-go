@@ -145,7 +145,10 @@
 <div class="p-6">
 	<div class="max-w-7xl mx-auto">
 		<div class="mb-6">
-			<h1 class="text-3xl font-semibold mb-3">Shifts Dashboard</h1>
+			<h1 class="text-2xl font-bold flex items-center gap-2 mb-3">
+				<CalendarIcon class="h-6 w-6" />
+				Shifts Dashboard
+			</h1>
 			<p class="text-muted-foreground text-lg">
 				Real-time overview of shift coverage, alerts, and assignment opportunities
 			</p>

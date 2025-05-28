@@ -17,6 +17,7 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import { authenticatedFetch } from '$lib/utils/api';
 
 	// Filter state
@@ -193,12 +194,11 @@
 
 <div class="p-6">
 	<div class="max-w-7xl mx-auto">
-		<div class="mb-6">
-			<h1 class="text-3xl font-bold mb-2">Reports Analytics</h1>
-			<p class="text-muted-foreground">
-				Analyze incident report patterns and trends
-			</p>
-		</div>
+		<AdminPageHeader 
+			icon={BarChartIcon}
+			heading="Reports Analytics"
+			subheading="Analyze incident report patterns and trends"
+		/>
 
 		<!-- Filters -->
 		<Card.Root class="p-6 mb-6">

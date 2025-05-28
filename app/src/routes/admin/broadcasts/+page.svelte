@@ -7,6 +7,8 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select';
 	import SendIcon from '@lucide/svelte/icons/send';
+	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { UserData } from '$lib/schemas/user';
 	import { createBroadcast } from '$lib/queries/admin/broadcasts';
@@ -109,11 +111,12 @@
 </svelte:head>
 
 <div class="p-6">
-	<div class="max-w-2xl mx-auto">
-		<div class="mb-6">
-			<h1 class="text-2xl font-semibold mb-2">Send Broadcast</h1>
-			<p class="text-muted-foreground">Compose and send a message to your users</p>
-		</div>
+	<div class="max-w-6xl mx-auto">
+		<AdminPageHeader 
+			icon={MessageSquareIcon}
+			heading="Send Broadcast"
+			subheading="Compose and send a message to your users"
+		/>
 
 		<!-- Send Broadcast Form -->
 		<Card.Root class="p-6">

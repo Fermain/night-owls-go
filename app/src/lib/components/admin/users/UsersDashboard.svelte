@@ -8,6 +8,8 @@
 	import TopVolunteers from './TopVolunteers.svelte';
 	import ShiftDistributionChart from './ShiftDistributionChart.svelte';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import type { UserData } from '$lib/schemas/user';
 	import type { AdminShiftSlot } from '$lib/types';
 	import {
@@ -55,12 +57,12 @@
 
 <div class="p-8">
 	<div class="max-w-full mx-auto">
-		<div class="mb-8">
-			<h1 class="text-3xl font-semibold mb-3">Users Dashboard</h1>
-			<p class="text-muted-foreground text-lg">
-				Overview of user registrations, roles, and shift distribution
-			</p>
-		</div>
+		<AdminPageHeader 
+			icon={UsersIcon}
+			heading="Users Dashboard"
+			subheading="Overview of user registrations, roles, and shift distribution"
+			className="mb-8"
+		/>
 
 		{#if isLoading}
 			<!-- Loading Dashboard Skeletons -->

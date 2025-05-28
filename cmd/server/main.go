@@ -257,6 +257,7 @@ func main() {
 	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
+	fuego.DeleteStd(protected, "/bookings/{id}", bookingAPIHandler.CancelBookingHandler)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
 	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)

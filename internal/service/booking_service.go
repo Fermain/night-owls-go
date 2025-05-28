@@ -22,6 +22,7 @@ var (
 	ErrBookingNotFound     = errors.New("booking not found")
 	ErrForbiddenUpdate     = errors.New("user not authorized to update this booking")
 	ErrCheckInTooEarly     = errors.New("check-in is too early - can only check in up to 30 minutes before shift starts")
+	ErrBookingCannotBeCancelled = errors.New("booking cannot be cancelled - shift has already started or is too close to start time")
 )
 
 // BookingService handles logic related to bookings.
@@ -218,6 +219,57 @@ func (s *BookingService) MarkCheckIn(ctx context.Context, bookingID int64, userI
 
 	s.logger.InfoContext(ctx, "Booking check-in marked successfully", "booking_id", updatedBooking.BookingID, "checked_in_at", updatedBooking.CheckedInAt)
 	return updatedBooking, nil
+}
+
+// CancelBooking handles cancelling a booking by the user who made it.
+func (s *BookingService) CancelBooking(ctx context.Context, bookingID int64, userIDFromAuth int64) error {
+	booking, err := s.querier.GetBookingByID(ctx, bookingID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "Booking not found for cancellation", "booking_id", bookingID)
+			return ErrBookingNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get booking by ID for cancellation", "booking_id", bookingID, "error", err)
+		return ErrInternalServer
+	}
+
+	// Authorization: Only the user who booked can cancel (or an admin, not implemented yet)
+	if booking.UserID != userIDFromAuth {
+		s.logger.WarnContext(ctx, "User forbidden to cancel booking", "booking_id", bookingID, "booking_owner_id", booking.UserID, "auth_user_id", userIDFromAuth)
+		return ErrForbiddenUpdate
+	}
+
+	// Business rule: Cannot cancel if shift has already started or is within 2 hours of starting
+	now := time.Now().UTC()
+	cancellationDeadline := booking.ShiftStart.Add(-2 * time.Hour) // 2 hours before shift start
+	if now.After(cancellationDeadline) {
+		s.logger.WarnContext(ctx, "Cancellation attempt too late", "booking_id", bookingID, "shift_start", booking.ShiftStart, "cancellation_deadline", cancellationDeadline, "current_time", now)
+		return ErrBookingCannotBeCancelled
+	}
+
+	// Delete the booking
+	err = s.querier.DeleteBooking(ctx, bookingID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete booking from DB", "booking_id", bookingID, "error", err)
+		return ErrInternalServer
+	}
+
+	s.logger.InfoContext(ctx, "Booking cancelled successfully", "booking_id", bookingID, "user_id", userIDFromAuth)
+
+	// Queue cancellation notification to outbox
+	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "cancelled_at": "%s"}`, 
+		bookingID, booking.UserID, booking.ShiftStart.Format(time.RFC3339), now.Format(time.RFC3339))
+	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
+		MessageType: "BOOKING_CANCELLATION",
+		Recipient:   fmt.Sprintf("%d", booking.UserID),
+		Payload:     sql.NullString{String: outboxPayload, Valid: true},
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create outbox item for booking cancellation", "booking_id", bookingID, "error", err)
+		// Non-fatal for cancellation itself, but log it.
+	}
+
+	return nil
 }
 
 // AdminAssignUserToShift handles the logic for an admin assigning a user to a specific shift slot.

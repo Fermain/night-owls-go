@@ -5,6 +5,8 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Card from '$lib/components/ui/card';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { toast } from 'svelte-sonner';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
@@ -171,18 +173,17 @@
 	}
 </script>
 
-<div class="container mx-auto p-6 max-w-2xl">
+<div class="container mx-auto p-6 max-w-6xl">
+	<AdminPageHeader 
+		icon={PhoneIcon}
+		heading="{title}"
+		subheading="{isEditing 
+			? 'Update the emergency contact information' 
+			: 'Add a new emergency contact for the community'}"
+	/>
+	
 	<Card.Root>
-		<Card.Header>
-			<Card.Title>{title}</Card.Title>
-			<Card.Description>
-				{isEditing 
-					? 'Update the emergency contact information' 
-					: 'Add a new emergency contact for the community'}
-			</Card.Description>
-		</Card.Header>
-		
-		<Card.Content>
+		<Card.Content class="p-6">
 			<form onsubmit={handleSubmit} class="space-y-4">
 				<div class="space-y-2">
 					<Label for="name">Name *</Label>

@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
+	import UserIcon from '@lucide/svelte/icons/user';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { PhoneInput } from '$lib/components/ui/phone-input';
@@ -15,8 +16,10 @@
 	import UserRoleChangeDialog from '$lib/components/admin/dialogs/UserRoleChangeDialog.svelte';
 	import { BookingsApiService, type BookingResponse } from '$lib/services/api/bookings';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { CalendarIcon, ClockIcon, UserIcon, CheckCircleIcon, XCircleIcon } from 'lucide-svelte';
+	import { CalendarIcon, ClockIcon } from 'lucide-svelte';
+	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import { format, isPast } from 'date-fns';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 
 	// Use $props() for Svelte 5 runes mode
 	let { user }: { user?: UserData } = $props();
@@ -198,9 +201,11 @@
 </svelte:head>
 
 <div class="container mr-auto p-4">
-	<h1 class="text-2xl font-bold mb-6">
-		{user?.id !== undefined ? 'Edit' : 'Create New'} User
-	</h1>
+	<AdminPageHeader 
+		icon={UserIcon}
+		heading="{user?.id !== undefined ? 'Edit' : 'Create New'} User"
+		subheading="{user?.id !== undefined ? 'Update user information and manage their account' : 'Add a new user to the community watch system'}"
+	/>
 
 	<form
 		onsubmit={(event) => {

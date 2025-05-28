@@ -26,6 +26,7 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportDetail from '$lib/components/admin/reports/ReportDetail.svelte';
 	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
+	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 
 	// Get current selected report ID from URL
 	const currentSelectedReportId = $derived.by(() => {
@@ -283,17 +284,14 @@
 		<div class="max-w-7xl mx-auto">
 			<div class="mb-6">
 				<div class="flex items-center justify-between">
-					<div>
-						<h1 class="text-3xl font-bold mb-2">
-							{showArchived ? 'Archived' : 'Active'} Incident Reports
-						</h1>
-						<p class="text-muted-foreground">
-							{showArchived 
-								? 'View and manage archived incident reports' 
-								: 'Monitor and analyze incident reports submitted by volunteers during shifts'
-							}
-						</p>
-					</div>
+					<AdminPageHeader 
+						icon={FileTextIcon}
+						heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
+						subheading="{showArchived 
+							? 'View and manage archived incident reports' 
+							: 'Monitor and analyze incident reports submitted by volunteers during shifts'
+						}"
+					/>
 					<div class="flex gap-2">
 						<div class="flex border rounded-lg p-1">
 							<Button 
