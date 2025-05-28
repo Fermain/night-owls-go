@@ -10,10 +10,7 @@
 	import { getSeverityLabel } from '$lib/utils/reports';
 	import type { components } from '$lib/types/api';
 
-	type ReportResponse = components['schemas']['api.ReportResponse'] & {
-		user_name: string;
-		schedule_name: string;
-	};
+	type AdminReport = components['schemas']['api.AdminReportResponse'];
 
 	let searchTerm = $state('');
 	let { children } = $props();
@@ -42,7 +39,7 @@
 					throw new Error(`Failed to fetch reports: ${response.status}`);
 				}
 				const data = await response.json();
-				return data as ReportResponse[];
+				return data as AdminReport[];
 			}
 		})
 	);
@@ -69,7 +66,7 @@
 	});
 
 	// Handle selecting a report from the dynamic list
-	const selectReportForViewing = (report: ReportResponse) => {
+	const selectReportForViewing = (report: AdminReport) => {
 		goto(`/admin/reports?reportId=${report.report_id}`);
 	};
 

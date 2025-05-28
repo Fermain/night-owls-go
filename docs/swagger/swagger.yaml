@@ -1,19 +1,116 @@
 basePath: /
 definitions:
+  api.APIError:
+    properties:
+      code:
+        type: string
+      details:
+        allOf:
+        - $ref: '#/definitions/api.ErrorDetails'
+        description: Detailed error information (development only)
+      error:
+        description: Core error information
+        type: string
+      message:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      request_id:
+        description: Request context for debugging
+        type: string
+      timestamp:
+        type: string
+      validation_errors:
+        description: Validation errors (for input validation failures)
+        items:
+          $ref: '#/definitions/api.ValidationError'
+        type: array
+    type: object
+  api.AdminReportResponse:
+    properties:
+      archived_at:
+        type: string
+      booking_id:
+        type: integer
+      created_at:
+        type: string
+      gps_accuracy:
+        type: number
+      gps_timestamp:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      message:
+        type: string
+      report_id:
+        type: integer
+      schedule_id:
+        type: integer
+      schedule_name:
+        type: string
+      severity:
+        type: integer
+      shift_end:
+        type: string
+      shift_start:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      user_phone:
+        type: string
+    type: object
+  api.AssignUserToShiftRequest:
+    properties:
+      schedule_id:
+        type: integer
+      start_time:
+        type: string
+      user_id:
+        type: integer
+    type: object
   api.BookingResponse:
     properties:
-      attended:
-        type: boolean
       booking_id:
         type: integer
       buddy_name:
         type: string
       buddy_user_id:
         type: integer
+      checked_in_at:
+        type: string
       created_at:
         type: string
       schedule_id:
         type: integer
+      shift_end:
+        type: string
+      shift_start:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  api.BookingWithScheduleResponse:
+    properties:
+      booking_id:
+        type: integer
+      buddy_name:
+        type: string
+      buddy_user_id:
+        type: integer
+      checked_in_at:
+        type: string
+      created_at:
+        type: string
+      schedule_id:
+        type: integer
+      schedule_name:
+        type: string
       shift_end:
         type: string
       shift_start:
@@ -30,26 +127,133 @@ definitions:
       schedule_id:
         type: integer
       start_time:
-        description: Expected in RFC3339 format e.g. "2025-05-10T18:00:00Z"
         type: string
     type: object
-  api.CreateReportRequest:
+  api.CreateEmergencyContactRequest:
     properties:
+      description:
+        type: string
+      display_order:
+        type: integer
+      is_default:
+        type: boolean
+      name:
+        type: string
+      number:
+        type: string
+    type: object
+  api.CreateOffShiftReportRequest:
+    properties:
+      accuracy:
+        type: number
+      latitude:
+        type: number
+      location_timestamp:
+        type: string
+      longitude:
+        type: number
       message:
         type: string
       severity:
         description: 0, 1, or 2
         type: integer
     type: object
+  api.CreateReportRequest:
+    properties:
+      accuracy:
+        type: number
+      latitude:
+        type: number
+      location_timestamp:
+        type: string
+      longitude:
+        type: number
+      message:
+        type: string
+      severity:
+        description: 0, 1, or 2
+        type: integer
+    type: object
+  api.DevLoginRequest:
+    properties:
+      phone:
+        type: string
+    type: object
+  api.DevLoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        properties:
+          id:
+            type: integer
+          name:
+            type: string
+          phone:
+            type: string
+          role:
+            type: string
+        type: object
+    type: object
+  api.EmergencyContactResponse:
+    properties:
+      description:
+        type: string
+      display_order:
+        type: integer
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      name:
+        type: string
+      number:
+        type: string
+    type: object
+  api.ErrorDetails:
+    properties:
+      context:
+        additionalProperties: true
+        type: object
+      internal_message:
+        type: string
+      stack_trace:
+        type: string
+      type:
+        type: string
+    type: object
   api.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  api.MarkAttendanceRequest:
+  api.ExampleRequest:
     properties:
-      attended:
-        type: boolean
+      age:
+        type: integer
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+  api.ExampleResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      request_id:
+        type: string
     type: object
   api.RegisterRequest:
     properties:
@@ -60,6 +264,9 @@ definitions:
     type: object
   api.RegisterResponse:
     properties:
+      dev_otp:
+        description: Development only - include OTP for easier testing
+        type: string
       message:
         type: string
     type: object
@@ -93,6 +300,19 @@ definitions:
       timezone:
         type: string
     type: object
+  api.UpdateEmergencyContactRequest:
+    properties:
+      description:
+        type: string
+      display_order:
+        type: integer
+      is_default:
+        type: boolean
+      name:
+        type: string
+      number:
+        type: string
+    type: object
   api.UserAPIResponse:
     properties:
       created_at:
@@ -105,6 +325,17 @@ definitions:
         type: string
       role:
         description: Added role
+        type: string
+    type: object
+  api.ValidationError:
+    properties:
+      code:
+        type: string
+      field:
+        type: string
+      message:
+        type: string
+      value:
         type: string
     type: object
   api.VerifyRequest:
@@ -136,8 +367,25 @@ definitions:
       phone:
         type: string
       role:
-        description: Optional role, assuming we'll add update role logic later
+        description: Make role required since frontend always sends it
         type: string
+    type: object
+  service.AdminDashboard:
+    properties:
+      generated_at:
+        type: string
+      member_contributions:
+        items:
+          $ref: '#/definitions/service.MemberContribution'
+        type: array
+      metrics:
+        $ref: '#/definitions/service.DashboardMetrics'
+      problematic_slots:
+        items:
+          $ref: '#/definitions/service.TimeSlotPattern'
+        type: array
+      quality_metrics:
+        $ref: '#/definitions/service.QualityMetrics'
     type: object
   service.AvailableShiftSlot:
     properties:
@@ -155,6 +403,74 @@ definitions:
       timezone:
         type: string
     type: object
+  service.DashboardMetrics:
+    properties:
+      booked_shifts:
+        type: integer
+      check_in_rate:
+        type: number
+      checked_in_shifts:
+        type: integer
+      completed_shifts:
+        type: integer
+      completion_rate:
+        type: number
+      fill_rate:
+        type: number
+      next_week_unfilled:
+        type: integer
+      this_weekend_status:
+        type: string
+      total_shifts:
+        type: integer
+      unfilled_shifts:
+        type: integer
+    type: object
+  service.MemberContribution:
+    properties:
+      attendance_rate:
+        type: number
+      completion_rate:
+        type: number
+      contribution_category:
+        type: string
+      last_shift_date:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      shifts_attended:
+        type: integer
+      shifts_booked:
+        type: integer
+      shifts_completed:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  service.QualityMetrics:
+    properties:
+      incomplete_rate:
+        type: number
+      no_show_rate:
+        type: number
+      reliability_score:
+        type: number
+    type: object
+  service.TimeSlotPattern:
+    properties:
+      check_in_rate:
+        type: number
+      completion_rate:
+        type: number
+      day_of_week:
+        type: string
+      hour_of_day:
+        type: string
+      total_bookings:
+        type: integer
+    type: object
 host: localhost:5888
 info:
   contact:
@@ -168,6 +484,473 @@ info:
   title: Community Watch Shift Scheduler API
   version: "1.0"
 paths:
+  /api/admin/bookings/assign:
+    post:
+      consumes:
+      - application/json
+      description: Allows an admin to book a specific user for a given schedule ID
+        and start time.
+      parameters:
+      - description: Assignment details (schedule_id, start_time, user_id)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.AssignUserToShiftRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Booking created successfully for the user
+          schema:
+            $ref: '#/definitions/api.BookingResponse'
+        "400":
+          description: Invalid request format or data (e.g., missing fields, invalid
+            user/schedule)
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - admin authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - user does not have admin privileges
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User or Schedule not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Slot already booked or other conflict
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign a user to a specific shift slot (Admin)
+      tags:
+      - admin-bookings
+  /api/admin/dashboard:
+    get:
+      description: Returns comprehensive dashboard metrics including unfilled shifts,
+        member contributions, and quality metrics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard metrics
+          schema:
+            $ref: '#/definitions/service.AdminDashboard'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get admin dashboard metrics
+      tags:
+      - admin-dashboard
+  /api/admin/emergency-contacts:
+    get:
+      description: Returns all emergency contacts for admin management
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of emergency contacts
+          schema:
+            items:
+              $ref: '#/definitions/api.EmergencyContactResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Get emergency contacts'
+      tags:
+      - admin-emergency-contacts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new emergency contact
+      parameters:
+      - description: Emergency contact data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateEmergencyContactRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created emergency contact
+          schema:
+            $ref: '#/definitions/api.EmergencyContactResponse'
+        "400":
+          description: Invalid request data
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Create emergency contact'
+      tags:
+      - admin-emergency-contacts
+  /api/admin/emergency-contacts/{id}:
+    delete:
+      description: Deletes an emergency contact (cannot delete default contact)
+      parameters:
+      - description: Emergency Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Emergency contact deleted successfully
+        "400":
+          description: Invalid contact ID or cannot delete default contact
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Emergency contact not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Delete emergency contact'
+      tags:
+      - admin-emergency-contacts
+    get:
+      description: Returns a specific emergency contact by ID
+      parameters:
+      - description: Emergency Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Emergency contact details
+          schema:
+            $ref: '#/definitions/api.EmergencyContactResponse'
+        "400":
+          description: Invalid contact ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Emergency contact not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Get emergency contact by ID'
+      tags:
+      - admin-emergency-contacts
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing emergency contact
+      parameters:
+      - description: Emergency Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Emergency contact data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateEmergencyContactRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated emergency contact
+          schema:
+            $ref: '#/definitions/api.EmergencyContactResponse'
+        "400":
+          description: Invalid request data
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Emergency contact not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Update emergency contact'
+      tags:
+      - admin-emergency-contacts
+  /api/admin/emergency-contacts/{id}/default:
+    put:
+      description: Sets a specific emergency contact as the default
+      parameters:
+      - description: Emergency Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Default emergency contact updated successfully
+        "400":
+          description: Invalid contact ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - admin access required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Emergency contact not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Admin: Set default emergency contact'
+      tags:
+      - admin-emergency-contacts
+  /api/admin/reports:
+    get:
+      description: Get all incident reports with full context including user and schedule
+        information
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: Filter by severity (0=info, 1=warning, 2=critical)
+        in: query
+        name: severity
+        type: integer
+      - description: Filter by schedule ID
+        in: query
+        name: schedule_id
+        type: integer
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of reports with full context
+          schema:
+            items:
+              $ref: '#/definitions/api.AdminReportResponse'
+            type: array
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all reports (Admin)
+      tags:
+      - admin/reports
+  /api/admin/reports/{id}:
+    get:
+      description: Get a specific report with full context by ID
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Report with full context
+          schema:
+            $ref: '#/definitions/api.AdminReportResponse'
+        "400":
+          description: Invalid report ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Report not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a specific report (Admin)
+      tags:
+      - admin/reports
+  /api/admin/reports/{id}/archive:
+    put:
+      description: Archive a specific report by ID (soft delete)
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid report ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Report not found or already archived
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Archive a report (Admin)
+      tags:
+      - admin/reports
+  /api/admin/reports/{id}/unarchive:
+    put:
+      description: Unarchive a specific report by ID
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid report ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unarchive a report (Admin)
+      tags:
+      - admin/reports
+  /api/admin/reports/archived:
+    get:
+      description: Get all archived reports with full context
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of archived reports
+          schema:
+            items:
+              $ref: '#/definitions/api.AdminReportResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List archived reports (Admin)
+      tags:
+      - admin/reports
   /api/admin/users:
     get:
       description: Get a list of all users in the system. Requires admin authentication.
@@ -322,6 +1105,163 @@ paths:
       summary: Update a user (Admin)
       tags:
       - admin/users
+  /api/admin/users/{userId}/bookings:
+    get:
+      description: Allows an admin to view all bookings (past and future) for a specific
+        user.
+      parameters:
+      - description: User ID
+        example: 42
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bookings for the user with schedule names
+          schema:
+            items:
+              $ref: '#/definitions/api.BookingWithScheduleResponse'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - admin authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - user does not have admin privileges
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all bookings for a specific user (Admin)
+      tags:
+      - admin-bookings
+  /api/admin/users/bulk-delete:
+    post:
+      consumes:
+      - application/json
+      description: Delete multiple users by their IDs. Requires admin authentication.
+      parameters:
+      - description: List of user IDs to delete
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            user_ids:
+              items:
+                type: integer
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request or no user IDs provided
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Bulk delete users (Admin)
+      tags:
+      - admin/users
+  /api/emergency-contacts:
+    get:
+      description: Returns all active emergency contacts for public use
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of emergency contacts
+          schema:
+            items:
+              $ref: '#/definitions/api.EmergencyContactResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get emergency contacts
+      tags:
+      - emergency-contacts
+  /api/emergency-contacts/default:
+    get:
+      description: Returns the default emergency contact (usually RUSA)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Default emergency contact
+          schema:
+            $ref: '#/definitions/api.EmergencyContactResponse'
+        "404":
+          description: No default emergency contact found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get default emergency contact
+      tags:
+      - emergency-contacts
+  /auth/dev-login:
+    post:
+      consumes:
+      - application/json
+      description: Bypasses OTP and directly generates JWT token for testing (DEV
+        MODE ONLY)
+      parameters:
+      - description: Phone number for dev login
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.DevLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token generated successfully
+          schema:
+            $ref: '#/definitions/api.DevLoginResponse'
+        "400":
+          description: Invalid request or dev mode disabled
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Development-only direct login endpoint
+      tags:
+      - auth
   /auth/register:
     post:
       consumes:
@@ -432,32 +1372,23 @@ paths:
       summary: Create a new booking
       tags:
       - bookings
-  /bookings/{id}/attendance:
-    patch:
-      consumes:
-      - application/json
-      description: Updates a booking to record whether the volunteer attended
+  /bookings/{id}:
+    delete:
+      description: Cancel a user's booking if it's not too close to the shift start
+        time
       parameters:
       - description: Booking ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Attendance status
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.MarkAttendanceRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: Attendance marked successfully
-          schema:
-            $ref: '#/definitions/api.BookingResponse'
+        "204":
+          description: Booking cancelled successfully
         "400":
-          description: Invalid request format
+          description: Invalid booking ID or booking cannot be cancelled
           schema:
             $ref: '#/definitions/api.ErrorResponse'
         "401":
@@ -465,7 +1396,7 @@ paths:
           schema:
             $ref: '#/definitions/api.ErrorResponse'
         "403":
-          description: Forbidden - not authorized to mark this booking
+          description: Not authorized to cancel this booking
           schema:
             $ref: '#/definitions/api.ErrorResponse'
         "404":
@@ -478,7 +1409,48 @@ paths:
             $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Mark attendance for a booking
+      summary: Cancel a booking
+      tags:
+      - bookings
+  /bookings/{id}/checkin:
+    post:
+      description: Mark the user as checked in to their booked shift with a timestamp
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Check-in marked successfully
+          schema:
+            $ref: '#/definitions/api.BookingResponse'
+        "400":
+          description: Invalid booking ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Not authorized to check in to this booking
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check in to a booking
       tags:
       - bookings
   /bookings/{id}/report:
@@ -528,6 +1500,97 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a report for a booking
+      tags:
+      - reports
+  /bookings/my:
+    get:
+      description: Returns all bookings for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's bookings with schedule names
+          schema:
+            items:
+              $ref: '#/definitions/api.BookingWithScheduleResponse'
+            type: array
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user's bookings
+      tags:
+      - bookings
+  /examples:
+    post:
+      consumes:
+      - application/json
+      description: Creates an example resource with comprehensive request validation
+      parameters:
+      - description: Example data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ExampleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Example created successfully
+          schema:
+            $ref: '#/definitions/api.ExampleResponse'
+        "400":
+          description: Validation error with detailed field information
+          schema:
+            $ref: '#/definitions/api.APIError'
+        "500":
+          description: Internal server error with request tracking
+          schema:
+            $ref: '#/definitions/api.APIError'
+      summary: Create example with validation
+      tags:
+      - examples
+  /reports/off-shift:
+    post:
+      consumes:
+      - application/json
+      description: Submits an incident report when not on a scheduled shift
+      parameters:
+      - description: Report details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateOffShiftReportRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Report created successfully
+          schema:
+            $ref: '#/definitions/api.ReportResponse'
+        "400":
+          description: Invalid request format or severity out of range
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an off-shift report
       tags:
       - reports
   /schedules:

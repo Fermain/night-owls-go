@@ -3,19 +3,16 @@
 	import { getSeverityIcon, getSeverityColor } from '$lib/utils/reports';
 	import { formatRelativeTime } from '$lib/utils/dateFormatting';
 
-	type Report = components['schemas']['api.ReportResponse'] & {
-		user_name: string;
-		schedule_name: string;
-	};
+	type AdminReport = components['schemas']['api.AdminReportResponse'];
 
 	let {
 		report,
 		isSelected = false,
 		onSelect
 	}: {
-		report: Report;
+		report: AdminReport;
 		isSelected?: boolean;
-		onSelect: (report: Report) => void;
+		onSelect: (report: AdminReport) => void;
 	} = $props();
 
 	const SeverityIcon = $derived(getSeverityIcon(report.severity ?? 0));

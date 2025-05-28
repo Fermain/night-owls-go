@@ -21,7 +21,7 @@
 		"test:e2e:debug": "playwright test --debug",
 		"test:e2e:critical": "playwright test critical-user-journeys.test.ts",
 		"convert:swagger": "swagger2openapi ../docs/swagger/swagger.json -o ../docs/swagger/openapi.json",
-		"generate:api-types": "openapi-typescript ../docs/swagger/openapi.json --output src/lib/types/api.d.ts",
+		"generate:api-types": "npx swagger2openapi ../docs/swagger/swagger.json --outfile ../docs/swagger/openapi-converted.json && openapi-typescript ../docs/swagger/openapi-converted.json --output src/lib/types/api.d.ts",
 		"generate:api-types:all": "npm run convert:swagger && npm run generate:api-types"
 	},
 	"devDependencies": {

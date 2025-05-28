@@ -2,6 +2,7 @@ import { authenticatedFetch } from '$lib/utils/api';
 import type { components } from '$lib/types/api';
 
 type ReportResponse = components['schemas']['api.ReportResponse'];
+type AdminReportResponse = components['schemas']['api.AdminReportResponse'];
 type CreateReportRequest = components['schemas']['api.CreateReportRequest'];
 
 export class ReportsApiService {
@@ -14,7 +15,7 @@ export class ReportsApiService {
 		severity?: number;
 		user_id?: number;
 		booking_id?: number;
-	}): Promise<ReportResponse[]> {
+	}): Promise<AdminReportResponse[]> {
 		const searchParams = new URLSearchParams();
 		if (params?.from) searchParams.append('from', params.from);
 		if (params?.to) searchParams.append('to', params.to);
@@ -34,7 +35,7 @@ export class ReportsApiService {
 	/**
 	 * Get a specific report by ID
 	 */
-	static async getById(reportId: number): Promise<ReportResponse> {
+	static async getById(reportId: number): Promise<AdminReportResponse> {
 		const response = await authenticatedFetch(`/api/admin/reports/${reportId}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch report ${reportId}: ${response.status}`);
@@ -77,7 +78,9 @@ export class ReportsApiService {
 			body: JSON.stringify(payload)
 		});
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ message: 'Failed to create off-shift report' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ message: 'Failed to create off-shift report' }));
 			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
 		}
 		return response.json();
@@ -92,7 +95,7 @@ export class ReportsApiService {
 			message: string;
 			severity: number;
 		}
-	): Promise<ReportResponse> {
+	): Promise<AdminReportResponse> {
 		const response = await authenticatedFetch(`/api/admin/reports/${reportId}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -127,7 +130,7 @@ export class ReportsApiService {
 	/**
 	 * Get reports for a specific booking
 	 */
-	static async getByBookingId(bookingId: number): Promise<ReportResponse[]> {
+	static async getByBookingId(bookingId: number): Promise<AdminReportResponse[]> {
 		const response = await authenticatedFetch(`/api/admin/bookings/${bookingId}/reports`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch reports for booking ${bookingId}: ${response.status}`);
@@ -138,7 +141,7 @@ export class ReportsApiService {
 	/**
 	 * Get reports by a specific user
 	 */
-	static async getByUserId(userId: number): Promise<ReportResponse[]> {
+	static async getByUserId(userId: number): Promise<AdminReportResponse[]> {
 		const response = await authenticatedFetch(`/api/admin/users/${userId}/reports`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch reports for user ${userId}: ${response.status}`);
