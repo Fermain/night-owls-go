@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"night-owls-go/internal/service"
 
@@ -30,14 +31,22 @@ func NewReportHandler(reportService *service.ReportService, logger *slog.Logger)
 
 // CreateReportRequest is the expected JSON for POST /bookings/{id}/report.
 type CreateReportRequest struct {
-	Severity int32  `json:"severity"` // 0, 1, or 2
-	Message  string `json:"message,omitempty"`
+	Severity          int32   `json:"severity"` // 0, 1, or 2
+	Message           string  `json:"message,omitempty"`
+	Latitude          *float64 `json:"latitude,omitempty"`
+	Longitude         *float64 `json:"longitude,omitempty"`
+	Accuracy          *float64 `json:"accuracy,omitempty"`
+	LocationTimestamp *string  `json:"location_timestamp,omitempty"`
 }
 
 // CreateOffShiftReportRequest is the expected JSON for POST /reports/off-shift.
 type CreateOffShiftReportRequest struct {
-	Severity int32  `json:"severity"` // 0, 1, or 2
-	Message  string `json:"message,omitempty"`
+	Severity          int32   `json:"severity"` // 0, 1, or 2
+	Message           string  `json:"message,omitempty"`
+	Latitude          *float64 `json:"latitude,omitempty"`
+	Longitude         *float64 `json:"longitude,omitempty"`
+	Accuracy          *float64 `json:"accuracy,omitempty"`
+	LocationTimestamp *string  `json:"location_timestamp,omitempty"`
 }
 
 // CreateReportHandler handles POST /bookings/{id}/report
@@ -111,7 +120,24 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 		messageSQL.Valid = true
 	}
 
-	report, err := h.reportService.CreateReport(r.Context(), userID, bookingID, req.Severity, messageSQL.String)
+	// Parse GPS location data
+	var gpsLocation *service.GPSLocation
+	if req.Latitude != nil && req.Longitude != nil {
+		gpsLocation = &service.GPSLocation{
+			Latitude:  req.Latitude,
+			Longitude: req.Longitude,
+			Accuracy:  req.Accuracy,
+		}
+		
+		// Parse timestamp if provided
+		if req.LocationTimestamp != nil {
+			if parsedTime, err := time.Parse(time.RFC3339, *req.LocationTimestamp); err == nil {
+				gpsLocation.Timestamp = &parsedTime
+			}
+		}
+	}
+
+	report, err := h.reportService.CreateReport(r.Context(), userID, bookingID, req.Severity, messageSQL.String, gpsLocation)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrReportBookingAuth):
@@ -175,7 +201,24 @@ func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *ht
 		messageSQL.Valid = true
 	}
 
-	report, err := h.reportService.CreateOffShiftReport(r.Context(), userID, req.Severity, messageSQL.String)
+	// Parse GPS location data
+	var gpsLocation *service.GPSLocation
+	if req.Latitude != nil && req.Longitude != nil {
+		gpsLocation = &service.GPSLocation{
+			Latitude:  req.Latitude,
+			Longitude: req.Longitude,
+			Accuracy:  req.Accuracy,
+		}
+		
+		// Parse timestamp if provided
+		if req.LocationTimestamp != nil {
+			if parsedTime, err := time.Parse(time.RFC3339, *req.LocationTimestamp); err == nil {
+				gpsLocation.Timestamp = &parsedTime
+			}
+		}
+	}
+
+	report, err := h.reportService.CreateOffShiftReport(r.Context(), userID, req.Severity, messageSQL.String, gpsLocation)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrSeverityOutOfRange):

@@ -48,6 +48,10 @@ type AdminReportResponse struct {
 	ScheduleName string     `json:"schedule_name"`
 	ShiftStart   time.Time  `json:"shift_start"`
 	ShiftEnd     time.Time  `json:"shift_end"`
+	Latitude     *float64   `json:"latitude,omitempty"`
+	Longitude    *float64   `json:"longitude,omitempty"`
+	GPSAccuracy  *float64   `json:"gps_accuracy,omitempty"`
+	GPSTimestamp *time.Time `json:"gps_timestamp,omitempty"`
 }
 
 // AdminListReportsHandler handles GET /api/admin/reports
@@ -123,6 +127,20 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 		// Handle nullable message field
 		if report.Message.Valid {
 			apiReport.Message = report.Message.String
+		}
+
+		// Handle GPS fields
+		if report.Latitude.Valid {
+			apiReport.Latitude = &report.Latitude.Float64
+		}
+		if report.Longitude.Valid {
+			apiReport.Longitude = &report.Longitude.Float64
+		}
+		if report.GpsAccuracy.Valid {
+			apiReport.GPSAccuracy = &report.GpsAccuracy.Float64
+		}
+		if report.GpsTimestamp.Valid {
+			apiReport.GPSTimestamp = &report.GpsTimestamp.Time
 		}
 
 		apiReports = append(apiReports, apiReport)
@@ -222,6 +240,20 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 	// Handle nullable message field
 	if report.Message.Valid {
 		apiReport.Message = report.Message.String
+	}
+
+	// Handle GPS fields
+	if report.Latitude.Valid {
+		apiReport.Latitude = &report.Latitude.Float64
+	}
+	if report.Longitude.Valid {
+		apiReport.Longitude = &report.Longitude.Float64
+	}
+	if report.GpsAccuracy.Valid {
+		apiReport.GPSAccuracy = &report.GpsAccuracy.Float64
+	}
+	if report.GpsTimestamp.Valid {
+		apiReport.GPSTimestamp = &report.GpsTimestamp.Time
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiReport, h.logger)
@@ -364,6 +396,20 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 		// Handle nullable message field
 		if report.Message.Valid {
 			apiReport.Message = report.Message.String
+		}
+
+		// Handle GPS fields
+		if report.Latitude.Valid {
+			apiReport.Latitude = &report.Latitude.Float64
+		}
+		if report.Longitude.Valid {
+			apiReport.Longitude = &report.Longitude.Float64
+		}
+		if report.GpsAccuracy.Valid {
+			apiReport.GPSAccuracy = &report.GpsAccuracy.Float64
+		}
+		if report.GpsTimestamp.Valid {
+			apiReport.GPSTimestamp = &report.GpsTimestamp.Time
 		}
 
 		apiReports = append(apiReports, apiReport)

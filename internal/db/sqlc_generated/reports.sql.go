@@ -20,6 +20,10 @@ SELECT
     r.message,
     r.created_at,
     r.archived_at,
+    r.latitude,
+    r.longitude,
+    r.gps_accuracy,
+    r.gps_timestamp,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -34,19 +38,23 @@ WHERE r.report_id = ?
 `
 
 type AdminGetReportWithContextRow struct {
-	ReportID     int64          `json:"report_id"`
-	BookingID    sql.NullInt64  `json:"booking_id"`
-	UserID       sql.NullInt64  `json:"user_id"`
-	Severity     int64          `json:"severity"`
-	Message      sql.NullString `json:"message"`
-	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   sql.NullTime   `json:"archived_at"`
-	UserName     string         `json:"user_name"`
-	UserPhone    string         `json:"user_phone"`
-	ScheduleID   int64          `json:"schedule_id"`
-	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   interface{}    `json:"shift_start"`
-	ShiftEnd     interface{}    `json:"shift_end"`
+	ReportID     int64           `json:"report_id"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	ArchivedAt   sql.NullTime    `json:"archived_at"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	UserName     string          `json:"user_name"`
+	UserPhone    string          `json:"user_phone"`
+	ScheduleID   int64           `json:"schedule_id"`
+	ScheduleName string          `json:"schedule_name"`
+	ShiftStart   interface{}     `json:"shift_start"`
+	ShiftEnd     interface{}     `json:"shift_end"`
 }
 
 func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error) {
@@ -60,6 +68,10 @@ func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64)
 		&i.Message,
 		&i.CreatedAt,
 		&i.ArchivedAt,
+		&i.Latitude,
+		&i.Longitude,
+		&i.GpsAccuracy,
+		&i.GpsTimestamp,
 		&i.UserName,
 		&i.UserPhone,
 		&i.ScheduleID,
@@ -79,6 +91,10 @@ SELECT
     r.message,
     r.created_at,
     r.archived_at,
+    r.latitude,
+    r.longitude,
+    r.gps_accuracy,
+    r.gps_timestamp,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -94,19 +110,23 @@ ORDER BY r.archived_at DESC
 `
 
 type AdminListArchivedReportsWithContextRow struct {
-	ReportID     int64          `json:"report_id"`
-	BookingID    sql.NullInt64  `json:"booking_id"`
-	UserID       sql.NullInt64  `json:"user_id"`
-	Severity     int64          `json:"severity"`
-	Message      sql.NullString `json:"message"`
-	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   sql.NullTime   `json:"archived_at"`
-	UserName     string         `json:"user_name"`
-	UserPhone    string         `json:"user_phone"`
-	ScheduleID   int64          `json:"schedule_id"`
-	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   interface{}    `json:"shift_start"`
-	ShiftEnd     interface{}    `json:"shift_end"`
+	ReportID     int64           `json:"report_id"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	ArchivedAt   sql.NullTime    `json:"archived_at"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	UserName     string          `json:"user_name"`
+	UserPhone    string          `json:"user_phone"`
+	ScheduleID   int64           `json:"schedule_id"`
+	ScheduleName string          `json:"schedule_name"`
+	ShiftStart   interface{}     `json:"shift_start"`
+	ShiftEnd     interface{}     `json:"shift_end"`
 }
 
 func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error) {
@@ -126,6 +146,10 @@ func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]Ad
 			&i.Message,
 			&i.CreatedAt,
 			&i.ArchivedAt,
+			&i.Latitude,
+			&i.Longitude,
+			&i.GpsAccuracy,
+			&i.GpsTimestamp,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,
@@ -155,6 +179,10 @@ SELECT
     r.message,
     r.created_at,
     r.archived_at,
+    r.latitude,
+    r.longitude,
+    r.gps_accuracy,
+    r.gps_timestamp,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -170,19 +198,23 @@ ORDER BY r.created_at DESC
 `
 
 type AdminListReportsWithContextRow struct {
-	ReportID     int64          `json:"report_id"`
-	BookingID    sql.NullInt64  `json:"booking_id"`
-	UserID       sql.NullInt64  `json:"user_id"`
-	Severity     int64          `json:"severity"`
-	Message      sql.NullString `json:"message"`
-	CreatedAt    sql.NullTime   `json:"created_at"`
-	ArchivedAt   sql.NullTime   `json:"archived_at"`
-	UserName     string         `json:"user_name"`
-	UserPhone    string         `json:"user_phone"`
-	ScheduleID   int64          `json:"schedule_id"`
-	ScheduleName string         `json:"schedule_name"`
-	ShiftStart   interface{}    `json:"shift_start"`
-	ShiftEnd     interface{}    `json:"shift_end"`
+	ReportID     int64           `json:"report_id"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	ArchivedAt   sql.NullTime    `json:"archived_at"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	UserName     string          `json:"user_name"`
+	UserPhone    string          `json:"user_phone"`
+	ScheduleID   int64           `json:"schedule_id"`
+	ScheduleName string          `json:"schedule_name"`
+	ShiftStart   interface{}     `json:"shift_start"`
+	ShiftEnd     interface{}     `json:"shift_end"`
 }
 
 func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error) {
@@ -202,6 +234,10 @@ func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListR
 			&i.Message,
 			&i.CreatedAt,
 			&i.ArchivedAt,
+			&i.Latitude,
+			&i.Longitude,
+			&i.GpsAccuracy,
+			&i.GpsTimestamp,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,
@@ -259,8 +295,16 @@ INSERT INTO reports (
     user_id,
     severity,
     message,
+    latitude,
+    longitude,
+    gps_accuracy,
+    gps_timestamp,
     archived_at
 ) VALUES (
+    ?,
+    ?,
+    ?,
+    ?,
     ?,
     ?,
     ?,
@@ -270,13 +314,25 @@ RETURNING report_id, booking_id, user_id, severity, message, created_at, latitud
 `
 
 type CreateOffShiftReportParams struct {
-	UserID   sql.NullInt64  `json:"user_id"`
-	Severity int64          `json:"severity"`
-	Message  sql.NullString `json:"message"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
 }
 
 func (q *Queries) CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error) {
-	row := q.db.QueryRowContext(ctx, createOffShiftReport, arg.UserID, arg.Severity, arg.Message)
+	row := q.db.QueryRowContext(ctx, createOffShiftReport,
+		arg.UserID,
+		arg.Severity,
+		arg.Message,
+		arg.Latitude,
+		arg.Longitude,
+		arg.GpsAccuracy,
+		arg.GpsTimestamp,
+	)
 	var i Report
 	err := row.Scan(
 		&i.ReportID,
@@ -300,8 +356,16 @@ INSERT INTO reports (
     user_id,
     severity,
     message,
+    latitude,
+    longitude,
+    gps_accuracy,
+    gps_timestamp,
     archived_at
 ) VALUES (
+    ?,
+    ?,
+    ?,
+    ?,
     ?,
     ?,
     ?,
@@ -312,10 +376,14 @@ RETURNING report_id, booking_id, user_id, severity, message, created_at, latitud
 `
 
 type CreateReportParams struct {
-	BookingID sql.NullInt64  `json:"booking_id"`
-	UserID    sql.NullInt64  `json:"user_id"`
-	Severity  int64          `json:"severity"`
-	Message   sql.NullString `json:"message"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
 }
 
 func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Report, error) {
@@ -324,6 +392,10 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Rep
 		arg.UserID,
 		arg.Severity,
 		arg.Message,
+		arg.Latitude,
+		arg.Longitude,
+		arg.GpsAccuracy,
+		arg.GpsTimestamp,
 	)
 	var i Report
 	err := row.Scan(

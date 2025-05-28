@@ -52,6 +52,10 @@
 					booking_id: number;
 					user_id: number;
 					schedule_id: number;
+					latitude?: number;
+					longitude?: number;
+					gps_accuracy?: number;
+					gps_timestamp?: string;
 				};
 			}
 		})
@@ -156,18 +160,14 @@
 		}
 	}
 
-	// Mock GPS data - in real implementation, this would come from the report
-	const mockGpsData = {
-		latitude: -33.9249,
-		longitude: 18.4241,
-		accuracy: 10,
-		timestamp: new Date().toISOString()
-	};
-
 	// Timeline events for the shift
 	const timelineEvents = $derived.by(() => {
 		const report = $reportQuery.data;
 		if (!report) return [];
+
+		// Check if this is an off-shift report (no booking_id or schedule_name is "Off-Shift Report")
+		const isOffShiftReport = !report.booking_id || report.schedule_name === 'Off-Shift Report';
+		if (isOffShiftReport) return [];
 
 		const shiftStart = new Date(report.shift_start);
 		const reportTime = new Date(report.created_at);
@@ -196,6 +196,31 @@
 				color: 'text-gray-600'
 			}
 		].sort((a, b) => a.time.getTime() - b.time.getTime());
+	});
+
+	// Check if this is an off-shift report
+	const isOffShiftReport = $derived.by(() => {
+		const report = $reportQuery.data;
+		if (!report) return false;
+		return !report.booking_id || report.schedule_name === 'Off-Shift Report';
+	});
+
+	// GPS data from the report (replace mock data)
+	const gpsData = $derived.by(() => {
+		const report = $reportQuery.data;
+		if (!report) return null;
+		
+		// Check if GPS data is available
+		if (report.latitude && report.longitude) {
+			return {
+				latitude: report.latitude,
+				longitude: report.longitude,
+				accuracy: report.gps_accuracy || 0,
+				timestamp: report.gps_timestamp || report.created_at
+			};
+		}
+		
+		return null;
 	});
 </script>
 
@@ -293,87 +318,91 @@
 					</Card.Root>
 
 					<!-- Timeline -->
-					<Card.Root class="p-6">
-						<Card.Header class="px-0 pt-0">
-							<Card.Title class="flex items-center gap-2">
-								<ClockIcon class="h-5 w-5" />
-								Shift Timeline
-							</Card.Title>
-						</Card.Header>
-						<Card.Content class="px-0 pb-0">
-							<div class="space-y-4">
-								{#each timelineEvents as event, index (index)}
-									<div class="flex items-start gap-4">
-										<div class="flex flex-col items-center">
-											<div class="p-2 rounded-full bg-background border-2 {
-												event.color === 'text-green-600' ? 'border-green-200' :
-												event.color === 'text-red-600' ? 'border-red-200' :
-												event.color === 'text-orange-600' ? 'border-orange-200' :
-												event.color === 'text-blue-600' ? 'border-blue-200' : 'border-gray-200'
-											}">
-												<event.icon class="h-4 w-4 {event.color}" />
+					{#if !isOffShiftReport && timelineEvents.length > 0}
+						<Card.Root class="p-6">
+							<Card.Header class="px-0 pt-0">
+								<Card.Title class="flex items-center gap-2">
+									<ClockIcon class="h-5 w-5" />
+									Shift Timeline
+								</Card.Title>
+							</Card.Header>
+							<Card.Content class="px-0 pb-0">
+								<div class="space-y-4">
+									{#each timelineEvents as event, index (index)}
+										<div class="flex items-start gap-4">
+											<div class="flex flex-col items-center">
+												<div class="p-2 rounded-full bg-background border-2 {
+													event.color === 'text-green-600' ? 'border-green-200' :
+													event.color === 'text-red-600' ? 'border-red-200' :
+													event.color === 'text-orange-600' ? 'border-orange-200' :
+													event.color === 'text-blue-600' ? 'border-blue-200' : 'border-gray-200'
+												}">
+													<event.icon class="h-4 w-4 {event.color}" />
+												</div>
+												{#if index < timelineEvents.length - 1}
+													<div class="w-px h-8 bg-border mt-2"></div>
+												{/if}
 											</div>
-											{#if index < timelineEvents.length - 1}
-												<div class="w-px h-8 bg-border mt-2"></div>
-											{/if}
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center justify-between">
-												<h4 class="font-medium">{event.title}</h4>
-												<span class="text-sm text-muted-foreground">
-													{event.time.toLocaleTimeString('en-ZA', { 
-														hour: '2-digit', 
-														minute: '2-digit',
-														timeZone: 'UTC'
-													})}
-												</span>
+											<div class="flex-1 min-w-0">
+												<div class="flex items-center justify-between">
+													<h4 class="font-medium">{event.title}</h4>
+													<span class="text-sm text-muted-foreground">
+														{event.time.toLocaleTimeString('en-ZA', { 
+															hour: '2-digit', 
+															minute: '2-digit',
+															timeZone: 'UTC'
+														})}
+													</span>
+												</div>
+												<p class="text-sm text-muted-foreground">{event.description}</p>
 											</div>
-											<p class="text-sm text-muted-foreground">{event.description}</p>
 										</div>
-									</div>
-								{/each}
-							</div>
-						</Card.Content>
-					</Card.Root>
+									{/each}
+								</div>
+							</Card.Content>
+						</Card.Root>
+					{/if}
 
 					<!-- Location Information (GPS) -->
-					<Card.Root class="p-6">
-						<Card.Header class="px-0 pt-0">
-							<Card.Title class="flex items-center gap-2">
-								<MapPinIcon class="h-5 w-5" />
-								Location Information
-							</Card.Title>
-						</Card.Header>
-						<Card.Content class="px-0 pb-0">
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div class="space-y-3">
-									<div>
-										<span class="text-sm font-medium text-muted-foreground">Coordinates</span>
-										<p class="text-sm font-mono">
-											{mockGpsData.latitude.toFixed(6)}, {mockGpsData.longitude.toFixed(6)}
-										</p>
+					{#if gpsData}
+						<Card.Root class="p-6">
+							<Card.Header class="px-0 pt-0">
+								<Card.Title class="flex items-center gap-2">
+									<MapPinIcon class="h-5 w-5" />
+									Location Information
+								</Card.Title>
+							</Card.Header>
+							<Card.Content class="px-0 pb-0">
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="space-y-3">
+										<div>
+											<span class="text-sm font-medium text-muted-foreground">Coordinates</span>
+											<p class="text-sm font-mono">
+												{gpsData.latitude.toFixed(6)}, {gpsData.longitude.toFixed(6)}
+											</p>
+										</div>
+										<div>
+											<span class="text-sm font-medium text-muted-foreground">Accuracy</span>
+											<p class="text-sm">±{gpsData.accuracy}m</p>
+										</div>
+										<div>
+											<span class="text-sm font-medium text-muted-foreground">Captured</span>
+											<p class="text-sm">{formatFullDateTime(gpsData.timestamp)}</p>
+										</div>
 									</div>
-									<div>
-										<span class="text-sm font-medium text-muted-foreground">Accuracy</span>
-										<p class="text-sm">±{mockGpsData.accuracy}m</p>
-									</div>
-									<div>
-										<span class="text-sm font-medium text-muted-foreground">Captured</span>
-										<p class="text-sm">{formatFullDateTime(mockGpsData.timestamp)}</p>
+									<div class="h-48">
+										<ReportMap
+											latitude={gpsData.latitude}
+											longitude={gpsData.longitude}
+											accuracy={gpsData.accuracy}
+											severity={report.severity}
+											className="h-full"
+										/>
 									</div>
 								</div>
-								<div class="h-48">
-									<ReportMap
-										latitude={mockGpsData.latitude}
-										longitude={mockGpsData.longitude}
-										accuracy={mockGpsData.accuracy}
-										severity={report.severity}
-										className="h-full"
-									/>
-								</div>
-							</div>
-						</Card.Content>
-					</Card.Root>
+							</Card.Content>
+						</Card.Root>
+					{/if}
 				</div>
 
 				<!-- Sidebar -->
@@ -409,35 +438,60 @@
 					</Card.Root>
 
 					<!-- Shift Information -->
-					<Card.Root class="p-6">
-						<Card.Header class="px-0 pt-0">
-							<Card.Title class="flex items-center gap-2">
-								<ClockIcon class="h-5 w-5" />
-								Shift Details
-							</Card.Title>
-						</Card.Header>
-						<Card.Content class="px-0 pb-0">
-							<div class="space-y-4">
-								<div>
-									<span class="text-sm font-medium text-muted-foreground">Schedule</span>
-									<p class="text-sm font-medium">{report.schedule_name}</p>
+					{#if !isOffShiftReport}
+						<Card.Root class="p-6">
+							<Card.Header class="px-0 pt-0">
+								<Card.Title class="flex items-center gap-2">
+									<ClockIcon class="h-5 w-5" />
+									Shift Details
+								</Card.Title>
+							</Card.Header>
+							<Card.Content class="px-0 pb-0">
+								<div class="space-y-4">
+									<div>
+										<span class="text-sm font-medium text-muted-foreground">Schedule</span>
+										<p class="text-sm font-medium">{report.schedule_name}</p>
+									</div>
+									<Separator />
+									<div>
+										<span class="text-sm font-medium text-muted-foreground">Start Time</span>
+										<p class="text-sm">{formatFullDateTime(report.shift_start)}</p>
+									</div>
+									<div>
+										<span class="text-sm font-medium text-muted-foreground">End Time</span>
+										<p class="text-sm">{formatFullDateTime(report.shift_end)}</p>
+									</div>
+									<div>
+										<span class="text-sm font-medium text-muted-foreground">Duration</span>
+										<p class="text-sm">{formatShiftDuration(report.shift_start, report.shift_end)}</p>
+									</div>
 								</div>
-								<Separator />
-								<div>
-									<span class="text-sm font-medium text-muted-foreground">Start Time</span>
-									<p class="text-sm">{formatFullDateTime(report.shift_start)}</p>
+							</Card.Content>
+						</Card.Root>
+					{:else}
+						<!-- Off-Shift Report Info -->
+						<Card.Root class="p-6">
+							<Card.Header class="px-0 pt-0">
+								<Card.Title class="flex items-center gap-2">
+									<ClockIcon class="h-5 w-5" />
+									Report Type
+								</Card.Title>
+							</Card.Header>
+							<Card.Content class="px-0 pb-0">
+								<div class="p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg">
+									<div class="flex items-center gap-2">
+										<InfoIcon class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+										<div>
+											<p class="text-sm font-medium text-blue-900 dark:text-blue-100">Off-Shift Report</p>
+											<p class="text-xs text-blue-700 dark:text-blue-300">
+												This report was submitted outside of a scheduled shift
+											</p>
+										</div>
+									</div>
 								</div>
-								<div>
-									<span class="text-sm font-medium text-muted-foreground">End Time</span>
-									<p class="text-sm">{formatFullDateTime(report.shift_end)}</p>
-								</div>
-								<div>
-									<span class="text-sm font-medium text-muted-foreground">Duration</span>
-									<p class="text-sm">{formatShiftDuration(report.shift_start, report.shift_end)}</p>
-								</div>
-							</div>
-						</Card.Content>
-					</Card.Root>
+							</Card.Content>
+						</Card.Root>
+					{/if}
 
 					<!-- Reporter Information -->
 					<Card.Root class="p-6">
@@ -492,8 +546,10 @@
 									class="w-full justify-start"
 									onclick={() => {
 										// Open in a new window with a larger map
-										const mapUrl = `https://www.openstreetmap.org/?mlat=${mockGpsData.latitude}&mlon=${mockGpsData.longitude}&zoom=18`;
-										window.open(mapUrl, '_blank');
+										if (gpsData) {
+											const mapUrl = `https://www.openstreetmap.org/?mlat=${gpsData.latitude}&mlon=${gpsData.longitude}&zoom=18`;
+											window.open(mapUrl, '_blank');
+										}
 									}}
 								>
 									<MapPinIcon class="h-4 w-4 mr-2" />

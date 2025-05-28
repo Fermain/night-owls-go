@@ -5,9 +5,18 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
 )
+
+// GPSLocation represents GPS coordinates and metadata
+type GPSLocation struct {
+	Latitude  *float64
+	Longitude *float64
+	Accuracy  *float64
+	Timestamp *time.Time
+}
 
 var (
 	ErrSeverityOutOfRange = errors.New("severity must be between 0 and 2")
@@ -29,7 +38,7 @@ func NewReportService(querier db.Querier, logger *slog.Logger) *ReportService {
 }
 
 // CreateReport handles the logic for creating a new incident report.
-func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, bookingID int64, severity int32, message string) (db.Report, error) {
+func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, bookingID int64, severity int32, message string, gpsLocation *GPSLocation) (db.Report, error) {
 	// 1. Validate booking exists and user is authorized
 	// A user can only report on their own bookings.
 	booking, err := s.querier.GetBookingByID(ctx, bookingID)
@@ -53,12 +62,35 @@ func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, 
 		return db.Report{}, ErrSeverityOutOfRange
 	}
 
-	// 3. Insert report into DB
+	// 3. Prepare GPS data
+	var latitude, longitude, accuracy sql.NullFloat64
+	var gpsTimestamp sql.NullTime
+	
+	if gpsLocation != nil {
+		if gpsLocation.Latitude != nil {
+			latitude = sql.NullFloat64{Float64: *gpsLocation.Latitude, Valid: true}
+		}
+		if gpsLocation.Longitude != nil {
+			longitude = sql.NullFloat64{Float64: *gpsLocation.Longitude, Valid: true}
+		}
+		if gpsLocation.Accuracy != nil {
+			accuracy = sql.NullFloat64{Float64: *gpsLocation.Accuracy, Valid: true}
+		}
+		if gpsLocation.Timestamp != nil {
+			gpsTimestamp = sql.NullTime{Time: *gpsLocation.Timestamp, Valid: true}
+		}
+	}
+
+	// 4. Insert report into DB
 	reportParams := db.CreateReportParams{
-		BookingID: sql.NullInt64{Int64: bookingID, Valid: true},
-		UserID:    sql.NullInt64{Int64: userIDFromAuth, Valid: true},
-		Severity:  int64(severity),
-		Message:   sql.NullString{String: message, Valid: message != ""},
+		BookingID:    sql.NullInt64{Int64: bookingID, Valid: true},
+		UserID:       sql.NullInt64{Int64: userIDFromAuth, Valid: true},
+		Severity:     int64(severity),
+		Message:      sql.NullString{String: message, Valid: message != ""},
+		Latitude:     latitude,
+		Longitude:    longitude,
+		GpsAccuracy:  accuracy,
+		GpsTimestamp: gpsTimestamp,
 	}
 
 	createdReport, err := s.querier.CreateReport(ctx, reportParams)
@@ -72,18 +104,41 @@ func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, 
 }
 
 // CreateOffShiftReport handles the logic for creating an off-shift incident report.
-func (s *ReportService) CreateOffShiftReport(ctx context.Context, userIDFromAuth int64, severity int32, message string) (db.Report, error) {
+func (s *ReportService) CreateOffShiftReport(ctx context.Context, userIDFromAuth int64, severity int32, message string, gpsLocation *GPSLocation) (db.Report, error) {
 	// 1. Validate severity (0-2)
 	if severity < 0 || severity > 2 {
 		s.logger.WarnContext(ctx, "Severity out of range for off-shift report", "severity", severity)
 		return db.Report{}, ErrSeverityOutOfRange
 	}
 
-	// 2. Insert off-shift report into DB
+	// 2. Prepare GPS data
+	var latitude, longitude, accuracy sql.NullFloat64
+	var gpsTimestamp sql.NullTime
+	
+	if gpsLocation != nil {
+		if gpsLocation.Latitude != nil {
+			latitude = sql.NullFloat64{Float64: *gpsLocation.Latitude, Valid: true}
+		}
+		if gpsLocation.Longitude != nil {
+			longitude = sql.NullFloat64{Float64: *gpsLocation.Longitude, Valid: true}
+		}
+		if gpsLocation.Accuracy != nil {
+			accuracy = sql.NullFloat64{Float64: *gpsLocation.Accuracy, Valid: true}
+		}
+		if gpsLocation.Timestamp != nil {
+			gpsTimestamp = sql.NullTime{Time: *gpsLocation.Timestamp, Valid: true}
+		}
+	}
+
+	// 3. Insert off-shift report into DB
 	reportParams := db.CreateOffShiftReportParams{
-		UserID:   sql.NullInt64{Int64: userIDFromAuth, Valid: true},
-		Severity: int64(severity),
-		Message:  sql.NullString{String: message, Valid: message != ""},
+		UserID:       sql.NullInt64{Int64: userIDFromAuth, Valid: true},
+		Severity:     int64(severity),
+		Message:      sql.NullString{String: message, Valid: message != ""},
+		Latitude:     latitude,
+		Longitude:    longitude,
+		GpsAccuracy:  accuracy,
+		GpsTimestamp: gpsTimestamp,
 	}
 
 	createdReport, err := s.querier.CreateOffShiftReport(ctx, reportParams)

@@ -11,6 +11,7 @@
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { toast } from 'svelte-sonner';
 	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
+	import GPSCapture from '$lib/components/ui/gps-capture/GPSCapture.svelte';
 	import { UserApiService } from '$lib/services/api/user';
 	import { ReportsApiService } from '$lib/services/api/reports';
 	import { goto } from '$app/navigation';
@@ -19,6 +20,12 @@
 	let selectedSeverity = $state('0'); // Default to Normal (severity 0)
 	let reportMessage = $state('');
 	let isSubmitting = $state(false);
+	let gpsLocation = $state<{
+		latitude: number;
+		longitude: number;
+		accuracy: number;
+		timestamp: string;
+	} | null>(null);
 
 	// Current shift interface
 	interface CurrentShift {
@@ -75,6 +82,17 @@
 		return severityOptions.find((opt) => opt.value === value);
 	}
 
+	function handleLocationCaptured(location: { latitude: number; longitude: number; accuracy: number; timestamp: string }) {
+		gpsLocation = location;
+		toast.success('Location captured successfully');
+	}
+
+	function handleLocationError(error: string) {
+		console.log('Location capture failed:', error);
+		// Don't show error toast since location is optional
+		// Users can still submit reports without location data
+	}
+
 	async function handleSubmit() {
 		if (!selectedSeverity || !reportMessage.trim()) {
 			toast.error('Please select severity and provide a message');
@@ -86,7 +104,13 @@
 		try {
 			const payload = {
 				severity: parseInt(selectedSeverity),
-				message: reportMessage.trim()
+				message: reportMessage.trim(),
+				...(gpsLocation && {
+					latitude: gpsLocation.latitude,
+					longitude: gpsLocation.longitude,
+					accuracy: gpsLocation.accuracy,
+					location_timestamp: gpsLocation.timestamp
+				})
 			};
 
 			// Check if user is currently on shift by looking for active bookings
@@ -112,6 +136,7 @@
 			// Reset form
 			selectedSeverity = '0'; // Reset to default Normal severity
 			reportMessage = '';
+			gpsLocation = null;
 			
 			// Navigate back to home
 			goto('/');
@@ -236,6 +261,20 @@
 						<span>Be specific about location, time, and circumstances</span>
 						<span>{reportMessage.length}/1000</span>
 					</div>
+				</div>
+
+				<!-- GPS Location Capture -->
+				<div class="space-y-2">
+					<Label class="text-base font-medium">Location Information (Optional)</Label>
+					<GPSCapture
+						autoCapture={false}
+						onLocationCaptured={handleLocationCaptured}
+						onError={handleLocationError}
+						className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
+					/>
+					<p class="text-xs text-slate-500 dark:text-slate-400">
+						Location data helps emergency services and improves incident response. If GPS fails, you can enter coordinates manually or submit without location data.
+					</p>
 				</div>
 
 				<!-- Submit Button -->
