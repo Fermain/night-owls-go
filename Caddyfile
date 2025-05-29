@@ -18,6 +18,20 @@ mm.nightowls.app {
     # Enable compression
     encode gzip
 
+    # SvelteKit static assets (must be before general API routes)
+    handle /_app/immutable/* {
+        reverse_proxy night-owls:5888 {
+            header_down Cache-Control "public, max-age=31536000, immutable"
+        }
+    }
+    
+    # Other SvelteKit static assets
+    handle /_app/* {
+        reverse_proxy night-owls:5888 {
+            header_down Cache-Control "public, max-age=86400"
+        }
+    }
+
     # API routes
     handle /api* {
         reverse_proxy night-owls:5888 {
@@ -55,13 +69,6 @@ mm.nightowls.app {
     
     handle /swagger* {
         reverse_proxy night-owls:5888
-    }
-
-    # Static assets with long cache
-    handle /assets/* {
-        reverse_proxy night-owls:5888 {
-            header_down Cache-Control "public, max-age=31536000, immutable"
-        }
     }
 
     # Frontend fallback - everything else goes to the SPA
