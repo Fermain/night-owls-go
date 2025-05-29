@@ -61,7 +61,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           # Stop existing containers
-          cd ~/night-owls-app 2>/dev/null || mkdir -p ~/night-owls-app
+          mkdir -p ~/night-owls-app
           cd ~/night-owls-app
           
           # Detect Docker Compose version
