@@ -29,6 +29,16 @@ print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
+# Detect docker compose command
+if command -v "docker compose" &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    print_warning "Docker Compose not found. Using docker commands directly."
+    DOCKER_COMPOSE=""
+fi
+
 # Create backup directory if it doesn't exist
 mkdir -p $BACKUP_DIR
 

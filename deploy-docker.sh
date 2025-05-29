@@ -51,27 +51,33 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null; then
-    print_error "docker-compose not found. Please install docker-compose."
+# Check if docker compose is available (try both V2 and legacy)
+if command -v "docker compose" &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+    print_status "Using Docker Compose V2"
+elif command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+    print_status "Using Docker Compose V1 (legacy)"
+else
+    print_error "Docker Compose not found. Please install docker-compose or docker compose plugin."
     exit 1
 fi
 
 print_status "Stopping existing containers..."
-docker-compose -f $COMPOSE_FILE --env-file .env.production down
+$DOCKER_COMPOSE -f $COMPOSE_FILE --env-file .env.production down
 
 print_status "Building Docker image..."
 docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
 
 print_status "Starting services..."
-docker-compose -f $COMPOSE_FILE --env-file .env.production up -d
+$DOCKER_COMPOSE -f $COMPOSE_FILE --env-file .env.production up -d
 
 # Wait for services to be healthy
 print_status "Waiting for services to be healthy..."
 timeout=120
 elapsed=0
 while [ $elapsed -lt $timeout ]; do
-    if docker-compose -f $COMPOSE_FILE ps | grep -q "healthy"; then
+    if $DOCKER_COMPOSE -f $COMPOSE_FILE ps | grep -q "healthy"; then
         break
     fi
     sleep 5
@@ -81,26 +87,26 @@ done
 
 # Check final status
 print_status "Checking service status..."
-docker-compose -f $COMPOSE_FILE ps
+$DOCKER_COMPOSE -f $COMPOSE_FILE ps
 
 # Test health endpoint
 print_status "Testing health endpoint..."
 if curl -f -s http://localhost/health > /dev/null; then
     print_success "Health check passed!"
 else
-    print_warning "Health check failed. Check logs with: docker-compose logs"
+    print_warning "Health check failed. Check logs with: $DOCKER_COMPOSE logs"
 fi
 
 # Show logs
 print_status "Recent logs:"
-docker-compose -f $COMPOSE_FILE logs --tail=20
+$DOCKER_COMPOSE -f $COMPOSE_FILE logs --tail=20
 
 print_success "Deployment complete!"
 print_status "Application should be available at: https://mm.nightowls.app"
 print_status "Local access (if testing): http://localhost"
 print_status ""
 print_status "Useful commands:"
-echo "  - View logs: docker-compose logs -f"
-echo "  - Stop services: docker-compose down"
-echo "  - Restart: docker-compose restart"
+echo "  - View logs: $DOCKER_COMPOSE logs -f"
+echo "  - Stop services: $DOCKER_COMPOSE down"
+echo "  - Restart: $DOCKER_COMPOSE restart"
 echo "  - Update: ./deploy-docker.sh" 
