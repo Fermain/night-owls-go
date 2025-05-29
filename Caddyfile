@@ -87,4 +87,4 @@ mm.nightowls.app {
         format json
         level INFO
     }
-} 
+}
