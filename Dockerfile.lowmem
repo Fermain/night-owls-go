@@ -11,10 +11,10 @@ ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 # Install with reduced concurrency and memory optimizations
-RUN pnpm install --frozen-lockfile --prefer-offline \
-    --config.child-concurrency=1 \
-    --config.network-concurrency=1 \
-    --config.fetch-retries=1
+ENV PNPM_CHILD_CONCURRENCY=1
+ENV PNPM_NETWORK_CONCURRENCY=1
+ENV PNPM_FETCH_RETRIES=1
+RUN pnpm install --frozen-lockfile --prefer-offline
 
 COPY app/ ./
 RUN pnpm run build
