@@ -69,6 +69,10 @@ jobs:
           echo "🛑 Stopping containers..."
           docker compose down || docker-compose down || true
           
+          echo "🗑️ Removing old containers and images..."
+          docker container prune -f
+          docker image prune -f
+          
           echo "🔐 Logging in to registry..."
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
@@ -76,7 +80,7 @@ jobs:
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
           echo "🚀 Starting application..."
-          docker compose up -d || docker-compose up -d
+          docker compose up -d --force-recreate || docker-compose up -d --force-recreate
           
           echo "⏳ Waiting for application..."
           sleep 15
