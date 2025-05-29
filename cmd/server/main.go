@@ -68,6 +68,11 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 }
 
 func main() {
+	startTime := time.Now() // Track server start time for health check uptime
+	
+	// Force timezone to UTC
+	os.Setenv("TZ", "UTC")
+
 	// Use Overload to force .env file values to override any existing environment variables
 	err := godotenv.Overload()
 	if err != nil {
@@ -156,8 +161,6 @@ func main() {
 		slog.Error("Failed to add broadcast processing job to cron", "error", err)
 		os.Exit(1)
 	}
-
-
 
 	// Auto-archive old reports daily at 2 AM
 	_, err = cronScheduler.AddFunc("0 2 * * *", func() {
@@ -251,6 +254,39 @@ func main() {
 	fuego.GetStd(s, "/api/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
 	fuego.GetStd(s, "/api/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
 	
+	// Health check endpoints for monitoring
+	fuego.GetStd(s, "/health", func(w http.ResponseWriter, r *http.Request) {
+		// Check database connectivity
+		dbStatus := "up"
+		if err := dbConn.Ping(); err != nil {
+			dbStatus = "down"
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"status": "unhealthy",
+				"database": dbStatus,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "healthy",
+			"database": dbStatus,
+			"uptime": time.Since(startTime).String(),
+			"version": "1.0.0", // TODO: Use build version
+		})
+	})
+
+	// API health check endpoint
+	fuego.GetStd(s, "/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "ok",
+			"service": "night-owls-api",
+		})
+	})
+	
 	// Protected routes (require auth)
 	protected := fuego.Group(s, "")
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
@@ -289,8 +325,6 @@ func main() {
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
-
-
 
 	// Admin Reports
 	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)
@@ -356,7 +390,6 @@ func main() {
 		json.NewEncoder(w).Encode(stats)
 	})
 
-	
 	// Simple test handler - mimicking working admin handlers
 	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Simple test handler called")
@@ -567,4 +600,4 @@ func runMigrations(dbConn *sql.DB, cfg *config.Config, logger *slog.Logger) {
 		logger.Info("Database migrations applied successfully.")
 	}
 	// The main dbConn (passed as an argument but no longer directly used here) remains untouched and managed by main().
-} 
+}
