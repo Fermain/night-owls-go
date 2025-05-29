@@ -76,10 +76,10 @@ jobs:
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
           echo "🚀 Starting application..."
-          docker compose up -d || docker-compose up -d
+          docker compose up night-owls -d || docker-compose up night-owls -d
           
           echo "⏳ Waiting for application..."
-          sleep 20
+          sleep 10
           
           echo "🏥 Health check..."
           curl -f http://localhost:5888/health && echo "✅ Deployed!" || { echo "❌ Failed"; exit 1; } 
