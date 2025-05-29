@@ -107,7 +107,7 @@ jobs:
           
           # Health check
           echo "🏥 Running health check..."
-          curl -f http://localhost:5888/health && echo "✅ Health check passed!" || echo "❌ Health check failed"
+          curl -f http://localhost:5888/health && echo "✅ Health check passed!" || { echo "❌ Health check failed"; exit 1; }
           
           # Show status
           echo "📊 Deployment status:"

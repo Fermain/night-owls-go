@@ -51,16 +51,12 @@ var reportMessages = map[int][]string{
 	},
 }
 
-// Helper functions to reduce boilerplate
-func newNullInt64(v int64) sql.NullInt64 {
-	return sql.NullInt64{Int64: v, Valid: true}
-}
 
 func newNullString(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: true}
 }
 
-func newCreateReportParams(bookingID, userID int64, severity int64, message string) db.CreateReportParams {
+func testutils.NewCreateReportParams(bookingID, userID int64, severity int64, message string) db.CreateReportParams {
 	return db.CreateReportParams{
 		BookingID: newNullInt64(bookingID),
 		UserID:    newNullInt64(userID),
@@ -120,7 +116,7 @@ func seedReports(querier db.Querier) error {
 		message := messages[rand.Intn(len(messages))]
 
 		// Create the report
-		reportParams := newCreateReportParams(booking.BookingID, booking.UserID, severity, message)
+		reportParams := testutils.NewCreateReportParams(booking.BookingID, booking.UserID, severity, message)
 
 		report, err := querier.CreateReport(ctx, reportParams)
 		if err != nil {
@@ -174,7 +170,7 @@ func seedRecentCriticalReports(querier db.Querier) error {
 			continue
 		}
 
-		reportParams := newCreateReportParams(booking.BookingID, booking.UserID, 2, criticalMessages[i])
+		reportParams := testutils.NewCreateReportParams(booking.BookingID, booking.UserID, 2, criticalMessages[i])
 
 		report, err := querier.CreateReport(ctx, reportParams)
 		if err != nil {
