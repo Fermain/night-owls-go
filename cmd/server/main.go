@@ -31,7 +31,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	// Import the generated swagger docs when available
-	_ "night-owls-go/docs/swagger"
+	// _ "night-owls-go/docs/swagger"
 
 	"github.com/go-fuego/fuego"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
