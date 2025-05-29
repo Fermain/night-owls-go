@@ -1,9 +1,6 @@
 mm.nightowls.app {
-    # Automatic HTTPS with Let's Encrypt
-    tls {
-        # You can specify email here if needed: email your-email@domain.com
-    }
-
+    # Automatic HTTPS with Let's Encrypt (enabled by default)
+    
     # Security headers
     header {
         # Security headers
