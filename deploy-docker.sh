@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "🐳 Night Owls Control - Docker Deployment"
+echo "🐳 Night Owls Control - Low Memory Docker Deployment"
 echo "=========================================="
 
 # Configuration
-DOCKER_IMAGE="night-owls-control"
+DOCKER_IMAGE="night-owls-go"
 DOCKER_TAG="latest"
 COMPOSE_FILE="docker-compose.yml"
 
@@ -66,8 +66,11 @@ fi
 print_status "Stopping existing containers..."
 $DOCKER_COMPOSE -f $COMPOSE_FILE --env-file .env.production down
 
-print_status "Building Docker image..."
-docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
+print_status "Cleaning up Docker to free memory..."
+docker system prune -f
+
+print_status "Building Docker image with low-memory optimizations..."
+docker build --memory="900m" --memory-swap="4g" -f Dockerfile.lowmem -t $DOCKER_IMAGE:$DOCKER_TAG .
 
 print_status "Starting services..."
 $DOCKER_COMPOSE -f $COMPOSE_FILE --env-file .env.production up -d

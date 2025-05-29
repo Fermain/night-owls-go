@@ -6,8 +6,8 @@ RUN corepack enable pnpm
 
 WORKDIR /app/frontend
 
-# Set Node memory limit to prevent OOM
-ENV NODE_OPTIONS="--max-old-space-size=512"
+# Set Node memory limit to prevent OOM - increased for swap environment
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 # Install with reduced concurrency

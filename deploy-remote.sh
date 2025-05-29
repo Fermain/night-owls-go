@@ -8,6 +8,8 @@ echo "=========================================="
 REMOTE_HOST="mm.nightowls.app"
 REMOTE_USER="deploy"
 REMOTE_DIR="night-owls-go"
+USE_DOCKERHUB=${USE_DOCKERHUB:-false}
+DOCKER_USERNAME="${DOCKER_USERNAME:-olivernight}"  # Change this!
 
 # Colors for output
 RED='\033[0;31m'
@@ -32,6 +34,12 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Check for Docker Hub deployment flag
+if [ "$1" == "--dockerhub" ]; then
+    USE_DOCKERHUB=true
+    print_status "Using pre-built image from Docker Hub"
+fi
+
 # Check if we can connect to the server
 print_status "Testing SSH connection to $REMOTE_HOST..."
 if ! ssh -q $REMOTE_USER@$REMOTE_HOST exit; then
@@ -43,7 +51,7 @@ print_success "SSH connection successful"
 
 # Deploy via SSH
 print_status "Deploying to $REMOTE_HOST..."
-ssh $REMOTE_USER@$REMOTE_HOST << 'ENDSSH'
+ssh $REMOTE_USER@$REMOTE_HOST << ENDSSH
 set -e
 
 # Colors for remote output
@@ -54,15 +62,15 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 print_status() {
-    echo -e "${BLUE}[REMOTE]${NC} $1"
+    echo -e "\${BLUE}[REMOTE]\${NC} \$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[REMOTE]${NC} $1"
+    echo -e "\${GREEN}[REMOTE]\${NC} \$1"
 }
 
 print_error() {
-    echo -e "${RED}[REMOTE]${NC} $1"
+    echo -e "\${RED}[REMOTE]\${NC} \$1"
 }
 
 print_status "Starting remote deployment..."
@@ -70,19 +78,49 @@ print_status "Starting remote deployment..."
 # Navigate to project directory
 cd night-owls-go
 
-# Pull latest changes
-print_status "Pulling latest changes from GitHub..."
-git pull origin main
-
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
     print_error ".env.production not found! Please configure it first."
     exit 1
 fi
 
-# Run deployment
-print_status "Running deployment script..."
-./deploy-docker.sh
+if [ "$USE_DOCKERHUB" = "true" ]; then
+    print_status "Deploying from Docker Hub..."
+    
+    # Stop existing containers
+    cd ~/night-owls-app 2>/dev/null || mkdir -p ~/night-owls-app
+    docker-compose down 2>/dev/null || true
+    
+    # Clean up Docker to free memory
+    print_status "Cleaning up Docker system..."
+    docker system prune -f
+    
+    # Pull the pre-built image
+    print_status "Pulling image from Docker Hub..."
+    docker pull $DOCKER_USERNAME/night-owls-go:latest
+    
+    # Tag it for docker-compose
+    docker tag $DOCKER_USERNAME/night-owls-go:latest night-owls-go:latest
+    
+    # Copy necessary files if not present
+    if [ ! -f docker-compose.yml ]; then
+        cp ~/night-owls-go/docker-compose.yml . 2>/dev/null || true
+    fi
+    if [ ! -f .env.production ]; then
+        cp ~/night-owls-go/.env.production . 2>/dev/null || true
+    fi
+    
+    # Start the application
+    print_status "Starting application..."
+    docker-compose up -d
+else
+    # Original deployment method
+    print_status "Pulling latest changes from GitHub..."
+    git pull origin main
+    
+    print_status "Running deployment script..."
+    ./deploy-docker.sh
+fi
 
 print_success "Remote deployment completed!"
 ENDSSH
