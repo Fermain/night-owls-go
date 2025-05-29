@@ -36,11 +36,11 @@ print_error() {
 if [ ! -f ".env.production" ]; then
     print_warning ".env.production not found"
     print_status "Creating from template..."
-    cp env.production.example .env.production
+    cp .env.production.example .env.production
     print_warning "Please edit .env.production with your actual values before continuing"
     print_status "Required variables to update:"
     echo "  - JWT_SECRET (generate with: openssl rand -base64 32)"
-    echo "  - VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (generate with: npx web-push generate-vapid-keys)"
+    echo "  - VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (generate with: pnpm dlx web-push generate-vapid-keys)"
     echo "  - Twilio credentials for SMS"
     exit 1
 fi

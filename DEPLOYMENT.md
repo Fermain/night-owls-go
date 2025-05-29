@@ -37,11 +37,15 @@ This guide covers deploying the Night Owls Control application using Docker cont
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/yourusername/night-owls-go.git
+git clone https://github.com/Fermain/night-owls-go
 cd night-owls-go
 
+# Quick setup with pnpm (installs dependencies and generates VAPID keys)
+./setup-pnpm.sh
+
+# Or manual setup:
 # Create production environment file
-cp env.production.example .env.production
+cp .env.example .env.production
 ```
 
 ### 2. Configure Environment Variables
@@ -53,7 +57,7 @@ Edit `.env.production` with your actual values:
 JWT_SECRET=$(openssl rand -base64 32)
 
 # Generate VAPID keys for push notifications
-npx web-push generate-vapid-keys
+pnpm dlx web-push generate-vapid-keys
 
 # Add your Twilio credentials
 TWILIO_ACCOUNT_SID=your_account_sid
@@ -90,8 +94,8 @@ A       *.mm.nightowls.app YOUR_SERVER_IP (optional, for subdomains)
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_SECRET` | Secure random string for JWT tokens | Generated with `openssl rand -base64 32` |
-| `VAPID_PUBLIC_KEY` | Public key for web push notifications | Generated with `npx web-push generate-vapid-keys` |
-| `VAPID_PRIVATE_KEY` | Private key for web push notifications | Generated with `npx web-push generate-vapid-keys` |
+| `VAPID_PUBLIC_KEY` | Public key for web push notifications | Generated with `pnpm dlx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Private key for web push notifications | Generated with `pnpm dlx web-push generate-vapid-keys` |
 | `VAPID_SUBJECT` | Contact email for push service | `mailto:admin@mm.nightowls.app` |
 | `TWILIO_ACCOUNT_SID` | Twilio account identifier | `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
 | `TWILIO_AUTH_TOKEN` | Twilio authentication token | `your_auth_token` |
@@ -312,7 +316,7 @@ sudo apt install caddy
 go build -o night-owls-server ./cmd/server
 
 # Build frontend
-cd app && npm ci && npm run build && cd ..
+cd app && pnpm install && pnpm run build && cd ..
 
 # Install systemd service
 sudo cp scripts/night-owls.service /etc/systemd/system/

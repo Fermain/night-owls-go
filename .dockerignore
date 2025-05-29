@@ -34,6 +34,12 @@ service.test
 app/node_modules/
 node_modules/
 
+# Keep package manager files but exclude npm artifacts
+!app/package.json
+!app/pnpm-lock.yaml
+app/package-lock.json
+app/.npmrc
+
 # SvelteKit build output (will be built during Docker build)
 app/.svelte-kit/
 app/build/
