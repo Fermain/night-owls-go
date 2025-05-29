@@ -33,11 +33,11 @@ func NewAdminScheduleHandlers(logger *slog.Logger, scheduleService *service.Sche
 
 // AdminCreateScheduleRequest defines the expected JSON body for creating a schedule.
 type AdminCreateScheduleRequest struct {
-	Name            string  `json:"name"`
-	CronExpr        string  `json:"cron_expr"`
-	StartDate       *string `json:"start_date,omitempty"` // Expected format: "YYYY-MM-DD"
-	EndDate         *string `json:"end_date,omitempty"`   // Expected format: "YYYY-MM-DD"
-	Timezone        *string `json:"timezone,omitempty"`
+	Name      string  `json:"name"`
+	CronExpr  string  `json:"cron_expr"`
+	StartDate *string `json:"start_date,omitempty"` // Expected format: "YYYY-MM-DD"
+	EndDate   *string `json:"end_date,omitempty"`   // Expected format: "YYYY-MM-DD"
+	Timezone  *string `json:"timezone,omitempty"`
 }
 
 // parseDateToUTC parses a "YYYY-MM-DD" string and returns a time.Time
@@ -79,8 +79,8 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	params := db.CreateScheduleParams{
-		Name:            req.Name,
-		CronExpr:        req.CronExpr,
+		Name:     req.Name,
+		CronExpr: req.CronExpr,
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {
@@ -126,7 +126,7 @@ func (h *AdminScheduleHandlers) AdminGetSchedule(w http.ResponseWriter, r *http.
 	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminGetSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if scheduleIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -135,7 +135,7 @@ func (h *AdminScheduleHandlers) AdminGetSchedule(w http.ResponseWriter, r *http.
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if scheduleIDStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -148,7 +148,7 @@ func (h *AdminScheduleHandlers) AdminGetSchedule(w http.ResponseWriter, r *http.
 			}
 		}
 	}
-	
+
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
@@ -176,7 +176,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminUpdateSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if scheduleIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -185,7 +185,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if scheduleIDStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -198,7 +198,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 			}
 		}
 	}
-	
+
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
@@ -232,9 +232,9 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	params := db.UpdateScheduleParams{
-		ScheduleID:      scheduleID,
-		Name:            req.Name,
-		CronExpr:        req.CronExpr,
+		ScheduleID: scheduleID,
+		Name:       req.Name,
+		CronExpr:   req.CronExpr,
 	}
 
 	if req.StartDate != nil && *req.StartDate != "" {
@@ -274,7 +274,7 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 	// Try multiple methods to extract the ID parameter
 	scheduleIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminDeleteSchedule called", "id_param", scheduleIDStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if scheduleIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -283,7 +283,7 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", scheduleIDStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if scheduleIDStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -296,7 +296,7 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 			}
 		}
 	}
-	
+
 	scheduleID, err := strconv.ParseInt(scheduleIDStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse schedule ID", "id_param", scheduleIDStr, "error", err)
@@ -362,7 +362,7 @@ func (h *AdminScheduleHandlers) AdminListAllShiftSlots(w http.ResponseWriter, r 
 		if errors.Is(err, service.ErrInternalServer) { // Assuming service might return this
 			RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve shift slots due to an internal error", h.logger, "error", err)
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve shift slots", h.logger, "error", err) 
+			RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve shift slots", h.logger, "error", err)
 		}
 		return
 	}
@@ -391,7 +391,7 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 	if err != nil {
 		// Log the error for server-side observability
 		slog.ErrorContext(r.Context(), "Error bulk deleting schedules", "error", err, "schedule_ids", req.ScheduleIDs)
-		
+
 		// Check for specific errors if needed, e.g., if some IDs were not found (though DELETE is often idempotent)
 		// For a simple bulk delete, a generic server error might be sufficient if any part fails.
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedules", h.logger)
@@ -399,4 +399,4 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedules deleted successfully"}, h.logger)
-} 
+}

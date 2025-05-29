@@ -65,7 +65,7 @@ func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, 
 	// 3. Prepare GPS data
 	var latitude, longitude, accuracy sql.NullFloat64
 	var gpsTimestamp sql.NullTime
-	
+
 	if gpsLocation != nil {
 		if gpsLocation.Latitude != nil {
 			latitude = sql.NullFloat64{Float64: *gpsLocation.Latitude, Valid: true}
@@ -114,7 +114,7 @@ func (s *ReportService) CreateOffShiftReport(ctx context.Context, userIDFromAuth
 	// 2. Prepare GPS data
 	var latitude, longitude, accuracy sql.NullFloat64
 	var gpsTimestamp sql.NullTime
-	
+
 	if gpsLocation != nil {
 		if gpsLocation.Latitude != nil {
 			latitude = sql.NullFloat64{Float64: *gpsLocation.Latitude, Valid: true}
@@ -149,4 +149,4 @@ func (s *ReportService) CreateOffShiftReport(ctx context.Context, userIDFromAuth
 
 	s.logger.InfoContext(ctx, "Off-shift report created successfully", "report_id", createdReport.ReportID, "user_id", userIDFromAuth)
 	return createdReport, nil
-} 
+}

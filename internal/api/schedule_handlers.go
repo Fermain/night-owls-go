@@ -100,4 +100,4 @@ func (h *ScheduleHandler) ListAvailableShiftsHandler(w http.ResponseWriter, r *h
 	}
 
 	RespondWithJSON(w, http.StatusOK, shifts, h.logger)
-} 
+}

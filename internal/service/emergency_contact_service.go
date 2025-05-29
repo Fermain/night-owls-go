@@ -175,4 +175,4 @@ func (s *EmergencyContactService) SetDefaultEmergencyContact(ctx context.Context
 
 	s.logger.InfoContext(ctx, "Default emergency contact updated", "contact_id", contactID)
 	return nil
-} 
+}

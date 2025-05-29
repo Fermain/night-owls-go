@@ -489,7 +489,7 @@ func TestAdminScheduleHandlers_ListAllShiftSlots_WithParams(t *testing.T) {
 	// Test with query parameters
 	fromTime := time.Now().UTC().Format(time.RFC3339)
 	toTime := time.Now().UTC().Add(7 * 24 * time.Hour).Format(time.RFC3339)
-	
+
 	url := fmt.Sprintf("/api/admin/schedules/all-slots?from=%s&to=%s&limit=10", fromTime, toTime)
 	rr := app.makeRequest(t, "GET", url, nil, adminToken)
 	require.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
@@ -555,4 +555,4 @@ func TestAdminScheduleHandlers_Unauthorized_NoToken(t *testing.T) {
 	// Test that requests without token are rejected
 	rr := app.makeRequest(t, "GET", "/api/admin/schedules", nil, "")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-} 
+}

@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
+	ErrUserNotFound        = errors.New("user not found")
 	ErrOTPValidationFailed = errors.New("otp validation failed")
-	ErrInternalServer    = errors.New("internal server error")
+	ErrInternalServer      = errors.New("internal server error")
 )
 
 // JWTGenerator defines a function that generates a JWT token
@@ -64,7 +64,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 
 			createUserParams := db.CreateUserParams{
 				Phone: phone,
-				Name:  name, // sql.NullString handles optional name
+				Name:  name,        // sql.NullString handles optional name
 				Role:  defaultRole, // Pass role as interface{} (string)
 			}
 			user, err = s.querier.CreateUser(ctx, createUserParams)
@@ -86,7 +86,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	}
 
 	otpValidityDuration := time.Duration(s.cfg.OTPValidityMinutes) * time.Minute // Use from config
-	s.otpStore.StoreOTP(phone, otp, otpValidityDuration) 
+	s.otpStore.StoreOTP(phone, otp, otpValidityDuration)
 	s.logger.DebugContext(ctx, "OTP generated and stored for user", "phone", phone, "validity_minutes", s.cfg.OTPValidityMinutes)
 
 	// Queue OTP message to outbox (actual DB write)
@@ -139,4 +139,4 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	s.logger.InfoContext(ctx, "OTP validated and JWT generated", "phone", phone, "user_id", user.UserID)
 	return tokenString, nil
-} 
+}

@@ -113,7 +113,7 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 	// Try multiple methods to extract the ID parameter
 	userIDStr := chi.URLParam(r, "userId")
 	h.logger.InfoContext(r.Context(), "GetUserBookingsHandler called", "id_param", userIDStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if userIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -122,7 +122,7 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", userIDStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if userIDStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -135,7 +135,7 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 			}
 		}
 	}
-	
+
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil || userID <= 0 {
 		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", userIDStr, "error", err)
@@ -161,4 +161,4 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 	}
 
 	RespondWithJSON(w, http.StatusOK, bookingResponses, h.logger)
-} 
+}

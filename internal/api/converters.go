@@ -37,15 +37,15 @@ func ToBookingResponse(booking db.Booking) BookingResponse {
 	}
 
 	return BookingResponse{
-		BookingID:    booking.BookingID,
-		UserID:       booking.UserID,
-		ScheduleID:   booking.ScheduleID,
-		ShiftStart:   booking.ShiftStart,
-		ShiftEnd:     booking.ShiftEnd,
-		BuddyUserID:  buddyUserID,
-		BuddyName:    buddyName,
-		CheckedInAt:  checkedInAt,
-		CreatedAt:    createdAt,
+		BookingID:   booking.BookingID,
+		UserID:      booking.UserID,
+		ScheduleID:  booking.ScheduleID,
+		ShiftStart:  booking.ShiftStart,
+		ShiftEnd:    booking.ShiftEnd,
+		BuddyUserID: buddyUserID,
+		BuddyName:   buddyName,
+		CheckedInAt: checkedInAt,
+		CreatedAt:   createdAt,
 	}
 }
 
@@ -168,4 +168,4 @@ func ToBookingWithScheduleResponse(booking db.ListBookingsByUserIDWithScheduleRo
 		CheckedInAt:  checkedInAt,
 		CreatedAt:    createdAt,
 	}
-} 
+}

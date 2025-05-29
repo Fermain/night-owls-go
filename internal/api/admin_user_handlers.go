@@ -39,15 +39,15 @@ type UserAPIResponse struct {
 
 // AdminUserHandler handles admin-specific user API requests.
 type AdminUserHandler struct {
-	db      db.Querier
+	db     db.Querier
 	logger *slog.Logger
 }
 
 // NewAdminUserHandler creates a new AdminUserHandler.
 func NewAdminUserHandler(db db.Querier, logger *slog.Logger) *AdminUserHandler {
 	return &AdminUserHandler{
-		db:      db,
-			logger: logger.With("handler", "AdminUserHandler"),
+		db:     db,
+		logger: logger.With("handler", "AdminUserHandler"),
 	}
 }
 
@@ -114,7 +114,7 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminGetUser called", "id_param", idStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -123,7 +123,7 @@ func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) 
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
@@ -256,19 +256,19 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminUpdateUser called", "id_param", idStr, "url", r.URL.Path)
-	
+
 	// Alternative method 1: Parse from URL path directly
 	if idStr == "" {
 		// Extract ID from path manually: /api/admin/users/{id}
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		h.logger.InfoContext(r.Context(), "URL path parts", "parts", pathParts)
-		
+
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
 			idStr = pathParts[3]
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if idStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -282,14 +282,14 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 			}
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid user ID", h.logger, "error", err)
 		return
 	}
-	
+
 	h.logger.InfoContext(r.Context(), "Parsed user ID successfully", "user_id", id)
 
 	var req updateUserRequest
@@ -334,7 +334,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		RespondWithError(w, http.StatusBadRequest, "Role is required", h.logger)
 		return
 	}
-	
+
 	if !isValidRole(req.Role) {
 		RespondWithError(w, http.StatusBadRequest, "Invalid role specified. Must be one of: admin, owl, guest", h.logger)
 		return
@@ -391,7 +391,7 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminDeleteUser called", "id_param", idStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -400,7 +400,7 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse user ID", "id_param", idStr, "error", err)
@@ -494,4 +494,4 @@ func derefString(s *string) string {
 		return ""
 	}
 	return *s
-} 
+}

@@ -33,7 +33,7 @@ func (s *Scheduler) EnqueueShiftReminders(ctx context.Context, booking db.Bookin
 
 	params24h := db.CreateOutboxItemParams{
 		MessageType: "push", // Channel
-		Recipient:   "",      // Not used for push, UserID is primary
+		Recipient:   "",     // Not used for push, UserID is primary
 		Payload:     sql.NullString{String: payload24h, Valid: true},
 		UserID:      sql.NullInt64{Int64: booking.UserID, Valid: true},
 		// Status will default to 'pending' in the DB or by CreateOutboxItem logic if it sets defaults.
@@ -71,4 +71,4 @@ func (s *Scheduler) EnqueueShiftReminders(ctx context.Context, booking db.Bookin
 
 	s.logger.WarnContext(ctx, "Reminder scheduling currently does not use a 'SendAt' field in outbox. Reminders will be dispatched when outbox processor runs.")
 	return nil
-} 
+}

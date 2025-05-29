@@ -20,25 +20,25 @@ type APIError struct {
 	Message   string    `json:"message"`
 	Code      string    `json:"code,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
-	
+
 	// Request context for debugging
 	RequestID string `json:"request_id,omitempty"`
 	Path      string `json:"path,omitempty"`
 	Method    string `json:"method,omitempty"`
-	
+
 	// Detailed error information (development only)
-	Details   *ErrorDetails `json:"details,omitempty"`
-	
+	Details *ErrorDetails `json:"details,omitempty"`
+
 	// Validation errors (for input validation failures)
 	ValidationErrors []ValidationError `json:"validation_errors,omitempty"`
 }
 
 // ErrorDetails provides additional debugging information (development mode only)
 type ErrorDetails struct {
-	Type       string                 `json:"type,omitempty"`
-	StackTrace string                 `json:"stack_trace,omitempty"`
-	Context    map[string]interface{} `json:"context,omitempty"`
-	InternalMsg string                `json:"internal_message,omitempty"`
+	Type        string                 `json:"type,omitempty"`
+	StackTrace  string                 `json:"stack_trace,omitempty"`
+	Context     map[string]interface{} `json:"context,omitempty"`
+	InternalMsg string                 `json:"internal_message,omitempty"`
 }
 
 // ValidationError represents a single field validation error
@@ -52,7 +52,7 @@ type ValidationError struct {
 // ErrorCode constants for standardized error identification
 const (
 	ErrCodeValidation       = "VALIDATION_ERROR"
-	ErrCodeAuthentication   = "AUTHENTICATION_ERROR" 
+	ErrCodeAuthentication   = "AUTHENTICATION_ERROR"
 	ErrCodeAuthorization    = "AUTHORIZATION_ERROR"
 	ErrCodeNotFound         = "RESOURCE_NOT_FOUND"
 	ErrCodeConflict         = "RESOURCE_CONFLICT"
@@ -69,12 +69,12 @@ func GetRequestID(r *http.Request) string {
 	if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
 		return requestID
 	}
-	
+
 	// Try correlation ID header
 	if correlationID := r.Header.Get("X-Correlation-ID"); correlationID != "" {
 		return correlationID
 	}
-	
+
 	// Generate a new request ID if none exists
 	return generateRequestID()
 }
@@ -110,7 +110,7 @@ func RespondWithAPIError(w http.ResponseWriter, r *http.Request, statusCode int,
 			InternalMsg: internalErr.Error(),
 			Context:     context,
 		}
-		
+
 		// Capture stack trace for internal errors
 		if statusCode >= 500 {
 			apiError.Details.StackTrace = captureStackTrace()
@@ -126,11 +126,11 @@ func RespondWithAPIError(w http.ResponseWriter, r *http.Request, statusCode int,
 		"path", r.URL.Path,
 		"method", r.Method,
 	}
-	
+
 	if internalErr != nil {
 		logFields = append(logFields, "internal_error", internalErr.Error())
 	}
-	
+
 	if context != nil {
 		for k, v := range context {
 			logFields = append(logFields, k, v)
@@ -146,7 +146,7 @@ func RespondWithAPIError(w http.ResponseWriter, r *http.Request, statusCode int,
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	if err := json.NewEncoder(w).Encode(apiError); err != nil {
 		logger.ErrorContext(r.Context(), "Failed to encode error response", "error", err)
 		// Fallback to basic error response
@@ -169,14 +169,14 @@ func RespondWithValidationError(w http.ResponseWriter, r *http.Request, validati
 	}
 
 	// Log validation errors
-	logger.WarnContext(r.Context(), "Validation Error", 
+	logger.WarnContext(r.Context(), "Validation Error",
 		"request_id", apiError.RequestID,
 		"path", r.URL.Path,
 		"validation_errors", validationErrors)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	
+
 	if err := json.NewEncoder(w).Encode(apiError); err != nil {
 		logger.ErrorContext(r.Context(), "Failed to encode validation error response", "error", err)
 	}
@@ -187,9 +187,9 @@ func RespondWithValidationError(w http.ResponseWriter, r *http.Request, validati
 // shouldIncludeDetails determines if detailed error information should be included
 func shouldIncludeDetails(r *http.Request) bool {
 	// Check for dev mode header or query parameter
-	return r.Header.Get("X-Debug-Mode") == "true" || 
-		   r.URL.Query().Get("debug") == "true" ||
-		   strings.Contains(r.Header.Get("User-Agent"), "development")
+	return r.Header.Get("X-Debug-Mode") == "true" ||
+		r.URL.Query().Get("debug") == "true" ||
+		strings.Contains(r.Header.Get("User-Agent"), "development")
 }
 
 // captureStackTrace captures the current stack trace for debugging
@@ -228,7 +228,7 @@ func buildContextFromDetails(details []any) map[string]interface{} {
 	if len(details) == 0 {
 		return nil
 	}
-	
+
 	context := make(map[string]interface{})
 	for i := 0; i < len(details)-1; i += 2 {
 		if key, ok := details[i].(string); ok && i+1 < len(details) {
@@ -246,14 +246,14 @@ func extractRequestFromContext(w http.ResponseWriter, details []any) *http.Reque
 		URL:    &url.URL{Path: "unknown"},
 		Header: make(http.Header),
 	}
-	
+
 	// Look for request in details
 	for _, detail := range details {
 		if req, ok := detail.(*http.Request); ok {
 			return req
 		}
 	}
-	
+
 	return r
 }
 
@@ -265,9 +265,9 @@ func RecoverFromPanic(w http.ResponseWriter, r *http.Request, logger *slog.Logge
 		context := map[string]interface{}{
 			"panic_value": fmt.Sprintf("%v", err),
 		}
-		
-		RespondWithAPIError(w, r, http.StatusInternalServerError, 
-			"Internal server error occurred", ErrCodeInternalServer, 
+
+		RespondWithAPIError(w, r, http.StatusInternalServerError,
+			"Internal server error occurred", ErrCodeInternalServer,
 			logger, fmt.Errorf("panic: %v", err), context)
 	}
 }
@@ -278,4 +278,4 @@ func WithErrorRecovery(handler http.HandlerFunc, logger *slog.Logger) http.Handl
 		defer RecoverFromPanic(w, r, logger)
 		handler(w, r)
 	}
-} 
+}

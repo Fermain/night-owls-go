@@ -123,9 +123,9 @@ func (s *BroadcastService) processBroadcast(ctx context.Context, broadcast db.Br
 		return fmt.Errorf("failed to update broadcast status to sent: %w", err)
 	}
 
-	s.logger.InfoContext(ctx, "Successfully processed broadcast", 
-		"broadcast_id", broadcast.BroadcastID, 
-		"recipients", len(recipients), 
+	s.logger.InfoContext(ctx, "Successfully processed broadcast",
+		"broadcast_id", broadcast.BroadcastID,
+		"recipients", len(recipients),
 		"outbox_entries", outboxCount)
 
 	return nil
@@ -192,9 +192,9 @@ func (s *BroadcastService) createPushOutboxEntries(ctx context.Context, broadcas
 			Payload:     sql.NullString{String: string(payloadBytes), Valid: true},
 		})
 		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to create outbox entry for push notification", 
-				"user_id", recipient.UserID, 
-				"broadcast_id", broadcast.BroadcastID, 
+			s.logger.ErrorContext(ctx, "Failed to create outbox entry for push notification",
+				"user_id", recipient.UserID,
+				"broadcast_id", broadcast.BroadcastID,
 				"error", err)
 			continue
 		}
@@ -210,4 +210,4 @@ func (s *BroadcastService) ScheduleBroadcast(ctx context.Context, broadcastID in
 	// The cron job should call ProcessPendingBroadcasts regularly to handle scheduled broadcasts
 	s.logger.InfoContext(ctx, "Broadcast scheduled", "broadcast_id", broadcastID, "scheduled_at", scheduledAt)
 	return nil
-} 
+}

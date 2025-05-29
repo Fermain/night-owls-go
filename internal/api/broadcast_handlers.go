@@ -66,7 +66,7 @@ func (h *BroadcastHandler) ListUserBroadcasts(w http.ResponseWriter, r *http.Req
 			} else {
 				createdAt = time.Now() // Fallback to current time if null
 			}
-			
+
 			userBroadcasts = append(userBroadcasts, UserBroadcastResponse{
 				ID:        broadcast.BroadcastID,
 				Message:   broadcast.Message,

@@ -122,9 +122,9 @@ func TestAdminBroadcastHandlers_CreateBroadcast_DifferentAudiences(t *testing.T)
 	require.NoError(t, err)
 
 	testCases := []struct {
-		audience        string
-		expectedCount   int64
-		description     string
+		audience      string
+		expectedCount int64
+		description   string
 	}{
 		{"all", 3, "all users (2 admins + 1 owl)"},
 		{"admins", 2, "admin users only"},
@@ -427,7 +427,7 @@ func TestAdminBroadcastHandlers_RecipientCountCalculation(t *testing.T) {
 
 	// Create test users with specific roles
 	ctx := context.Background()
-	
+
 	// Create another admin
 	_, err := app.Querier.CreateUser(ctx, db.CreateUserParams{
 		Phone: "+15550001002",
@@ -451,10 +451,10 @@ func TestAdminBroadcastHandlers_RecipientCountCalculation(t *testing.T) {
 		audience      string
 		expectedCount int64
 	}{
-		{"all", 5},     // 2 admins + 3 owls
-		{"admins", 2},  // 2 admins
-		{"owls", 3},    // 3 owls
-		{"active", 5},  // all users (for now)
+		{"all", 5},    // 2 admins + 3 owls
+		{"admins", 2}, // 2 admins
+		{"owls", 3},   // 3 owls
+		{"active", 5}, // all users (for now)
 	}
 
 	for _, tc := range testCases {
@@ -473,7 +473,7 @@ func TestAdminBroadcastHandlers_RecipientCountCalculation(t *testing.T) {
 			err := json.Unmarshal(rr.Body.Bytes(), &broadcast)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.expectedCount, broadcast.RecipientCount, 
+			assert.Equal(t, tc.expectedCount, broadcast.RecipientCount,
 				"Recipient count mismatch for audience %s", tc.audience)
 		})
 	}
@@ -515,4 +515,4 @@ func TestAdminBroadcastHandlers_Unauthorized_NoToken(t *testing.T) {
 	// Test that requests without token are rejected
 	rr := app.makeRequest(t, "GET", "/api/admin/broadcasts", nil, "")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-} 
+}

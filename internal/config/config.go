@@ -10,22 +10,22 @@ import (
 // Config holds the application configuration.
 // Values are typically loaded from environment variables.
 type Config struct {
-	ServerPort         string
-	DatabasePath       string
-	JWTSecret          string
+	ServerPort           string
+	DatabasePath         string
+	JWTSecret            string
 	DefaultShiftDuration time.Duration
-	OTPLogPath         string // Path for logging OTPs instead of sending them
-	LogLevel           string // e.g., "debug", "info", "warn", "error"
-	LogFormat          string // e.g., "json", "text"
+	OTPLogPath           string // Path for logging OTPs instead of sending them
+	LogLevel             string // e.g., "debug", "info", "warn", "error"
+	LogFormat            string // e.g., "json", "text"
 
 	JWTExpirationHours int
 	OTPValidityMinutes int
 	// OTPLength          int // Usually fixed by implementation, less often configured
-	OutboxBatchSize    int
-	OutboxMaxRetries   int
+	OutboxBatchSize  int
+	OutboxMaxRetries int
 
 	// Development mode - enables dev features like OTP in responses
-	DevMode            bool
+	DevMode bool
 
 	// PWA / WebPush specific
 	VAPIDPublic  string
@@ -39,26 +39,26 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		// Default values
-		ServerPort:         "5888",
-		DatabasePath:       "./community_watch.db",
-		JWTSecret:          "super-secret-jwt-key-please-change-in-prod", // IMPORTANT: Change this in production!
+		ServerPort:           "5888",
+		DatabasePath:         "./community_watch.db",
+		JWTSecret:            "super-secret-jwt-key-please-change-in-prod", // IMPORTANT: Change this in production!
 		DefaultShiftDuration: 2 * time.Hour,
-		OTPLogPath:         "./sms_outbox.log",
-		LogLevel:           "info", // Default log level
-		LogFormat:          "json", // Default log format
+		OTPLogPath:           "./sms_outbox.log",
+		LogLevel:             "info", // Default log level
+		LogFormat:            "json", // Default log format
 
-		JWTExpirationHours: 24,    // Default 24 hours
-		OTPValidityMinutes: 5,     // Default 5 minutes
+		JWTExpirationHours: 24, // Default 24 hours
+		OTPValidityMinutes: 5,  // Default 5 minutes
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
-		OutboxBatchSize:    10,    // Default 10 messages per batch
-		OutboxMaxRetries:   3,     // Default 3 retries
+		OutboxBatchSize:  10, // Default 10 messages per batch
+		OutboxMaxRetries: 3,  // Default 3 retries
 
 		// Development mode - enables dev features like OTP in responses
-		DevMode:            false,
+		DevMode: false,
 
 		// PWA / WebPush defaults
 		VAPIDSubject: "mailto:admin@example.com", // Default VAPID subject
-		StaticDir:    "app/build",          // Default static file directory - Hardcoded as per user request
+		StaticDir:    "app/build",                // Default static file directory - Hardcoded as per user request
 	}
 
 	if port := os.Getenv("SERVER_PORT"); port != "" {
@@ -138,4 +138,4 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return cfg, nil
-} 
+}

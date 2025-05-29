@@ -40,4 +40,4 @@ func (h *AdminDashboardHandler) GetDashboardHandler(w http.ResponseWriter, r *ht
 	}
 
 	RespondWithJSON(w, http.StatusOK, dashboard, h.logger)
-} 
+}

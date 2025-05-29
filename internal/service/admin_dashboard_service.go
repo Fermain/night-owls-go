@@ -48,38 +48,38 @@ type DashboardMetrics struct {
 }
 
 type MemberContribution struct {
-	UserID               int64   `json:"user_id"`
-	Name                 string  `json:"name"`
-	Phone                string  `json:"phone"`
-	ShiftsBooked         int     `json:"shifts_booked"`
-	ShiftsAttended       int     `json:"shifts_attended"`
-	ShiftsCompleted      int     `json:"shifts_completed"`
-	AttendanceRate       float64 `json:"attendance_rate"`
-	CompletionRate       float64 `json:"completion_rate"`
+	UserID               int64      `json:"user_id"`
+	Name                 string     `json:"name"`
+	Phone                string     `json:"phone"`
+	ShiftsBooked         int        `json:"shifts_booked"`
+	ShiftsAttended       int        `json:"shifts_attended"`
+	ShiftsCompleted      int        `json:"shifts_completed"`
+	AttendanceRate       float64    `json:"attendance_rate"`
+	CompletionRate       float64    `json:"completion_rate"`
 	LastShiftDate        *time.Time `json:"last_shift_date"`
-	ContributionCategory string  `json:"contribution_category"`
+	ContributionCategory string     `json:"contribution_category"`
 }
 
 type QualityMetrics struct {
-	NoShowRate     float64 `json:"no_show_rate"`
-	IncompleteRate float64 `json:"incomplete_rate"`
+	NoShowRate       float64 `json:"no_show_rate"`
+	IncompleteRate   float64 `json:"incomplete_rate"`
 	ReliabilityScore float64 `json:"reliability_score"`
 }
 
 type TimeSlotPattern struct {
-	DayOfWeek       string  `json:"day_of_week"`
-	HourOfDay       string  `json:"hour_of_day"`
-	TotalBookings   int     `json:"total_bookings"`
-	CheckInRate     float64 `json:"check_in_rate"`
-	CompletionRate  float64 `json:"completion_rate"`
+	DayOfWeek      string  `json:"day_of_week"`
+	HourOfDay      string  `json:"hour_of_day"`
+	TotalBookings  int     `json:"total_bookings"`
+	CheckInRate    float64 `json:"check_in_rate"`
+	CompletionRate float64 `json:"completion_rate"`
 }
 
 type AdminDashboard struct {
-	Metrics           DashboardMetrics      `json:"metrics"`
+	Metrics             DashboardMetrics     `json:"metrics"`
 	MemberContributions []MemberContribution `json:"member_contributions"`
-	QualityMetrics    QualityMetrics        `json:"quality_metrics"`
-	ProblematicSlots  []TimeSlotPattern     `json:"problematic_slots"`
-	GeneratedAt       time.Time             `json:"generated_at"`
+	QualityMetrics      QualityMetrics       `json:"quality_metrics"`
+	ProblematicSlots    []TimeSlotPattern    `json:"problematic_slots"`
+	GeneratedAt         time.Time            `json:"generated_at"`
 }
 
 func NewAdminDashboardService(querier db.Querier, scheduleService *ScheduleService, logger *slog.Logger) *AdminDashboardService {
@@ -94,7 +94,7 @@ func NewAdminDashboardService(querier db.Querier, scheduleService *ScheduleServi
 func (s *AdminDashboardService) GetDashboard(ctx context.Context) (*AdminDashboard, error) {
 	now := time.Now().UTC()
 	twoWeeksFromNow := now.AddDate(0, 0, 14)
-	
+
 	// Calculate metrics for next 2 weeks
 	metrics := s.calculateDashboardMetrics(ctx, now, twoWeeksFromNow)
 
@@ -275,7 +275,7 @@ func (s *AdminDashboardService) getProblematicTimeSlots(ctx context.Context) ([]
 
 	dayNames := map[string]string{
 		"0": "Sunday",
-		"1": "Monday", 
+		"1": "Monday",
 		"2": "Tuesday",
 		"3": "Wednesday",
 		"4": "Thursday",
@@ -291,7 +291,7 @@ func (s *AdminDashboardService) getProblematicTimeSlots(ctx context.Context) ([]
 				dayOfWeekStr = dow
 			}
 		}
-		
+
 		dayName, exists := dayNames[dayOfWeekStr]
 		if !exists {
 			dayName = "Unknown"
@@ -346,4 +346,4 @@ func (s *AdminDashboardService) getWeekendStatus(slots []AdminAvailableShiftSlot
 		return "critical"
 	}
 	return "partial_coverage"
-} 
+}

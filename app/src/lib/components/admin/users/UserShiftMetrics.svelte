@@ -4,7 +4,10 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import type { UserShiftMetrics } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, metrics: _metrics = null }: { isLoading?: boolean; metrics?: UserShiftMetrics | null } = $props();
+	let {
+		isLoading = false,
+		metrics: _metrics = null
+	}: { isLoading?: boolean; metrics?: UserShiftMetrics | null } = $props();
 </script>
 
 <Card.Root class="p-6">

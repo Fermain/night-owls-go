@@ -170,7 +170,7 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 	// Extract booking ID from URL
 	bookingIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "MarkCheckInHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
-	
+
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {
 		h.logger.ErrorContext(r.Context(), "Failed to parse booking ID", "id_param", bookingIDStr, "error", err)
@@ -222,7 +222,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	// Extract booking ID from URL
 	bookingIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "CancelBookingHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
-	
+
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {
 		h.logger.ErrorContext(r.Context(), "Failed to parse booking ID", "id_param", bookingIDStr, "error", err)
@@ -247,4 +247,4 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 
 	// Return 204 No Content for successful deletion
 	w.WriteHeader(http.StatusNoContent)
-} 
+}

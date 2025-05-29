@@ -45,8 +45,6 @@ type ScheduleSeed struct {
 	Timezone        string
 }
 
-
-
 type BookingSeed struct {
 	UserPhone    string
 	ScheduleName string
@@ -57,13 +55,13 @@ type BookingSeed struct {
 
 func main() {
 	var (
-		dbPath = flag.String("db", "", "Database path (if empty, uses config)")
-		reset  = flag.Bool("reset", false, "Reset database before seeding")
-		dryRun = flag.Bool("dry-run", false, "Show what would be seeded without actually doing it")
-		userCount = flag.Int("users", 10, "Number of users to create (default: 10)")
+		dbPath         = flag.String("db", "", "Database path (if empty, uses config)")
+		reset          = flag.Bool("reset", false, "Reset database before seeding")
+		dryRun         = flag.Bool("dry-run", false, "Show what would be seeded without actually doing it")
+		userCount      = flag.Int("users", 10, "Number of users to create (default: 10)")
 		futureBookings = flag.Bool("future-bookings", false, "Generate future bookings for next 30 days")
-		exportJSON = flag.String("export", "", "Export seeded data to JSON file")
-		verbose = flag.Bool("verbose", false, "Enable verbose logging")
+		exportJSON     = flag.String("export", "", "Export seeded data to JSON file")
+		verbose        = flag.Bool("verbose", false, "Enable verbose logging")
 	)
 	flag.Parse()
 
@@ -91,9 +89,9 @@ func main() {
 		databasePath = *dbPath
 	}
 
-	logger.Info("Starting seeding process", 
-		"database", databasePath, 
-		"reset", *reset, 
+	logger.Info("Starting seeding process",
+		"database", databasePath,
+		"reset", *reset,
 		"dry_run", *dryRun,
 		"user_count", *userCount,
 		"future_bookings", *futureBookings,
@@ -230,8 +228,6 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 		scheduleMap[schedule.Name] = schedule.ScheduleID
 	}
 
-
-
 	// Seed sample bookings
 	for _, bookingSeed := range seedData.Bookings {
 		userID, ok := userMap[bookingSeed.UserPhone]
@@ -274,8 +270,8 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 
 		booking, err := querier.CreateBooking(ctx, params)
 		if err != nil {
-			logger.Error("Failed to create booking", 
-				"user", bookingSeed.UserPhone, 
+			logger.Error("Failed to create booking",
+				"user", bookingSeed.UserPhone,
 				"schedule", bookingSeed.ScheduleName,
 				"shift_start", bookingSeed.ShiftStart,
 				"error", err)
@@ -291,14 +287,14 @@ func seedDatabase(ctx context.Context, querier db.Querier, logger *slog.Logger, 
 				CheckedInAt: checkInTime,
 			})
 			if err != nil {
-				logger.Warn("Failed to update booking check-in", 
-					"booking_id", booking.BookingID, 
+				logger.Warn("Failed to update booking check-in",
+					"booking_id", booking.BookingID,
 					"error", err)
 			}
 		}
 
-		logger.Info("Created booking", 
-			"user", bookingSeed.UserPhone, 
+		logger.Info("Created booking",
+			"user", bookingSeed.UserPhone,
 			"schedule", bookingSeed.ScheduleName,
 			"shift_start", shiftStart.Format(time.RFC3339),
 			"id", booking.BookingID)
@@ -315,16 +311,16 @@ func getSeedData() SeedData {
 
 func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData {
 	users := generateUsers(userCount)
-	
+
 	// No additional schedules - rely only on migration schedules
 	schedules := []ScheduleSeed{}
-	
+
 	// Create user phone map for filtering bookings
 	userPhones := make(map[string]bool)
 	for _, user := range users {
 		userPhones[user.Phone] = true
 	}
-	
+
 	historicalBookings := []BookingSeed{
 		// Historical bookings for Daily Evening Patrol
 		{
@@ -345,7 +341,7 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 			UserPhone:    "+27821234571", // Eve
 			ScheduleName: "Daily Evening Patrol",
 			ShiftStart:   "2025-01-22T18:00:00Z", // Recent Wednesday
-			Attended:     false, // Missed shift
+			Attended:     false,                  // Missed shift
 		},
 		{
 			UserPhone:    "+27821234571", // Eve
@@ -363,7 +359,7 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 			UserPhone:    "+27821234572", // Frank
 			ScheduleName: "Weekend Morning Watch",
 			ShiftStart:   "2025-01-25T06:00:00Z", // Recent Saturday
-			Attended:     false, // Missed shift
+			Attended:     false,                  // Missed shift
 		},
 		{
 			UserPhone:    "+27821234573", // Grace
@@ -419,7 +415,7 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 			Attended:     true,
 		},
 	}
-	
+
 	// Filter historical bookings based on available users
 	var filteredBookings []BookingSeed
 	for _, booking := range historicalBookings {
@@ -427,17 +423,17 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 			filteredBookings = append(filteredBookings, booking)
 		}
 	}
-	
+
 	// Add future bookings if requested
 	if includeFutureBookings {
 		// Create user and schedule maps for future booking generation
 		userMap := make(map[string]int64)
 		scheduleMap := make(map[string]int64)
-		
+
 		// These would be populated during actual seeding
 		// For now, we'll generate future bookings based on known users
 		futureBookings := generateFutureBookings(userMap, scheduleMap)
-		
+
 		// Filter future bookings based on available users
 		for _, booking := range futureBookings {
 			if userPhones[booking.UserPhone] {
@@ -455,30 +451,28 @@ func getSeedDataWithOptions(userCount int, includeFutureBookings bool) SeedData 
 
 func showSeedData(logger *slog.Logger, userCount int, futureBookings bool) {
 	seedData := getSeedDataWithOptions(userCount, futureBookings)
-	
+
 	logger.Info("=== SEED DATA PREVIEW ===")
-	
+
 	logger.Info("Users to be created", "count", len(seedData.Users))
 	for _, user := range seedData.Users {
 		logger.Info("  User", "name", user.Name, "phone", user.Phone, "role", user.Role)
 	}
-	
+
 	logger.Info("Schedules to be created", "count", len(seedData.Schedules))
 	for _, schedule := range seedData.Schedules {
 		logger.Info("  Schedule", "name", schedule.Name, "cron", schedule.CronExpr)
 	}
-	
 
-	
 	logger.Info("Bookings to be created", "count", len(seedData.Bookings))
 	for _, booking := range seedData.Bookings {
-		logger.Info("  Booking", 
-			"user", booking.UserPhone, 
+		logger.Info("  Booking",
+			"user", booking.UserPhone,
 			"schedule", booking.ScheduleName,
 			"shift", booking.ShiftStart,
 			"attended", booking.Attended)
 	}
-	
+
 	if futureBookings {
 		futureCount := 0
 		for _, booking := range seedData.Bookings {
@@ -493,7 +487,7 @@ func showSeedData(logger *slog.Logger, userCount int, futureBookings bool) {
 
 func exportSeededData(seedData SeedData, filePath string, logger *slog.Logger) error {
 	logger.Info("Exporting seeded data", "file", filePath)
-	
+
 	// Create export structure with metadata
 	exportData := struct {
 		ExportedAt time.Time `json:"exported_at"`
@@ -506,32 +500,32 @@ func exportSeededData(seedData SeedData, filePath string, logger *slog.Logger) e
 		Database:   "Night Owls Go",
 		Data:       seedData,
 	}
-	
+
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create export file: %w", err)
 	}
 	defer file.Close()
-	
+
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	
+
 	if err := encoder.Encode(exportData); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
-	
+
 	return nil
 }
 
 func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int64) []BookingSeed {
 	var futureBookings []BookingSeed
 	now := time.Now()
-	
+
 	// Generate bookings for the next 30 days
 	for i := 1; i <= 30; i++ {
 		futureDate := now.AddDate(0, 0, i)
 		weekday := int(futureDate.Weekday())
-		
+
 		// Add Daily Evening Patrol bookings (weekdays)
 		if weekday >= 1 && weekday <= 5 { // Monday to Friday
 			futureBookings = append(futureBookings, BookingSeed{
@@ -542,14 +536,14 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 				Attended:     false, // Future bookings default to not attended
 			})
 		}
-		
+
 		// Add Weekend Morning Watch bookings
 		if weekday == 6 || weekday == 0 { // Saturday or Sunday
 			userPhone := "+27821234572" // Frank
-			if weekday == 0 { // Sunday
+			if weekday == 0 {           // Sunday
 				userPhone = "+27821234573" // Grace
 			}
-			
+
 			futureBookings = append(futureBookings, BookingSeed{
 				UserPhone:    userPhone,
 				ScheduleName: "Weekend Morning Watch",
@@ -558,7 +552,7 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 				Attended:     false,
 			})
 		}
-		
+
 		// Occasionally add Weekday Lunch Security bookings (for variety)
 		if i%7 == 0 && weekday >= 1 && weekday <= 5 { // Every 7th weekday
 			futureBookings = append(futureBookings, BookingSeed{
@@ -570,7 +564,7 @@ func generateFutureBookings(userMap map[string]int64, scheduleMap map[string]int
 			})
 		}
 	}
-	
+
 	return futureBookings
 }
 
@@ -595,18 +589,18 @@ func generateUsers(count int) []UserSeed {
 			{Name: "Jack Visitor", Phone: "+27821234576", Role: "guest"},
 		}[:count]
 	}
-	
+
 	// Generate additional users for larger counts
 	users := generateUsers(10) // Start with base 10
-	
+
 	owlNames := []string{"Leo", "Zoe", "Max", "Ivy", "Sam", "Ruby", "Alex", "Nova", "Finn", "Luna"}
 	guestNames := []string{"Maya", "Ryan", "Aria", "Dean", "Nora", "Kyle", "Sage", "Troy", "Vale", "Reed"}
-	
+
 	phoneBase := 27821234577 // Continue from last default user
-	
+
 	for i := 10; i < count; i++ {
 		var name, role string
-		
+
 		if i%4 == 0 { // Every 4th user is a guest
 			role = "guest"
 			name = fmt.Sprintf("%s Guest", guestNames[(i-10)%len(guestNames)])
@@ -614,13 +608,13 @@ func generateUsers(count int) []UserSeed {
 			role = "owl"
 			name = fmt.Sprintf("%s Owl", owlNames[(i-10)%len(owlNames)])
 		}
-		
+
 		users = append(users, UserSeed{
 			Name:  name,
 			Phone: fmt.Sprintf("+%d", phoneBase+i-10),
 			Role:  role,
 		})
 	}
-	
+
 	return users
-} 
+}

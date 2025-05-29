@@ -91,7 +91,7 @@ type DevLoginResponse struct {
 // @Router /auth/register [post]
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.InfoContext(r.Context(), "RegisterHandler called with dev_mode", "dev_mode", h.config.DevMode)
-	
+
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
@@ -312,4 +312,4 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.InfoContext(r.Context(), "Dev login successful", "phone", phoneE164, "user_id", user.UserID, "role", user.Role)
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
-} 
+}

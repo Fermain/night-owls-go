@@ -113,7 +113,7 @@ export const handlers = [
 			id: Date.now(),
 			...body,
 			created_at: new Date().toISOString()
-		} as typeof mockSchedules[0] & { created_at: string };
+		} as (typeof mockSchedules)[0] & { created_at: string };
 		return HttpResponse.json(newSchedule);
 	}),
 

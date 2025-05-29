@@ -73,7 +73,7 @@ func seedReports(querier db.Querier) error {
 	// Create reports for a subset of bookings (not all shifts have incidents)
 	// Roughly 30% of shifts have some kind of report
 	reportsCreated := 0
-	
+
 	for _, booking := range bookings {
 		// Only create reports for past shifts (shifts that have already happened)
 		if booking.ShiftStart.After(time.Now()) {
@@ -115,7 +115,7 @@ func seedReports(querier db.Querier) error {
 		}
 
 		reportsCreated++
-		log.Printf("Created report %d (severity %d) for booking %d by %s", 
+		log.Printf("Created report %d (severity %d) for booking %d by %s",
 			report.ReportID, severity, booking.BookingID, booking.UserName)
 
 		// Add some time variation to make reports more realistic
@@ -173,10 +173,10 @@ func seedRecentCriticalReports(querier db.Querier) error {
 		}
 
 		reportsCreated++
-		log.Printf("Created critical report %d for booking %d by %s", 
+		log.Printf("Created critical report %d for booking %d by %s",
 			report.ReportID, booking.BookingID, booking.UserName)
 	}
 
 	log.Printf("Successfully created %d critical reports", reportsCreated)
 	return nil
-} 
+}

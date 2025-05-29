@@ -67,21 +67,21 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	t.Helper()
 
 	cfg := &config.Config{
-		ServerPort:         "0",
-		DatabasePath:       ":memory:",
-		JWTSecret:          "test-jwt-secret-admin",
+		ServerPort:           "0",
+		DatabasePath:         ":memory:",
+		JWTSecret:            "test-jwt-secret-admin",
 		DefaultShiftDuration: 2 * time.Hour,
-		OTPLogPath:         os.DevNull,
-		LogLevel:           "debug",
-		LogFormat:          "text",
-		JWTExpirationHours: 1,
-		OTPValidityMinutes: 5,
-		OutboxBatchSize:    10,
-		OutboxMaxRetries:   3,
-		StaticDir:          "../../app/build", // Path relative to internal/api
-		VAPIDPublic:        "test_public_key",
-		VAPIDPrivate:       "test_private_key",
-		VAPIDSubject:       "mailto:test@example.com",
+		OTPLogPath:           os.DevNull,
+		LogLevel:             "debug",
+		LogFormat:            "text",
+		JWTExpirationHours:   1,
+		OTPValidityMinutes:   5,
+		OutboxBatchSize:      10,
+		OutboxMaxRetries:     3,
+		StaticDir:            "../../app/build", // Path relative to internal/api
+		VAPIDPublic:          "test_public_key",
+		VAPIDPrivate:         "test_private_key",
+		VAPIDSubject:         "mailto:test@example.com",
 	}
 
 	loggerOpts := &slog.HandlerOptions{Level: slog.LevelDebug}
@@ -99,7 +99,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	migrationFiles, err := filepath.Glob(filepath.Join(migrationsDir, "*.up.sql"))
 	require.NoError(t, err, "Failed to glob migration files")
 	require.NotEmpty(t, migrationFiles, "No migration files found")
-	
+
 	// Sort migration files to ensure correct order if not already sorted by Glob
 	// For simple numeric prefixes, default sort usually works.
 	// sort.Strings(migrationFiles) // If more complex naming needed
@@ -107,30 +107,30 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	for _, migrationFile := range migrationFiles {
 		sqlBytes, err := os.ReadFile(migrationFile)
 		require.NoError(t, err, fmt.Sprintf("Failed to read migration file: %s", migrationFile))
-		
+
 		// Execute the entire migration file as one statement instead of splitting
 		// This handles inline comments properly
-        sqlContent := strings.TrimSpace(string(sqlBytes))
-        if sqlContent == "" {
-            continue
-        }
-        _, err = dbConn.Exec(sqlContent)
-        if err != nil {
-            // If executing as one statement fails, try splitting by semicolon followed by newline
-            queries := strings.Split(sqlContent, ";\n")
-            for i, query := range queries {
-                trimmedQuery := strings.TrimSpace(query)
-                if trimmedQuery == "" || strings.HasPrefix(trimmedQuery, "--") {
-                    continue
-                }
-                // Add semicolon back if it was the last statement and doesn't end with one
-                if i == len(queries)-1 && !strings.HasSuffix(trimmedQuery, ";") {
-                    trimmedQuery += ";"
-                }
-                _, err = dbConn.Exec(trimmedQuery)
-                require.NoError(t, err, fmt.Sprintf("Failed to execute migration query from %s: %s", migrationFile, trimmedQuery))
-            }
-        }
+		sqlContent := strings.TrimSpace(string(sqlBytes))
+		if sqlContent == "" {
+			continue
+		}
+		_, err = dbConn.Exec(sqlContent)
+		if err != nil {
+			// If executing as one statement fails, try splitting by semicolon followed by newline
+			queries := strings.Split(sqlContent, ";\n")
+			for i, query := range queries {
+				trimmedQuery := strings.TrimSpace(query)
+				if trimmedQuery == "" || strings.HasPrefix(trimmedQuery, "--") {
+					continue
+				}
+				// Add semicolon back if it was the last statement and doesn't end with one
+				if i == len(queries)-1 && !strings.HasSuffix(trimmedQuery, ";") {
+					trimmedQuery += ";"
+				}
+				_, err = dbConn.Exec(trimmedQuery)
+				require.NoError(t, err, fmt.Sprintf("Failed to execute migration query from %s: %s", migrationFile, trimmedQuery))
+			}
+		}
 	}
 
 	err = dbConn.Ping()
@@ -146,7 +146,6 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	reportService := service.NewReportService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
-
 
 	cronScheduler := cron.New()
 	// todo: setup cron jobs if they interfere or are needed by test flows
@@ -216,14 +215,13 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 		// Admin Dashboard
 		r.Get("/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
 	})
-	
+
 	// Also register protected user routes if admin might interact with them or if setup requires it
 	router.Group(func(r chi.Router) {
 		r.Use(api.AuthMiddleware(cfg, logger))
 		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
 		// ... other protected routes
 	})
-
 
 	return &adminTestApp{
 		Router:          router,
@@ -381,24 +379,24 @@ func parseSQLStatements(sqlContent string) []string {
 	inMultiLineComment := false
 	inString := false
 	var stringDelimiter rune
-	
+
 	lines := strings.Split(sqlContent, "\n")
-	
+
 	for _, line := range lines {
 		originalLine := line
 		line = strings.TrimSpace(line)
-		
+
 		// Skip migration directives
 		if strings.HasPrefix(strings.TrimSpace(line), "-- +migrate") {
 			continue
 		}
-		
+
 		// Handle single-line comments that start the line
 		if strings.HasPrefix(strings.TrimSpace(line), "--") && !inString && !inMultiLineComment {
 			// Skip this line entirely
 			continue
 		}
-		
+
 		for i, char := range line {
 			if inSingleLineComment {
 				// Single line comments end at line end, will be reset below
@@ -452,20 +450,20 @@ func parseSQLStatements(sqlContent string) []string {
 				}
 			}
 		}
-		
+
 		// Reset single-line comment flag at end of line
 		inSingleLineComment = false
-		
+
 		// Add newline to preserve formatting (except for comment lines)
 		if !strings.HasPrefix(strings.TrimSpace(originalLine), "--") {
 			currentStatement.WriteRune('\n')
 		}
 	}
-	
+
 	// Handle final statement if no trailing semicolon
 	if finalStmt := strings.TrimSpace(currentStatement.String()); finalStmt != "" {
 		statements = append(statements, finalStmt)
 	}
-	
+
 	return statements
 }

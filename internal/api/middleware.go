@@ -15,11 +15,11 @@ type ContextKey string
 
 const (
 	// UserIDKey is the key used to store the user ID in the request context.
-	UserIDKey    ContextKey = "userID"
+	UserIDKey ContextKey = "userID"
 	// UserPhoneKey is the key used to store the user phone in the request context.
 	UserPhoneKey ContextKey = "userPhone"
 	// UserRoleKey is the key used to store the user role in the request context.
-	UserRoleKey  ContextKey = "userRole"
+	UserRoleKey ContextKey = "userRole"
 )
 
 // AuthMiddleware creates a middleware handler for JWT authentication.
@@ -76,4 +76,4 @@ func AdminMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-} 
+}

@@ -38,7 +38,9 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	var otpValue string
 	for _, item := range outboxItems {
 		if item.Recipient == userPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otpValue = otpPayload.OTP
@@ -68,25 +70,25 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	// Shift time: 2025-01-06 at 18:00.
 
 	dailySchedule, err := app.Querier.GetScheduleByID(context.Background(), 1) // Assuming seeded daily schedule ID is 1
-    if errors.Is(err, sql.ErrNoRows) { // If GetScheduleByID is not implemented in mock or returns error
-        // Fallback: find it by name if GetScheduleByID is an issue or for robustness
-        schedules, errList := app.Querier.ListActiveSchedules(context.Background(), db.ListActiveSchedulesParams{
-            Date: sql.NullTime{Time: time.Now(), Valid: true},
-            Date_2: sql.NullTime{Time: time.Now(), Valid: true},
-        })
-        require.NoError(t, errList)
-        found := false
-        for _, s := range schedules {
-            if s.Name == "Daily Evening Patrol" {
-                dailySchedule = s
-                found = true
-                break
-            }
-        }
-        require.True(t, found, "Daily Evening Patrol schedule not found via ListActiveSchedules")
-    } else {
-	    require.NoError(t, err, "Failed to get daily schedule by ID=1 for test setup")
-    }
+	if errors.Is(err, sql.ErrNoRows) {                                         // If GetScheduleByID is not implemented in mock or returns error
+		// Fallback: find it by name if GetScheduleByID is an issue or for robustness
+		schedules, errList := app.Querier.ListActiveSchedules(context.Background(), db.ListActiveSchedulesParams{
+			Date:   sql.NullTime{Time: time.Now(), Valid: true},
+			Date_2: sql.NullTime{Time: time.Now(), Valid: true},
+		})
+		require.NoError(t, errList)
+		found := false
+		for _, s := range schedules {
+			if s.Name == "Daily Evening Patrol" {
+				dailySchedule = s
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "Daily Evening Patrol schedule not found via ListActiveSchedules")
+	} else {
+		require.NoError(t, err, "Failed to get daily schedule by ID=1 for test setup")
+	}
 
 	// Use a time that matches the cron expression in Africa/Johannesburg timezone
 	// Daily Evening Patrol runs at 18:00 in Johannesburg time, which is 16:00 UTC
@@ -132,22 +134,24 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	// Register and login another user
 	otherUserPhone := "+14155550104"
 	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Other User", Valid: true})
-    require.NoError(t, err, "Failed to register other user")
+	require.NoError(t, err, "Failed to register other user")
 
-    // Retrieve OTP for other user (directly from outbox table)
-    outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10) 
+	// Retrieve OTP for other user (directly from outbox table)
+	outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
 	var otherOtpValue string
 	for _, item := range outboxItemsOther {
 		if item.Recipient == otherUserPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otherOtpValue = otpPayload.OTP
-			break 
+			break
 		}
 	}
-    require.NotEmpty(t, otherOtpValue, "OTP not found in outbox for other user")
+	require.NotEmpty(t, otherOtpValue, "OTP not found in outbox for other user")
 
 	verifyOtherPayload := api.VerifyRequest{Phone: otherUserPhone, Code: otherOtpValue}
 	verOtherPayloadBytes, _ := json.Marshal(verifyOtherPayload)
@@ -163,4 +167,4 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 }
 
 // TODO: Test other booking error cases (invalid schedule, invalid time format, etc.)
-// TODO: Test booking with registered buddy (phone lookup success) 
+// TODO: Test booking with registered buddy (phone lookup success)

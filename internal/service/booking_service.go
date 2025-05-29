@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	ErrScheduleNotFound      = errors.New("schedule not found")
-	ErrShiftTimeInvalid    = errors.New("requested shift time is invalid for the schedule or outside its active window")
-	ErrBookingConflict       = errors.New("shift slot is already booked") // Corresponds to HTTP 409
-	ErrBookingNotFound     = errors.New("booking not found")
-	ErrForbiddenUpdate     = errors.New("user not authorized to update this booking")
-	ErrCheckInTooEarly     = errors.New("check-in is too early - can only check in up to 30 minutes before shift starts")
+	ErrScheduleNotFound         = errors.New("schedule not found")
+	ErrShiftTimeInvalid         = errors.New("requested shift time is invalid for the schedule or outside its active window")
+	ErrBookingConflict          = errors.New("shift slot is already booked") // Corresponds to HTTP 409
+	ErrBookingNotFound          = errors.New("booking not found")
+	ErrForbiddenUpdate          = errors.New("user not authorized to update this booking")
+	ErrCheckInTooEarly          = errors.New("check-in is too early - can only check in up to 30 minutes before shift starts")
 	ErrBookingCannotBeCancelled = errors.New("booking cannot be cancelled - shift has already started or is too close to start time")
 )
 
@@ -55,10 +55,10 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	}
 
 	// Check if startTime is within the schedule's overall active period (start_date and end_date)
-	if (schedule.StartDate.Valid && startTime.Before(schedule.StartDate.Time)) || 
-	   (schedule.EndDate.Valid && startTime.After(schedule.EndDate.Time)) {
-		s.logger.WarnContext(ctx, "Booking attempt for shift time outside schedule active dates", 
-			"schedule_id", scheduleID, "start_time", startTime, 
+	if (schedule.StartDate.Valid && startTime.Before(schedule.StartDate.Time)) ||
+		(schedule.EndDate.Valid && startTime.After(schedule.EndDate.Time)) {
+		s.logger.WarnContext(ctx, "Booking attempt for shift time outside schedule active dates",
+			"schedule_id", scheduleID, "start_time", startTime,
 			"schedule_start_date", schedule.StartDate, "schedule_end_date", schedule.EndDate)
 		return db.Booking{}, ErrShiftTimeInvalid
 	}
@@ -90,7 +90,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	// If this next occurrence is not exactly localStartTimeForCron, then startTime is not a valid point.
 	nextOccurrenceFromAlmostStartTime := cronExpression.Next(localStartTimeForCron.Add(-1 * time.Second))
 	if nextOccurrenceFromAlmostStartTime.IsZero() || !nextOccurrenceFromAlmostStartTime.Equal(localStartTimeForCron) {
-		s.logger.WarnContext(ctx, "Requested start_time does not match a cron expression occurrence in schedule's timezone", 
+		s.logger.WarnContext(ctx, "Requested start_time does not match a cron expression occurrence in schedule's timezone",
 			"schedule_id", scheduleID, "start_time_utc", startTime, "start_time_local", localStartTimeForCron, "cron_expr", schedule.CronExpr, "calculated_next_local", nextOccurrenceFromAlmostStartTime)
 		return db.Booking{}, ErrShiftTimeInvalid
 	}
@@ -116,8 +116,8 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 				actualBuddyName.String = buddyUser.Name.String // Prefer registered name
 				actualBuddyName.Valid = true
 			} else if !actualBuddyName.Valid { // if no name provided in request and user has no registered name
-                 actualBuddyName.Valid = false // ensure it remains null
-            }
+				actualBuddyName.Valid = false // ensure it remains null
+			}
 		} else if !errors.Is(err, sql.ErrNoRows) {
 			s.logger.ErrorContext(ctx, "Error looking up buddy by phone", "buddy_phone", buddyPhone.String, "error", err)
 			// Non-fatal, proceed with buddyName if provided
@@ -144,15 +144,15 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 		// This often manifests as a generic error containing "UNIQUE constraint failed".
 		s.logger.ErrorContext(ctx, "Failed to create booking in DB", "params", bookingParams, "error", err)
 		// A simple check for now, this might need refinement based on actual errors from sqlite driver
-        if isUniqueConstraintError(err) { // Renamed placeholder for actual error check
-            return db.Booking{}, ErrBookingConflict
-        }
+		if isUniqueConstraintError(err) { // Renamed placeholder for actual error check
+			return db.Booking{}, ErrBookingConflict
+		}
 		return db.Booking{}, ErrInternalServer
 	}
 	s.logger.InfoContext(ctx, "Booking created successfully", "booking_id", createdBooking.BookingID, "user_id", userID)
 
 	// 5. Queue confirmation message to outbox
-	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s"}`, 
+	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s"}`,
 		createdBooking.BookingID, createdBooking.UserID, createdBooking.ShiftStart.Format(time.RFC3339))
 	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
 		MessageType: "BOOKING_CONFIRMATION",
@@ -169,15 +169,16 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 
 // isUniqueConstraintError checks if the error is likely a unique constraint violation.
 func isUniqueConstraintError(err error) bool {
-    if err == nil { return false }
-    // This is a simplistic check. Real applications might use specific error codes or types
-    // provided by the database driver or an ORM.
-    // For SQLite with mattn/go-sqlite3, check for sqlite3.Error.Code == sqlite3.CONSTRAINT_UNIQUE (19 or 1555 or 2067)
-    // or if err.Error() contains "UNIQUE constraint failed"
-    // For now, a simple string check is used.
-    return strings.Contains(err.Error(), "UNIQUE constraint failed")
+	if err == nil {
+		return false
+	}
+	// This is a simplistic check. Real applications might use specific error codes or types
+	// provided by the database driver or an ORM.
+	// For SQLite with mattn/go-sqlite3, check for sqlite3.Error.Code == sqlite3.CONSTRAINT_UNIQUE (19 or 1555 or 2067)
+	// or if err.Error() contains "UNIQUE constraint failed"
+	// For now, a simple string check is used.
+	return strings.Contains(err.Error(), "UNIQUE constraint failed")
 }
-
 
 // MarkCheckIn handles marking a booking as checked in with a timestamp.
 func (s *BookingService) MarkCheckIn(ctx context.Context, bookingID int64, userIDFromAuth int64) (db.Booking, error) {
@@ -257,7 +258,7 @@ func (s *BookingService) CancelBooking(ctx context.Context, bookingID int64, use
 	s.logger.InfoContext(ctx, "Booking cancelled successfully", "booking_id", bookingID, "user_id", userIDFromAuth)
 
 	// Queue cancellation notification to outbox
-	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "cancelled_at": "%s"}`, 
+	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "cancelled_at": "%s"}`,
 		bookingID, booking.UserID, booking.ShiftStart.Format(time.RFC3339), now.Format(time.RFC3339))
 	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
 		MessageType: "BOOKING_CANCELLATION",
@@ -301,17 +302,16 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	// For this service method, we'll assume it's provided as UTC, consistent with how bookings are stored.
 	utcShiftStartTime := shiftStartTime.UTC()
 
-
 	// Check if shiftStartTime is within the schedule's overall active period (start_date and end_date)
 	// Dates in DB are YYYY-MM-DD, effectively UTC. startTime is also UTC.
 	if (schedule.StartDate.Valid && utcShiftStartTime.Before(schedule.StartDate.Time)) ||
-		(schedule.EndDate.Valid && utcShiftStartTime.After(schedule.EndDate.Time.AddDate(0,0,1).Add(-time.Nanosecond))) { // end_date is inclusive
+		(schedule.EndDate.Valid && utcShiftStartTime.After(schedule.EndDate.Time.AddDate(0, 0, 1).Add(-time.Nanosecond))) { // end_date is inclusive
 		s.logger.WarnContext(ctx, "Admin assignment attempt for shift time outside schedule active dates",
 			"schedule_id", scheduleID, "start_time", utcShiftStartTime,
 			"schedule_start_date", schedule.StartDate, "schedule_end_date", schedule.EndDate)
 		return db.Booking{}, ErrShiftTimeInvalid
 	}
-	
+
 	// Handle timezone for cron expression validation
 	// Load the schedule's timezone, or default to UTC if not specified or invalid
 	loc := time.UTC
@@ -326,7 +326,6 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	}
 	// Convert the UTC shiftStartTime to the schedule's local time for cron validation
 	localShiftStartTimeForCron := utcShiftStartTime.In(loc)
-
 
 	cronExpression, err := cronexpr.Parse(schedule.CronExpr)
 	if err != nil {
@@ -366,10 +365,10 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	bookingParams := db.CreateBookingParams{
 		UserID:      targetUserID,
 		ScheduleID:  scheduleID,
-		ShiftStart:  utcShiftStartTime, // Store in UTC
-		ShiftEnd:    shiftEndTime,   // Store in UTC
-		BuddyUserID: sql.NullInt64{Valid: false}, // No buddy for admin assignment by default
-		BuddyName:   sql.NullString{Valid: false},// No buddy for admin assignment by default
+		ShiftStart:  utcShiftStartTime,            // Store in UTC
+		ShiftEnd:    shiftEndTime,                 // Store in UTC
+		BuddyUserID: sql.NullInt64{Valid: false},  // No buddy for admin assignment by default
+		BuddyName:   sql.NullString{Valid: false}, // No buddy for admin assignment by default
 	}
 
 	createdBooking, err := s.querier.CreateBooking(ctx, bookingParams)
@@ -420,4 +419,4 @@ func (s *BookingService) GetUserBookings(ctx context.Context, userID int64) ([]d
 	}
 
 	return bookings, nil
-} 
+}

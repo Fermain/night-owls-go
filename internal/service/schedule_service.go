@@ -17,8 +17,8 @@ import (
 
 // Service specific errors
 var (
-	ErrNotFound       = errors.New("requested resource not found")
-	ErrInvalidInput   = errors.New("invalid input")
+	ErrNotFound     = errors.New("requested resource not found")
+	ErrInvalidInput = errors.New("invalid input")
 	// ErrInternalServer is assumed to be defined globally or in another service package.
 	// Add other common service errors here if needed, e.g., ErrInvalidInput
 )
@@ -42,26 +42,26 @@ func NewScheduleService(querier db.Querier, logger *slog.Logger, cfg *config.Con
 // AvailableShiftSlot represents a shift slot that can be booked.
 // It combines information from a schedule and a specific occurrence.
 type AvailableShiftSlot struct {
-	ScheduleID    int64     `json:"schedule_id"`
-	ScheduleName  string    `json:"schedule_name"`
-	StartTime     time.Time `json:"start_time"`
-	EndTime       time.Time `json:"end_time"`
-	Timezone      string    `json:"timezone,omitempty"`
-	IsBooked      bool      `json:"is_booked"` // Should always be false when returned by GetUpcomingAvailableSlots
+	ScheduleID   int64     `json:"schedule_id"`
+	ScheduleName string    `json:"schedule_name"`
+	StartTime    time.Time `json:"start_time"`
+	EndTime      time.Time `json:"end_time"`
+	Timezone     string    `json:"timezone,omitempty"`
+	IsBooked     bool      `json:"is_booked"` // Should always be false when returned by GetUpcomingAvailableSlots
 }
 
 // AdminAvailableShiftSlot represents a shift slot with booking details for admin view.
 type AdminAvailableShiftSlot struct {
-	ScheduleID               int64     `json:"schedule_id"`
-	ScheduleName             string    `json:"schedule_name"`
-	StartTime                time.Time `json:"start_time"`
-	EndTime                  time.Time `json:"end_time"`
-	Timezone                 string    `json:"timezone,omitempty"`
-	IsBooked                 bool      `json:"is_booked"`
-	BookingID                *int64    `json:"booking_id,omitempty"`
-	UserName                 *string   `json:"user_name,omitempty"`
-	UserPhone                *string   `json:"user_phone,omitempty"`
-	BuddyName                *string   `json:"buddy_name,omitempty"`
+	ScheduleID   int64     `json:"schedule_id"`
+	ScheduleName string    `json:"schedule_name"`
+	StartTime    time.Time `json:"start_time"`
+	EndTime      time.Time `json:"end_time"`
+	Timezone     string    `json:"timezone,omitempty"`
+	IsBooked     bool      `json:"is_booked"`
+	BookingID    *int64    `json:"booking_id,omitempty"`
+	UserName     *string   `json:"user_name,omitempty"`
+	UserPhone    *string   `json:"user_phone,omitempty"`
+	BuddyName    *string   `json:"buddy_name,omitempty"`
 }
 
 // calculateScheduleBoundaryTimesInLocation determines the effective start and end times
@@ -174,7 +174,7 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 					ScheduleID:   schedule.ScheduleID,
 					ScheduleName: schedule.Name,
 					StartTime:    firstPossibleOccurrence, // In schedule's loc
-					EndTime:      shiftEndTime,          // In schedule's loc
+					EndTime:      shiftEndTime,            // In schedule's loc
 					Timezone:     loc.String(),
 					IsBooked:     false,
 				}
@@ -262,8 +262,6 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		return []AdminAvailableShiftSlot{}, nil
 	}
 
-
-
 	var allSlots []AdminAvailableShiftSlot
 
 	for _, schedule := range allSchedules {
@@ -271,7 +269,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		if locErr != nil {
 			s.logger.WarnContext(ctx, "Proceeding with default location for schedule due to load error", "schedule_id", schedule.ScheduleID, "error", locErr)
 		}
-		
+
 		queryFromInLoc := actualFrom.In(loc)
 		queryToInLoc := actualTo.In(loc)
 
@@ -306,7 +304,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 					ScheduleID:   schedule.ScheduleID,
 					ScheduleName: schedule.Name,
 					StartTime:    firstPossibleOccurrence, // In schedule's loc
-					EndTime:      shiftEndTime,          // In schedule's loc
+					EndTime:      shiftEndTime,            // In schedule's loc
 					Timezone:     loc.String(),
 					IsBooked:     false,
 				}
@@ -337,19 +335,19 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 
 	var populatedSlots []AdminAvailableShiftSlot
 	for _, slot := range allSlots {
-		populatedSlot := slot 
-		
+		populatedSlot := slot
+
 		// First check for actual bookings
 		booking, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
 			ScheduleID: slot.ScheduleID,
 			ShiftStart: slot.StartTime.UTC(),
 		})
-		
+
 		if err == nil {
 			// Actual booking exists
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-			
+
 			user, userErr := s.querier.GetUserByID(ctx, booking.UserID)
 			if userErr == nil {
 				if user.Name.Valid {
@@ -359,7 +357,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 					populatedSlot.UserPhone = &user.Phone
 				}
 			}
-			
+
 			if booking.BuddyName.Valid {
 				populatedSlot.BuddyName = &booking.BuddyName.String
 			}
@@ -371,22 +369,20 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			s.logger.ErrorContext(ctx, "Error checking booking for admin slot", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
 			populatedSlot.IsBooked = false
 		}
-		
+
 		populatedSlots = append(populatedSlots, populatedSlot)
 	}
 
 	sort.Slice(populatedSlots, func(i, j int) bool {
 		return populatedSlots[i].StartTime.Before(populatedSlots[j].StartTime)
 	})
-	
+
 	if limit != nil && len(populatedSlots) > *limit {
 		populatedSlots = populatedSlots[:*limit]
 	}
 
 	return populatedSlots, nil
 }
-
-
 
 // Add the ListAllSchedules method to retrieve all schedules
 func (s *ScheduleService) ListAllSchedules(ctx context.Context) ([]db.Schedule, error) {
@@ -431,7 +427,7 @@ func (s *ScheduleService) AdminUpdateSchedule(ctx context.Context, params db.Upd
 
 	schedule, err := s.querier.UpdateSchedule(ctx, params)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) { 
+		if errors.Is(err, sql.ErrNoRows) {
 			s.logger.WarnContext(ctx, "Schedule not found for update (admin)", "schedule_id", params.ScheduleID, "error", err)
 			return db.Schedule{}, ErrNotFound
 		}
@@ -456,4 +452,4 @@ func (s *ScheduleService) AdminDeleteSchedule(ctx context.Context, scheduleID in
 // AdminBulkDeleteSchedules deletes multiple schedules by their IDs.
 func (s *ScheduleService) AdminBulkDeleteSchedules(ctx context.Context, scheduleIDs []int64) error {
 	return s.querier.AdminBulkDeleteSchedules(ctx, scheduleIDs)
-} 
+}

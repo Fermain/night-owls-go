@@ -9,7 +9,10 @@
 		cumulative: number;
 	}
 
-	let { isLoading = false, data: _data = null }: { isLoading?: boolean; data?: UserGrowthData[] | null } = $props();
+	let {
+		isLoading = false,
+		data: _data = null
+	}: { isLoading?: boolean; data?: UserGrowthData[] | null } = $props();
 </script>
 
 <Card.Root class="p-6">

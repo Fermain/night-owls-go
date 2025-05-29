@@ -37,7 +37,9 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	foundOTP := false
 	for _, item := range outboxItems {
 		if item.Recipient == userPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otpValue = otpPayload.OTP
@@ -62,7 +64,7 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	// Use one of the seeded schedules. Daily Evening Patrol (ID 1): '0 18 * * *'
 	// Active Jan 1, 2025 - Dec 31, 2025.
 	// Target shift: Monday, Jan 6, 2025, at 18:00 Johannesburg time (16:00 UTC)
-	targetScheduleID := int64(1) // Assuming Daily Evening Patrol is ID 1 from seed
+	targetScheduleID := int64(1)                // Assuming Daily Evening Patrol is ID 1 from seed
 	shiftStartTimeStr := "2025-01-06T16:00:00Z" // 18:00 Johannesburg time = 16:00 UTC
 	shiftStartTime, _ := time.Parse(time.RFC3339, shiftStartTimeStr)
 
@@ -95,25 +97,27 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	assert.Equal(t, reportReq.Message, createdReport.Message)
 
 	// --- Test POST /bookings/{id}/report (Invalid severity) ---
-	invalidReportReq := api.CreateReportRequest{ Severity: 5, Message: "Invalid severity report." }
+	invalidReportReq := api.CreateReportRequest{Severity: 5, Message: "Invalid severity report."}
 	invalidReportPayloadBytes, _ := json.Marshal(invalidReportReq)
 	rrInvalidReport := app.makeRequest(t, "POST", reportPath, bytes.NewBuffer(invalidReportPayloadBytes), userToken)
 	assert.Equal(t, http.StatusBadRequest, rrInvalidReport.Code, "Expected 400 for invalid severity: %s", rrInvalidReport.Body.String())
 
 	// --- Test POST /bookings/{id}/report (For a booking not owned by user) ---
 	otherUserPhone := "+14155550999" // Using US format that passes validation
-	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String:"Another Reporter", Valid:true})
+	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Another Reporter", Valid: true})
 	require.NoError(t, err, "Failed to register other user")
 
 	// Get a fresh look at outbox items for the other user
 	outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
-	
+
 	// Find the OTP for the other user
 	var otherOtpValue string
 	for _, item := range outboxItemsOther {
 		if item.Recipient == otherUserPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otherOtpValue = otpPayload.OTP
@@ -121,13 +125,13 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 		}
 	}
 	require.NotEmpty(t, otherOtpValue, "OTP not found for other reporter %s", otherUserPhone)
-	
+
 	// Verify the other user to get their token
 	verifyOtherPayload := api.VerifyRequest{Phone: otherUserPhone, Code: otherOtpValue}
 	verOtherPayloadBytes, _ := json.Marshal(verifyOtherPayload)
 	rrOtherVerify := app.makeRequest(t, "POST", "/auth/verify", bytes.NewBuffer(verOtherPayloadBytes), "")
 	require.Equal(t, http.StatusOK, rrOtherVerify.Code, "Verify for other user failed: %s", rrOtherVerify.Body.String())
-	
+
 	var verifyOtherResp api.VerifyResponse
 	err = json.Unmarshal(rrOtherVerify.Body.Bytes(), &verifyOtherResp)
 	require.NoError(t, err)
@@ -142,7 +146,7 @@ func TestShiftsAvailable_FilteringAndLimits(t *testing.T) {
 	app := newTestApp(t)
 	defer app.DB.Close()
 
-	// Seeded schedules: 
+	// Seeded schedules:
 	// ID 1: Daily Evening Patrol (Jan 1, 2025 - Dec 31, 2025), Cron: '0 18 * * *' (Daily 18:00)
 	// ID 2: Weekend Morning Watch (Jan 1, 2025 - Dec 31, 2025), Cron: '0 6,10 * * 6,0' (Sat/Sun 06:00, 10:00)
 	// ID 3: Weekday Lunch Security (Jan 1, 2025 - Dec 31, 2025), Cron: '0 12 * * 1-5' (Mon-Fri 12:00)
@@ -211,4 +215,4 @@ func TestSchedulesEndpoint(t *testing.T) {
 
 // TODO for this file was:
 // TODO: Test GET /schedules (currently placeholder in handler) - Partially done by TestSchedulesEndpoint
-// TODO: More detailed tests for /shifts/available (filtering, limits, no active schedules, time window effects) 
+// TODO: More detailed tests for /shifts/available (filtering, limits, no active schedules, time window effects)

@@ -54,21 +54,21 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 	t.Helper()
 
 	cfg := &config.Config{
-		ServerPort:         "0",
-		DatabasePath:       ":memory:",
-		JWTSecret:          "test-jwt-secret-booking",
+		ServerPort:           "0",
+		DatabasePath:         ":memory:",
+		JWTSecret:            "test-jwt-secret-booking",
 		DefaultShiftDuration: 2 * time.Hour,
-		OTPLogPath:         os.DevNull,
-		LogLevel:           "debug",
-		LogFormat:          "text",
-		JWTExpirationHours: 1,
-		OTPValidityMinutes: 5,
-		OutboxBatchSize:    10,
-		OutboxMaxRetries:   3,
-		StaticDir:          "../../app/build",
-		VAPIDPublic:        "test_public_key",
-		VAPIDPrivate:       "test_private_key",
-		VAPIDSubject:       "mailto:test@example.com",
+		OTPLogPath:           os.DevNull,
+		LogLevel:             "debug",
+		LogFormat:            "text",
+		JWTExpirationHours:   1,
+		OTPValidityMinutes:   5,
+		OutboxBatchSize:      10,
+		OutboxMaxRetries:     3,
+		StaticDir:            "../../app/build",
+		VAPIDPublic:          "test_public_key",
+		VAPIDPrivate:         "test_private_key",
+		VAPIDSubject:         "mailto:test@example.com",
 	}
 
 	loggerOpts := &slog.HandlerOptions{Level: slog.LevelDebug}
@@ -90,7 +90,7 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 	for _, migrationFile := range migrationFiles {
 		sqlBytes, err := os.ReadFile(migrationFile)
 		require.NoError(t, err, fmt.Sprintf("Failed to read migration file: %s", migrationFile))
-		
+
 		sqlContent := strings.TrimSpace(string(sqlBytes))
 		if sqlContent == "" {
 			continue
@@ -477,4 +477,4 @@ func TestBookingOperations_InvalidRequestPayload(t *testing.T) {
 	incompleteRequest := bytes.NewBufferString(`{"schedule_id": 1}`) // Missing start_time
 	rr = app.makeRequest(t, "POST", "/bookings", incompleteRequest, token)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-} 
+}

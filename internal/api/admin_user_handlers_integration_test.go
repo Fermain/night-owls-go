@@ -541,4 +541,4 @@ func TestAdminUserHandlers_Unauthorized_NoToken(t *testing.T) {
 	// Test that requests without token are rejected
 	rr := app.makeRequest(t, "GET", "/api/admin/users", nil, "")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-} 
+}

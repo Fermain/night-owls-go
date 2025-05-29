@@ -35,7 +35,7 @@ func NewLogFileMessageSender(logFilePath string, logger *slog.Logger) (*LogFileM
 
 // Send writes the message details to the configured log file.
 func (s *LogFileMessageSender) Send(recipient, messageType, payload string) error {
-	logMessage := fmt.Sprintf("[%s] To: %s, Type: %s, Payload: %s\n", 
+	logMessage := fmt.Sprintf("[%s] To: %s, Type: %s, Payload: %s\n",
 		time.Now().Format(time.RFC3339),
 		recipient,
 		messageType,
@@ -56,4 +56,4 @@ func (s *LogFileMessageSender) Send(recipient, messageType, payload string) erro
 
 	s.logger.Info("Message written to log file (mock send)", "recipient", recipient, "type", messageType, "path", s.logFilePath)
 	return nil
-} 
+}

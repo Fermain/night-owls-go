@@ -4,8 +4,10 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import type { UserMetrics } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, metrics: _metrics = null }: { isLoading?: boolean; metrics?: UserMetrics | null } =
-		$props();
+	let {
+		isLoading = false,
+		metrics: _metrics = null
+	}: { isLoading?: boolean; metrics?: UserMetrics | null } = $props();
 </script>
 
 <Card.Root class="p-6">

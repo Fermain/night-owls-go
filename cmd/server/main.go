@@ -69,7 +69,7 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 
 func main() {
 	startTime := time.Now() // Track server start time for health check uptime
-	
+
 	// Force timezone to UTC
 	os.Setenv("TZ", "UTC")
 
@@ -133,7 +133,7 @@ func main() {
 	// --- Setup Cron Jobs ---
 	cronLoggerAdapter := &slogCronLogger{logger: logger.With("component", "cron")}
 	cronScheduler := cron.New(cron.WithLogger(cron.PrintfLogger(cronLoggerAdapter)))
-	
+
 	// Process outbox every 1 minute
 	_, err = cronScheduler.AddFunc("@every 1m", func() {
 		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background())
@@ -182,7 +182,7 @@ func main() {
 
 	// --- Setup HTTP Router & Handlers ---
 	s := fuego.NewServer(
-		fuego.WithAddr(":" + cfg.ServerPort),
+		fuego.WithAddr(":"+cfg.ServerPort),
 		fuego.WithEngineOptions(
 			fuego.WithOpenAPIConfig(fuego.OpenAPIConfig{
 				UIHandler: func(specURL string) http.Handler {
@@ -238,22 +238,22 @@ func main() {
 	// Public routes
 	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
-	
+
 	// Development-only auth endpoints
 	if cfg.DevMode {
 		fuego.PostStd(s, "/api/auth/dev-login", authAPIHandler.DevLoginHandler)
 		slog.Info("Development mode: dev-login endpoint enabled")
 	}
-	
+
 	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
-	
+
 	// Emergency contacts (public access)
 	fuego.GetStd(s, "/api/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
 	fuego.GetStd(s, "/api/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
-	
+
 	// Health check endpoints for monitoring
 	fuego.GetStd(s, "/health", func(w http.ResponseWriter, r *http.Request) {
 		// Check database connectivity
@@ -262,19 +262,19 @@ func main() {
 			dbStatus = "down"
 			w.WriteHeader(http.StatusServiceUnavailable)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": "unhealthy",
+				"status":   "unhealthy",
 				"database": dbStatus,
-				"error": err.Error(),
+				"error":    err.Error(),
 			})
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": "healthy",
+			"status":   "healthy",
 			"database": dbStatus,
-			"uptime": time.Since(startTime).String(),
-			"version": "1.0.0", // TODO: Use build version
+			"uptime":   time.Since(startTime).String(),
+			"version":  "1.0.0", // TODO: Use build version
 		})
 	})
 
@@ -282,11 +282,11 @@ func main() {
 	fuego.GetStd(s, "/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
-			"status": "ok",
+			"status":  "ok",
 			"service": "night-owls-api",
 		})
 	})
-	
+
 	// Protected routes (require auth)
 	protected := fuego.Group(s, "")
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
@@ -337,10 +337,10 @@ func main() {
 	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
 	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
 	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
-	
+
 	// Test user broadcasts under admin for debugging
 	fuego.GetStd(admin, "/test-broadcasts", broadcastAPIHandler.ListUserBroadcasts)
-	
+
 	// Debug endpoint to manually trigger broadcast processing
 	fuego.PostStd(admin, "/debug/process-broadcasts", func(w http.ResponseWriter, r *http.Request) {
 		processed, err := broadcastService.ProcessPendingBroadcasts(r.Context())
@@ -349,12 +349,12 @@ func main() {
 			http.Error(w, "Failed to process broadcasts: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
+
 		response := map[string]interface{}{
 			"processed": processed,
-			"message": fmt.Sprintf("Successfully processed %d broadcasts", processed),
+			"message":   fmt.Sprintf("Successfully processed %d broadcasts", processed),
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	})
@@ -367,12 +367,12 @@ func main() {
 			http.Error(w, "Failed to archive reports: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
+
 		response := map[string]interface{}{
 			"archived": archived,
-			"message": fmt.Sprintf("Successfully archived %d reports", archived),
+			"message":  fmt.Sprintf("Successfully archived %d reports", archived),
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	})
@@ -385,7 +385,7 @@ func main() {
 			http.Error(w, "Failed to get archiving stats: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(stats)
 	})
@@ -396,13 +396,13 @@ func main() {
 		// Mimic the exact response pattern of working admin handlers
 		broadcasts := []map[string]interface{}{
 			{
-				"id": 999,
-				"message": "Test broadcast from simple handler",
-				"audience": "all",
+				"id":         999,
+				"message":    "Test broadcast from simple handler",
+				"audience":   "all",
 				"created_at": "2025-05-26T12:00:00Z",
 			},
 		}
-		
+
 		// Use the same response pattern as other handlers
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(broadcasts)
@@ -468,7 +468,7 @@ func main() {
 	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
 		// Enhanced debug logging
 		logger.Info("SPA fallback handler hit", "path", r.URL.Path, "method", r.Method)
-		
+
 		// Check each condition individually for debugging
 		hasApiPrefix := strings.HasPrefix(r.URL.Path, "/api/")
 		hasBookingsPrefix := strings.HasPrefix(r.URL.Path, "/bookings")
@@ -477,8 +477,8 @@ func main() {
 		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
 		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
 		hasReportsPrefix := strings.HasPrefix(r.URL.Path, "/reports/")
-		
-		logger.Info("Path prefix checks", 
+
+		logger.Info("Path prefix checks",
 			"path", r.URL.Path,
 			"api", hasApiPrefix,
 			"bookings", hasBookingsPrefix,
@@ -487,16 +487,16 @@ func main() {
 			"shifts", hasShiftsPrefix,
 			"push", hasPushPrefix,
 			"reports", hasReportsPrefix)
-		
+
 		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
 		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix || hasReportsPrefix {
 			logger.Info("Returning 404 for API route", "path", r.URL.Path)
 			http.NotFound(w, r)
 			return
 		}
-		
+
 		logger.Info("Serving SPA for route", "path", r.URL.Path)
-		
+
 		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
 		stat, err := os.Stat(requestedFilePath)
 		if err == nil && !stat.IsDir() {
@@ -518,11 +518,11 @@ func main() {
 
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{
-		Addr:    ":" + cfg.ServerPort,
-		Handler: s.Mux,
-		ReadTimeout: 5 * time.Second, 
-        WriteTimeout: 10 * time.Second,
-        IdleTimeout:  120 * time.Second,
+		Addr:         ":" + cfg.ServerPort,
+		Handler:      s.Mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	slog.Info("Night Owls Control Backend Starting HTTP server...", "port", cfg.ServerPort)

@@ -4,8 +4,10 @@
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import type { UserShiftDistribution } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, volunteers: _volunteers = null }: { isLoading?: boolean; volunteers?: UserShiftDistribution[] | null } =
-		$props();
+	let {
+		isLoading = false,
+		volunteers: _volunteers = null
+	}: { isLoading?: boolean; volunteers?: UserShiftDistribution[] | null } = $props();
 </script>
 
 <Card.Root class="p-6">

@@ -68,4 +68,4 @@ func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl
 			s.logger.InfoContext(ctx, "web push notification sent successfully", "user_id", userID, "endpoint", sub.Endpoint, "status_code", resp.StatusCode)
 		}
 	}
-} 
+}

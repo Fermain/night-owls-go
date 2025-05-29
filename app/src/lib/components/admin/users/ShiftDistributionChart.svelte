@@ -4,8 +4,10 @@
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import type { UserShiftDistribution } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, distribution: _distribution = null }: { isLoading?: boolean; distribution?: UserShiftDistribution[] | null } =
-		$props();
+	let {
+		isLoading = false,
+		distribution: _distribution = null
+	}: { isLoading?: boolean; distribution?: UserShiftDistribution[] | null } = $props();
 </script>
 
 <Card.Root class="p-6">

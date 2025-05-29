@@ -165,7 +165,7 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 	// Try multiple methods to extract the ID parameter (following users pattern)
 	idStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "AdminGetReportHandler called", "id_param", idStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -174,7 +174,7 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse report ID", "id_param", idStr, "error", err)
@@ -278,7 +278,7 @@ func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r 
 			idStr = pathParts[3]
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger)
@@ -313,7 +313,7 @@ func (h *AdminReportHandler) AdminUnarchiveReportHandler(w http.ResponseWriter, 
 			idStr = pathParts[3]
 		}
 	}
-	
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger)
@@ -416,4 +416,4 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiReports, h.logger)
-} 
+}

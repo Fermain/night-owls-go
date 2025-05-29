@@ -31,8 +31,8 @@ func NewReportHandler(reportService *service.ReportService, logger *slog.Logger)
 
 // CreateReportRequest is the expected JSON for POST /bookings/{id}/report.
 type CreateReportRequest struct {
-	Severity          int32   `json:"severity"` // 0, 1, or 2
-	Message           string  `json:"message,omitempty"`
+	Severity          int32    `json:"severity"` // 0, 1, or 2
+	Message           string   `json:"message,omitempty"`
 	Latitude          *float64 `json:"latitude,omitempty"`
 	Longitude         *float64 `json:"longitude,omitempty"`
 	Accuracy          *float64 `json:"accuracy,omitempty"`
@@ -41,8 +41,8 @@ type CreateReportRequest struct {
 
 // CreateOffShiftReportRequest is the expected JSON for POST /reports/off-shift.
 type CreateOffShiftReportRequest struct {
-	Severity          int32   `json:"severity"` // 0, 1, or 2
-	Message           string  `json:"message,omitempty"`
+	Severity          int32    `json:"severity"` // 0, 1, or 2
+	Message           string   `json:"message,omitempty"`
 	Latitude          *float64 `json:"latitude,omitempty"`
 	Longitude         *float64 `json:"longitude,omitempty"`
 	Accuracy          *float64 `json:"accuracy,omitempty"`
@@ -76,7 +76,7 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 	// Try multiple methods to extract the ID parameter
 	bookingIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "CreateReportHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -85,7 +85,7 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", bookingIDStr)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if bookingIDStr == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -98,7 +98,7 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 			}
 		}
 	}
-	
+
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {
 		h.logger.ErrorContext(r.Context(), "Failed to parse booking ID", "id_param", bookingIDStr, "error", err)
@@ -128,7 +128,7 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 			Longitude: req.Longitude,
 			Accuracy:  req.Accuracy,
 		}
-		
+
 		// Parse timestamp if provided
 		if req.LocationTimestamp != nil {
 			if parsedTime, err := time.Parse(time.RFC3339, *req.LocationTimestamp); err == nil {
@@ -209,7 +209,7 @@ func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *ht
 			Longitude: req.Longitude,
 			Accuracy:  req.Accuracy,
 		}
-		
+
 		// Parse timestamp if provided
 		if req.LocationTimestamp != nil {
 			if parsedTime, err := time.Parse(time.RFC3339, *req.LocationTimestamp); err == nil {
@@ -232,4 +232,4 @@ func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *ht
 	// Convert to API response format
 	reportResponse := ToReportResponse(report)
 	RespondWithJSON(w, http.StatusCreated, reportResponse, h.logger)
-} 
+}

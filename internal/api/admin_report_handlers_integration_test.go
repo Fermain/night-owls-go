@@ -27,7 +27,7 @@ func TestAdminReportHandlers_ListReports_Success(t *testing.T) {
 
 	// Create test data: user, schedule, booking, and reports
 	ctx := context.Background()
-	
+
 	// Create a regular user
 	testUser, err := app.Querier.CreateUser(ctx, db.CreateUserParams{
 		Phone: "+15550001002",
@@ -272,7 +272,7 @@ func TestAdminReportHandlers_ArchiveReport_NotFound(t *testing.T) {
 	rr := app.makeRequest(t, "PUT", "/api/admin/reports/99999/archive", nil, adminToken)
 	// Archive operation is idempotent - returns 200 OK even for non-existent reports
 	assert.Equal(t, http.StatusOK, rr.Code)
-	
+
 	var response map[string]string
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
@@ -526,7 +526,7 @@ func TestAdminReportHandlers_ReportWorkflow_Complete(t *testing.T) {
 	// Step 1: Get the report
 	rr := app.makeRequest(t, "GET", fmt.Sprintf("/api/admin/reports/%d", testReport.ReportID), nil, adminToken)
 	require.Equal(t, http.StatusOK, rr.Code)
-	
+
 	var report api.AdminReportResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &report)
 	require.NoError(t, err)
@@ -539,11 +539,11 @@ func TestAdminReportHandlers_ReportWorkflow_Complete(t *testing.T) {
 	// Step 3: Verify it appears in archived list
 	rr = app.makeRequest(t, "GET", "/api/admin/reports/archived", nil, adminToken)
 	require.Equal(t, http.StatusOK, rr.Code)
-	
+
 	var archivedReports []api.AdminReportResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &archivedReports)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, archivedReport := range archivedReports {
 		if archivedReport.ReportID == testReport.ReportID {
@@ -561,11 +561,11 @@ func TestAdminReportHandlers_ReportWorkflow_Complete(t *testing.T) {
 	// Step 5: Verify it's back in regular list
 	rr = app.makeRequest(t, "GET", "/api/admin/reports", nil, adminToken)
 	require.Equal(t, http.StatusOK, rr.Code)
-	
+
 	var regularReports []api.AdminReportResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &regularReports)
 	require.NoError(t, err)
-	
+
 	found = false
 	for _, regularReport := range regularReports {
 		if regularReport.ReportID == testReport.ReportID {
@@ -615,4 +615,4 @@ func TestAdminReportHandlers_Unauthorized_NoToken(t *testing.T) {
 	// Test that requests without token are rejected
 	rr := app.makeRequest(t, "GET", "/api/admin/reports", nil, "")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-} 
+}

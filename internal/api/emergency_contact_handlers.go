@@ -26,12 +26,12 @@ func NewEmergencyContactHandler(emergencyContactService *service.EmergencyContac
 
 // EmergencyContactResponse represents the API response format
 type EmergencyContactResponse struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Number      string `json:"number"`
-	Description string `json:"description"`
-	IsDefault   bool   `json:"is_default"`
-	DisplayOrder int64 `json:"display_order"`
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	Number       string `json:"number"`
+	Description  string `json:"description"`
+	IsDefault    bool   `json:"is_default"`
+	DisplayOrder int64  `json:"display_order"`
 }
 
 // CreateEmergencyContactRequest represents the request to create an emergency contact
@@ -374,4 +374,4 @@ func (h *EmergencyContactHandler) AdminSetDefaultEmergencyContactHandler(w http.
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-} 
+}

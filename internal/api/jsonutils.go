@@ -12,7 +12,7 @@ func RespondWithError(w http.ResponseWriter, code int, message string, logger *s
 	// Try to extract request from details for enhanced error handling
 	var r *http.Request
 	var context map[string]interface{}
-	
+
 	// Parse details to find request and build context
 	context = make(map[string]interface{})
 	for i := 0; i < len(details); i++ {
@@ -27,14 +27,14 @@ func RespondWithError(w http.ResponseWriter, code int, message string, logger *s
 			}
 		}
 	}
-	
+
 	// If we have a request, use the advanced error handling
 	if r != nil {
 		errorCode := getErrorCodeFromStatus(code)
 		RespondWithAPIError(w, r, code, message, errorCode, logger, nil, context)
 		return
 	}
-	
+
 	// Fallback to legacy behavior for backward compatibility
 	RespondWithJSON(w, code, map[string]string{"error": message}, logger, details...)
 }
@@ -48,22 +48,22 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}, logge
 		if currentLogger == nil {
 			currentLogger = slog.Default()
 		}
-		
+
 		// Enhanced error logging with more context
 		logFields := []interface{}{
 			"payload_type", getPayloadType(payload),
 			"error", err,
 		}
-		
+
 		// Add details to log fields
 		for i := 0; i < len(details)-1; i += 2 {
 			if key, ok := details[i].(string); ok && i+1 < len(details) {
 				logFields = append(logFields, key, details[i+1])
 			}
 		}
-		
+
 		currentLogger.Error("Failed to marshal JSON response", logFields...)
-		
+
 		// Send structured error response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -79,21 +79,21 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}, logge
 		if currentLogger == nil {
 			currentLogger = slog.Default()
 		}
-		
+
 		// Enhanced warning logging
 		logFields := []interface{}{
 			"status_code", code,
 			"response_size", len(response),
 			"error", err,
 		}
-		
+
 		// Add details to log fields
 		for i := 0; i < len(details)-1; i += 2 {
 			if key, ok := details[i].(string); ok && i+1 < len(details) {
 				logFields = append(logFields, key, details[i+1])
 			}
 		}
-		
+
 		currentLogger.Warn("Failed to write JSON response", logFields...)
 	}
 }
@@ -103,7 +103,7 @@ func getPayloadType(payload interface{}) string {
 	if payload == nil {
 		return "nil"
 	}
-	
+
 	switch payload.(type) {
 	case map[string]string:
 		return "map[string]string"
@@ -116,4 +116,4 @@ func getPayloadType(payload interface{}) string {
 	default:
 		return "unknown"
 	}
-} 
+}

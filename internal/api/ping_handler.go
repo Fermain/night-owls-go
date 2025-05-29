@@ -44,4 +44,4 @@ func PingHandler(logger *slog.Logger) http.HandlerFunc {
 
 		RespondWithJSON(w, http.StatusOK, resp, logger.With("handler", "PingHandler"))
 	}
-} 
+}

@@ -89,8 +89,8 @@ func (h *ExampleHandler) CreateExampleWithValidation(w http.ResponseWriter, r *h
 	var req ExampleRequest
 	if !GetValidatedData(r, &req) {
 		// This shouldn't happen if middleware is configured correctly
-		RespondWithAPIError(w, r, http.StatusInternalServerError, 
-			"Failed to get validated data", ErrCodeInternalServer, 
+		RespondWithAPIError(w, r, http.StatusInternalServerError,
+			"Failed to get validated data", ErrCodeInternalServer,
 			h.logger, fmt.Errorf("validation middleware not configured"), nil)
 		return
 	}
@@ -117,7 +117,7 @@ func (h *ExampleHandler) CreateExampleWithValidation(w http.ResponseWriter, r *h
 // CreateExampleManualValidation demonstrates manual validation with detailed errors
 func (h *ExampleHandler) CreateExampleManualValidation(w http.ResponseWriter, r *http.Request) {
 	var req ExampleRequest
-	
+
 	// Manual validation using the validation framework
 	validationErrors := ValidateRequest(r, &req, exampleValidationRules, h.logger)
 	if len(validationErrors) > 0 {
@@ -132,7 +132,7 @@ func (h *ExampleHandler) CreateExampleManualValidation(w http.ResponseWriter, r 
 			"reason": "reserved_name",
 			"name":   req.Name,
 		}
-		RespondWithAPIError(w, r, http.StatusConflict, 
+		RespondWithAPIError(w, r, http.StatusConflict,
 			"Name 'error' is reserved and cannot be used", ErrCodeConflict,
 			h.logger, fmt.Errorf("reserved name: %s", req.Name), context)
 		return
@@ -164,30 +164,30 @@ func (h *ExampleHandler) GetExampleWithErrorDemo(w http.ResponseWriter, r *http.
 	switch errorType {
 	case "not_found":
 		context := map[string]interface{}{
-			"example_id": exampleID,
+			"example_id":  exampleID,
 			"searched_at": time.Now().UTC(),
 		}
-		RespondWithAPIError(w, r, http.StatusNotFound, 
+		RespondWithAPIError(w, r, http.StatusNotFound,
 			"Example not found", ErrCodeNotFound,
 			h.logger, fmt.Errorf("example %s not found", exampleID), context)
 		return
-		
+
 	case "forbidden":
 		context := map[string]interface{}{
 			"example_id": exampleID,
-			"user_id": r.Context().Value(UserIDKey),
+			"user_id":    r.Context().Value(UserIDKey),
 		}
-		RespondWithAPIError(w, r, http.StatusForbidden, 
+		RespondWithAPIError(w, r, http.StatusForbidden,
 			"Access denied to this example", ErrCodeAuthorization,
 			h.logger, fmt.Errorf("user not authorized for example %s", exampleID), context)
 		return
-		
+
 	case "internal":
 		context := map[string]interface{}{
 			"example_id": exampleID,
-			"operation": "get_example",
+			"operation":  "get_example",
 		}
-		RespondWithAPIError(w, r, http.StatusInternalServerError, 
+		RespondWithAPIError(w, r, http.StatusInternalServerError,
 			"Internal server error occurred", ErrCodeInternalServer,
 			h.logger, fmt.Errorf("database connection failed"), context)
 		return
@@ -211,7 +211,7 @@ func (h *ExampleHandler) GetExampleWithErrorDemo(w http.ResponseWriter, r *http.
 func (h *ExampleHandler) SetupExampleRoutes(mux *http.ServeMux, cfg *config.Config, logger *slog.Logger) {
 	// Route with validation middleware
 	validationMiddleware := ValidationMiddleware(exampleValidationRules, ExampleRequest{}, logger)
-	
+
 	// Chain multiple middlewares for comprehensive request handling
 	createWithValidation := SecurityHeadersMiddleware(cfg)(
 		RequestTracingMiddleware(logger)(
@@ -277,7 +277,7 @@ func GetExampleErrorPatterns() map[string]interface{} {
 				Path:      "/api/examples",
 				Method:    "POST",
 				Details: &ErrorDetails{
-					Type:    "*errors.errorString",
+					Type: "*errors.errorString",
 					Context: map[string]interface{}{
 						"reason": "reserved_name",
 						"name":   "error",
@@ -326,4 +326,4 @@ func GetExampleErrorPatterns() map[string]interface{} {
 			},
 		},
 	}
-} 
+}

@@ -60,7 +60,7 @@ func (s *ReportArchivingService) ArchiveOldReports(ctx context.Context) (int, er
 		severityCounts[report.Severity]++
 	}
 
-	s.logger.InfoContext(ctx, "Successfully auto-archived reports", 
+	s.logger.InfoContext(ctx, "Successfully auto-archived reports",
 		"total_archived", len(reportIDs),
 		"normal_reports", severityCounts[0],
 		"suspicion_reports", severityCounts[1],
@@ -79,9 +79,9 @@ func (s *ReportArchivingService) GetArchivingStats(ctx context.Context) (map[str
 	stats := map[string]interface{}{
 		"total_archivable": len(reportsToArchive),
 		"by_severity": map[string]int{
-			"normal":     0,
-			"suspicion":  0,
-			"incident":   0,
+			"normal":    0,
+			"suspicion": 0,
+			"incident":  0,
 		},
 		"oldest_archivable": nil,
 	}
@@ -115,4 +115,4 @@ func (s *ReportArchivingService) GetArchivingStats(ctx context.Context) (map[str
 	}
 
 	return stats, nil
-} 
+}

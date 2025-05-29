@@ -250,4 +250,4 @@ func nullInt64ToInt64(ni sql.NullInt64) int64 {
 		return ni.Int64
 	}
 	return 0
-} 
+}

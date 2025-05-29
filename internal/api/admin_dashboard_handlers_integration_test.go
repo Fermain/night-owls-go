@@ -35,14 +35,14 @@ func TestAdminDashboardHandlers_GetDashboard_Success(t *testing.T) {
 	// Verify metrics structure
 	metrics, ok := dashboard["metrics"].(map[string]interface{})
 	require.True(t, ok, "metrics should be an object")
-	
+
 	expectedMetrics := []string{
-		"total_shifts", "booked_shifts", "unfilled_shifts", 
+		"total_shifts", "booked_shifts", "unfilled_shifts",
 		"checked_in_shifts", "completed_shifts", "fill_rate",
 		"check_in_rate", "completion_rate", "next_week_unfilled",
 		"this_weekend_status",
 	}
-	
+
 	for _, metric := range expectedMetrics {
 		assert.Contains(t, metrics, metric, "Missing metric: %s", metric)
 	}
@@ -58,7 +58,7 @@ func TestAdminDashboardHandlers_GetDashboard_Success(t *testing.T) {
 	// Verify member contributions structure
 	memberContributions, ok := dashboard["member_contributions"].([]interface{})
 	require.True(t, ok, "member_contributions should be an array")
-	
+
 	if len(memberContributions) > 0 {
 		contribution := memberContributions[0].(map[string]interface{})
 		expectedFields := []string{
@@ -66,7 +66,7 @@ func TestAdminDashboardHandlers_GetDashboard_Success(t *testing.T) {
 			"shifts_attended", "shifts_completed", "attendance_rate",
 			"completion_rate", "last_shift_date", "contribution_category",
 		}
-		
+
 		for _, field := range expectedFields {
 			assert.Contains(t, contribution, field, "Missing contribution field: %s", field)
 		}
@@ -75,7 +75,7 @@ func TestAdminDashboardHandlers_GetDashboard_Success(t *testing.T) {
 	// Verify quality metrics structure
 	qualityMetrics, ok := dashboard["quality_metrics"].(map[string]interface{})
 	require.True(t, ok, "quality_metrics should be an object")
-	
+
 	expectedQualityMetrics := []string{"no_show_rate", "incomplete_rate", "reliability_score"}
 	for _, metric := range expectedQualityMetrics {
 		assert.Contains(t, qualityMetrics, metric, "Missing quality metric: %s", metric)
@@ -119,12 +119,12 @@ func TestAdminDashboardHandlers_GetDashboard_MetricsValidation(t *testing.T) {
 	assert.GreaterOrEqual(t, totalShifts, float64(0), "Total shifts should be non-negative")
 	assert.GreaterOrEqual(t, bookedShifts, float64(0), "Booked shifts should be non-negative")
 	assert.GreaterOrEqual(t, unfilledShifts, float64(0), "Unfilled shifts should be non-negative")
-	
+
 	// Relationship validation
 	if totalShifts > 0 {
 		assert.LessOrEqual(t, bookedShifts, totalShifts, "Booked shifts should not exceed total shifts")
 		assert.LessOrEqual(t, unfilledShifts, totalShifts, "Unfilled shifts should not exceed total shifts")
-		
+
 		// Fill rate should be between 0 and 100
 		assert.GreaterOrEqual(t, fillRate, float64(0), "Fill rate should be at least 0%")
 		assert.LessOrEqual(t, fillRate, float64(100), "Fill rate should not exceed 100%")
@@ -133,7 +133,7 @@ func TestAdminDashboardHandlers_GetDashboard_MetricsValidation(t *testing.T) {
 	// Validate percentage metrics
 	checkInRate := metrics["check_in_rate"].(float64)
 	completionRate := metrics["completion_rate"].(float64)
-	
+
 	assert.GreaterOrEqual(t, checkInRate, float64(0), "Check-in rate should be at least 0%")
 	assert.LessOrEqual(t, checkInRate, float64(100), "Check-in rate should not exceed 100%")
 	assert.GreaterOrEqual(t, completionRate, float64(0), "Completion rate should be at least 0%")
@@ -165,10 +165,10 @@ func TestAdminDashboardHandlers_GetDashboard_QualityMetricsValidation(t *testing
 	// All rates should be percentages (0-100)
 	assert.GreaterOrEqual(t, noShowRate, float64(0), "No-show rate should be at least 0%")
 	assert.LessOrEqual(t, noShowRate, float64(100), "No-show rate should not exceed 100%")
-	
+
 	assert.GreaterOrEqual(t, incompleteRate, float64(0), "Incomplete rate should be at least 0%")
 	assert.LessOrEqual(t, incompleteRate, float64(100), "Incomplete rate should not exceed 100%")
-	
+
 	assert.GreaterOrEqual(t, reliabilityScore, float64(0), "Reliability score should be at least 0%")
 	assert.LessOrEqual(t, reliabilityScore, float64(100), "Reliability score should not exceed 100%")
 }
@@ -189,11 +189,11 @@ func TestAdminDashboardHandlers_GetDashboard_MemberContributionsStructure(t *tes
 	require.NoError(t, err)
 
 	memberContributions := dashboard["member_contributions"].([]interface{})
-	
+
 	// If there are member contributions, validate their structure
 	if len(memberContributions) > 0 {
 		contribution := memberContributions[0].(map[string]interface{})
-		
+
 		// Validate data types
 		assert.IsType(t, float64(0), contribution["user_id"])
 		assert.IsType(t, "", contribution["name"])
@@ -208,16 +208,16 @@ func TestAdminDashboardHandlers_GetDashboard_MemberContributionsStructure(t *tes
 			assert.IsType(t, "", contribution["last_shift_date"])
 		}
 		assert.IsType(t, "", contribution["contribution_category"])
-		
+
 		// Validate ranges
 		attendanceRate := contribution["attendance_rate"].(float64)
 		completionRate := contribution["completion_rate"].(float64)
-		
+
 		assert.GreaterOrEqual(t, attendanceRate, float64(0), "Attendance rate should be at least 0%")
 		assert.LessOrEqual(t, attendanceRate, float64(100), "Attendance rate should not exceed 100%")
 		assert.GreaterOrEqual(t, completionRate, float64(0), "Completion rate should be at least 0%")
 		assert.LessOrEqual(t, completionRate, float64(100), "Completion rate should not exceed 100%")
-		
+
 		// Validate contribution category (based on actual SQL query)
 		category := contribution["contribution_category"].(string)
 		validCategories := []string{"non_contributor", "minimum_contributor", "fair_contributor", "heavy_lifter"}
@@ -238,7 +238,7 @@ func TestAdminDashboardHandlers_GetDashboard_ResponseTime(t *testing.T) {
 	duration := time.Since(start)
 
 	require.Equal(t, http.StatusOK, rr.Code)
-	
+
 	// Dashboard should respond quickly (under 1 second for simple implementation)
 	assert.Less(t, duration.Milliseconds(), int64(1000), "Dashboard response should be fast")
 }
@@ -282,4 +282,4 @@ func TestAdminDashboardHandlers_GetDashboard_JSONStructure(t *testing.T) {
 
 	// Verify content type
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
-} 
+}

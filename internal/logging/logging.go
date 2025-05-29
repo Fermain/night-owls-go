@@ -41,4 +41,4 @@ func NewLogger(cfg *config.Config) *slog.Logger {
 
 	logger := slog.New(handler)
 	return logger
-} 
+}

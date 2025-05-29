@@ -32,9 +32,10 @@ func NewPushHandler(querier db.Querier, cfg *config.Config, logger *slog.Logger)
 // swagger:route POST /push/subscribe push subscribePush
 // Store or update the caller's Web-Push subscription.
 // responses:
-//   200: OK
-//   400: Bad Request
-//   500: Internal Server Error
+//
+//	200: OK
+//	400: Bad Request
+//	500: Internal Server Error
 func (h *PushHandler) SubscribePush(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Endpoint  string `json:"endpoint" validate:"required"`
@@ -77,13 +78,14 @@ func (h *PushHandler) SubscribePush(w http.ResponseWriter, r *http.Request) {
 // swagger:route DELETE /push/subscribe/{endpoint} push unsubscribePush
 // Unsubscribes a push notification endpoint.
 // responses:
-//   204: No Content
-//   500: Internal Server Error
+//
+//	204: No Content
+//	500: Internal Server Error
 func (h *PushHandler) UnsubscribePush(w http.ResponseWriter, r *http.Request) {
 	// Try multiple methods to extract the endpoint parameter
 	endpoint := chi.URLParam(r, "endpoint")
 	h.Logger.InfoContext(r.Context(), "UnsubscribePush called", "endpoint_param", endpoint, "url", r.URL.Path)
-	
+
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if endpoint == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -92,7 +94,7 @@ func (h *PushHandler) UnsubscribePush(w http.ResponseWriter, r *http.Request) {
 			h.Logger.InfoContext(r.Context(), "Extracted endpoint from path manually", "endpoint_param", endpoint)
 		}
 	}
-	
+
 	// Alternative method 2: Check request context for route values
 	if endpoint == "" {
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -130,7 +132,8 @@ func (h *PushHandler) UnsubscribePush(w http.ResponseWriter, r *http.Request) {
 // swagger:route GET /push/vapid-public push getVAPID
 // Returns the VAPID public key.
 // responses:
-//   200: OK
+//
+//	200: OK
 func (h *PushHandler) VAPIDPublicKey(w http.ResponseWriter, r *http.Request) {
 	if h.Config.VAPIDPublic == "" {
 		h.Logger.WarnContext(r.Context(), "VAPID public key is not configured")
@@ -138,4 +141,4 @@ func (h *PushHandler) VAPIDPublicKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	RespondWithJSON(w, http.StatusOK, map[string]string{"key": h.Config.VAPIDPublic}, h.Logger)
-} 
+}
