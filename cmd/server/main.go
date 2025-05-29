@@ -1,4 +1,4 @@
-// Package main is the entry point for the Community Watch API server
+// Package main is the entry point for the Night Owls Control API server
 package main
 
 import (
@@ -39,7 +39,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// @title Community Watch Shift Scheduler API
+// @title Night Owls Control Shift Scheduler API
 // @version 1.0
 // @description API for managing community watch shifts, bookings, and reports
 // @termsOfService http://swagger.io/terms/
@@ -492,7 +492,7 @@ func main() {
         IdleTimeout:  120 * time.Second,
 	}
 
-	slog.Info("Community Watch Backend Starting HTTP server...", "port", cfg.ServerPort)
+	slog.Info("Night Owls Control Backend Starting HTTP server...", "port", cfg.ServerPort)
 
 	// Goroutine for graceful shutdown
 	go func() {

@@ -142,7 +142,7 @@
 
 				<!-- Footer -->
 				<div class="absolute bottom-4 left-4 right-4 text-center">
-					<p class="text-xs text-muted-foreground">Community Watch Platform</p>
+					<p class="text-xs text-muted-foreground">Night Owls Control Platform</p>
 				</div>
 			</div>
 		</div>

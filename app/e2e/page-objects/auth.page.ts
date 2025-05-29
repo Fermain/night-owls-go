@@ -21,7 +21,7 @@ export class AuthPage {
 		this.page = page;
 
 		// Registration page
-		this.registerHeading = page.getByRole('heading', { name: 'Join the Community Watch' });
+		this.registerHeading = page.getByRole('heading', { name: 'Join the Night Owls Control' });
 		this.nameInput = page.getByLabel('Full Name');
 		this.phoneInput = page.getByLabel('Phone Number');
 		this.createAccountButton = page.getByRole('button', { name: 'Create account' });

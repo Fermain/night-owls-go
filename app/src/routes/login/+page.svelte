@@ -145,7 +145,7 @@
 </script>
 
 <svelte:head>
-	<title>Login - Community Watch</title>
+	<title>Login - Night Owls Control</title>
 </svelte:head>
 
 {#if !$isAuthenticated}
@@ -154,7 +154,7 @@
 			<!-- Header -->
 			<div class="flex flex-col gap-2 text-center">
 				<h1 class="text-2xl font-semibold tracking-tight">
-					{step === 'register' ? 'Welcome to Community Watch' : 'Enter verification code'}
+					{step === 'register' ? 'Welcome to Night Owls Control' : 'Enter verification code'}
 				</h1>
 				<p class="text-sm text-muted-foreground">
 					{step === 'register'

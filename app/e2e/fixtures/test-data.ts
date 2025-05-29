@@ -19,7 +19,7 @@ export const testUsers = {
 export const testSchedules = {
 	morningPatrol: {
 		name: 'Morning Patrol',
-		description: 'Early morning community watch patrol',
+		description: 'Early morning Night Owls Control patrol',
 		cronExpression: '0 6 * * *',
 		duration: 120,
 		positions: 2,

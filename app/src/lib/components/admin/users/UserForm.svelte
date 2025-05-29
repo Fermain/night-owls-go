@@ -206,7 +206,7 @@
 		heading="{user?.id !== undefined ? 'Edit' : 'Create New'} User"
 		subheading={user?.id !== undefined
 			? 'Update user information and manage their account'
-			: 'Add a new user to the community watch system'}
+			: 'Add a new user to the Night Owls Control system'}
 	/>
 
 	<form

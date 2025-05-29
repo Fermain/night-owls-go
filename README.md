@@ -1,6 +1,6 @@
-# Night Owls Go - Community Watch Shift Scheduler Backend
+# Night Owls Go - Night Owls Control Shift Scheduler Backend
 
-This project is a Go backend service for managing volunteer shifts for a community watch program.
+This project is a Go backend service for managing volunteer shifts for a Night Owls Control program.
 It provides a RESTful API for user authentication (passwordless via OTP), viewing available shifts, booking shifts (with an optional buddy), marking attendance, and submitting incident reports.
 
 Key features include:

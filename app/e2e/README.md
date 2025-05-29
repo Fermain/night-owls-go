@@ -1,6 +1,6 @@
-# End-to-End (E2E) Tests - Best Practice Implementation
+# End-to-End Testing
 
-This directory contains a modern, best-practice implementation of e2e tests for the Community Watch application.
+This directory contains a modern, best-practice implementation of e2e tests for the Night Owls Control application.
 
 ## Philosophy
 

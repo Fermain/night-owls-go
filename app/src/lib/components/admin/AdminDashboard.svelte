@@ -187,7 +187,7 @@
 		<AdminPageHeader
 			icon={LayoutDashboardIcon}
 			heading="Admin Dashboard"
-			subheading="Central hub for managing volunteers, schedules, and community watch operations"
+			subheading="Central hub for managing volunteers, schedules, and Night Owls Control operations"
 			className="mb-8"
 		/>
 

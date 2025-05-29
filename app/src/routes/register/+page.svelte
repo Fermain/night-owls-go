@@ -60,7 +60,7 @@
 </script>
 
 <svelte:head>
-	<title>Join Community Watch</title>
+	<title>Join Night Owls Control</title>
 </svelte:head>
 
 {#if !$isAuthenticated}
@@ -74,7 +74,7 @@
 					>
 						<ShieldIcon class="size-4" />
 					</div>
-					Community Watch
+					Night Owls Control
 				</a>
 			</div>
 
@@ -83,7 +83,7 @@
 					<div class="flex flex-col gap-6">
 						<!-- Header -->
 						<div class="flex flex-col gap-2 text-center">
-							<h1 class="text-2xl font-semibold tracking-tight">Join the Community Watch</h1>
+							<h1 class="text-2xl font-semibold tracking-tight">Join the Night Owls Control</h1>
 							<p class="text-sm text-muted-foreground">
 								Help keep our neighborhood safe. Create your account to get started.
 							</p>
