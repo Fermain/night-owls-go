@@ -28,13 +28,8 @@ ENV CGO_ENABLED=1
 WORKDIR /app
 COPY go.mod go.sum ./
 
-# Download modules with retry logic
-RUN echo "Starting go mod download..." && \
-    go mod download -x || \
-    (echo "First attempt failed, retrying with different proxy..." && \
-     GOPROXY=https://goproxy.io,direct go mod download -x) || \
-    (echo "Second attempt failed, trying direct..." && \
-     GOPROXY=direct go mod download -x)
+# Download modules with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 RUN echo "Building Go application..." && \
