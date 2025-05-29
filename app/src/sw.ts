@@ -7,7 +7,14 @@ interface SyncEvent extends ExtendableEvent {
 	lastChance: boolean;
 }
 
-declare let self: ServiceWorkerGlobalScope;
+declare let self: ServiceWorkerGlobalScope & {
+	__WB_MANIFEST: (string | PrecacheEntry)[];
+};
+
+interface PrecacheEntry {
+	url: string;
+	revision?: string;
+}
 
 interface ExtendedNotificationOptions extends NotificationOptions {
 	actions?: NotificationAction[];

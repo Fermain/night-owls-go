@@ -58,14 +58,16 @@ func TestAdminReportHandlers_ListReports_Success(t *testing.T) {
 
 	// Create test reports
 	report1, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  0, // Info
 		Message:   sql.NullString{String: "Test info report", Valid: true},
 	})
 	require.NoError(t, err)
 
 	report2, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  2, // Critical
 		Message:   sql.NullString{String: "Test critical report", Valid: true},
 	})
@@ -143,7 +145,8 @@ func TestAdminReportHandlers_GetReport_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	testReport, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  1, // Warning
 		Message:   sql.NullString{String: "Test warning report", Valid: true},
 	})
@@ -227,7 +230,8 @@ func TestAdminReportHandlers_ArchiveReport_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	testReport, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  1,
 		Message:   sql.NullString{String: "Test report to archive", Valid: true},
 	})
@@ -325,7 +329,8 @@ func TestAdminReportHandlers_UnarchiveReport_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	testReport, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  1,
 		Message:   sql.NullString{String: "Test report to unarchive", Valid: true},
 	})
@@ -410,7 +415,8 @@ func TestAdminReportHandlers_ListArchivedReports_Success(t *testing.T) {
 
 	// Create and archive test reports
 	archivedReport1, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  0,
 		Message:   sql.NullString{String: "Archived report 1", Valid: true},
 	})
@@ -419,7 +425,8 @@ func TestAdminReportHandlers_ListArchivedReports_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	archivedReport2, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  2,
 		Message:   sql.NullString{String: "Archived report 2", Valid: true},
 	})
@@ -429,7 +436,8 @@ func TestAdminReportHandlers_ListArchivedReports_Success(t *testing.T) {
 
 	// Create a non-archived report (should not appear in archived list)
 	_, err = app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  1,
 		Message:   sql.NullString{String: "Active report", Valid: true},
 	})
@@ -517,7 +525,8 @@ func TestAdminReportHandlers_ReportWorkflow_Complete(t *testing.T) {
 	require.NoError(t, err)
 
 	testReport, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: testBooking.BookingID,
+		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
+		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
 		Severity:  2,
 		Message:   sql.NullString{String: "Critical incident report", Valid: true},
 	})

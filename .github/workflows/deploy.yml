@@ -72,9 +72,6 @@ jobs:
           
           $DOCKER_COMPOSE down 2>/dev/null || true
           
-          # Clean up to free memory
-          docker system prune -f
-          
           # Login to GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
