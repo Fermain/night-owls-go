@@ -24,7 +24,7 @@
 	}>();
 
 	// Internal state - hardcode South Africa to avoid international formatting issues
-	let selectedCountry: CountryCode = 'ZA';
+	let selectedCountry = $state('ZA' as CountryCode);
 	let internalValid = $state(true);
 
 	// Sync internal validity with parent
