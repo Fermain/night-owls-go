@@ -6,8 +6,9 @@ RUN corepack enable pnpm
 
 WORKDIR /app/frontend
 
-# Set Node memory limit to prevent OOM - increased for swap environment
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Set Node memory limit to prevent OOM - increased to 3GB for swap environment
+ENV NODE_OPTIONS="--max-old-space-size=3072 --expose-gc"
+ENV NODE_ENV="production"
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 # Install with reduced concurrency and memory optimizations
@@ -17,7 +18,10 @@ ENV PNPM_FETCH_RETRIES=1
 RUN pnpm install --frozen-lockfile --prefer-offline
 
 COPY app/ ./
-RUN pnpm run build
+# Add memory debugging and try build
+RUN echo "Node.js memory limit: $NODE_OPTIONS" && \
+    node -e "console.log('Max heap size:', v8.getHeapStatistics().heap_size_limit / 1024 / 1024, 'MB')" && \
+    pnpm run build
 
 # Build backend with reduced parallelism
 FROM golang:1.24-alpine AS backend-builder
