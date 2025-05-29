@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  night-owls:
+    build: .
+    container_name: night-owls-app
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=5888
+      - STATIC_DIR=./static
+      - DATABASE_PATH=./data/production.db
+      - DEV_MODE=false
+      - JWT_SECRET=${JWT_SECRET}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=${VAPID_SUBJECT}
+      - OTP_LOG_PATH=./data/logs/sms_outbox.log
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+    volumes:
+      - night_owls_data:/app/data
+    networks:
+      - night_owls_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: night-owls-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - night_owls_network
+    depends_on:
+      night-owls:
+        condition: service_healthy
+
+volumes:
+  night_owls_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  night_owls_network:
+    driver: bridge 

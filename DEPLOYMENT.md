@@ -2,607 +2,458 @@
 
 ## Overview
 
-This guide covers deploying the Night Owls Control application to a DigitalOcean droplet for public trial. The setup includes automated deployments, monitoring, backups, and security best practices.
+This guide covers deploying the Night Owls Control application using Docker containers with Caddy as a reverse proxy for automatic HTTPS. The application will be deployed to `mm.nightowls.app` with modern containerized infrastructure.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   DigitalOcean Droplet                   │
+│                   Production Server                      │
 ├─────────────────────────────────────────────────────────┤
-│  Nginx (Reverse Proxy)                                  │
-│    ├── Frontend (SvelteKit) - Port 3000                │
-│    └── Backend (Go API) - Port 5888                    │
-│                                                         │
-│  SQLite Database                                        │
-│  Systemd Services                                       │
-│  Let's Encrypt SSL                                      │
+│  Caddy (Reverse Proxy + Automatic HTTPS)               │
+│    ├── Frontend (SvelteKit Static) ──┐                 │
+│    └── Backend (Go API)              │                 │
+│                                       │                 │
+│  Docker Container: night-owls-app     │                 │
+│    ├── Go Backend Server (Port 5888) │                 │
+│    ├── SvelteKit Frontend (Static)   │                 │
+│    └── SQLite Database               │                 │
+│                                       │                 │
+│  Docker Volumes:                      │                 │
+│    ├── night_owls_data (Database)    │                 │
+│    ├── caddy_data (SSL Certificates) │                 │
+│    └── caddy_config (Caddy Config)   │                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
+## Quick Start (Recommended: Docker Deployment)
 
-### 1. DigitalOcean Droplet Setup
-- Ubuntu 22.04 LTS
-- Minimum 2GB RAM, 2 vCPUs
-- 50GB SSD storage
-- Reserved IP address
+### Prerequisites
 
-### 2. Domain Setup
-- Point your domain to the droplet IP
-- Configure DNS records:
-  - A record: `@` → Droplet IP
-  - A record: `www` → Droplet IP
-  - A record: `api` → Droplet IP (optional)
+- Docker and Docker Compose installed
+- Domain `mm.nightowls.app` pointing to your server
+- Server with minimum 2GB RAM, 1 vCPU, 20GB storage
 
-## Initial Server Setup
-
-### 1. Create Deploy User
+### 1. Clone and Setup
 
 ```bash
-# As root
-adduser deploy
-usermod -aG sudo deploy
-su - deploy
-```
-
-### 2. SSH Key Setup
-
-```bash
-# On your local machine
-ssh-copy-id deploy@your-server-ip
-
-# On server, disable password auth
-sudo nano /etc/ssh/sshd_config
-# Set: PasswordAuthentication no
-sudo systemctl restart ssh
-```
-
-### 3. Firewall Configuration
-
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw enable
-```
-
-### 4. Install Dependencies
-
-```bash
-# System packages
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl wget git build-essential nginx certbot python3-certbot-nginx
-
-# Go 1.21+
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-source ~/.bashrc
-
-# Node.js 20+
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# SQLite tools
-sudo apt install -y sqlite3
-
-# Process manager
-sudo npm install -g pm2
-```
-
-## Application Setup
-
-### 1. Clone Repository
-
-```bash
-cd ~
 git clone https://github.com/yourusername/night-owls-go.git
 cd night-owls-go
+
+# Create production environment file
+cp env.production.example .env.production
 ```
 
-### 2. Backend Setup
+### 2. Configure Environment Variables
+
+Edit `.env.production` with your actual values:
 
 ```bash
-# Install Go dependencies
-go mod download
-
-# Build backend
-CGO_ENABLED=1 go build -o night-owls-server ./cmd/server
-
-# Create production env file
-cat > .env.production << EOF
-# Server Configuration
-SERVER_PORT=5888
-STATIC_DIR=./app/build
-DEV_MODE=false
-
-# Database Configuration
-DATABASE_PATH=/home/deploy/night-owls-data/production.db
-
-# JWT Configuration (Generate secure secret!)
+# Generate JWT secret
 JWT_SECRET=$(openssl rand -base64 32)
 
-# VAPID Keys for Web Push (Generate with: npx web-push generate-vapid-keys)
-VAPID_PUBLIC_KEY=your-public-key
-VAPID_PRIVATE_KEY=your-private-key
-VAPID_SUBJECT=mailto:admin@yourdomain.com
+# Generate VAPID keys for push notifications
+npx web-push generate-vapid-keys
 
-# SMS/OTP Configuration
-OTP_LOG_PATH=/home/deploy/night-owls-data/logs/sms_outbox.log
-
-# Twilio (for production SMS)
-TWILIO_ACCOUNT_SID=your-sid
-TWILIO_AUTH_TOKEN=your-token
+# Add your Twilio credentials
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_FROM_NUMBER=+1234567890
-EOF
-
-# Create data directories
-mkdir -p ~/night-owls-data/{logs,backups}
-chmod 700 ~/night-owls-data
 ```
 
-### 3. Frontend Setup
+### 3. Deploy
 
 ```bash
-cd app
-npm ci --production=false
+# Make deployment script executable
+chmod +x deploy-docker.sh
 
-# Create production env
-cat > .env.production << EOF
-PUBLIC_API_URL=https://api.yourdomain.com
-PUBLIC_APP_URL=https://yourdomain.com
-EOF
-
-# Build frontend
-npm run build
+# Deploy the application
+./deploy-docker.sh
 ```
 
-### 4. Database Migration
+The application will be available at `https://mm.nightowls.app` with automatic HTTPS via Let's Encrypt.
+
+## Detailed Setup Instructions
+
+### Domain Configuration
+
+Ensure your DNS is configured correctly:
+
+```
+Type    Name              Value
+A       mm.nightowls.app  YOUR_SERVER_IP
+A       *.mm.nightowls.app YOUR_SERVER_IP (optional, for subdomains)
+```
+
+### Environment Variables Reference
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `JWT_SECRET` | Secure random string for JWT tokens | Generated with `openssl rand -base64 32` |
+| `VAPID_PUBLIC_KEY` | Public key for web push notifications | Generated with `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Private key for web push notifications | Generated with `npx web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` | Contact email for push service | `mailto:admin@mm.nightowls.app` |
+| `TWILIO_ACCOUNT_SID` | Twilio account identifier | `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `TWILIO_AUTH_TOKEN` | Twilio authentication token | `your_auth_token` |
+| `TWILIO_FROM_NUMBER` | Twilio phone number for SMS | `+1234567890` |
+
+### File Structure
+
+```
+night-owls-go/
+├── Dockerfile                 # Multi-stage build for app
+├── docker-compose.yml         # Production compose file
+├── Caddyfile                 # Caddy reverse proxy config
+├── env.production.example    # Environment template
+├── .env.production          # Your production config
+├── deploy-docker.sh         # Deployment script
+├── backup.sh               # Backup script
+└── app/                    # Frontend source
+```
+
+## Container Management
+
+### View Logs
 
 ```bash
-cd ~/night-owls-go
-./night-owls-server -migrate-only
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f night-owls
+docker-compose logs -f caddy
 ```
 
-## Systemd Service Setup
-
-### 1. Backend Service
+### Service Management
 
 ```bash
-sudo nano /etc/systemd/system/night-owls-backend.service
-```
+# Start services
+docker-compose up -d
 
-```ini
-[Unit]
-Description=Night Owls Control Backend
-After=network.target
-
-[Service]
-Type=simple
-User=deploy
-WorkingDirectory=/home/deploy/night-owls-go
-Environment="PATH=/usr/local/go/bin:/usr/bin:/bin"
-EnvironmentFile=/home/deploy/night-owls-go/.env.production
-ExecStart=/home/deploy/night-owls-go/night-owls-server
-Restart=always
-RestartSec=5
-StandardOutput=append:/home/deploy/night-owls-data/logs/backend.log
-StandardError=append:/home/deploy/night-owls-data/logs/backend-error.log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 2. Frontend Service (if using Node adapter)
-
-```bash
-sudo nano /etc/systemd/system/night-owls-frontend.service
-```
-
-```ini
-[Unit]
-Description=Night Owls Control Frontend
-After=network.target
-
-[Service]
-Type=simple
-User=deploy
-WorkingDirectory=/home/deploy/night-owls-go/app
-Environment="NODE_ENV=production"
-Environment="PORT=3000"
-ExecStart=/usr/bin/node build
-Restart=always
-RestartSec=5
-StandardOutput=append:/home/deploy/night-owls-data/logs/frontend.log
-StandardError=append:/home/deploy/night-owls-data/logs/frontend-error.log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 3. Enable Services
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable night-owls-backend
-sudo systemctl enable night-owls-frontend
-sudo systemctl start night-owls-backend
-sudo systemctl start night-owls-frontend
-```
-
-## Nginx Configuration
-
-### 1. Create Site Configuration
-
-```bash
-sudo nano /etc/nginx/sites-available/night-owls
-```
-
-```nginx
-# Redirect HTTP to HTTPS
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-# Main HTTPS server
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com www.yourdomain.com;
-
-    # SSL configuration (will be managed by Certbot)
-    # ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';" always;
-
-    # Logging
-    access_log /var/log/nginx/night-owls-access.log;
-    error_log /var/log/nginx/night-owls-error.log;
-
-    # Frontend proxy
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # API proxy
-    location /api {
-        proxy_pass http://localhost:5888;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Increase timeout for long-running requests
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-    }
-
-    # Additional backend routes
-    location ~ ^/(schedules|shifts|bookings|reports|push|swagger) {
-        proxy_pass http://localhost:5888;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Static file caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
-```
-
-### 2. Enable Site
-
-```bash
-sudo ln -s /etc/nginx/sites-available/night-owls /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 3. SSL Certificate
-
-```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-```
-
-## Deployment Script
-
-Create `deploy.sh` in the repository:
-
-```bash
-#!/bin/bash
-set -e
-
-echo "🚀 Starting deployment..."
-
-# Configuration
-REMOTE_USER="deploy"
-REMOTE_HOST="your-server-ip"
-REMOTE_DIR="/home/deploy/night-owls-go"
-
-# Build frontend locally
-echo "📦 Building frontend..."
-cd app
-npm ci
-npm run build
-cd ..
-
-# Build backend
-echo "🔨 Building backend..."
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o night-owls-server ./cmd/server
-
-# Deploy files
-echo "📤 Uploading files..."
-rsync -avz --delete \
-  --exclude='.git' \
-  --exclude='node_modules' \
-  --exclude='.env' \
-  --exclude='*.db' \
-  --exclude='*.log' \
-  . $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/
-
-# Run remote commands
-echo "🔄 Restarting services..."
-ssh $REMOTE_USER@$REMOTE_HOST << 'ENDSSH'
-cd /home/deploy/night-owls-go
-
-# Backup database
-cp /home/deploy/night-owls-data/production.db \
-   /home/deploy/night-owls-data/backups/production-$(date +%Y%m%d-%H%M%S).db
-
-# Run migrations
-./night-owls-server -migrate-only
+# Stop services
+docker-compose down
 
 # Restart services
-sudo systemctl restart night-owls-backend
-sudo systemctl restart night-owls-frontend
+docker-compose restart
 
 # Check status
-sudo systemctl status night-owls-backend --no-pager
-sudo systemctl status night-owls-frontend --no-pager
-ENDSSH
-
-echo "✅ Deployment complete!"
+docker-compose ps
 ```
 
-Make it executable:
-```bash
-chmod +x deploy.sh
-```
-
-## Monitoring Setup
-
-### 1. Log Rotation
+### Health Checks
 
 ```bash
-sudo nano /etc/logrotate.d/night-owls
+# Check application health
+curl https://mm.nightowls.app/health
+
+# Check container health
+docker-compose ps
 ```
 
-```
-/home/deploy/night-owls-data/logs/*.log {
-    daily
-    missingok
-    rotate 14
-    compress
-    notifempty
-    create 0644 deploy deploy
-    sharedscripts
-    postrotate
-        systemctl reload night-owls-backend > /dev/null 2>&1 || true
-    endscript
-}
-```
+## Backup and Recovery
 
-### 2. Health Check Endpoint
-
-Add to your Go backend:
-```go
-// Health check endpoint
-fuego.GetStd(s, "/health", func(w http.ResponseWriter, r *http.Request) {
-    // Check database
-    if err := dbConn.Ping(); err != nil {
-        w.WriteHeader(http.StatusServiceUnavailable)
-        json.NewEncoder(w).Encode(map[string]string{"status": "unhealthy", "db": "down"})
-        return
-    }
-    
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{"status": "healthy", "db": "up"})
-})
-```
-
-### 3. Uptime Monitoring
-
-Use a service like:
-- UptimeRobot
-- Pingdom
-- DigitalOcean Monitoring
-
-Configure to check `https://yourdomain.com/health` every 5 minutes.
-
-## Database Backup
-
-### 1. Automated Backup Script
+### Automated Backups
 
 ```bash
-nano ~/backup-database.sh
-```
+# Make backup script executable
+chmod +x backup.sh
 
-```bash
-#!/bin/bash
-BACKUP_DIR="/home/deploy/night-owls-data/backups"
-DB_PATH="/home/deploy/night-owls-data/production.db"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/production-$TIMESTAMP.db"
+# Run manual backup
+./backup.sh
 
-# Create backup
-sqlite3 $DB_PATH ".backup '$BACKUP_FILE'"
-
-# Compress
-gzip $BACKUP_FILE
-
-# Keep only last 7 days
-find $BACKUP_DIR -name "*.db.gz" -mtime +7 -delete
-
-# Optional: Upload to cloud storage
-# aws s3 cp $BACKUP_FILE.gz s3://your-bucket/backups/
-```
-
-### 2. Schedule Backup
-
-```bash
+# Schedule with cron (daily at 2 AM)
 crontab -e
+# Add: 0 2 * * * /path/to/night-owls-go/backup.sh
 ```
 
-Add:
+### Restore from Backup
+
+```bash
+# Stop the application
+docker-compose down
+
+# Extract backup
+gunzip backups/backup-TIMESTAMP.db.gz
+
+# Restore database
+docker run --rm -v night_owls_data:/data -v $(pwd)/backups:/backups alpine \
+  cp /backups/backup-TIMESTAMP.db /data/production.db
+
+# Start the application
+docker-compose up -d
 ```
-0 2 * * * /home/deploy/backup-database.sh
+
+## Monitoring
+
+### Application Metrics
+
+The application provides the following endpoints:
+
+- **Health Check**: `https://mm.nightowls.app/health`
+- **API Documentation**: `https://mm.nightowls.app/swagger`
+
+### Log Analysis
+
+```bash
+# View recent application logs
+docker-compose logs --tail=100 night-owls
+
+# Follow logs in real-time
+docker-compose logs -f
+
+# Export logs for analysis
+docker-compose logs --since=24h > logs-$(date +%Y%m%d).log
 ```
 
-## Security Checklist
+### Resource Monitoring
 
-### Before Going Live
+```bash
+# Container resource usage
+docker stats
 
-- [ ] Change all default passwords
-- [ ] Generate strong JWT secret
-- [ ] Configure CORS properly
-- [ ] Enable rate limiting
-- [ ] Set up fail2ban
-- [ ] Configure firewall rules
-- [ ] Enable automatic security updates
-- [ ] Implement input validation
-- [ ] Set up HTTPS only
-- [ ] Configure secure headers
+# Disk usage
+docker system df
 
-### Environment Variables
+# Container sizes
+docker images
+```
 
-- [ ] Remove `.env` files from repository
-- [ ] Use strong, unique secrets
-- [ ] Rotate secrets regularly
-- [ ] Implement secret management
+## Security Configuration
+
+### Caddy Security Features
+
+The Caddyfile includes:
+
+- **Automatic HTTPS** with Let's Encrypt
+- **Security Headers**:
+  - HSTS (HTTP Strict Transport Security)
+  - X-Content-Type-Options
+  - X-Frame-Options
+  - X-XSS-Protection
+  - Referrer-Policy
+  - Permissions-Policy
+
+### Container Security
+
+- **Non-root user**: Application runs as `appuser`
+- **Read-only root filesystem** (except data volumes)
+- **Resource limits** configured in docker-compose.yml
+- **Health checks** for service monitoring
+
+### Network Security
+
+- **Internal network**: Containers communicate via private network
+- **Exposed ports**: Only 80 and 443 exposed publicly
+- **Proxy headers**: Real IP forwarding configured
 
 ## Performance Optimization
 
-### 1. Enable Gzip
+### Caching Strategy
 
-Add to Nginx config:
-```nginx
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss;
+- **Static assets**: Long-term caching (1 year)
+- **API responses**: No caching for dynamic content
+- **Gzip compression**: Enabled for all text content
+
+### Container Optimization
+
+- **Multi-stage builds**: Minimal production image
+- **Alpine Linux**: Small base image
+- **Build caching**: Docker layer caching optimized
+
+## Scaling Options
+
+### Vertical Scaling
+
+Increase server resources:
+
+```yaml
+# docker-compose.yml
+services:
+  night-owls:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
 ```
 
-### 2. Database Optimization
+### Horizontal Scaling
+
+For high availability:
+
+1. **Load Balancer**: Add multiple app containers
+2. **Database**: Consider PostgreSQL for better concurrency
+3. **File Storage**: Use shared storage for uploads
+4. **Session Storage**: Use Redis for session management
+
+## Alternative Deployment: Traditional Server
+
+If you prefer not to use Docker:
+
+### Prerequisites
+
+- Ubuntu 22.04 LTS server
+- Go 1.21+ installed
+- Node.js 20+ installed
+- Caddy installed
+
+### Setup
 
 ```bash
-# Analyze and optimize SQLite
-sqlite3 /home/deploy/night-owls-data/production.db "VACUUM;"
-sqlite3 /home/deploy/night-owls-data/production.db "ANALYZE;"
-```
+# Install Caddy
+sudo apt update
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
 
-### 3. CDN Setup (Optional)
+# Build application
+go build -o night-owls-server ./cmd/server
 
-Consider using Cloudflare for:
-- DDoS protection
-- Global CDN
-- SSL termination
-- Caching
+# Build frontend
+cd app && npm ci && npm run build && cd ..
 
-## Rollback Strategy
+# Install systemd service
+sudo cp scripts/night-owls.service /etc/systemd/system/
+sudo systemctl enable night-owls
+sudo systemctl start night-owls
 
-### Quick Rollback
-
-```bash
-# Keep previous build
-cp night-owls-server night-owls-server.backup
-
-# If deployment fails
-mv night-owls-server.backup night-owls-server
-sudo systemctl restart night-owls-backend
-```
-
-### Database Rollback
-
-```bash
-# Stop services
-sudo systemctl stop night-owls-backend
-
-# Restore backup
-cp /home/deploy/night-owls-data/backups/production-TIMESTAMP.db \
-   /home/deploy/night-owls-data/production.db
-
-# Restart
-sudo systemctl start night-owls-backend
-```
-
-## Monitoring Commands
-
-```bash
-# Check service status
-sudo systemctl status night-owls-backend
-sudo systemctl status night-owls-frontend
-
-# View logs
-sudo journalctl -u night-owls-backend -f
-sudo journalctl -u night-owls-frontend -f
-
-# Check resource usage
-htop
-df -h
-free -m
-
-# Database size
-du -h /home/deploy/night-owls-data/production.db
+# Configure Caddy
+sudo cp Caddyfile /etc/caddy/
+sudo systemctl reload caddy
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **502 Bad Gateway**
-   - Check if services are running
-   - Verify port configurations
-   - Check Nginx error logs
+1. **Container won't start**
+   ```bash
+   # Check logs
+   docker-compose logs night-owls
+   
+   # Check environment variables
+   docker-compose config
+   ```
 
-2. **Database Locked**
-   - Check for long-running queries
-   - Ensure single process access
-   - Consider WAL mode
+2. **SSL Certificate issues**
+   ```bash
+   # Check Caddy logs
+   docker-compose logs caddy
+   
+   # Verify domain points to server
+   dig mm.nightowls.app
+   ```
 
-3. **High Memory Usage**
-   - Monitor Go routine leaks
-   - Check database connections
-   - Implement connection pooling
+3. **Database connection errors**
+   ```bash
+   # Check volume permissions
+   docker-compose exec night-owls ls -la /app/data/
+   
+   # Check database file
+   docker-compose exec night-owls sqlite3 /app/data/production.db ".tables"
+   ```
+
+4. **High memory usage**
+   ```bash
+   # Check container stats
+   docker stats
+   
+   # Adjust memory limits in docker-compose.yml
+   ```
+
+### Recovery Procedures
+
+1. **Complete system failure**
+   ```bash
+   # Restore from backup
+   docker-compose down
+   ./restore-backup.sh TIMESTAMP
+   docker-compose up -d
+   ```
+
+2. **Corrupted database**
+   ```bash
+   # Stop application
+   docker-compose stop night-owls
+   
+   # Restore database only
+   docker run --rm -v night_owls_data:/data -v $(pwd)/backups:/backups alpine \
+     cp /backups/backup-TIMESTAMP.db /data/production.db
+   
+   # Start application
+   docker-compose start night-owls
+   ```
+
+## Production Checklist
+
+Before going live:
+
+- [ ] Domain configured and pointing to server
+- [ ] SSL certificate obtained (automatic with Caddy)
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] Backup strategy implemented
+- [ ] Monitoring setup
+- [ ] Log rotation configured
+- [ ] Security headers validated
+- [ ] Performance testing completed
+- [ ] Disaster recovery plan documented
+
+## Maintenance
+
+### Regular Tasks
+
+- **Daily**: Check application health and logs
+- **Weekly**: Review backup integrity
+- **Monthly**: Update dependencies and security patches
+- **Quarterly**: Performance review and optimization
+
+### Updates
+
+```bash
+# Pull latest code
+git pull origin main
+
+# Rebuild and deploy
+./deploy-docker.sh
+
+# Verify deployment
+curl https://mm.nightowls.app/health
+```
+
+### Security Updates
+
+```bash
+# Update base images
+docker-compose pull
+
+# Rebuild application
+docker-compose build --no-cache
+
+# Deploy updates
+./deploy-docker.sh
+```
+
+## Support
+
+For deployment issues:
+
+1. Check logs: `docker-compose logs -f`
+2. Verify health: `curl https://mm.nightowls.app/health`
+3. Review backup integrity: `./backup.sh`
+4. Check resource usage: `docker stats`
 
 ## Next Steps
+
+After successful deployment:
 
 1. Set up monitoring and alerting
 2. Configure automated backups
 3. Implement CI/CD pipeline
-4. Add application metrics
-5. Set up error tracking (Sentry)
+4. Add application performance monitoring
+5. Set up error tracking (e.g., Sentry)
 6. Configure log aggregation
-7. Implement A/B testing
+7. Implement blue-green deployments
 8. Set up staging environment 

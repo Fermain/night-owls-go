@@ -20,7 +20,12 @@ coverage.html
 # Environment variables file
 .env
 .env.*
-!env.example
+!.env.example
+!.env.production.example
+
+# Docker production files
+.env.production
+docker-compose.override.yml
 
 # OS-specific files
 .DS_Store
@@ -81,6 +86,8 @@ temp/
 *.bak
 *.backup
 *~
+backups/
+*.db.gz
 
 # Binary files (catch-all)
 *.bin
