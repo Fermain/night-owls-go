@@ -6,7 +6,7 @@ RUN corepack enable pnpm
 
 WORKDIR /app/frontend
 COPY app/package.json app/pnpm-lock.yaml* ./
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY app/ ./
 RUN pnpm run build
@@ -38,7 +38,7 @@ RUN echo "Starting go mod download..." && \
 
 COPY . .
 RUN echo "Building Go application..." && \
-    CGO_ENABLED=1 GOOS=linux go build -v -o night-owls-server ./cmd/server
+    CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o night-owls-server ./cmd/server
 
 # Production image
 FROM alpine:latest
