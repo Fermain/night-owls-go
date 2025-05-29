@@ -94,12 +94,8 @@ jobs:
             }
           fi
           
-          if [ ! -f .env ]; then
-            cp ~/night-owls-go/.env.production .env 2>/dev/null || echo "⚠️  No .env.production found, using defaults"
-          fi
-          
           # Update docker-compose.yml to use local image tag
-          sed -i 's|ghcr.io/.*night-owls-go:latest|night-owls-go:latest|g' docker-compose.yml
+          sed -i 's|build: \.|image: night-owls-go:latest|g' docker-compose.yml
           
           # Start application
           echo "🚀 Starting application..."
