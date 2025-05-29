@@ -91,9 +91,17 @@ jobs:
           
           # Copy config files if needed
           echo "📋 Setting up configuration files..."
-          if [ ! -f docker-compose.yml ]; then
-            cp ~/night-owls-go/docker-compose.yml . || {
-              echo "❌ Failed to copy docker-compose.yml"
+          
+          # Always copy the latest docker-compose.yml to ensure we have the updated env vars
+          cp ~/night-owls-go/docker-compose.yml . || {
+            echo "❌ Failed to copy docker-compose.yml"
+            exit 1
+          }
+          
+          # Copy Caddyfile if it doesn't exist
+          if [ ! -f Caddyfile ]; then
+            cp ~/night-owls-go/Caddyfile . || {
+              echo "❌ Failed to copy Caddyfile"
               exit 1
             }
           fi
