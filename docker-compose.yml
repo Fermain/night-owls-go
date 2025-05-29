@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   night-owls:
-    image: night-owls-go:latest
+    image: ghcr.io/fermain/night-owls-go:latest
     container_name: night-owls-app
     restart: unless-stopped
     environment:
