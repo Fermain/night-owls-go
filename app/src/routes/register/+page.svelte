@@ -42,12 +42,20 @@
 			// Save phone number and name to persistent store for future use
 			saveUserData(phoneNumber, name);
 
-			await authService.register({
+			const response = await authService.register({
 				phone: phoneNumber, // E164 format ready for API
 				name: name.trim()
 			});
 
-			toast.success('Registration successful! Check sms_outbox.log for your verification code.');
+			// Show appropriate message based on OTP method
+			if (response.message.includes('Twilio')) {
+				toast.success('Registration successful! Check your phone for SMS verification code.');
+			} else if (response.message.includes('sms_outbox.log')) {
+				toast.success('Registration successful! Check sms_outbox.log for your verification code.');
+			} else {
+				toast.success(`Registration successful! ${response.message}`);
+			}
+			
 			// Redirect to login with pre-filled phone number
 			goto(`/login?phone=${encodeURIComponent(phoneNumber)}&name=${encodeURIComponent(name)}`);
 		} catch (error) {

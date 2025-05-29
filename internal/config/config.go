@@ -32,6 +32,12 @@ type Config struct {
 	VAPIDPrivate string
 	VAPIDSubject string
 	StaticDir    string
+
+	// Twilio configuration for SMS OTP
+	TwilioAccountSID string
+	TwilioAuthToken  string
+	TwilioVerifySID  string
+	TwilioFromNumber string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -135,6 +141,20 @@ func LoadConfig() (*Config, error) {
 	}
 	if staticDir := os.Getenv("STATIC_DIR"); staticDir != "" {
 		cfg.StaticDir = staticDir
+	}
+
+	// Load Twilio configuration
+	if twilioAccountSID := os.Getenv("TWILIO_ACCOUNT_SID"); twilioAccountSID != "" {
+		cfg.TwilioAccountSID = twilioAccountSID
+	}
+	if twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN"); twilioAuthToken != "" {
+		cfg.TwilioAuthToken = twilioAuthToken
+	}
+	if twilioVerifySID := os.Getenv("TWILIO_VERIFY_SID"); twilioVerifySID != "" {
+		cfg.TwilioVerifySID = twilioVerifySID
+	}
+	if twilioFromNumber := os.Getenv("TWILIO_FROM_NUMBER"); twilioFromNumber != "" {
+		cfg.TwilioFromNumber = twilioFromNumber
 	}
 
 	return cfg, nil
