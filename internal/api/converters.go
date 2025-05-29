@@ -30,16 +30,22 @@ func ToBookingResponse(booking db.Booking) BookingResponse {
 		createdAt = time.Now() // Fallback, though this shouldn't happen
 	}
 
+	// Handle CheckedInAt
+	var checkedInAt *time.Time
+	if booking.CheckedInAt.Valid {
+		checkedInAt = &booking.CheckedInAt.Time
+	}
+
 	return BookingResponse{
-		BookingID:    booking.BookingID,
-		UserID:       booking.UserID,
-		ScheduleID:   booking.ScheduleID,
-		ShiftStart:   booking.ShiftStart,
-		ShiftEnd:     booking.ShiftEnd,
-		BuddyUserID:  buddyUserID,
-		BuddyName:    buddyName,
-		Attended:     booking.Attended,
-		CreatedAt:    createdAt,
+		BookingID:   booking.BookingID,
+		UserID:      booking.UserID,
+		ScheduleID:  booking.ScheduleID,
+		ShiftStart:  booking.ShiftStart,
+		ShiftEnd:    booking.ShiftEnd,
+		BuddyUserID: buddyUserID,
+		BuddyName:   buddyName,
+		CheckedInAt: checkedInAt,
+		CreatedAt:   createdAt,
 	}
 }
 
@@ -58,9 +64,15 @@ func ToReportResponse(report db.Report) ReportResponse {
 		createdAt = time.Now() // Fallback, though this shouldn't happen
 	}
 
+	// Handle nullable BookingID
+	var bookingID int64
+	if report.BookingID.Valid {
+		bookingID = report.BookingID.Int64
+	}
+
 	return ReportResponse{
 		ReportID:  report.ReportID,
-		BookingID: report.BookingID,
+		BookingID: bookingID,
 		Severity:  report.Severity,
 		Message:   message,
 		CreatedAt: createdAt,
@@ -69,29 +81,33 @@ func ToReportResponse(report db.Report) ReportResponse {
 
 // ToScheduleResponse converts a database Schedule to an API-friendly response
 func ToScheduleResponse(schedule db.Schedule) ScheduleResponse {
-	var startDate, endDate *time.Time
+	var startDateStr, endDateStr *string
+
 	if schedule.StartDate.Valid {
-		value := schedule.StartDate.Time
-		startDate = &value
-	}
-	if schedule.EndDate.Valid {
-		value := schedule.EndDate.Time
-		endDate = &value
+		// schedule.StartDate.Time is already 00:00:00 UTC for the given date
+		sDateStr := schedule.StartDate.Time.Format("2006-01-02")
+		startDateStr = &sDateStr
 	}
 
-	var timezone string
+	if schedule.EndDate.Valid {
+		// schedule.EndDate.Time is already 00:00:00 UTC for the given date
+		eDateStr := schedule.EndDate.Time.Format("2006-01-02")
+		endDateStr = &eDateStr
+	}
+
+	var timezoneString string
 	if schedule.Timezone.Valid {
-		timezone = schedule.Timezone.String
+		timezoneString = schedule.Timezone.String
 	}
 
 	return ScheduleResponse{
 		ScheduleID:      schedule.ScheduleID,
 		Name:            schedule.Name,
 		CronExpr:        schedule.CronExpr,
-		StartDate:       startDate,
-		EndDate:         endDate,
+		StartDate:       startDateStr, // This will be a "YYYY-MM-DD" string or nil
+		EndDate:         endDateStr,   // This will be a "YYYY-MM-DD" string or nil
 		DurationMinutes: schedule.DurationMinutes,
-		Timezone:        timezone,
+		Timezone:        timezoneString,
 	}
 }
 
@@ -111,4 +127,45 @@ func ToBookingResponses(bookings []db.Booking) []BookingResponse {
 		responses[i] = ToBookingResponse(booking)
 	}
 	return responses
-} 
+}
+
+// ToBookingWithScheduleResponse converts a ListBookingsByUserIDWithScheduleRow to an API-friendly response
+func ToBookingWithScheduleResponse(booking db.ListBookingsByUserIDWithScheduleRow) BookingWithScheduleResponse {
+	var buddyUserID *int64
+	if booking.BuddyUserID.Valid {
+		value := booking.BuddyUserID.Int64
+		buddyUserID = &value
+	}
+
+	var buddyName string
+	if booking.BuddyName.Valid {
+		buddyName = booking.BuddyName.String
+	}
+
+	// Handle CreatedAt
+	var createdAt time.Time
+	if booking.CreatedAt.Valid {
+		createdAt = booking.CreatedAt.Time
+	} else {
+		createdAt = time.Now() // Fallback, though this shouldn't happen
+	}
+
+	// Handle CheckedInAt
+	var checkedInAt *time.Time
+	if booking.CheckedInAt.Valid {
+		checkedInAt = &booking.CheckedInAt.Time
+	}
+
+	return BookingWithScheduleResponse{
+		BookingID:    booking.BookingID,
+		UserID:       booking.UserID,
+		ScheduleID:   booking.ScheduleID,
+		ScheduleName: booking.ScheduleName,
+		ShiftStart:   booking.ShiftStart,
+		ShiftEnd:     booking.ShiftEnd,
+		BuddyUserID:  buddyUserID,
+		BuddyName:    buddyName,
+		CheckedInAt:  checkedInAt,
+		CreatedAt:    createdAt,
+	}
+}

@@ -8,38 +8,73 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
+
+const adminBulkDeleteUsers = `-- name: AdminBulkDeleteUsers :exec
+DELETE FROM users
+WHERE user_id IN (/*SLICE:user_ids*/?)
+`
+
+func (q *Queries) AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error {
+	query := adminBulkDeleteUsers
+	var queryParams []interface{}
+	if len(userIds) > 0 {
+		for _, v := range userIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:user_ids*/?", strings.Repeat(",?", len(userIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:user_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     phone,
-    name
+    name,
+    role
 ) VALUES (
     ?,
-    ?
+    ?,
+    COALESCE(?3, 'guest') -- Use guest if role is not provided
 )
-RETURNING user_id, phone, name, created_at
+RETURNING user_id, phone, name, created_at, role
 `
 
 type CreateUserParams struct {
 	Phone string         `json:"phone"`
 	Name  sql.NullString `json:"name"`
+	Role  interface{}    `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Phone, arg.Name)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Phone, arg.Name, arg.Role)
 	var i User
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users
+WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, userID)
+	return err
+}
+
 const getUserByID = `-- name: GetUserByID :one
-SELECT user_id, phone, name, created_at FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?
 `
 
@@ -51,12 +86,13 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int64) (User, error) {
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
 
 const getUserByPhone = `-- name: GetUserByPhone :one
-SELECT user_id, phone, name, created_at FROM users
+SELECT user_id, phone, name, created_at, role FROM users
 WHERE phone = ?
 `
 
@@ -68,6 +104,78 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 		&i.Phone,
 		&i.Name,
 		&i.CreatedAt,
+		&i.Role,
+	)
+	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT user_id, phone, name, created_at, role FROM users
+WHERE (?1 IS NULL OR name LIKE ?1 OR phone LIKE ?1)
+ORDER BY name
+`
+
+func (q *Queries) ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Phone,
+			&i.Name,
+			&i.CreatedAt,
+			&i.Role,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET
+    phone = COALESCE(?1, phone),
+    name = COALESCE(?2, name),
+    role = COALESCE(?3, role)
+WHERE
+    user_id = ?4
+RETURNING user_id, phone, name, created_at, role
+`
+
+type UpdateUserParams struct {
+	Phone  sql.NullString `json:"phone"`
+	Name   sql.NullString `json:"name"`
+	Role   sql.NullString `json:"role"`
+	UserID int64          `json:"user_id"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser,
+		arg.Phone,
+		arg.Name,
+		arg.Role,
+		arg.UserID,
+	)
+	var i User
+	err := row.Scan(
+		&i.UserID,
+		&i.Phone,
+		&i.Name,
+		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }

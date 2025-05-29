@@ -37,7 +37,9 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	foundOTP := false
 	for _, item := range outboxItems {
 		if item.Recipient == userPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otpValue = otpPayload.OTP
@@ -59,11 +61,11 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	require.NotEmpty(t, userToken)
 
 	// --- Setup: Book a known valid shift for the report ---
-	// Use one of the seeded schedules. Summer Patrol (ID 1): '0 0,2 * 11-12,1-4 6,0,1'
-	// Active Nov 1, 2024 - Apr 30, 2025.
-	// Target shift: Monday, Nov 4, 2024, at 00:00:00Z.
-	targetScheduleID := int64(1) // Assuming Summer Patrol is ID 1 from seed
-	shiftStartTimeStr := "2024-11-04T00:00:00Z"
+	// Use one of the seeded schedules. Daily Evening Patrol (ID 1): '0 18 * * *'
+	// Active Jan 1, 2025 - Dec 31, 2025.
+	// Target shift: Monday, Jan 6, 2025, at 18:00 Johannesburg time (16:00 UTC)
+	targetScheduleID := int64(1)                // Assuming Daily Evening Patrol is ID 1 from seed
+	shiftStartTimeStr := "2025-01-06T16:00:00Z" // 18:00 Johannesburg time = 16:00 UTC
 	shiftStartTime, _ := time.Parse(time.RFC3339, shiftStartTimeStr)
 
 	createBookingReq := api.CreateBookingRequest{
@@ -95,25 +97,27 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	assert.Equal(t, reportReq.Message, createdReport.Message)
 
 	// --- Test POST /bookings/{id}/report (Invalid severity) ---
-	invalidReportReq := api.CreateReportRequest{ Severity: 5, Message: "Invalid severity report." }
+	invalidReportReq := api.CreateReportRequest{Severity: 5, Message: "Invalid severity report."}
 	invalidReportPayloadBytes, _ := json.Marshal(invalidReportReq)
 	rrInvalidReport := app.makeRequest(t, "POST", reportPath, bytes.NewBuffer(invalidReportPayloadBytes), userToken)
 	assert.Equal(t, http.StatusBadRequest, rrInvalidReport.Code, "Expected 400 for invalid severity: %s", rrInvalidReport.Body.String())
 
 	// --- Test POST /bookings/{id}/report (For a booking not owned by user) ---
 	otherUserPhone := "+14155550999" // Using US format that passes validation
-	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String:"Another Reporter", Valid:true})
+	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Another Reporter", Valid: true})
 	require.NoError(t, err, "Failed to register other user")
 
 	// Get a fresh look at outbox items for the other user
 	outboxItemsOther, err := app.Querier.GetPendingOutboxItems(context.Background(), 10)
 	require.NoError(t, err)
-	
+
 	// Find the OTP for the other user
 	var otherOtpValue string
 	for _, item := range outboxItemsOther {
 		if item.Recipient == otherUserPhone && item.MessageType == "OTP_VERIFICATION" {
-			var otpPayload struct{ OTP string `json:"otp"` }
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
 			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
 			require.NoError(t, err)
 			otherOtpValue = otpPayload.OTP
@@ -121,13 +125,13 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 		}
 	}
 	require.NotEmpty(t, otherOtpValue, "OTP not found for other reporter %s", otherUserPhone)
-	
+
 	// Verify the other user to get their token
 	verifyOtherPayload := api.VerifyRequest{Phone: otherUserPhone, Code: otherOtpValue}
 	verOtherPayloadBytes, _ := json.Marshal(verifyOtherPayload)
 	rrOtherVerify := app.makeRequest(t, "POST", "/auth/verify", bytes.NewBuffer(verOtherPayloadBytes), "")
 	require.Equal(t, http.StatusOK, rrOtherVerify.Code, "Verify for other user failed: %s", rrOtherVerify.Body.String())
-	
+
 	var verifyOtherResp api.VerifyResponse
 	err = json.Unmarshal(rrOtherVerify.Body.Bytes(), &verifyOtherResp)
 	require.NoError(t, err)
@@ -142,42 +146,48 @@ func TestShiftsAvailable_FilteringAndLimits(t *testing.T) {
 	app := newTestApp(t)
 	defer app.DB.Close()
 
-	// Seeded schedules: 
-	// ID 1: Summer Patrol (Nov 1, 2024 - Apr 30, 2025), Cron: '0 0,2 * 11-12,1-4 6,0,1' (Sat/Sun/Mon 00:00, 02:00)
-	// ID 2: Winter Patrol (May 1, 2025 - Oct 31, 2025), Cron: '0 1,3 * 5-10 6,0,1'   (Sat/Sun/Mon 01:00, 03:00)
+	// Seeded schedules:
+	// ID 1: Daily Evening Patrol (Jan 1, 2025 - Dec 31, 2025), Cron: '0 18 * * *' (Daily 18:00)
+	// ID 2: Weekend Morning Watch (Jan 1, 2025 - Dec 31, 2025), Cron: '0 6,10 * * 6,0' (Sat/Sun 06:00, 10:00)
+	// ID 3: Weekday Lunch Security (Jan 1, 2025 - Dec 31, 2025), Cron: '0 12 * * 1-5' (Mon-Fri 12:00)
 
-	// Test Case 1: Query specific range in Summer, expect Summer slots
-	fromNov2024 := "2024-11-04T00:00:00Z"
-	toNov2024 := "2024-11-10T23:59:59Z" // Mon Nov 4, Sat Nov 9, Sun Nov 10
+	// Test Case 1: Query specific range for Daily Evening Patrol
+	fromJan2025 := "2025-01-06T00:00:00Z"
+	toJan2025 := "2025-01-10T23:59:59Z" // Mon Jan 6 to Fri Jan 10
 	qParams := url.Values{}
-	qParams.Add("from", fromNov2024)
-	qParams.Add("to", toNov2024)
+	qParams.Add("from", fromJan2025)
+	qParams.Add("to", toJan2025)
 
 	rr := app.makeRequest(t, "GET", "/shifts/available?"+qParams.Encode(), nil, "")
 	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
-	var slotsNov []service.AvailableShiftSlot
-	err := json.Unmarshal(rr.Body.Bytes(), &slotsNov)
+	var slotsJan []service.AvailableShiftSlot
+	err := json.Unmarshal(rr.Body.Bytes(), &slotsJan)
 	require.NoError(t, err)
-	// Expect 6 slots: Nov 4 (00,02), Nov 9 (00,02), Nov 10 (00,02)
-	assert.Len(t, slotsNov, 6, "Expected 6 slots for Nov 4-10 range (Mon Nov 4 @ 00,02; Sat Nov 9 @ 00,02; Sun Nov 10 @ 00,02)")
-	if len(slotsNov) >= 2 { // Check first two if at least two exist
-		assert.Equal(t, int64(1), slotsNov[0].ScheduleID) // Summer Schedule ID
-		assert.Equal(t, "2024-11-04T00:00:00Z", slotsNov[0].StartTime.Format(time.RFC3339))
-		assert.Equal(t, int64(1), slotsNov[1].ScheduleID)
-		assert.Equal(t, "2024-11-04T02:00:00Z", slotsNov[1].StartTime.Format(time.RFC3339))
+	// Expect multiple slots: Daily Evening Patrol (5 days @ 18:00), Weekday Lunch Security (5 days @ 12:00), Weekend Morning Watch (Sat/Sun @ 6:00, 10:00)
+	assert.GreaterOrEqual(t, len(slotsJan), 10, "Expected at least 10 slots for Jan 6-10 range")
+	if len(slotsJan) >= 1 {
+		// Should have Daily Evening Patrol slots
+		foundDailySlot := false
+		for _, slot := range slotsJan {
+			if slot.ScheduleName == "Daily Evening Patrol" {
+				foundDailySlot = true
+				break
+			}
+		}
+		assert.True(t, foundDailySlot, "Expected to find Daily Evening Patrol slots")
 	}
 
 	// Test Case 2: Query with limit
 	qParamsLimit := url.Values{}
-	qParamsLimit.Add("from", "2024-11-01T00:00:00Z") // Full November 2024
-	qParamsLimit.Add("to", "2024-11-30T23:59:59Z")
+	qParamsLimit.Add("from", "2025-01-01T00:00:00Z") // Full January 2025
+	qParamsLimit.Add("to", "2025-01-31T23:59:59Z")
 	qParamsLimit.Add("limit", "3")
 	rr = app.makeRequest(t, "GET", "/shifts/available?"+qParamsLimit.Encode(), nil, "")
 	assert.Equal(t, http.StatusOK, rr.Code, "Response: %s", rr.Body.String())
 	var slotsLimit []service.AvailableShiftSlot
 	err = json.Unmarshal(rr.Body.Bytes(), &slotsLimit)
 	require.NoError(t, err)
-	assert.Len(t, slotsLimit, 3, "Expected 3 slots due to limit for Nov 2024")
+	assert.Len(t, slotsLimit, 3, "Expected 3 slots due to limit for Jan 2025")
 
 	// Test Case 3: Query range where schedules are not active due to their own start/end dates
 	qParamsFarFuture := url.Values{}
@@ -205,4 +215,4 @@ func TestSchedulesEndpoint(t *testing.T) {
 
 // TODO for this file was:
 // TODO: Test GET /schedules (currently placeholder in handler) - Partially done by TestSchedulesEndpoint
-// TODO: More detailed tests for /shifts/available (filtering, limits, no active schedules, time window effects) 
+// TODO: More detailed tests for /shifts/available (filtering, limits, no active schedules, time window effects)

@@ -30,4 +30,25 @@ ORDER BY name;
 
 -- name: ListAllSchedules :many
 SELECT * FROM schedules
-ORDER BY name; 
+ORDER BY name;
+
+-- name: UpdateSchedule :one
+UPDATE schedules
+SET
+    name = ?,
+    cron_expr = ?,
+    start_date = ?,
+    end_date = ?,
+    duration_minutes = ?,
+    timezone = ?
+WHERE
+    schedule_id = ?
+RETURNING *;
+
+-- name: DeleteSchedule :exec
+DELETE FROM schedules
+WHERE schedule_id = ?;
+
+-- name: AdminBulkDeleteSchedules :exec
+DELETE FROM schedules
+WHERE schedule_id IN (sqlc.slice('schedule_ids')); 

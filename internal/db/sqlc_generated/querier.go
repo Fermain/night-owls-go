@@ -6,28 +6,72 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
+	AdminBulkDeleteSchedules(ctx context.Context, scheduleIds []int64) error
+	AdminBulkDeleteUsers(ctx context.Context, userIds []int64) error
+	AdminGetReportWithContext(ctx context.Context, reportID int64) (AdminGetReportWithContextRow, error)
+	AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error)
+	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
+	ArchiveReport(ctx context.Context, reportID int64) error
+	BulkArchiveReports(ctx context.Context, reportIds []int64) error
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
+	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
+	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
+	CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteBooking(ctx context.Context, bookingID int64) error
+	DeleteEmergencyContact(ctx context.Context, contactID int64) error
+	DeleteSchedule(ctx context.Context, scheduleID int64) error
+	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
+	DeleteUser(ctx context.Context, userID int64) error
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
+	// Admin Dashboard Metrics Queries
+	// Get booking-based metrics for dashboard (will be combined with slot data in Go)
+	GetBookingMetrics(ctx context.Context, arg GetBookingMetricsParams) (GetBookingMetricsRow, error)
+	// Get booking patterns by time slot from historical data
+	GetBookingPatternsByTimeSlot(ctx context.Context) ([]GetBookingPatternsByTimeSlotRow, error)
+	// Get all bookings in date range with check-in and report status
+	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
+	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	GetDefaultEmergencyContact(ctx context.Context) (EmergencyContact, error)
+	GetEmergencyContactByID(ctx context.Context, contactID int64) (EmergencyContact, error)
+	GetEmergencyContacts(ctx context.Context) ([]EmergencyContact, error)
+	// Get member contribution analysis for the past month
+	GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
-	GetReportByBookingID(ctx context.Context, bookingID int64) (Report, error)
+	// Limit to prevent processing too many at once
+	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
+	GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error)
+	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
+	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	GetUserByPhone(ctx context.Context, phone string) (User, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
-	ListReportsByUserID(ctx context.Context, userID int64) ([]Report, error)
-	UpdateBookingAttendance(ctx context.Context, arg UpdateBookingAttendanceParams) (Booking, error)
-	// Limit to prevent processing too many at once
+	ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error)
+	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
+	ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcastsWithSenderRow, error)
+	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
+	ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error)
+	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
+	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
+	UnarchiveReport(ctx context.Context, reportID int64) error
+	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
+	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
+	UpdateEmergencyContact(ctx context.Context, arg UpdateEmergencyContactParams) (EmergencyContact, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
+	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 }
 
 var _ Querier = (*Queries)(nil)

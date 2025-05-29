@@ -1,0 +1,225 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.21'
+  NODE_VERSION: '20'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install Go dependencies
+        run: go mod download
+      
+      - name: Run Go tests
+        run: go test ./... -v
+      
+      - name: Install frontend dependencies
+        working-directory: ./app
+        run: npm ci
+      
+      - name: Run frontend type check
+        working-directory: ./app
+        run: npm run check
+      
+      - name: Run frontend linting
+        working-directory: ./app
+        run: npm run lint:errors
+      
+      - name: Run frontend tests
+        working-directory: ./app
+        run: npm run test:unit -- --run
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Build backend
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+          go build -ldflags="-w -s" -o night-owls-server ./cmd/server
+      
+      - name: Build frontend
+        working-directory: ./app
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: night-owls-server
+      
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: app/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download backend artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-build
+      
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: app/build
+      
+      - name: Deploy to server
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
+          
+          # Create deployment directory
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST \
+            "mkdir -p /home/$DEPLOY_USER/night-owls-go-new"
+          
+          # Copy files
+          scp -i ~/.ssh/deploy_key -r \
+            night-owls-server \
+            app/build \
+            internal \
+            docs \
+            $DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/night-owls-go-new/
+          
+          # Deploy script
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST << 'ENDSSH'
+            set -e
+            
+            # Backup current deployment
+            if [ -d "/home/$USER/night-owls-go" ]; then
+              sudo systemctl stop night-owls-backend night-owls-frontend || true
+              cp -r /home/$USER/night-owls-go /home/$USER/night-owls-go-backup-$(date +%Y%m%d-%H%M%S)
+            fi
+            
+            # Backup database
+            if [ -f "/home/$USER/night-owls-data/production.db" ]; then
+              cp /home/$USER/night-owls-data/production.db \
+                 /home/$USER/night-owls-data/backups/production-$(date +%Y%m%d-%H%M%S).db
+            fi
+            
+            # Move new deployment
+            rm -rf /home/$USER/night-owls-go
+            mv /home/$USER/night-owls-go-new /home/$USER/night-owls-go
+            cd /home/$USER/night-owls-go
+            
+            # Make backend executable
+            chmod +x night-owls-server
+            
+            # Run migrations
+            ./night-owls-server -migrate-only
+            
+            # Restart services
+            sudo systemctl start night-owls-backend night-owls-frontend
+            sleep 5
+            
+            # Health check
+            if curl -f http://localhost:5888/health; then
+              echo "Deployment successful!"
+            else
+              echo "Health check failed, rolling back..."
+              sudo systemctl stop night-owls-backend night-owls-frontend
+              rm -rf /home/$USER/night-owls-go
+              mv /home/$USER/night-owls-go-backup-* /home/$USER/night-owls-go
+              sudo systemctl start night-owls-backend night-owls-frontend
+              exit 1
+            fi
+          ENDSSH
+      
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Deployment ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+      
+      - name: Run smoke tests
+        run: |
+          # Check frontend
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.PRODUCTION_URL }})
+          if [ $response -ne 200 ]; then
+            echo "Frontend check failed with status $response"
+            exit 1
+          fi
+          
+          # Check API health
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.PRODUCTION_URL }}/api/health)
+          if [ $response -ne 200 ]; then
+            echo "API health check failed with status $response"
+            exit 1
+          fi
+          
+          echo "Smoke tests passed!" 

@@ -17,8 +17,35 @@ type Booking struct {
 	ShiftEnd    time.Time      `json:"shift_end"`
 	BuddyUserID sql.NullInt64  `json:"buddy_user_id"`
 	BuddyName   sql.NullString `json:"buddy_name"`
-	Attended    bool           `json:"attended"`
 	CreatedAt   sql.NullTime   `json:"created_at"`
+	CheckedInAt sql.NullTime   `json:"checked_in_at"`
+}
+
+type Broadcast struct {
+	BroadcastID    int64         `json:"broadcast_id"`
+	Message        string        `json:"message"`
+	Audience       string        `json:"audience"`
+	SenderUserID   int64         `json:"sender_user_id"`
+	PushEnabled    bool          `json:"push_enabled"`
+	ScheduledAt    sql.NullTime  `json:"scheduled_at"`
+	SentAt         sql.NullTime  `json:"sent_at"`
+	Status         string        `json:"status"`
+	RecipientCount sql.NullInt64 `json:"recipient_count"`
+	SentCount      sql.NullInt64 `json:"sent_count"`
+	FailedCount    sql.NullInt64 `json:"failed_count"`
+	CreatedAt      sql.NullTime  `json:"created_at"`
+}
+
+type EmergencyContact struct {
+	ContactID    int64          `json:"contact_id"`
+	Name         string         `json:"name"`
+	Number       string         `json:"number"`
+	Description  sql.NullString `json:"description"`
+	IsDefault    bool           `json:"is_default"`
+	IsActive     bool           `json:"is_active"`
+	DisplayOrder int64          `json:"display_order"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
 }
 
 type Outbox struct {
@@ -30,14 +57,32 @@ type Outbox struct {
 	CreatedAt   sql.NullTime   `json:"created_at"`
 	SentAt      sql.NullTime   `json:"sent_at"`
 	RetryCount  sql.NullInt64  `json:"retry_count"`
+	UserID      sql.NullInt64  `json:"user_id"`
+}
+
+type PushSubscription struct {
+	ID        int64          `json:"id"`
+	UserID    int64          `json:"user_id"`
+	Endpoint  string         `json:"endpoint"`
+	P256dhKey string         `json:"p256dh_key"`
+	AuthKey   string         `json:"auth_key"`
+	UserAgent sql.NullString `json:"user_agent"`
+	Platform  sql.NullString `json:"platform"`
+	CreatedAt sql.NullTime   `json:"created_at"`
 }
 
 type Report struct {
-	ReportID  int64          `json:"report_id"`
-	BookingID int64          `json:"booking_id"`
-	Severity  int64          `json:"severity"`
-	Message   sql.NullString `json:"message"`
-	CreatedAt sql.NullTime   `json:"created_at"`
+	ReportID     int64           `json:"report_id"`
+	BookingID    sql.NullInt64   `json:"booking_id"`
+	UserID       sql.NullInt64   `json:"user_id"`
+	Severity     int64           `json:"severity"`
+	Message      sql.NullString  `json:"message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	Latitude     sql.NullFloat64 `json:"latitude"`
+	Longitude    sql.NullFloat64 `json:"longitude"`
+	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
+	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	ArchivedAt   sql.NullTime    `json:"archived_at"`
 }
 
 type Schedule struct {
@@ -55,4 +100,5 @@ type User struct {
 	Phone     string         `json:"phone"`
 	Name      sql.NullString `json:"name"`
 	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
 }

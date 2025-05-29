@@ -1,15 +1,19 @@
-// Package main is the entry point for the Community Watch API server
+// Package main is the entry point for the Night Owls Control API server
 package main
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,20 +25,21 @@ import (
 	"night-owls-go/internal/outbox"
 	"night-owls-go/internal/service"
 
-	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // Driver for reading migration files from disk
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/robfig/cron/v3"
 	httpSwagger "github.com/swaggo/http-swagger"
+
 	// Import the generated swagger docs when available
-	// _ "night-owls-go/docs"
+	_ "night-owls-go/docs/swagger"
+
+	"github.com/go-fuego/fuego"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// @title Community Watch Shift Scheduler API
+// @title Night Owls Control Shift Scheduler API
 // @version 1.0
 // @description API for managing community watch shifts, bookings, and reports
 // @termsOfService http://swagger.io/terms/
@@ -45,7 +50,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8080
+// @host localhost:5888
 // @BasePath /
 // @schemes http
 
@@ -63,7 +68,13 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 }
 
 func main() {
-	err := godotenv.Load()
+	startTime := time.Now() // Track server start time for health check uptime
+
+	// Force timezone to UTC
+	os.Setenv("TZ", "UTC")
+
+	// Use Overload to force .env file values to override any existing environment variables
+	err := godotenv.Overload()
 	if err != nil {
 		// Log this initial finding using standard log before slog is fully set up
 		log.Println("No .env file found, using environment variables or defaults")
@@ -78,6 +89,7 @@ func main() {
 	slog.SetDefault(logger)          // Set as global default
 
 	slog.Info("Configuration loaded successfully")
+	slog.Info("Development mode status", "dev_mode", cfg.DevMode)
 
 	dbConn, err := sql.Open("sqlite3", cfg.DatabasePath)
 	if err != nil {
@@ -103,16 +115,28 @@ func main() {
 	}
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
-	scheduleService := service.NewScheduleService(querier, logger)
+	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, logger, cfg)
+	reportArchivingService := service.NewReportArchivingService(querier, logger)
+	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
+	broadcastService := service.NewBroadcastService(querier, logger, cfg)
+	emergencyContactService := service.NewEmergencyContactService(querier, logger)
+
+	// Instantiate PushSender service
+	pushSenderService := service.NewPushSender(querier, cfg, logger)
+
+	outboxDispatcherService := outbox.NewDispatcherService(querier, messageSender, pushSenderService, logger, cfg)
+
+	pushAPIHandler := api.NewPushHandler(querier, cfg, logger)
 
 	// --- Setup Cron Jobs ---
 	cronLoggerAdapter := &slogCronLogger{logger: logger.With("component", "cron")}
 	cronScheduler := cron.New(cron.WithLogger(cron.PrintfLogger(cronLoggerAdapter)))
-	_, err = cronScheduler.AddFunc("@every 1m", func() { // Process outbox every 1 minute
-		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background()) // Use background context for cron job
+
+	// Process outbox every 1 minute
+	_, err = cronScheduler.AddFunc("@every 1m", func() {
+		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background())
 		if errors > 0 {
 			slog.Warn("Outbox dispatcher finished with errors", "processed_count", processed, "error_count", errors)
 		} else if processed > 0 {
@@ -123,71 +147,385 @@ func main() {
 		slog.Error("Failed to add outbox dispatcher job to cron", "error", err)
 		os.Exit(1)
 	}
+
+	// Process pending broadcasts every 30 seconds
+	_, err = cronScheduler.AddFunc("@every 30s", func() {
+		processed, err := broadcastService.ProcessPendingBroadcasts(context.Background())
+		if err != nil {
+			slog.Error("Failed to process pending broadcasts", "error", err)
+		} else if processed > 0 {
+			slog.Info("Successfully processed pending broadcasts", "processed_count", processed)
+		}
+	})
+	if err != nil {
+		slog.Error("Failed to add broadcast processing job to cron", "error", err)
+		os.Exit(1)
+	}
+
+	// Auto-archive old reports daily at 2 AM
+	_, err = cronScheduler.AddFunc("0 2 * * *", func() {
+		ctx := context.Background()
+		archived, err := reportArchivingService.ArchiveOldReports(ctx)
+		if err != nil {
+			slog.Error("Failed to auto-archive old reports", "error", err)
+		} else if archived > 0 {
+			slog.Info("Successfully auto-archived old reports", "archived_count", archived)
+		}
+	})
+	if err != nil {
+		slog.Error("Failed to add report archiving job to cron", "error", err)
+		os.Exit(1)
+	}
+
 	cronScheduler.Start()
-	slog.Info("Cron scheduler started for outbox processing.")
+	slog.Info("Cron scheduler started for outbox processing, broadcasts, and report archiving.")
 
 	// --- Setup HTTP Router & Handlers ---
-	router := chi.NewRouter()
-	router.Use(chiMiddleware.RequestID)
-	router.Use(chiMiddleware.RealIP)
-	// Using slog for logging HTTP requests via middleware
-	router.Use(func(next http.Handler) http.Handler {
+	s := fuego.NewServer(
+		fuego.WithAddr(":"+cfg.ServerPort),
+		fuego.WithEngineOptions(
+			fuego.WithOpenAPIConfig(fuego.OpenAPIConfig{
+				UIHandler: func(specURL string) http.Handler {
+					return httpSwagger.Handler(
+						httpSwagger.URL(specURL),
+						httpSwagger.Layout(httpSwagger.BaseLayout),
+						httpSwagger.PersistAuthorization(true),
+					)
+				},
+				SwaggerURL:       "/swagger",
+				SpecURL:          "/swagger/doc.json",
+				JSONFilePath:     "openapi.json",
+				Disabled:         false,
+				DisableSwaggerUI: false,
+				DisableMessages:  false,
+			}),
+		),
+	)
+
+	// Global middlewares
+	fuego.Use(s, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			wrapper := chiMiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			wrapper := w // fuego does not have chi's WrapResponseWriter, so use w directly
 			next.ServeHTTP(wrapper, r)
 			slog.Info("HTTP request",
 				"method", r.Method,
 				"path", r.URL.Path,
-				"status", wrapper.Status(),
+				// No status or bytes_written without wrapper, unless custom ResponseWriter is implemented
 				"latency_ms", time.Since(start).Milliseconds(),
-				"bytes_written", wrapper.BytesWritten(),
 				"remote_addr", r.RemoteAddr,
-				"request_id", chiMiddleware.GetReqID(r.Context()),
 			)
 		})
 	})
-	router.Use(chiMiddleware.Recoverer) // Recovers from panics and returns a 500
 
 	// Initialize handlers
-	authAPIHandler := api.NewAuthHandler(userService, logger)
+	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
+	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
+	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
+	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
+	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
+	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
+	broadcastAPIHandler := api.NewBroadcastHandler(querier, logger)
+	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
+	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
+
+	// Debug: Check handler initialization
+	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
 
 	// Public routes
-	router.Post("/auth/register", authAPIHandler.RegisterHandler)
-	router.Post("/auth/verify", authAPIHandler.VerifyHandler)
-	router.Get("/schedules", scheduleAPIHandler.ListSchedulesHandler)             // Optional, as per guide
-	router.Get("/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
+	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
 
-	// Protected routes (require auth)
-	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger)) // Apply AuthMiddleware
+	// Development-only auth endpoints
+	if cfg.DevMode {
+		fuego.PostStd(s, "/api/auth/dev-login", authAPIHandler.DevLoginHandler)
+		slog.Info("Development mode: dev-login endpoint enabled")
+	}
 
-		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
-		r.Patch("/bookings/{id}/attendance", bookingAPIHandler.MarkAttendanceHandler)
-		// r.Delete("/bookings/{id}", bookingAPIHandler.CancelBookingHandler) // Optional
+	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
+	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
+	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
 
-		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
-		// r.Get("/reports", reportAPIHandler.ListReportsHandler) // Optional
+	// Emergency contacts (public access)
+	fuego.GetStd(s, "/api/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
+	fuego.GetStd(s, "/api/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
+
+	// Health check endpoints for monitoring
+	fuego.GetStd(s, "/health", func(w http.ResponseWriter, r *http.Request) {
+		// Check database connectivity
+		dbStatus := "up"
+		if err := dbConn.Ping(); err != nil {
+			dbStatus = "down"
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"status":   "unhealthy",
+				"database": dbStatus,
+				"error":    err.Error(),
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":   "healthy",
+			"database": dbStatus,
+			"uptime":   time.Since(startTime).String(),
+			"version":  "1.0.0", // TODO: Use build version
+		})
 	})
 
-	// Swagger documentation
-	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"), // The URL pointing to API definition
-	))
+	// API health check endpoint
+	fuego.GetStd(s, "/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "ok",
+			"service": "night-owls-api",
+		})
+	})
+
+	// Protected routes (require auth)
+	protected := fuego.Group(s, "")
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
+	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
+	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
+	fuego.DeleteStd(protected, "/bookings/{id}", bookingAPIHandler.CancelBookingHandler)
+	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
+	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
+	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
+
+	// Admin routes
+	admin := fuego.Group(s, "/api/admin")
+	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
+	fuego.Use(admin, api.AdminMiddleware(logger))
+
+	// Admin Schedules
+	fuego.GetStd(admin, "/schedules", adminScheduleAPIHandler.AdminListSchedules)
+	fuego.PostStd(admin, "/schedules", adminScheduleAPIHandler.AdminCreateSchedule)
+	fuego.GetStd(admin, "/schedules/all-slots", adminScheduleAPIHandler.AdminListAllShiftSlots)
+	fuego.GetStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminGetSchedule)
+	fuego.PutStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminUpdateSchedule)
+	fuego.DeleteStd(admin, "/schedules/{id}", adminScheduleAPIHandler.AdminDeleteSchedule)
+	fuego.DeleteStd(admin, "/schedules", adminScheduleAPIHandler.AdminBulkDeleteSchedules)
+
+	// Admin Users
+	fuego.GetStd(admin, "/users", adminUserAPIHandler.AdminListUsers)
+	fuego.PostStd(admin, "/users", adminUserAPIHandler.AdminCreateUser)
+	fuego.GetStd(admin, "/users/{id}", adminUserAPIHandler.AdminGetUser)
+	fuego.GetStd(admin, "/users/{userId}/bookings", adminBookingAPIHandler.GetUserBookingsHandler)
+	fuego.PutStd(admin, "/users/{id}", adminUserAPIHandler.AdminUpdateUser)
+	fuego.DeleteStd(admin, "/users/{id}", adminUserAPIHandler.AdminDeleteUser)
+	fuego.PostStd(admin, "/users/bulk-delete", adminUserAPIHandler.AdminBulkDeleteUsers)
+
+	// Admin Bookings
+	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
+
+	// Admin Reports
+	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)
+	fuego.GetStd(admin, "/reports/archived", adminReportAPIHandler.AdminListArchivedReportsHandler)
+	fuego.GetStd(admin, "/reports/{id}", adminReportAPIHandler.AdminGetReportHandler)
+	fuego.PutStd(admin, "/reports/{id}/archive", adminReportAPIHandler.AdminArchiveReportHandler)
+	fuego.PutStd(admin, "/reports/{id}/unarchive", adminReportAPIHandler.AdminUnarchiveReportHandler)
+
+	// Admin Broadcasts
+	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
+	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
+	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
+
+	// Test user broadcasts under admin for debugging
+	fuego.GetStd(admin, "/test-broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+
+	// Debug endpoint to manually trigger broadcast processing
+	fuego.PostStd(admin, "/debug/process-broadcasts", func(w http.ResponseWriter, r *http.Request) {
+		processed, err := broadcastService.ProcessPendingBroadcasts(r.Context())
+		if err != nil {
+			logger.Error("Failed to process broadcasts", "error", err)
+			http.Error(w, "Failed to process broadcasts: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := map[string]interface{}{
+			"processed": processed,
+			"message":   fmt.Sprintf("Successfully processed %d broadcasts", processed),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Debug endpoint to manually trigger report archiving
+	fuego.PostStd(admin, "/debug/archive-reports", func(w http.ResponseWriter, r *http.Request) {
+		archived, err := reportArchivingService.ArchiveOldReports(r.Context())
+		if err != nil {
+			logger.Error("Failed to archive reports", "error", err)
+			http.Error(w, "Failed to archive reports: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := map[string]interface{}{
+			"archived": archived,
+			"message":  fmt.Sprintf("Successfully archived %d reports", archived),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Debug endpoint to get archiving statistics
+	fuego.GetStd(admin, "/debug/archiving-stats", func(w http.ResponseWriter, r *http.Request) {
+		stats, err := reportArchivingService.GetArchivingStats(r.Context())
+		if err != nil {
+			logger.Error("Failed to get archiving stats", "error", err)
+			http.Error(w, "Failed to get archiving stats: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stats)
+	})
+
+	// Simple test handler - mimicking working admin handlers
+	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Simple test handler called")
+		// Mimic the exact response pattern of working admin handlers
+		broadcasts := []map[string]interface{}{
+			{
+				"id":         999,
+				"message":    "Test broadcast from simple handler",
+				"audience":   "all",
+				"created_at": "2025-05-26T12:00:00Z",
+			},
+		}
+
+		// Use the same response pattern as other handlers
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(broadcasts)
+	})
+
+	// Admin Dashboard
+	fuego.GetStd(admin, "/dashboard", adminDashboardAPIHandler.GetDashboardHandler)
+
+	// Admin Emergency Contacts
+	fuego.GetStd(admin, "/emergency-contacts", emergencyContactAPIHandler.AdminGetEmergencyContactsHandler)
+	fuego.PostStd(admin, "/emergency-contacts", emergencyContactAPIHandler.AdminCreateEmergencyContactHandler)
+	fuego.GetStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminGetEmergencyContactHandler)
+	fuego.PutStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminUpdateEmergencyContactHandler)
+	fuego.DeleteStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminDeleteEmergencyContactHandler)
+	fuego.PutStd(admin, "/emergency-contacts/{id}/default", emergencyContactAPIHandler.AdminSetDefaultEmergencyContactHandler)
+
+	// Explicit Swagger routes (must be before SPA fallback)
+	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {
+		handler := httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+			httpSwagger.Layout(httpSwagger.BaseLayout),
+			httpSwagger.PersistAuthorization(true),
+		)
+		handler.ServeHTTP(w, r)
+	})
+	fuego.GetStd(s, "/swagger/", func(w http.ResponseWriter, r *http.Request) {
+		handler := httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+			httpSwagger.Layout(httpSwagger.BaseLayout),
+			httpSwagger.PersistAuthorization(true),
+		)
+		handler.ServeHTTP(w, r)
+	})
+	fuego.GetStd(s, "/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		// Generate OpenAPI spec and serve it
+		spec := s.Engine.OutputOpenAPISpec()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(spec)
+	})
+
+	// --- Serve Static Assets & SPA ---
+	// Static file serving
+	staticPath, err := filepath.Abs(cfg.StaticDir)
+	if err != nil {
+		logger.Error("Failed to get absolute path for static directory", "path", cfg.StaticDir, "error", err)
+		os.Exit(1)
+	}
+	logger.Info("Serving static files from", "path", staticPath)
+
+	// Serve index.html for the root path
+	fuego.GetStd(s, "/", func(w http.ResponseWriter, r *http.Request) {
+		indexPage := filepath.Join(staticPath, "index.html")
+		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
+			logger.Error("SPA index.html not found", "path", indexPage)
+			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPage)
+	})
+
+	// Serve static files and fallback to index.html for SPA routes
+	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
+		// Enhanced debug logging
+		logger.Info("SPA fallback handler hit", "path", r.URL.Path, "method", r.Method)
+
+		// Check each condition individually for debugging
+		hasApiPrefix := strings.HasPrefix(r.URL.Path, "/api/")
+		hasBookingsPrefix := strings.HasPrefix(r.URL.Path, "/bookings")
+		hasBroadcastsPrefix := strings.HasPrefix(r.URL.Path, "/broadcasts")
+		hasSchedulesPrefix := strings.HasPrefix(r.URL.Path, "/schedules")
+		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
+		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
+		hasReportsPrefix := strings.HasPrefix(r.URL.Path, "/reports/")
+
+		logger.Info("Path prefix checks",
+			"path", r.URL.Path,
+			"api", hasApiPrefix,
+			"bookings", hasBookingsPrefix,
+			"broadcasts", hasBroadcastsPrefix,
+			"schedules", hasSchedulesPrefix,
+			"shifts", hasShiftsPrefix,
+			"push", hasPushPrefix,
+			"reports", hasReportsPrefix)
+
+		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
+		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix || hasReportsPrefix {
+			logger.Info("Returning 404 for API route", "path", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+
+		logger.Info("Serving SPA for route", "path", r.URL.Path)
+
+		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
+		stat, err := os.Stat(requestedFilePath)
+		if err == nil && !stat.IsDir() {
+			http.ServeFile(w, r, requestedFilePath)
+			return
+		}
+		indexPage := filepath.Join(staticPath, "index.html")
+		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
+			logger.Error("SPA index.html not found", "path", indexPage)
+			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPage)
+	})
+
+	// MIME tweak for webmanifest
+	// This ensures .webmanifest files are served with the correct Content-Type.
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{
-		Addr:    ":" + cfg.ServerPort,
-		Handler: router,
-		ReadTimeout: 5 * time.Second, 
-        WriteTimeout: 10 * time.Second,
-        IdleTimeout:  120 * time.Second,
+		Addr:         ":" + cfg.ServerPort,
+		Handler:      s.Mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
-	slog.Info("Community Watch Backend Starting HTTP server...", "port", cfg.ServerPort)
+	slog.Info("Night Owls Control Backend Starting HTTP server...", "port", cfg.ServerPort)
 
 	// Goroutine for graceful shutdown
 	go func() {
@@ -225,32 +563,41 @@ func main() {
 }
 
 func runMigrations(dbConn *sql.DB, cfg *config.Config, logger *slog.Logger) {
-	driver, err := sqlite3.WithInstance(dbConn, &sqlite3.Config{})
-	if err != nil {
-		logger.Error("Failed to create database driver instance for migrations", "error", err)
-		os.Exit(1)
-	}
-	m, err := migrate.NewWithDatabaseInstance(
+	// For migrations, it's cleaner to let migrate manage its own DB connection
+	// based on the DSN, rather than sharing and potentially closing the main app's dbConn.
+	migrationDSN := "sqlite3://" + cfg.DatabasePath
+	logger.Info("Preparing to run migrations using DSN", "dsn", migrationDSN)
+
+	m, err := migrate.New(
 		"file://internal/db/migrations",
-		"sqlite3", driver)
+		migrationDSN)
 	if err != nil {
-		logger.Error("Failed to create migrate instance", "error", err)
+		logger.Error("Failed to create migrate instance with DSN", "dsn", migrationDSN, "error", err)
 		os.Exit(1)
 	}
+	// It's important to defer Close on the migrate instance created with New()
+	// to clean up its own database connection and source file handles.
+	defer func() {
+		if srcErr, dbErr := m.Close(); srcErr != nil || dbErr != nil {
+			if srcErr != nil {
+				logger.Warn("Error closing migration source after DSN-based migration", "error", srcErr)
+			}
+			if dbErr != nil {
+				logger.Warn("Error closing migration database connection after DSN-based migration", "error", dbErr)
+			}
+		} else {
+			logger.Info("Migration instance (DSN-based) closed successfully.")
+		}
+	}()
+
 	logger.Info("Running database migrations...")
 	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
-		logger.Error("Failed to apply migrations", "error", err)
+		logger.Error("Failed to apply migrations using DSN", "dsn", migrationDSN, "error", err)
 		os.Exit(1)
 	} else if err == migrate.ErrNoChange {
 		logger.Info("No new migrations to apply.")
 	} else {
 		logger.Info("Database migrations applied successfully.")
 	}
-	srcErr, dbErr := m.Close()
-	if srcErr != nil {
-		logger.Warn("Error closing migration source", "error", srcErr)
-	}
-	if dbErr != nil {
-		logger.Warn("Error closing migration database connection", "error", dbErr)
-	}
-} 
+	// The main dbConn (passed as an argument but no longer directly used here) remains untouched and managed by main().
+}

@@ -91,7 +91,7 @@ func (s *InMemoryOTPStore) ValidateOTP(identifier string, otpToValidate string) 
 	valid := entry.OTP == otpToValidate
 	if valid {
 		s.mu.Lock()
-		delete(s.store, identifier) 
+		delete(s.store, identifier)
 		s.mu.Unlock()
 	}
 	return valid
@@ -112,4 +112,3 @@ func (s *InMemoryOTPStore) cleanupExpiredOTPs() {
 		s.mu.Unlock()
 	}
 }
- 

@@ -2,8 +2,10 @@
 INSERT INTO outbox (
     message_type,
     recipient,
-    payload
+    payload,
+    user_id
 ) VALUES (
+    ?,
     ?,
     ?,
     ?
@@ -15,6 +17,12 @@ SELECT * FROM outbox
 WHERE status = 'pending'
 ORDER BY created_at ASC
 LIMIT ?; -- Limit to prevent processing too many at once
+
+-- name: GetRecentOutboxItemsByRecipient :many
+SELECT * FROM outbox
+WHERE recipient = ?
+ORDER BY created_at DESC
+LIMIT ?;
 
 -- name: UpdateOutboxItemStatus :one
 UPDATE outbox

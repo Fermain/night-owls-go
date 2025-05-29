@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.development
+*.log
+*.db
+*.test
+
+# Test files and results
+test-results/
+coverage.out
+e2e/
+app/e2e/
+*.test
+
+# Build artifacts
+main
+server
+night-owls-server
+night-owls.test.db
+api.test
+outbox.test
+service.test
+
+# Node modules (will be installed during build)
+app/node_modules/
+node_modules/
+
+# SvelteKit build output (will be built during Docker build)
+app/.svelte-kit/
+app/build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Deployment files
+deploy.sh
+docker-compose.override.yml 

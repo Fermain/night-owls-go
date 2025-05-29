@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -16,9 +15,11 @@ type ContextKey string
 
 const (
 	// UserIDKey is the key used to store the user ID in the request context.
-	UserIDKey    ContextKey = "userID"
+	UserIDKey ContextKey = "userID"
 	// UserPhoneKey is the key used to store the user phone in the request context.
 	UserPhoneKey ContextKey = "userPhone"
+	// UserRoleKey is the key used to store the user role in the request context.
+	UserRoleKey ContextKey = "userRole"
 )
 
 // AuthMiddleware creates a middleware handler for JWT authentication.
@@ -40,23 +41,39 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger) func(next http.Hand
 			tokenString := parts[1]
 			claims, err := auth.ValidateJWT(tokenString, cfg.JWTSecret)
 			if err != nil {
-				log := logger.With("token", tokenString) // Avoid logging full token in prod if too sensitive
-				if errors.Is(err, auth.ErrInvalidToken) {
-					RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", log)
-				} else if errors.Is(err, auth.ErrTokenMissing) { // Should be caught by earlier check, but good to handle
-					RespondWithError(w, http.StatusUnauthorized, "Token missing", log)
-				} else {
-					log.Error("Token validation error", "error", err)
-					RespondWithError(w, http.StatusInternalServerError, "Could not process token", log)
-				}
+				// All JWT validation errors should be treated as 401 Unauthorized
+				// This includes malformed tokens, expired tokens, wrong signatures, etc.
+				RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", logger)
 				return
 			}
 
-			// Store user ID and phone in context for downstream handlers
+			// Store user ID, phone, and role in context for downstream handlers
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, UserPhoneKey, claims.Phone)
+			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-} 
+}
+
+// AdminMiddleware creates a middleware handler that requires admin role.
+// This middleware should be used after AuthMiddleware.
+func AdminMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role, ok := r.Context().Value(UserRoleKey).(string)
+			if !ok {
+				RespondWithError(w, http.StatusUnauthorized, "User role not found in context", logger)
+				return
+			}
+
+			if role != "admin" {
+				RespondWithError(w, http.StatusForbidden, "Admin access required", logger)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

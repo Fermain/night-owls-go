@@ -4,26 +4,128 @@
 *.dll
 *.so
 *.dylib
+*.test
+/main
+/server
+/night-owls-server
+/cmd/server/server
+/cmd/server/main
 
 # Test coverage
 *.out
 coverage.txt
 profile.out
+coverage.html
 
 # Environment variables file
 .env
+.env.*
+!.env.example
+!.env.production.example
+
+# Docker production files
+.env.production
+docker-compose.override.yml
 
 # OS-specific files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE-specific files
 .idea/
 .vscode/
 *.iml
+*.swp
+*.swo
+*~
 
-# Database file (if local)
-community_watch.db
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
 
-# Log files (if OTP or other logs are written to specific files)
-sms_outbox.log 
+# Log files
+*.log
+sms_outbox.log
+server.log
+server_debug.log
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+
+# Build directories
+/build/
+/dist/
+/app/build/
+/app/.svelte-kit/
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+*.mp4
+*.webm
+screenshots/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+*~
+backups/
+*.db.gz
+
+# Binary files (catch-all)
+*.bin
+*.a
+*.o
+
+# Archives
+*.tar.gz
+*.tar
+*.zip
+*.gz
+
+# Certificates and keys (security)
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+
+# Terraform (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Deployment artifacts
+deploy.tar.gz
+deploy/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+
+# Windows specific
+*.lnk
+
+# Linux specific
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*

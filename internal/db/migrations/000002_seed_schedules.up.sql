@@ -1,23 +1,34 @@
--- Seed initial schedules
+-- Seed initial schedules for 2025
 
--- Summer Patrol (Nov 2024 - Apr 2025)
+-- Daily Evening Patrol - 6 PM shifts
 INSERT INTO schedules (name, cron_expr, start_date, end_date, duration_minutes, timezone)
 VALUES (
-    'Summer Patrol (Nov-Apr)',
-    '0 0,2 * 11-12,1-4 6,0,1', -- Sat/Sun/Mon, 00:00 & 02:00, Nov-Apr (Months: Nov,Dec,Jan,Feb,Mar,Apr; DaysOfWeek: Sat,Sun,Mon)
-    '2024-11-01',
-    '2025-04-30',
+    'Daily Evening Patrol',
+    '0 18 * * *', -- Every day at 6 PM
+    '2025-01-01',
+    '2025-12-31',
     120,
-    'Africa/Johannesburg' -- Example timezone, adjust if necessary or make it configurable
+    'Africa/Johannesburg'
 );
 
--- Winter Patrol (May 2025 - Oct 2025)
+-- Weekend Morning Watch - Saturday and Sunday at 6 AM and 10 AM
 INSERT INTO schedules (name, cron_expr, start_date, end_date, duration_minutes, timezone)
 VALUES (
-    'Winter Patrol (May-Oct)',
-    '0 1,3 * 5-10 6,0,1', -- Sat/Sun/Mon, 01:00 & 03:00, May-Oct (Months: May,Jun,Jul,Aug,Sep,Oct; DaysOfWeek: Sat,Sun,Mon)
-    '2025-05-01',
-    '2025-10-31',
-    120,
-    'Africa/Johannesburg' -- Example timezone
+    'Weekend Morning Watch',
+    '0 6,10 * * 6,0', -- Saturday and Sunday at 6 AM and 10 AM
+    '2025-01-01',
+    '2025-12-31',
+    240,
+    'Africa/Johannesburg'
+);
+
+-- Weekday Lunch Security - Monday to Friday at noon
+INSERT INTO schedules (name, cron_expr, start_date, end_date, duration_minutes, timezone)
+VALUES (
+    'Weekday Lunch Security',
+    '0 12 * * 1-5', -- Monday to Friday at noon
+    '2025-01-01',
+    '2025-12-31',
+    60,
+    'Africa/Johannesburg'
 ); 
