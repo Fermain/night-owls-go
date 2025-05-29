@@ -1,6 +1,9 @@
 # Build frontend
 FROM node:20-alpine AS frontend-builder
 
+# Add build argument for cache busting
+ARG BUILD_DATE
+
 # Install pnpm
 RUN corepack enable pnpm
 
@@ -9,7 +12,8 @@ COPY app/package.json app/pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
 COPY app/ ./
-RUN pnpm run build
+# Force rebuild with timestamp
+RUN echo "Building frontend at ${BUILD_DATE}" && pnpm run build
 
 # Build backend
 FROM golang:1.24-alpine AS backend-builder
