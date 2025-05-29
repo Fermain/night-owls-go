@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   night-owls:
-    build: .
+    image: night-owls-go:latest
     container_name: night-owls-app
     restart: unless-stopped
     environment:
@@ -10,14 +10,14 @@ services:
       - STATIC_DIR=./static
       - DATABASE_PATH=./data/production.db
       - DEV_MODE=false
-      - JWT_SECRET=${JWT_SECRET}
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
-      - VAPID_SUBJECT=${VAPID_SUBJECT}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
       - OTP_LOG_PATH=./data/logs/sms_outbox.log
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
     volumes:
       - night_owls_data:/app/data
     networks:
