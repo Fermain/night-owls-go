@@ -14,10 +14,10 @@ RUN pnpm run build
 # Build backend
 FROM golang:1.24-alpine AS backend-builder
 
-# Install build dependencies (added git and ca-certificates)
+# Install build dependencies
 RUN apk add --no-cache gcc musl-dev sqlite-dev git ca-certificates
 
-# Set Go proxy and sumdb settings
+# Set Go environment variables for better module downloading
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOSUMDB=sum.golang.org
 ENV GO111MODULE=on
@@ -26,9 +26,11 @@ ENV GOPRIVATE=
 ENV CGO_ENABLED=1
 
 WORKDIR /app
+
+# Copy go mod files
 COPY go.mod go.sum ./
 
-# Download modules with retry logic
+# Try to download modules with verbose logging and retry
 RUN echo "Starting go mod download..." && \
     go mod download -x || \
     (echo "First attempt failed, retrying with different proxy..." && \
@@ -36,8 +38,12 @@ RUN echo "Starting go mod download..." && \
     (echo "Second attempt failed, trying direct..." && \
      GOPROXY=direct go mod download -x)
 
+# Copy source code
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o night-owls-server ./cmd/server
+
+# Build with verbose output
+RUN echo "Building application..." && \
+    go build -v -a -installsuffix cgo -o night-owls-server ./cmd/server
 
 # Production image
 FROM alpine:latest
