@@ -4,9 +4,9 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 
 	interface UserGrowthData {
-		date: string;
-		count: number;
-		cumulative: number;
+		period: string;
+		total: number;
+		new: number;
 	}
 
 	let {

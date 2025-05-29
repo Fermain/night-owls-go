@@ -161,7 +161,7 @@
 				{selectedUsers}
 				allUsers={$usersQuery.data || []}
 				{onExitBulkMode}
-				{onClearSelection}
+				_onClearSelection={onClearSelection}
 			/>
 		{/if}
 

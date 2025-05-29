@@ -129,9 +129,9 @@
 		class="w-full h-full"
 	>
 		{#each reportsWithLocation as report (report.report_id)}
+			{@const SeverityIcon = getSeverityIcon(report.severity)}
 			<Marker lngLat={[report.longitude!, report.latitude!]}>
 				<div class="marker-container">
-					{@const SeverityIcon = getSeverityIcon(report.severity)}
 					<button
 						class="marker-pin"
 						style="background-color: {getSeverityColor(report.severity)}"

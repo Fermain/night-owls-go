@@ -401,11 +401,11 @@
 									</div>
 									<div class="h-48">
 										<ReportMap
-											latitude={gpsData.latitude}
-											longitude={gpsData.longitude}
-											accuracy={gpsData.accuracy}
-											severity={report.severity}
-											className="h-full"
+											_latitude={gpsData.latitude}
+											_longitude={gpsData.longitude}
+											_accuracy={gpsData.accuracy}
+											_severity={report.severity}
+											_className="h-full"
 										/>
 									</div>
 								</div>

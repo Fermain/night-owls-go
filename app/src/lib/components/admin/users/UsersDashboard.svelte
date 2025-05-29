@@ -135,7 +135,7 @@
 					<UserGrowthChart data={growthData} />
 				</div>
 				<div class="xl:col-span-4">
-					<RecentUsers users={recentUsers} />
+					<RecentUsers _users={recentUsers} />
 				</div>
 
 				<!-- Bottom row: Shift distribution components -->
