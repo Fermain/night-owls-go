@@ -64,12 +64,20 @@
 			// Save phone number and name to persistent store for future logins
 			saveUserData(phoneNumber, name);
 
-			await authService.register({
+			const response = await authService.register({
 				phone: phoneNumber, // E164 format ready for API
 				name: name.trim() || undefined
 			});
 
-			toast.success('OTP sent! Check sms_outbox.log for the code.');
+			// Show appropriate message based on OTP method
+			if (response.message.includes('Twilio')) {
+				toast.success('OTP sent via SMS! Check your phone for the verification code.');
+			} else if (response.message.includes('sms_outbox.log')) {
+				toast.success('OTP sent! Check sms_outbox.log for the code.');
+			} else {
+				toast.success(response.message);
+			}
+			
 			step = 'verify';
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Registration failed');
@@ -296,7 +304,10 @@
 			<div class="text-center text-xs text-muted-foreground">
 				{#if step === 'verify'}
 					<p>
-						Didn't receive the code? Check the <code class="font-mono">sms_outbox.log</code> file
+						Didn't receive the code? 
+						<span class="text-muted-foreground">Check your phone for SMS or the </span>
+						<code class="font-mono">sms_outbox.log</code> 
+						<span class="text-muted-foreground">file in development mode</span>
 					</p>
 				{:else}
 					<p>By continuing, you agree to our terms of service</p>

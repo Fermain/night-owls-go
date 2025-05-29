@@ -129,21 +129,28 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := RegisterResponse{Message: "OTP sent to sms_outbox.log"}
+	response := RegisterResponse{Message: "OTP sent successfully"}
 
-	// In development mode, include the OTP in the response for easier testing
+	// In development mode, provide helpful information about the OTP flow
 	if h.config.DevMode {
-		response.Message = "OTP sent to sms_outbox.log (DEV MODE ACTIVE)"
-		h.logger.InfoContext(r.Context(), "Development mode enabled, attempting to retrieve OTP", "phone", phoneE164)
-		// Get the latest OTP for this phone number from the outbox
-		if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
-			h.logger.InfoContext(r.Context(), "Found OTP for development response", "phone", phoneE164, "otp", otp)
-			response.DevOTP = otp
+		// Check if Twilio is configured by looking for credentials
+		cfg := h.config
+		if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
+			response.Message = "OTP sent via Twilio SMS (DEV MODE: check your phone for real SMS)"
+			h.logger.InfoContext(r.Context(), "Twilio OTP sent in development mode", "phone", phoneE164)
 		} else {
-			h.logger.WarnContext(r.Context(), "No OTP found for development response", "phone", phoneE164)
+			response.Message = "OTP sent to sms_outbox.log (DEV MODE: using mock SMS)"
+			h.logger.InfoContext(r.Context(), "Mock OTP flow used in development mode", "phone", phoneE164)
+			// For mock flow, get the latest OTP from outbox
+			if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
+				h.logger.InfoContext(r.Context(), "Found mock OTP for development response", "phone", phoneE164, "otp", otp)
+				response.DevOTP = otp
+			} else {
+				h.logger.WarnContext(r.Context(), "No mock OTP found for development response", "phone", phoneE164)
+			}
 		}
 	} else {
-		h.logger.InfoContext(r.Context(), "Development mode disabled")
+		h.logger.InfoContext(r.Context(), "Production mode - OTP details not included in response")
 	}
 
 	RespondWithJSON(w, http.StatusOK, response, h.logger)

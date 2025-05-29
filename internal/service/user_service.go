@@ -11,6 +11,7 @@ import (
 	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
+	"night-owls-go/internal/otp"
 )
 
 var (
@@ -26,6 +27,7 @@ type JWTGenerator func(userID int64, phone string, role string, secret string, e
 type UserService struct {
 	querier      db.Querier // From sqlc
 	otpStore     auth.OTPStore
+	twilioOTP    *otp.Client // Twilio OTP client for real SMS
 	jwtSecret    string
 	otpLogPath   string
 	logger       *slog.Logger
@@ -35,9 +37,20 @@ type UserService struct {
 
 // NewUserService creates a new UserService.
 func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Config, logger *slog.Logger) *UserService {
+	var twilioOTP *otp.Client
+	
+	// Initialize Twilio OTP client if credentials are provided
+	if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
+		twilioOTP = otp.New(cfg.TwilioAccountSID, cfg.TwilioAuthToken, cfg.TwilioVerifySID)
+		logger.Info("Twilio OTP client initialized for real SMS verification")
+	} else {
+		logger.Info("Twilio credentials not configured, using mock OTP flow")
+	}
+
 	return &UserService{
 		querier:      querier,
 		otpStore:     otpStore,
+		twilioOTP:    twilioOTP,
 		jwtSecret:    cfg.JWTSecret,
 		otpLogPath:   cfg.OTPLogPath,
 		logger:       logger.With("service", "UserService"),
@@ -79,42 +92,75 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 		}
 	}
 
-	otp, err := auth.GenerateOTP()
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to generate OTP", "phone", phone, "error", err)
-		return ErrInternalServer
+	// Send OTP - use Twilio if configured, otherwise fall back to mock flow
+	if s.twilioOTP != nil {
+		// Use Twilio Verify to send real SMS OTP
+		err = s.twilioOTP.StartSMS(ctx, phone)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to send Twilio OTP", "phone", phone, "error", err)
+			return ErrInternalServer
+		}
+		s.logger.InfoContext(ctx, "Twilio OTP sent successfully", "phone", phone)
+		
+		// For Twilio, we don't store OTP locally or use outbox since Twilio manages it
+		return nil
+	} else {
+		// Fall back to mock OTP flow for development/testing
+		otp, err := auth.GenerateOTP()
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to generate OTP", "phone", phone, "error", err)
+			return ErrInternalServer
+		}
+
+		otpValidityDuration := time.Duration(s.cfg.OTPValidityMinutes) * time.Minute
+		s.otpStore.StoreOTP(phone, otp, otpValidityDuration)
+		s.logger.DebugContext(ctx, "Mock OTP generated and stored for user", "phone", phone, "validity_minutes", s.cfg.OTPValidityMinutes)
+
+		// Queue OTP message to outbox for mock SMS
+		outboxPayload := fmt.Sprintf(`{"otp": "%s"}`, otp)
+		_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
+			MessageType: "OTP_VERIFICATION",
+			Recipient:   phone,
+			Payload:     sql.NullString{String: outboxPayload, Valid: true},
+		})
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to create outbox item for mock OTP", "phone", phone, "error", err)
+			// Non-fatal for OTP sending itself, but log it
+		}
+
+		return nil
 	}
-
-	otpValidityDuration := time.Duration(s.cfg.OTPValidityMinutes) * time.Minute // Use from config
-	s.otpStore.StoreOTP(phone, otp, otpValidityDuration)
-	s.logger.DebugContext(ctx, "OTP generated and stored for user", "phone", phone, "validity_minutes", s.cfg.OTPValidityMinutes)
-
-	// Queue OTP message to outbox (actual DB write)
-	outboxPayload := fmt.Sprintf(`{"otp": "%s"}`, otp)
-	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
-		MessageType: "OTP_VERIFICATION",
-		Recipient:   phone,
-		Payload:     sql.NullString{String: outboxPayload, Valid: true},
-	})
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create outbox item for OTP", "phone", phone, "error", err)
-		// Non-fatal for OTP sending itself, but log it. The OTP is still in memory.
-		// Depending on requirements, this could be a fatal error for the request.
-	}
-
-	// TODO: In a real system, we would NOT log the OTP here in production.
-	// For development, one might write it to a specific file or use a very verbose debug log.
-	// The plan mentions writing to `sms_outbox.log` - this service should not directly write to files.
-	// The Outbox dispatcher will handle the "sending" (logging to file in our mock case).
-	// The logging of OTP above (s.logger.InfoContext) is for dev console visibility.
-
-	return nil
 }
 
 // VerifyOTP validates the OTP for a given phone number and if valid, generates a JWT.
 func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string) (string, error) {
-	if !s.otpStore.ValidateOTP(phone, otpToValidate) {
-		s.logger.WarnContext(ctx, "OTP validation failed", "phone", phone)
+	var otpValid bool
+	
+	// Verify OTP - use Twilio if configured, otherwise use local store
+	if s.twilioOTP != nil {
+		// Use Twilio Verify to check the OTP
+		valid, err := s.twilioOTP.Check(ctx, phone, otpToValidate)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Twilio OTP verification failed", "phone", phone, "error", err)
+			return "", ErrOTPValidationFailed
+		}
+		otpValid = valid
+		if otpValid {
+			s.logger.InfoContext(ctx, "Twilio OTP verified successfully", "phone", phone)
+		} else {
+			s.logger.WarnContext(ctx, "Twilio OTP validation failed - invalid code", "phone", phone)
+		}
+	} else {
+		// Fall back to local OTP store for development/testing
+		otpValid = s.otpStore.ValidateOTP(phone, otpToValidate)
+		if otpValid {
+			s.logger.InfoContext(ctx, "Mock OTP verified successfully", "phone", phone)
+		} else {
+			s.logger.WarnContext(ctx, "Mock OTP validation failed", "phone", phone)
+		}
+	}
+	
+	if !otpValid {
 		return "", ErrOTPValidationFailed
 	}
 
