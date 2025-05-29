@@ -7,7 +7,7 @@ set -e
 # Configuration
 ENVIRONMENT=${1:-production}
 REMOTE_USER="deploy"
-REMOTE_HOST="your-server-ip"  # TODO: Replace with your server IP
+REMOTE_HOST="nightowls.app"
 REMOTE_DIR="/home/deploy/night-owls-go"
 BRANCH="main"
 
