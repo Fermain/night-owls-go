@@ -37,7 +37,8 @@ RUN echo "Starting go mod download..." && \
      GOPROXY=direct go mod download -x)
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o night-owls-server ./cmd/server
+RUN echo "Building Go application..." && \
+    CGO_ENABLED=1 GOOS=linux go build -v -o night-owls-server ./cmd/server
 
 # Production image
 FROM alpine:latest
