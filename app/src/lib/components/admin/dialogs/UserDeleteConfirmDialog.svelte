@@ -1,20 +1,27 @@
 <script lang="ts">
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
+	import type { CreateMutationResult } from '@tanstack/svelte-query';
+
+	interface User {
+		id: number;
+		name: string | null;
+		[key: string]: unknown;
+	}
 
 	let {
 		open = $bindable(false),
 		userName = '',
 		onConfirm = () => {},
 		isLoading = false,
-		user = null,
-		mutation = null
+		_user = null,
+		_mutation = null
 	}: {
 		open?: boolean;
 		userName?: string;
 		onConfirm?: () => void;
 		isLoading?: boolean;
-		user?: any;
-		mutation?: any;
+		_user?: User | null;
+		_mutation?: CreateMutationResult<unknown, Error, number, unknown> | null;
 	} = $props();
 </script>
 

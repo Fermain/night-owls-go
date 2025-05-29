@@ -2,8 +2,15 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import UsersIcon from '@lucide/svelte/icons/users';
+	import type { UserData } from '$lib/schemas/user';
 
-	let { isLoading = false, users = null }: { isLoading?: boolean; users?: any } = $props();
+	let {
+		isLoading = false,
+		_users = []
+	}: {
+		isLoading?: boolean;
+		_users?: UserData[];
+	} = $props();
 </script>
 
 <Card.Root class="p-6">

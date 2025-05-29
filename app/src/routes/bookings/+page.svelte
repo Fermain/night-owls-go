@@ -122,7 +122,7 @@
 		}
 	}
 
-	function handleBookShift(shift: any) {
+	function handleBookShift(shift: { schedule_id: number; start_time: string }) {
 		$bookShiftMutation.mutate({
 			schedule_id: shift.schedule_id,
 			start_time: shift.start_time
@@ -157,7 +157,7 @@
 
 			{#if isLoadingBookings}
 				<div class="space-y-4">
-					{#each Array(3) as _}
+					{#each Array(3) as _, i (i)}
 						<Card.Root>
 							<Card.Content class="pt-6">
 								<div class="animate-pulse space-y-3">
@@ -320,7 +320,7 @@
 
 			{#if isLoadingShifts}
 				<div class="space-y-4">
-					{#each Array(3) as _}
+					{#each Array(3) as _, i (i)}
 						<Card.Root>
 							<Card.Content class="pt-6">
 								<div class="animate-pulse space-y-3">

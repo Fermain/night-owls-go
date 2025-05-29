@@ -108,13 +108,12 @@ export const handlers = [
 	}),
 
 	http.post('/api/admin/schedules', async ({ request }) => {
-		const body = (await request.json()) as any;
+		const body = (await request.json()) as Record<string, unknown>;
 		const newSchedule = {
 			id: Date.now(),
 			...body,
 			created_at: new Date().toISOString()
-		};
-		mockSchedules.push(newSchedule);
+		} as typeof mockSchedules[0] & { created_at: string };
 		return HttpResponse.json(newSchedule);
 	}),
 
@@ -124,12 +123,12 @@ export const handlers = [
 	}),
 
 	http.post('/api/admin/users', async ({ request }) => {
-		const body = (await request.json()) as any;
+		const body = (await request.json()) as Record<string, unknown>;
 		const newUser = {
 			id: Date.now(),
 			...body,
 			created_at: new Date().toISOString()
-		};
+		} as typeof mockUsers.admin & { created_at: string };
 		return HttpResponse.json(newUser);
 	}),
 

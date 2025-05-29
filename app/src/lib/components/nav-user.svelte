@@ -40,7 +40,7 @@
 		}
 	}
 
-	function getRoleIcon(role: string | null) {
+	function _getRoleIcon(role: string | null) {
 		switch (role) {
 			case 'admin':
 				return ShieldIcon;

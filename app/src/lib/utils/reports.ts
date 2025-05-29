@@ -96,7 +96,7 @@ export function formatRelativeTime(dateString: string): string {
 		if (diffInHours < 24) return `${diffInHours}h ago`;
 		if (diffInDays === 1) return 'Yesterday';
 		if (diffInDays < 7) return `${diffInDays}d ago`;
-		
+
 		// For older dates, show the actual date
 		return date.toLocaleDateString('en-ZA', {
 			month: 'short',

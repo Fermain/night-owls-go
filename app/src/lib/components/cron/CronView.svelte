@@ -9,7 +9,7 @@
 		}
 		try {
 			return cronstrue.toString(cronExpr);
-		} catch (error) {
+		} catch (_error) {
 			return 'Invalid CRON expression';
 		}
 	});

@@ -71,7 +71,7 @@
 		return 'text-gray-600 dark:text-gray-400';
 	}
 
-	function callNumber(number: string, name: string) {
+	function callNumber(number: string, _name: string) {
 		// For mobile devices, use tel: protocol
 		if (typeof window !== 'undefined') {
 			window.location.href = `tel:${number}`;

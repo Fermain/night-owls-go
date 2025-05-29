@@ -45,7 +45,7 @@
 			<Card.Title class="text-base">Available shifts</Card.Title>
 		</Card.Header>
 		<Card.Content class="pt-0">
-			{#each previewShifts as shift, i}
+			{#each previewShifts as shift, i (`${shift.schedule_id}-${shift.start_time}`)}
 				<div class="flex items-center justify-between py-3">
 					<div class="flex-1">
 						<div class="text-sm font-medium">{shift.schedule_name ?? 'Unknown Schedule'}</div>

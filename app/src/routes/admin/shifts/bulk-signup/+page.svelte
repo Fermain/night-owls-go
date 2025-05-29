@@ -14,13 +14,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Badge } from '$lib/components/ui/badge';
 	import DateRangePicker from '$lib/components/ui/date-range-picker/DateRangePicker.svelte';
-	import {
-		CheckIcon,
-		ChevronsUpDownIcon,
-		CalendarDaysIcon,
-		UsersIcon,
-		ClockIcon
-	} from 'lucide-svelte';
+	import { CheckIcon, ChevronsUpDownIcon, CalendarDaysIcon, UsersIcon } from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/stores';
-	import type { AdminShiftSlot, Schedule } from '$lib/types';
+	import type { AdminShiftSlot } from '$lib/types';
 	import EnhancedShiftsDashboard from '$lib/components/dashboard/EnhancedShiftsDashboard.svelte';
 	import ShiftBookingForm from '$lib/components/admin/shifts/ShiftBookingForm.svelte';
 	import { createShiftDetailsQuery } from '$lib/queries/admin/shifts/shiftDetailsQuery';

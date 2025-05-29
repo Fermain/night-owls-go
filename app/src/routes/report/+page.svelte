@@ -6,7 +6,6 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { toast } from 'svelte-sonner';
@@ -196,7 +195,7 @@
 			<div class="space-y-3">
 				<Label class="text-base font-medium">Incident Severity *</Label>
 				<div class="space-y-2">
-					{#each severityOptions as severity}
+					{#each severityOptions as severity (severity.value)}
 						{@const IconComponent = severity.icon}
 						<button
 							type="button"

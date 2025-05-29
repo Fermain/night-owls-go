@@ -10,12 +10,12 @@
 		selectedUsers,
 		allUsers,
 		onExitBulkMode,
-		onClearSelection
+		_onClearSelection = () => {}
 	}: {
 		selectedUsers: UserData[];
 		allUsers: UserData[];
 		onExitBulkMode: () => void;
-		onClearSelection: () => void;
+		_onClearSelection?: () => void;
 	} = $props();
 
 	// State
@@ -26,7 +26,7 @@
 
 	// Computed
 	const selectedCount = $derived(selectedUsers.length);
-	const totalCount = $derived(allUsers.length);
+	const _totalCount = $derived(allUsers.length);
 	const hasSelection = $derived(selectedCount > 0);
 
 	// Actions

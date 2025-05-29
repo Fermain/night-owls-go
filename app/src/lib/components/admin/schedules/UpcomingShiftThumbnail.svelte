@@ -2,6 +2,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { formatDistanceToNow } from 'date-fns';
 	import type { AdminShiftSlot } from '$lib/types';
+	import { format } from 'date-fns';
 
 	let {
 		shift,
@@ -13,6 +14,11 @@
 		onSelect: (shift: AdminShiftSlot) => void;
 	} = $props();
 
+	const _timeOnly = $derived.by(() => {
+		const date = new Date(shift.start_time);
+		return format(date, 'HH:mm');
+	});
+
 	function formatShiftTitleCondensed(startTimeIso: string, endTimeIso: string): string {
 		if (!startTimeIso || !endTimeIso) return 'N/A';
 		try {
@@ -23,7 +29,7 @@
 			const formatHourWithAmPm = (date: Date) => {
 				let h = date.getHours();
 				const m = date.getMinutes();
-				const ampm = h >= 12 ? 'PM' : 'AM';
+				const _ampm = h >= 12 ? 'PM' : 'AM';
 				h = h % 12;
 				h = h ? h : 12;
 				return h + (m === 0 ? '' : `:${m.toString().padStart(2, '0')}`);

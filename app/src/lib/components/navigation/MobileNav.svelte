@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { isAuthenticated } from '$lib/services/userService';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
@@ -61,7 +61,7 @@
 		class="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border md:hidden"
 	>
 		<div class="flex items-center justify-around px-2 py-2">
-			{#each navItems as item}
+			{#each navItems as item (item.href)}
 				{@const IconComponent = item.icon}
 				{@const isActive = isActiveRoute(item.href)}
 				<a

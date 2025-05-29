@@ -25,6 +25,7 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import type { UserData } from '$lib/schemas/user';
 	import type { AdminShiftSlot } from '$lib/types';
+	import type { RecurringAssignment, RecurringAssignmentData } from '$lib/types';
 
 	const queryClient = useQueryClient();
 
@@ -71,7 +72,7 @@
 	});
 
 	// Fetch recurring assignments
-	const recurringAssignmentsQuery = createQuery<any[], Error>({
+	const recurringAssignmentsQuery = createQuery<RecurringAssignment[], Error>({
 		queryKey: ['adminRecurringAssignments'],
 		queryFn: async () => {
 			const response = await authenticatedFetch('/api/admin/recurring-assignments');
@@ -82,7 +83,7 @@
 
 	// Create recurring assignment mutation
 	const createRecurringAssignmentMutation = createMutation({
-		mutationFn: async (data: any) => {
+		mutationFn: async (data: RecurringAssignmentData) => {
 			const response = await authenticatedFetch('/api/admin/recurring-assignments', {
 				method: 'POST',
 				headers: {

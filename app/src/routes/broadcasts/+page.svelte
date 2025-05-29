@@ -1,17 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
-	import BellIcon from '@lucide/svelte/icons/bell';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import FilterIcon from '@lucide/svelte/icons/filter';
 	import { notificationStore } from '$lib/services/notificationService';
-	import type { UserNotification } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 
 	// Real notification state

@@ -2,8 +2,9 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import BarChartIcon from '@lucide/svelte/icons/bar-chart';
+	import type { UserMetrics } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, metrics = null }: { isLoading?: boolean; metrics?: any } = $props();
+	let { isLoading = false, metrics: _metrics = null }: { isLoading?: boolean; metrics?: UserMetrics | null } = $props();
 </script>
 
 <Card.Root class="p-6">

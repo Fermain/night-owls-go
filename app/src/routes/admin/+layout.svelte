@@ -22,8 +22,6 @@
 {:else}
 	<!-- Fallback for any other admin pages -->
 	<SidebarPage>
-		{#snippet children()}
-			{@render children?.()}
-		{/snippet}
+		{@render children?.()}
 	</SidebarPage>
 {/if}

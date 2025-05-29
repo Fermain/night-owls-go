@@ -17,6 +17,7 @@
 		type CreateBookingRequest
 	} from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -132,17 +133,11 @@
 	}
 
 	function handleBookShift(shift: AvailableShiftSlot) {
-		if (!currentUser.isAuthenticated) {
-			toast.error('Please log in to book shifts');
-			return;
-		}
+		goto(`/bookings?scheduleId=${shift.schedule_id}&startTime=${shift.start_time}`);
+	}
 
-		const request: CreateBookingRequest = {
-			schedule_id: shift.schedule_id,
-			start_time: shift.start_time
-		};
-
-		$bookingMutation.mutate(request);
+	function handleViewMyBookings() {
+		goto('/bookings/my');
 	}
 </script>
 
@@ -229,7 +224,7 @@
 						<Card.Title class="text-base">Available shifts</Card.Title>
 					</Card.Header>
 					<Card.Content class="pt-0">
-						{#each unfillableShifts as shift, i}
+						{#each unfillableShifts as shift, i (`${shift.schedule_id}-${shift.start_time}`)}
 							<div class="flex items-center justify-between py-3">
 								<div class="flex-1">
 									<div class="text-sm font-medium">{shift.schedule_name}</div>

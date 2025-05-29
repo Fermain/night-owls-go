@@ -12,7 +12,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
-	import { CheckIcon, ChevronsUpDownIcon, UserIcon, Users2Icon, ClockIcon } from 'lucide-svelte';
+	import { CheckIcon, ChevronsUpDownIcon, UserIcon, Users2Icon } from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import { formatTimeSlot, formatRelativeTime } from '$lib/utils/dateFormatting';
@@ -22,6 +22,7 @@
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+	import ClockIcon from '@lucide/svelte/icons/clock';
 
 	interface Props {
 		selectedShift: AdminShiftSlot;
@@ -223,8 +224,9 @@
 			const timeRange = `${startHour}-${endHour}AM`;
 
 			return `${dayName} Night ${timeRange}`;
-		} catch (e) {
-			return 'Shift Assignment';
+		} catch (_e) {
+			console.error('Error parsing shift time:', _e);
+			return 'Invalid time';
 		}
 	}
 

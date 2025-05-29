@@ -219,8 +219,14 @@
 
 <!-- Delete Confirmation Dialog -->
 <DeleteConfirmDialog
-	open={showDeleteConfirmDialog}
-	name={scheduleToDelete?.name ?? ''}
-	id={scheduleToDelete?.schedule_id ?? 0}
-	mutation={deleteScheduleMutation}
+	bind:open={showDeleteConfirmDialog}
+	title="Delete Schedule"
+	description="Are you sure you want to delete '{scheduleToDelete?.name ??
+		'this schedule'}'? This action cannot be undone."
+	onConfirm={() => {
+		if (scheduleToDelete?.schedule_id) {
+			$deleteScheduleMutation.mutate(scheduleToDelete.schedule_id);
+		}
+	}}
+	isLoading={$deleteScheduleMutation.isPending}
 />

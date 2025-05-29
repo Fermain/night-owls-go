@@ -2,8 +2,9 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import AwardIcon from '@lucide/svelte/icons/award';
+	import type { UserShiftDistribution } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, volunteers = null }: { isLoading?: boolean; volunteers?: any } =
+	let { isLoading = false, volunteers: _volunteers = null }: { isLoading?: boolean; volunteers?: UserShiftDistribution[] | null } =
 		$props();
 </script>
 

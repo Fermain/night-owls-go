@@ -12,21 +12,20 @@
 	import { createSchedulesQuery } from '$lib/queries/admin/schedules/schedulesQuery';
 	import { createDeleteScheduleMutation } from '$lib/queries/admin/schedules/deleteScheduleMutation';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
-	import { format } from 'date-fns';
 	import { useQueryClient } from '@tanstack/svelte-query';
 
 	let {
 		open = $bindable(false),
 		schedule,
-		mode = 'edit',
+		_mode = 'edit',
 		onSuccess,
-		onCancel
+		_onCancel
 	} = $props<{
 		open?: boolean;
 		schedule?: Schedule | null;
-		mode?: 'edit' | 'create';
+		_mode?: 'edit' | 'create';
 		onSuccess?: () => void;
-		onCancel?: () => void;
+		_onCancel?: () => void;
 	}>();
 
 	// State for form and schedule management
@@ -46,12 +45,6 @@
 			await queryClient.invalidateQueries({ queryKey: ['adminSchedules'] });
 		}
 	);
-
-	function handleClose() {
-		open = false;
-		currentSchedule = null;
-		onCancel?.();
-	}
 
 	function handleFormSuccess() {
 		currentSchedule = null; // Reset to create mode
@@ -98,16 +91,6 @@
 			default:
 				return 'outline';
 		}
-	}
-
-	function formatDateRange(schedule: Schedule): string {
-		const start = schedule.start_date ? format(new Date(schedule.start_date), 'MMM d, yyyy') : null;
-		const end = schedule.end_date ? format(new Date(schedule.end_date), 'MMM d, yyyy') : null;
-
-		if (start && end) return `${start} - ${end}`;
-		if (start) return `From ${start}`;
-		if (end) return `Until ${end}`;
-		return 'No date restrictions';
 	}
 
 	// Reset current schedule when the schedule prop changes
@@ -224,8 +207,14 @@
 
 <!-- Delete Confirmation Dialog -->
 <DeleteConfirmDialog
-	open={showDeleteConfirmDialog}
-	name={scheduleToDelete?.name ?? ''}
-	id={scheduleToDelete?.schedule_id ?? 0}
-	mutation={deleteScheduleMutation}
+	bind:open={showDeleteConfirmDialog}
+	title="Delete Schedule"
+	description="Are you sure you want to delete '{scheduleToDelete?.name ??
+		'this schedule'}'? This action cannot be undone."
+	onConfirm={() => {
+		if (scheduleToDelete?.schedule_id) {
+			$deleteScheduleMutation.mutate(scheduleToDelete.schedule_id);
+		}
+	}}
+	isLoading={$deleteScheduleMutation.isPending}
 />

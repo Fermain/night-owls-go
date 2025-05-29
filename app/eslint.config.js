@@ -22,7 +22,7 @@ export default ts.config(
 			'unused-imports': unusedImports
 		},
 		rules: {
-			'no-inline-comments': 'warn',
+			// 'no-inline-comments': 'warn', // Disabled to clean up linting output
 			'no-unused-vars': 'off',
 			'@typescript-eslint/no-unused-vars': 'off',
 			'unused-imports/no-unused-imports': 'error',

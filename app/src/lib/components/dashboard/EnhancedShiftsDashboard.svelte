@@ -12,7 +12,6 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import UserXIcon from '@lucide/svelte/icons/user-x';
-	import FilterIcon from '@lucide/svelte/icons/filter';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { ShiftAnalytics } from '$lib/queries/admin/shifts/shiftsAnalyticsQuery';
 	import { formatDistanceToNow } from 'date-fns';
@@ -98,7 +97,7 @@
 		return `${dayName} Night ${timeRange}`;
 	}
 
-	function getUrgencyColor(shift: any): string {
+	function getUrgencyColor(shift: { start_time: string }): string {
 		const shiftDate = new Date(shift.start_time);
 		const now = new Date();
 		const hoursUntil = (shiftDate.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -108,7 +107,7 @@
 		return 'green';
 	}
 
-	function getUrgencyText(shift: any): string {
+	function getUrgencyText(shift: { start_time: string }): string {
 		const shiftDate = new Date(shift.start_time);
 		const now = new Date();
 		const hoursUntil = (shiftDate.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -136,7 +135,7 @@
 	}
 
 	// Navigation function for shift details
-	function navigateToShiftDetail(shift: any) {
+	function navigateToShiftDetail(shift: { start_time: string; schedule_id: number }) {
 		const shiftStartTime = encodeURIComponent(shift.start_time);
 		goto(`/admin/shifts?shiftStartTime=${shiftStartTime}`);
 	}
@@ -483,7 +482,7 @@
 					</div>
 					<div class="space-y-3">
 						{#if systemHealth?.issues && systemHealth.issues.length > 0}
-							{#each systemHealth.issues as issue}
+							{#each systemHealth.issues as issue, index (index)}
 								<div
 									class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800"
 								>
@@ -493,7 +492,7 @@
 							{/each}
 						{/if}
 						{#if systemHealth?.warnings && systemHealth.warnings.length > 0}
-							{#each systemHealth.warnings as warning}
+							{#each systemHealth.warnings as warning, index (index)}
 								<div
 									class="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800"
 								>

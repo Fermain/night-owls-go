@@ -11,11 +11,11 @@
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import type {
-		EmergencyContact,
-		CreateEmergencyContactRequest
+	import {
+		validateEmergencyContact,
+		type EmergencyContact,
+		type CreateEmergencyContactRequest
 	} from '$lib/utils/emergencyContacts';
-	import { validateEmergencyContact, canDeleteContact } from '$lib/utils/emergencyContacts';
 
 	interface Props {
 		contact?: EmergencyContact;

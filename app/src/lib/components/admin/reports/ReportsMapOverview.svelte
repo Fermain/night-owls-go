@@ -48,7 +48,7 @@
 
 	// Filter reports that have GPS coordinates (for demo, we'll add mock coordinates)
 	const reportsWithLocation = $derived.by(() => {
-		return reports.map((report, index) => ({
+		return reports.map((report, _index) => ({
 			...report,
 			// Mock GPS coordinates for demo - in real app these would come from the database
 			latitude: -33.9249 + (Math.random() - 0.5) * 0.1, // Cape Town area with some spread
@@ -131,17 +131,15 @@
 		{#each reportsWithLocation as report (report.report_id)}
 			<Marker lngLat={[report.longitude!, report.latitude!]}>
 				<div class="marker-container">
-					{#snippet children()}
-						{@const SeverityIcon = getSeverityIcon(report.severity)}
-						<button
-							class="marker-pin"
-							style="background-color: {getSeverityColor(report.severity)}"
-							onclick={() => handleMarkerClick(report.report_id)}
-							title="Report #{report.report_id} - {report.message.slice(0, 50)}..."
-						>
-							<SeverityIcon class="h-3 w-3 text-white" />
-						</button>
-					{/snippet}
+					{@const SeverityIcon = getSeverityIcon(report.severity)}
+					<button
+						class="marker-pin"
+						style="background-color: {getSeverityColor(report.severity)}"
+						onclick={() => handleMarkerClick(report.report_id)}
+						title="Report #{report.report_id} - {report.message.slice(0, 50)}..."
+					>
+						<SeverityIcon class="h-3 w-3 text-white" />
+					</button>
 				</div>
 			</Marker>
 		{/each}

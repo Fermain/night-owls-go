@@ -1,18 +1,26 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import type { CreateMutationResult } from '@tanstack/svelte-query';
+
+	interface User {
+		id: number;
+		name: string | null;
+		role: string;
+		[key: string]: unknown;
+	}
 
 	let {
 		open = $bindable(false),
 		userName = '',
 		currentRole = $bindable(''),
-		newRole = $bindable(''),
+		newRole = '',
 		onConfirm = () => {},
 		isLoading = false,
-		user = null
+		_user = null,
+		_mutation = null
 	}: {
 		open?: boolean;
 		userName?: string;
@@ -20,7 +28,8 @@
 		newRole?: string;
 		onConfirm?: (role: 'admin' | 'owl' | 'guest') => void;
 		isLoading?: boolean;
-		user?: any;
+		_user?: User | null;
+		_mutation?: CreateMutationResult<unknown, Error, unknown, unknown> | null;
 	} = $props();
 
 	const roleOptions = [

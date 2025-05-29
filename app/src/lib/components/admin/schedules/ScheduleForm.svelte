@@ -149,7 +149,7 @@
 		}
 		try {
 			return cronstrue.toString(cronExpr);
-		} catch (error) {
+		} catch (_error) {
 			return null;
 		}
 	});
@@ -233,8 +233,14 @@
 </div>
 
 <DeleteConfirmDialog
-	open={showDeleteConfirm}
-	name={schedule?.name ?? ''}
-	id={schedule?.schedule_id ?? 0}
-	mutation={deleteMutation}
+	bind:open={showDeleteConfirm}
+	title="Delete Schedule"
+	description="Are you sure you want to delete '{schedule?.name ??
+		'this schedule'}'? This action cannot be undone."
+	onConfirm={() => {
+		if (schedule?.schedule_id) {
+			$deleteMutation.mutate(schedule.schedule_id);
+		}
+	}}
+	isLoading={$deleteMutation.isPending}
 />

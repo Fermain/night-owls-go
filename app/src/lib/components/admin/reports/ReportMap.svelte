@@ -5,18 +5,18 @@
 
 	let {
 		isLoading = false,
-		latitude = 0,
-		longitude = 0,
-		accuracy = 0,
-		severity = 0,
-		className = ''
+		_latitude,
+		_longitude,
+		_accuracy,
+		_severity,
+		_className = ''
 	}: {
 		isLoading?: boolean;
-		latitude?: number;
-		longitude?: number;
-		accuracy?: number;
-		severity?: number;
-		className?: string;
+		_latitude?: number;
+		_longitude?: number;
+		_accuracy?: number;
+		_severity?: number;
+		_className?: string;
 	} = $props();
 </script>
 

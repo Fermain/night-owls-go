@@ -415,7 +415,7 @@
 					</div>
 					<div class="space-y-3">
 						{#if scheduleHealth?.issues && scheduleHealth.issues.length > 0}
-							{#each scheduleHealth.issues as issue}
+							{#each scheduleHealth.issues as issue, index (index)}
 								<div
 									class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800"
 								>
@@ -425,7 +425,7 @@
 							{/each}
 						{/if}
 						{#if scheduleHealth?.warnings && scheduleHealth.warnings.length > 0}
-							{#each scheduleHealth.warnings as warning}
+							{#each scheduleHealth.warnings as warning, index (index)}
 								<div
 									class="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800"
 								>

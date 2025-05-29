@@ -20,7 +20,7 @@
 		required?: boolean;
 		class?: string;
 		placeholder?: string;
-		[key: string]: any;
+		[key: string]: unknown;
 	}>();
 
 	// Internal state - hardcode South Africa to avoid international formatting issues

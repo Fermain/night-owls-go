@@ -5,7 +5,7 @@ import { expect, test, describe, vi } from 'vitest';
 describe('Component Testing Demo', () => {
 	test('demonstrates basic component testing approach', () => {
 		// This shows the testing pattern we'd use
-		const mockProps = {
+		const _mockProps = {
 			text: 'Click me',
 			variant: 'primary',
 			disabled: false

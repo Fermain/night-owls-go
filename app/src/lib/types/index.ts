@@ -55,3 +55,24 @@ export type Schedule = {
 };
 
 export type UserRole = 'admin' | 'owl' | 'guest';
+
+export interface RecurringAssignment {
+	recurring_assignment_id: number;
+	user_id: number;
+	schedule_id: number;
+	day_of_week: number;
+	time_slot: string;
+	buddy_name?: SQLNullString;
+	description?: SQLNullString;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface RecurringAssignmentData {
+	user_id: number;
+	schedule_id: number;
+	day_of_week: number;
+	time_slot: string;
+	buddy_name?: string | null;
+	description?: string | null;
+}

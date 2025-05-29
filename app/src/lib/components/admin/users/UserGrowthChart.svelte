@@ -3,7 +3,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 
-	let { isLoading = false, data = null }: { isLoading?: boolean; data?: any } = $props();
+	interface UserGrowthData {
+		date: string;
+		count: number;
+		cumulative: number;
+	}
+
+	let { isLoading = false, data: _data = null }: { isLoading?: boolean; data?: UserGrowthData[] | null } = $props();
 </script>
 
 <Card.Root class="p-6">

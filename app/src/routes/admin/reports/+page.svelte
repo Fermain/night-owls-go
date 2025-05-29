@@ -18,7 +18,12 @@
 	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
 	import ReportsFilters from '$lib/components/admin/reports/ReportsFilters.svelte';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
-	import { getSeverityIcon, getSeverityColor, getSeverityLabel, formatRelativeTime } from '$lib/utils/reports';
+	import {
+		getSeverityIcon,
+		getSeverityColor,
+		getSeverityLabel,
+		formatRelativeTime
+	} from '$lib/utils/reports';
 
 	// Get current selected report ID from URL
 	const currentSelectedReportId = $derived.by(() => {
@@ -66,7 +71,12 @@
 					user_phone: string;
 					shift_start: string;
 					shift_end: string;
-					[key: string]: any;
+					latitude?: number;
+					longitude?: number;
+					gps_accuracy?: number;
+					gps_timestamp?: string;
+					user_id?: number;
+					booking_id?: number;
 				}>;
 
 				// Apply client-side filters and search

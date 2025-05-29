@@ -147,7 +147,7 @@
 		}
 
 		const bookings = queryData.data;
-		const now = new Date();
+		const _now = new Date();
 
 		const past = bookings.filter((booking: BookingResponse) =>
 			isPast(new Date(booking.shift_start))
@@ -424,13 +424,22 @@
 {/if}
 
 {#if showDeleteConfirm}
-	<UserDeleteConfirmDialog bind:open={showDeleteConfirm} {user} mutation={deleteUserMutation} />
+	<UserDeleteConfirmDialog
+		bind:open={showDeleteConfirm}
+		userName={user?.name ?? 'this user'}
+		onConfirm={() => {
+			if (user?.id) {
+				$deleteUserMutation.mutate(user.id);
+			}
+		}}
+		isLoading={$deleteUserMutation.isPending}
+	/>
 {/if}
 
 {#if showRoleChangeDialog}
 	<UserRoleChangeDialog
 		bind:open={showRoleChangeDialog}
-		{user}
+		userName={user?.name ?? 'this user'}
 		bind:currentRole={formData.role}
 		onConfirm={handleRoleConfirm}
 	/>

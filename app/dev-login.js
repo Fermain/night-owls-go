@@ -59,4 +59,9 @@ async function devLogin() {
 }
 
 console.log('🚀 Development login function loaded!');
-console.log('�� Run: devLogin()');
+console.log('🔧 Run: devLogin()');
+
+// Export for potential module usage
+if (typeof module !== 'undefined' && module.exports) {
+	module.exports = { devLogin };
+}

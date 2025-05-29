@@ -6,13 +6,11 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import { formatTime, getTimeUntil, isShiftActive } from '$lib/utils/bookings';
+	import { formatTime, getTimeUntil } from '$lib/utils/bookings';
 
 	interface NextShift {
-		id: number;
 		start_time: string;
 		end_time: string;
-		buddy_name?: string;
 		schedule_name: string;
 		can_checkin: boolean;
 		is_active: boolean;

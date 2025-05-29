@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
+	import type { Snippet } from 'svelte';
 
 	let {
 		class: className,
@@ -7,8 +8,8 @@
 		...restProps
 	}: {
 		class?: string;
-		children: any;
-		[key: string]: any;
+		children: Snippet;
+		[key: string]: unknown;
 	} = $props();
 </script>
 

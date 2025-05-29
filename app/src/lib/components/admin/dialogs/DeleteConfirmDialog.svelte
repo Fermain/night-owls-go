@@ -1,26 +1,19 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
 	import TrashIcon from '@lucide/svelte/icons/trash';
 
 	let {
 		open = $bindable(false),
-		title = 'Delete Item',
-		description = 'Are you sure you want to delete this item? This action cannot be undone.',
-		onConfirm = () => {},
-		isLoading = false,
-		name = '',
-		id = 0,
-		mutation = null
+		title = 'Confirm Deletion',
+		description = 'This action cannot be undone.',
+		onConfirm,
+		isLoading = false
 	}: {
 		open?: boolean;
 		title?: string;
 		description?: string;
-		onConfirm?: () => void;
+		onConfirm: () => void;
 		isLoading?: boolean;
-		name?: string;
-		id?: number;
-		mutation?: any;
 	} = $props();
 </script>
 

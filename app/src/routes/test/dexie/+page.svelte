@@ -235,7 +235,7 @@
 			<Card.Content>
 				{#if Object.keys(debugInfo.database.byAudience).length > 0}
 					<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-						{#each Object.entries(debugInfo.database.byAudience) as [audience, count]}
+						{#each Object.entries(debugInfo.database.byAudience) as [audience, count] (audience)}
 							<div class="text-center p-3 bg-muted rounded-lg">
 								<div class="font-bold text-lg">{count}</div>
 								<div class="text-sm text-muted-foreground capitalize">{audience}</div>
@@ -280,7 +280,7 @@
 			</Card.Header>
 			<Card.Content>
 				<div class="space-y-2 max-h-64 overflow-y-auto">
-					{#each testResults as result}
+					{#each testResults as result, i (i)}
 						<div class="flex justify-between items-center p-2 bg-muted rounded text-sm">
 							<span>{result.message}</span>
 							<span class="text-xs text-muted-foreground">{result.timestamp}</span>

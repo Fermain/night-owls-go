@@ -2,8 +2,9 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
+	import type { UserShiftDistribution } from '$lib/utils/userProcessing';
 
-	let { isLoading = false, distribution = null }: { isLoading?: boolean; distribution?: any } =
+	let { isLoading = false, distribution: _distribution = null }: { isLoading?: boolean; distribution?: UserShiftDistribution[] | null } =
 		$props();
 </script>
 

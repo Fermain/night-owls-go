@@ -32,7 +32,7 @@
 	{#if isLoading}
 		<!-- Loading skeletons -->
 		<div class="space-y-2">
-			{#each Array(3) as _}
+			{#each Array(3) as _, i (i)}
 				<div class="space-y-2 p-3 border-b">
 					<Skeleton class="h-4 w-3/4" />
 					<Skeleton class="h-3 w-1/2" />

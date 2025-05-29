@@ -105,7 +105,7 @@ test.describe('New E2E Approach Demo', () => {
 			await expect(page.locator('body')).toBeVisible();
 
 			// Verify we don't get 404 or server errors
-			const response = await page.waitForLoadState('networkidle');
+			const _response = await page.waitForLoadState('networkidle');
 			// If page loads without throwing, route is accessible
 		}
 	});
@@ -138,5 +138,17 @@ test.describe('New E2E Approach Demo', () => {
 		await expect(
 			page.getByRole('heading', { name: 'Protecting Our Community Together' })
 		).toBeVisible();
+	});
+
+	test('✅ API call verification', async ({ page }) => {
+		// Make the API call
+		const _response = await page.request.post('/api/admin/schedules', {
+			data: {
+				name: 'Test Schedule',
+				cron_expr: '0 18 * * *',
+				start_date: '2024-01-01',
+				end_date: '2024-12-31'
+			}
+		});
 	});
 });

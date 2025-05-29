@@ -1,11 +1,13 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
+
 	let {
-		icon,
+		icon: Icon,
 		heading,
 		subheading,
 		className = ''
 	}: {
-		icon?: any;
+		icon: Component;
 		heading: string;
 		subheading?: string;
 		className?: string;
@@ -14,8 +16,8 @@
 
 <div class="mb-6 {className}">
 	<h1 class="text-2xl font-bold flex items-center gap-2 mb-3">
-		{#if icon}
-			<svelte:component this={icon} class="h-6 w-6" />
+		{#if Icon}
+			<Icon class="h-6 w-6" />
 		{/if}
 		{heading}
 	</h1>
