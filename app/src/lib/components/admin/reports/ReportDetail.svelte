@@ -6,9 +6,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Separator } from '$lib/components/ui/separator';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import InfoIcon from '@lucide/svelte/icons/info';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
@@ -20,8 +17,12 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
+	import InfoIcon from '@lucide/svelte/icons/info';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportMap from './ReportMap.svelte';
+	import { formatShiftTime, formatRelativeTime } from '$lib/utils/dateFormatting';
+	import { getSeverityIcon, getSeverityColor, getSeverityLabel } from '$lib/utils/reports';
+	import { differenceInMinutes, format } from 'date-fns';
 
 	interface Props {
 		reportId: number;
@@ -61,20 +62,16 @@
 		})
 	);
 
-	function getSeverityIcon(severity: number) {
-		switch (severity) {
-			case 0:
-				return InfoIcon;
-			case 1:
-				return AlertTriangleIcon;
-			case 2:
-				return ShieldAlertIcon;
-			default:
-				return InfoIcon;
-		}
+	// Calculate duration between two dates
+	function calculateDuration(startDate: Date, endDate: Date): string {
+		const totalMinutes = differenceInMinutes(endDate, startDate);
+		const hours = Math.floor(totalMinutes / 60);
+		const minutes = totalMinutes % 60;
+		return `${hours}h ${minutes}m`;
 	}
 
-	function getSeverityColor(severity: number) {
+	// Get full color classes for severity badges
+	function getSeverityFullColor(severity: number) {
 		switch (severity) {
 			case 0:
 				return 'text-blue-600 bg-blue-50 border-blue-200';
@@ -85,41 +82,6 @@
 			default:
 				return 'text-gray-600 bg-gray-50 border-gray-200';
 		}
-	}
-
-	function getSeverityLabel(severity: number) {
-		switch (severity) {
-			case 0:
-				return 'Normal';
-			case 1:
-				return 'Suspicion';
-			case 2:
-				return 'Incident';
-			default:
-				return 'Unknown';
-		}
-	}
-
-	function formatFullDateTime(dateString: string) {
-		return new Date(dateString).toLocaleString('en-ZA', {
-			weekday: 'long',
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			timeZone: 'UTC'
-		});
-	}
-
-	function formatShiftDuration(startString: string, endString: string) {
-		const start = new Date(startString);
-		const end = new Date(endString);
-		const durationMs = end.getTime() - start.getTime();
-		const hours = Math.floor(durationMs / (1000 * 60 * 60));
-		const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-		return `${hours}h ${minutes}m`;
 	}
 
 	function goBack() {
@@ -186,7 +148,7 @@
 				title: 'Incident Reported',
 				description: `${getSeverityLabel(report.severity)} report submitted`,
 				icon: getSeverityIcon(report.severity),
-				color: getSeverityColor(report.severity).split(' ')[0]
+				color: getSeverityColor(report.severity)
 			},
 			{
 				time: shiftEnd,
@@ -205,7 +167,7 @@
 		return !report.booking_id || report.schedule_name === 'Off-Shift Report';
 	});
 
-	// GPS data from the report (replace mock data)
+	// GPS data from the report
 	const gpsData = $derived.by(() => {
 		const report = $reportQuery.data;
 		if (!report) return null;
@@ -244,17 +206,17 @@
 				{@const report = $reportQuery.data}
 				{@const SeverityIcon = getSeverityIcon(report.severity)}
 				<div class="flex items-center gap-4 mb-2">
-					<div class="p-3 rounded-lg {getSeverityColor(report.severity)}">
+					<div class="p-3 rounded-lg {getSeverityFullColor(report.severity)}">
 						<SeverityIcon class="h-6 w-6" />
 					</div>
 					<div>
 						<h1 class="text-3xl font-bold">Report #{report.report_id}</h1>
 						<p class="text-muted-foreground">
-							Submitted on {formatFullDateTime(report.created_at)}
+							Submitted {formatRelativeTime(report.created_at)} • {formatShiftTime(report.created_at)}
 						</p>
 					</div>
 					<div class="ml-auto flex gap-2">
-						<Badge class="{getSeverityColor(report.severity)} border text-sm px-3 py-1">
+						<Badge class="{getSeverityFullColor(report.severity)} border text-sm px-3 py-1">
 							{getSeverityLabel(report.severity)}
 						</Badge>
 						{#if report.archived_at}
@@ -356,11 +318,7 @@
 												<div class="flex items-center justify-between">
 													<h4 class="font-medium">{event.title}</h4>
 													<span class="text-sm text-muted-foreground">
-														{event.time.toLocaleTimeString('en-ZA', {
-															hour: '2-digit',
-															minute: '2-digit',
-															timeZone: 'UTC'
-														})}
+														{format(event.time, 'HH:mm')}
 													</span>
 												</div>
 												<p class="text-sm text-muted-foreground">{event.description}</p>
@@ -396,7 +354,7 @@
 										</div>
 										<div>
 											<span class="text-sm font-medium text-muted-foreground">Captured</span>
-											<p class="text-sm">{formatFullDateTime(gpsData.timestamp)}</p>
+											<p class="text-sm">{formatRelativeTime(gpsData.timestamp)}</p>
 										</div>
 									</div>
 									<div class="h-48">
@@ -416,7 +374,7 @@
 
 				<!-- Sidebar -->
 				<div class="space-y-6">
-					<!-- Calendar -->
+					<!-- Incident Date Card (simplified) -->
 					<Card.Root class="p-6">
 						<Card.Header class="px-0 pt-0">
 							<Card.Title class="flex items-center gap-2">
@@ -425,22 +383,12 @@
 							</Card.Title>
 						</Card.Header>
 						<Card.Content class="px-0 pb-0">
-							<div class="w-full p-4 bg-muted/20 rounded-lg border">
-								<div class="text-center">
-									<CalendarIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-									<p class="text-sm font-medium">
-										{new Date(report.created_at).toLocaleDateString('en-ZA', {
-											weekday: 'long',
-											year: 'numeric',
-											month: 'long',
-											day: 'numeric'
-										})}
-									</p>
-								</div>
-							</div>
-							<div class="mt-4 p-3 bg-muted/20 rounded-lg">
-								<p class="text-sm font-medium">
-									{formatFullDateTime(report.created_at)}
+							<div class="space-y-2">
+								<p class="text-2xl font-semibold">
+									{format(new Date(report.created_at), 'dd MMM yyyy')}
+								</p>
+								<p class="text-sm text-muted-foreground">
+									{format(new Date(report.created_at), 'EEEE, HH:mm:ss')} UTC
 								</p>
 							</div>
 						</Card.Content>
@@ -463,17 +411,13 @@
 									</div>
 									<Separator />
 									<div>
-										<span class="text-sm font-medium text-muted-foreground">Start Time</span>
-										<p class="text-sm">{formatFullDateTime(report.shift_start)}</p>
-									</div>
-									<div>
-										<span class="text-sm font-medium text-muted-foreground">End Time</span>
-										<p class="text-sm">{formatFullDateTime(report.shift_end)}</p>
+										<span class="text-sm font-medium text-muted-foreground">Shift Time</span>
+										<p class="text-sm">{formatShiftTime(report.shift_start)} - {format(new Date(report.shift_end), 'HH:mm')}</p>
 									</div>
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Duration</span>
 										<p class="text-sm">
-											{formatShiftDuration(report.shift_start, report.shift_end)}
+											{calculateDuration(new Date(report.shift_start), new Date(report.shift_end))}
 										</p>
 									</div>
 								</div>
@@ -554,20 +498,19 @@
 									<FileTextIcon class="h-4 w-4 mr-2" />
 									Export Report
 								</Button>
-								<Button
-									variant="outline"
-									class="w-full justify-start"
-									onclick={() => {
-										// Open in a new window with a larger map
-										if (gpsData) {
+								{#if gpsData}
+									<Button
+										variant="outline"
+										class="w-full justify-start"
+										onclick={() => {
 											const mapUrl = `https://www.openstreetmap.org/?mlat=${gpsData.latitude}&mlon=${gpsData.longitude}&zoom=18`;
 											window.open(mapUrl, '_blank');
-										}
-									}}
-								>
-									<MapPinIcon class="h-4 w-4 mr-2" />
-									View on Map
-								</Button>
+										}}
+									>
+										<MapPinIcon class="h-4 w-4 mr-2" />
+										View on Map
+									</Button>
+								{/if}
 								<Button variant="outline" class="w-full justify-start">
 									<UserIcon class="h-4 w-4 mr-2" />
 									Contact Reporter
@@ -599,4 +542,4 @@
 			</div>
 		{/if}
 	</div>
-</div>
+</div> 
