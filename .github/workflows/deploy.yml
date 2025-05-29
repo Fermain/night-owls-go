@@ -64,62 +64,22 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # Stop existing containers
-          mkdir -p ~/night-owls-app
-          cd ~/night-owls-app
+          cd ~/night-owls-go
           
-          # Detect Docker Compose version
-          if docker compose version &> /dev/null; then
-            DOCKER_COMPOSE="docker compose"
-          else
-            DOCKER_COMPOSE="docker-compose"
-          fi
+          echo "🛑 Stopping containers..."
+          docker compose down || docker-compose down || true
           
-          echo "🛑 Stopping existing containers..."
-          $DOCKER_COMPOSE down 2>/dev/null || true
-          
-          # Login to GitHub Container Registry with PAT
-          echo "🔐 Authenticating with GitHub Container Registry..."
+          echo "🔐 Logging in to registry..."
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Pull new image with lowercase repository name
           echo "📦 Pulling latest image..."
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
-          # Tag for docker-compose
-          docker tag ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest night-owls-go:latest
-          
-          # Copy config files if needed
-          echo "📋 Setting up configuration files..."
-          
-          # Always copy the latest docker-compose.yml to ensure we have the updated env vars
-          cp ~/night-owls-go/docker-compose.yml . || {
-            echo "❌ Failed to copy docker-compose.yml"
-            exit 1
-          }
-          
-          # Copy Caddyfile if it doesn't exist
-          if [ ! -f Caddyfile ]; then
-            cp ~/night-owls-go/Caddyfile . || {
-              echo "❌ Failed to copy Caddyfile"
-              exit 1
-            }
-          fi
-          
-          # Start application
           echo "🚀 Starting application..."
-          $DOCKER_COMPOSE up -d
+          docker compose up -d || docker-compose up -d
           
-          # Wait and test
-          echo "⏳ Waiting for application to start..."
-          sleep 15
+          echo "⏳ Waiting for application..."
+          sleep 20
           
-          # Health check
-          echo "🏥 Running health check..."
-          curl -f http://localhost:5888/health && echo "✅ Health check passed!" || { echo "❌ Health check failed"; exit 1; }
-          
-          # Show status
-          echo "📊 Deployment status:"
-          $DOCKER_COMPOSE ps
-          
-          echo "🎉 Deployment complete!" 
+          echo "🏥 Health check..."
+          curl -f http://localhost:5888/health && echo "✅ Deployed!" || { echo "❌ Failed"; exit 1; } 
