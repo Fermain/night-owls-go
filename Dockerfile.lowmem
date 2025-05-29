@@ -10,8 +10,11 @@ WORKDIR /app/frontend
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 COPY app/package.json app/pnpm-lock.yaml* ./
-# Install with reduced concurrency
-RUN pnpm install --frozen-lockfile --prefer-offline --max-concurrency=1
+# Install with reduced concurrency and memory optimizations
+RUN pnpm install --frozen-lockfile --prefer-offline \
+    --config.child-concurrency=1 \
+    --config.network-concurrency=1 \
+    --config.fetch-retries=1
 
 COPY app/ ./
 RUN pnpm run build
