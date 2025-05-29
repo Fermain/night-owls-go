@@ -477,6 +477,7 @@ func main() {
 		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
 		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
 		hasReportsPrefix := strings.HasPrefix(r.URL.Path, "/reports/")
+		hasAppPrefix := strings.HasPrefix(r.URL.Path, "/_app/")
 
 		logger.Info("Path prefix checks",
 			"path", r.URL.Path,
@@ -486,7 +487,22 @@ func main() {
 			"schedules", hasSchedulesPrefix,
 			"shifts", hasShiftsPrefix,
 			"push", hasPushPrefix,
-			"reports", hasReportsPrefix)
+			"reports", hasReportsPrefix,
+			"app", hasAppPrefix)
+
+		// For _app static assets, try to serve them directly and 404 if not found
+		if hasAppPrefix {
+			requestedFilePath := filepath.Join(staticPath, r.URL.Path)
+			stat, err := os.Stat(requestedFilePath)
+			if err == nil && !stat.IsDir() {
+				logger.Info("Serving static file", "path", r.URL.Path, "file", requestedFilePath)
+				http.ServeFile(w, r, requestedFilePath)
+				return
+			}
+			logger.Info("Static file not found, returning 404", "path", r.URL.Path, "file", requestedFilePath)
+			http.NotFound(w, r)
+			return
+		}
 
 		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
 		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix || hasReportsPrefix {
