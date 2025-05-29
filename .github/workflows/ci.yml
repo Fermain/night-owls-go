@@ -47,6 +47,13 @@ jobs:
           args: --timeout=5m
 
       - name: Run Go tests
+        env:
+          DATABASE_PATH: ./test.db
+          JWT_SECRET: test-secret-for-ci
+          DEV_MODE: true
+          VAPID_PUBLIC_KEY: test-public-key
+          VAPID_PRIVATE_KEY: test-private-key
+          VAPID_SUBJECT: mailto:test@example.com
         run: |
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
@@ -68,6 +75,7 @@ jobs:
   frontend-tests:
     name: Frontend Tests & Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,6 +119,8 @@ jobs:
 
       - name: Run unit tests
         working-directory: ./app
+        env:
+          NODE_ENV: test
         run: pnpm run test:unit -- --run --coverage
 
       - name: Upload frontend test coverage
@@ -133,6 +143,10 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -171,6 +185,7 @@ jobs:
   docker-build:
     name: Docker Build Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
