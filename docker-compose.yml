@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   night-owls:
     image: ghcr.io/fermain/night-owls-go:latest
