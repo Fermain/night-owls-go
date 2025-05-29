@@ -85,4 +85,4 @@ jobs:
           curl -f http://localhost:5888/health && echo "✅ App healthy!" || { echo "❌ App failed"; exit 1; }
           
           echo "🌐 SSL check..."
-          curl -f https://mm.nightowls.app/health && echo "✅ SSL deployed!" || echo "⚠️ SSL pending (may take a few minutes)" 
+          curl -f https://mm.nightowls.app/health && echo "✅ SSL deployed!" || echo "⚠️ SSL pending (may take a few minutes)"
