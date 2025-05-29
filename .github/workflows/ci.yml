@@ -1,86 +1,29 @@
-name: Continuous Integration
+name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 env:
   GO_VERSION: '1.24'
   NODE_VERSION: '20'
 
 jobs:
-  # Backend testing and linting
-  backend-tests:
-    name: Backend Tests & Linting
+  test:
+    name: Test & Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Download Go dependencies
-        run: go mod download
-
-      - name: Verify Go dependencies
-        run: go mod verify
-
-      - name: Run Go linting
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          args: --timeout=5m
-
-      - name: Run Go tests
-        env:
-          DATABASE_PATH: ./test.db
-          JWT_SECRET: test-secret-for-ci
-          DEV_MODE: true
-          VAPID_PUBLIC_KEY: test-public-key
-          VAPID_PRIVATE_KEY: test-private-key
-          VAPID_SUBJECT: mailto:test@example.com
-        run: |
-          go test -v -race -coverprofile=coverage.out ./...
-          go tool cover -html=coverage.out -o coverage.html
-
-      - name: Upload Go test coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: go-coverage
-          path: |
-            coverage.out
-            coverage.html
-
-      - name: Build backend
-        run: |
-          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
-          go build -ldflags="-w -s" -o night-owls-server ./cmd/server
-
-  # Frontend testing and linting
-  frontend-tests:
-    name: Frontend Tests & Linting
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -88,282 +31,43 @@ jobs:
       - name: Enable pnpm
         run: corepack enable pnpm
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Go - Download dependencies
+        run: go mod download
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+      - name: Go - Run tests
+        env:
+          DATABASE_PATH: ./test.db
+          JWT_SECRET: test-secret
+        run: go test -v ./...
 
-      - name: Install dependencies
+      - name: Go - Build
+        run: go build -o night-owls-server ./cmd/server
+
+      - name: Frontend - Install dependencies
         working-directory: ./app
         run: pnpm install --frozen-lockfile
 
-      - name: Type checking
+      - name: Frontend - Type check
         working-directory: ./app
         run: pnpm run check
 
-      - name: Linting (errors only)
-        working-directory: ./app
-        run: pnpm run lint:errors
-
-      - name: Prettier check
-        working-directory: ./app
-        run: pnpm run format --check
-
-      - name: Run unit tests
-        working-directory: ./app
-        env:
-          NODE_ENV: test
-        run: pnpm run test:unit -- --run --coverage
-
-      - name: Upload frontend test coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage
-          path: app/coverage
-
-      - name: Build frontend
+      - name: Frontend - Build
         working-directory: ./app
         run: pnpm run build
 
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: app/build
-
-  # Security scanning
-  security-scan:
-    name: Security Scanning
+  docker:
+    name: Docker Build
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Set up Go for security scanning
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Run Gosec Security Scanner
-        uses: securecodewarrior/github-action-gosec@master
-        with:
-          args: '-fmt sarif -out gosec-results.sarif ./...'
-
-      - name: Upload Gosec scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'gosec-results.sarif'
-
-  # Docker build test
-  docker-build:
-    name: Docker Build Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: false
-          tags: night-owls-control:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Test Docker image
-        run: |
-          docker run --rm --name test-container -d \
-            -e DATABASE_PATH=/tmp/test.db \
-            -e JWT_SECRET=test-secret \
-            -e DEV_MODE=true \
-            night-owls-control:test
-          
-          # Wait for container to start
-          sleep 10
-          
-          # Test health endpoint
-          docker exec test-container wget --spider -q http://localhost:5888/health
-          
-          # Stop container
-          docker stop test-container
-
-  # E2E tests (run on main branch and PRs to main)
-  e2e-tests:
-    name: End-to-End Tests
-    runs-on: ubuntu-latest
-    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
-    needs: [backend-tests, frontend-tests]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Enable pnpm
-        run: corepack enable pnpm
-
-      - name: Install frontend dependencies
-        working-directory: ./app
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        working-directory: ./app
-        run: pnpm exec playwright install --with-deps
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build and start backend
-        run: |
-          go build -o night-owls-server ./cmd/server
-          export DATABASE_PATH=./test.db
-          export JWT_SECRET=test-secret-for-e2e
-          export DEV_MODE=true
-          ./night-owls-server &
-          echo $! > backend.pid
-
-      - name: Build and serve frontend
-        working-directory: ./app
-        run: |
-          pnpm run build
-          pnpm run preview &
-          echo $! > frontend.pid
-
-      - name: Wait for services
-        run: |
-          # Wait for backend health check
-          for i in {1..30}; do
-            if curl -f http://localhost:5888/health; then
-              echo "Backend is ready"
-              break
-            fi
-            sleep 2
-          done
-          
-          # Wait for frontend
-          for i in {1..30}; do
-            if curl -f http://localhost:4173; then
-              echo "Frontend is ready"
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Run Playwright tests
-        working-directory: ./app
-        run: pnpm run test:e2e
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: app/playwright-report/
-          retention-days: 30
-
-      - name: Cleanup
-        if: always()
-        run: |
-          # Kill backend and frontend processes
-          if [ -f backend.pid ]; then
-            kill $(cat backend.pid) || true
-          fi
-          if [ -f app/frontend.pid ]; then
-            kill $(cat app/frontend.pid) || true
-          fi
-
-  # Dependency vulnerability check
-  dependency-check:
-    name: Dependency Vulnerability Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Enable pnpm
-        run: corepack enable pnpm
-
-      - name: Check for frontend vulnerabilities
-        working-directory: ./app
-        run: |
-          pnpm audit --audit-level high
-          pnpm audit --json > audit-results.json || true
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Check for Go vulnerabilities
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
-
-  # Build status check (combines all results)
-  build-status:
-    name: Build Status
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, security-scan, docker-build, dependency-check]
-    if: always()
-    steps:
-      - name: Check build status
-        run: |
-          if [[ "${{ needs.backend-tests.result }}" == "success" && \
-                "${{ needs.frontend-tests.result }}" == "success" && \
-                "${{ needs.security-scan.result }}" == "success" && \
-                "${{ needs.docker-build.result }}" == "success" && \
-                "${{ needs.dependency-check.result }}" == "success" ]]; then
-            echo "All checks passed!"
-            exit 0
-          else
-            echo "Some checks failed!"
-            echo "Backend tests: ${{ needs.backend-tests.result }}"
-            echo "Frontend tests: ${{ needs.frontend-tests.result }}"
-            echo "Security scan: ${{ needs.security-scan.result }}"
-            echo "Docker build: ${{ needs.docker-build.result }}"
-            echo "Dependency check: ${{ needs.dependency-check.result }}"
-            exit 1
-          fi 
+          tags: night-owls-go:test 

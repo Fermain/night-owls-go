@@ -22,6 +22,35 @@ Key features include:
 - **golang-jwt/jwt** for JWT handling
 - **swaggo/swag** for Swagger/OpenAPI documentation
 
+## Deployment
+
+This application is designed for containerized deployment using Docker and can be deployed using **GitHub Actions** with **GitHub Container Registry** for reliable, automated deployments.
+
+### 🚀 Automated Deployment (Recommended)
+
+The recommended deployment method uses GitHub Actions to build and deploy automatically:
+
+1. **See [GITHUB_DEPLOYMENT.md](GITHUB_DEPLOYMENT.md)** for complete setup instructions
+2. **Push to main branch** → Automatic build and deployment
+3. **Monitor in GitHub Actions tab** → See build status and logs
+
+**Benefits:**
+- ✅ **No memory issues** - Builds on GitHub's powerful runners (7GB RAM)
+- ✅ **Free** - GitHub Container Registry is free for public repos
+- ✅ **Automated** - Deploy on every push to main
+- ✅ **Reliable** - No more hanging builds or failures
+
+### 📦 Manual Deployment
+
+For manual deployments from GitHub Container Registry:
+
+```bash
+# Update the script with your GitHub username
+./deploy-manual.sh [image-tag]
+```
+
+### 🔧 Local Development
+
 ## Setup Instructions
 
 ### Prerequisites

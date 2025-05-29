@@ -103,7 +103,8 @@ func seedReports(querier db.Querier) error {
 
 		// Create the report
 		reportParams := db.CreateReportParams{
-			BookingID: booking.BookingID,
+			BookingID: sql.NullInt64{Int64: booking.BookingID, Valid: true},
+			UserID:    sql.NullInt64{Int64: booking.UserID, Valid: true},
 			Severity:  severity,
 			Message:   sql.NullString{String: message, Valid: true},
 		}
@@ -161,7 +162,8 @@ func seedRecentCriticalReports(querier db.Querier) error {
 		}
 
 		reportParams := db.CreateReportParams{
-			BookingID: booking.BookingID,
+			BookingID: sql.NullInt64{Int64: booking.BookingID, Valid: true},
+			UserID:    sql.NullInt64{Int64: booking.UserID, Valid: true},
 			Severity:  2, // Critical
 			Message:   sql.NullString{String: criticalMessages[i], Valid: true},
 		}

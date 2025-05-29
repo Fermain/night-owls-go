@@ -71,6 +71,9 @@ importers:
       svelte-tel-input:
         specifier: ^3.6.0
         version: 3.6.0(svelte@5.28.2)
+      workbox-precaching:
+        specifier: ^7.3.0
+        version: 7.3.0
       workbox-window:
         specifier: ^7.3.0
         version: 7.3.0

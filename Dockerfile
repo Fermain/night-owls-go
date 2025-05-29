@@ -6,7 +6,7 @@ RUN corepack enable pnpm
 
 WORKDIR /app/frontend
 COPY app/package.json app/pnpm-lock.yaml* ./
-RUN pnpm install --no-frozen-lockfile --production=false
+RUN pnpm install --frozen-lockfile
 
 COPY app/ ./
 RUN pnpm run build
@@ -14,15 +14,31 @@ RUN pnpm run build
 # Build backend
 FROM golang:1.24-alpine AS backend-builder
 
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+# Install build dependencies (added git and ca-certificates)
+RUN apk add --no-cache gcc musl-dev sqlite-dev git ca-certificates
+
+# Set Go proxy and sumdb settings
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
+ENV GO111MODULE=on
+ENV GONOSUMDB=github.com/twilio/*
+ENV GOPRIVATE=
+ENV CGO_ENABLED=1
 
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod download
+
+# Download modules with retry logic
+RUN echo "Starting go mod download..." && \
+    go mod download -x || \
+    (echo "First attempt failed, retrying with different proxy..." && \
+     GOPROXY=https://goproxy.io,direct go mod download -x) || \
+    (echo "Second attempt failed, trying direct..." && \
+     GOPROXY=direct go mod download -x)
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o night-owls-server ./cmd/server
+RUN echo "Building Go application..." && \
+    CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o night-owls-server ./cmd/server
 
 # Production image
 FROM alpine:latest
