@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
+	"night-owls-go/internal/testutils"
 )
 
 // Sample report messages for different severity levels
@@ -49,24 +49,6 @@ var reportMessages = map[int][]string{
 		"Assault witnessed in park area. Victim assisted and police called.",
 		"Major flooding due to burst water main. Multiple agencies notified.",
 	},
-}
-
-// Helper functions to reduce boilerplate
-func newNullInt64(v int64) sql.NullInt64 {
-	return sql.NullInt64{Int64: v, Valid: true}
-}
-
-func newNullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: true}
-}
-
-func newCreateReportParams(bookingID, userID int64, severity int64, message string) db.CreateReportParams {
-	return db.CreateReportParams{
-		BookingID: newNullInt64(bookingID),
-		UserID:    newNullInt64(userID),
-		Severity:  severity,
-		Message:   newNullString(message),
-	}
 }
 
 func seedReports(querier db.Querier) error {
@@ -120,7 +102,7 @@ func seedReports(querier db.Querier) error {
 		message := messages[rand.Intn(len(messages))]
 
 		// Create the report
-		reportParams := newCreateReportParams(booking.BookingID, booking.UserID, severity, message)
+		reportParams := testutils.NewCreateReportParams(booking.BookingID, booking.UserID, severity, message)
 
 		report, err := querier.CreateReport(ctx, reportParams)
 		if err != nil {
@@ -174,7 +156,7 @@ func seedRecentCriticalReports(querier db.Querier) error {
 			continue
 		}
 
-		reportParams := newCreateReportParams(booking.BookingID, booking.UserID, 2, criticalMessages[i])
+		reportParams := testutils.NewCreateReportParams(booking.BookingID, booking.UserID, 2, criticalMessages[i])
 
 		report, err := querier.CreateReport(ctx, reportParams)
 		if err != nil {
@@ -189,4 +171,4 @@ func seedRecentCriticalReports(querier db.Querier) error {
 
 	log.Printf("Successfully created %d critical reports", reportsCreated)
 	return nil
-}
+} 

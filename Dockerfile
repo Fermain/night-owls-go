@@ -28,7 +28,8 @@ ENV CGO_ENABLED=1
 WORKDIR /app
 COPY go.mod go.sum ./
 
-# Download modules with cache mount for faster rebuilds
+# Download modules with cache mount for faster rebuilds (requires BuildKit)
+# Use DOCKER_BUILDKIT=1 docker build . for best performance
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .

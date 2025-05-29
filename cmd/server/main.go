@@ -569,7 +569,7 @@ func runMigrations(dbConn *sql.DB, cfg *config.Config, logger *slog.Logger) {
 	logger.Info("Preparing to run migrations using DSN", "dsn", migrationDSN)
 
 	m, err := migrate.New(
-		"file://internal/db/migrations",
+		"file://./migrations",
 		migrationDSN)
 	if err != nil {
 		logger.Error("Failed to create migrate instance with DSN", "dsn", migrationDSN, "error", err)
