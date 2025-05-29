@@ -18,6 +18,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Helper functions to reduce boilerplate
+func newNullInt64(v int64) sql.NullInt64 {
+	return sql.NullInt64{Int64: v, Valid: true}
+}
+
+func newNullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: true}
+}
+
+func newCreateReportParams(bookingID, userID int64, severity int64, message string) db.CreateReportParams {
+	return db.CreateReportParams{
+		BookingID: newNullInt64(bookingID),
+		UserID:    newNullInt64(userID),
+		Severity:  severity,
+		Message:   newNullString(message),
+	}
+}
+
 func TestAdminReportHandlers_ListReports_Success(t *testing.T) {
 	app := newAdminTestApp(t)
 	defer app.DB.Close()
@@ -57,20 +75,12 @@ func TestAdminReportHandlers_ListReports_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create test reports
-	report1, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
-		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
-		Severity:  0, // Info
-		Message:   sql.NullString{String: "Test info report", Valid: true},
-	})
+	report1, err := app.Querier.CreateReport(ctx, newCreateReportParams(
+		testBooking.BookingID, testBooking.UserID, 0, "Test info report"))
 	require.NoError(t, err)
 
-	report2, err := app.Querier.CreateReport(ctx, db.CreateReportParams{
-		BookingID: sql.NullInt64{Int64: testBooking.BookingID, Valid: true},
-		UserID:    sql.NullInt64{Int64: testBooking.UserID, Valid: true},
-		Severity:  2, // Critical
-		Message:   sql.NullString{String: "Test critical report", Valid: true},
-	})
+	report2, err := app.Querier.CreateReport(ctx, newCreateReportParams(
+		testBooking.BookingID, testBooking.UserID, 2, "Test critical report"))
 	require.NoError(t, err)
 
 	// Test list reports
