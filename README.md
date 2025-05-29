@@ -1,241 +1,334 @@
-# Night Owls Go - Night Owls Control Shift Scheduler Backend
+# Night Owls Go - Community Watch Shift Scheduler
 
-This project is a Go backend service for managing volunteer shifts for a Night Owls Control program.
-It provides a RESTful API for user authentication (passwordless via OTP), viewing available shifts, booking shifts (with an optional buddy), marking attendance, and submitting incident reports.
+A comprehensive full-stack application for managing volunteer shifts in community watch programs. This system provides both a **Go backend API** and a **SvelteKit frontend** for complete shift scheduling, user management, incident reporting, and administrative oversight.
 
-Key features include:
-- Recurring shifts defined by Cron expressions with seasonal validity.
-- Ephemeral shifts: shift instances are only created in the database upon booking.
-- Transactional outbox pattern for reliable (mocked) SMS/notification dispatch.
-- API documentation with Swagger/OpenAPI
-- Converter-based approach for transforming DB models to API responses
+## 🚀 Key Features
 
-## Tech Stack
+### Core Functionality
+- **📱 Passwordless Authentication** - OTP-based login via SMS (Twilio integration)
+- **⏰ Dynamic Shift Scheduling** - Cron-based recurring shifts with seasonal validity
+- **👥 Buddy System** - Volunteer pairing for enhanced safety
+- **📊 Incident Reporting** - GPS-enabled reports with severity levels and archiving
+- **📢 Broadcast System** - Targeted messaging to user groups
+- **🏥 Emergency Contacts** - Centralized emergency contact management
+- **📈 Admin Dashboard** - Comprehensive analytics and management tools
 
-- **Go** (version 1.21+ recommended)
-- **SQLite** for the database
-- **Chi** for HTTP routing
-- **sqlc** for type-safe SQL query generation
-- **golang-migrate** for database migrations
-- **slog** for structured logging
-- **robfig/cron** for background job scheduling (outbox dispatcher)
-- **golang-jwt/jwt** for JWT handling
-- **swaggo/swag** for Swagger/OpenAPI documentation
+### Technical Features
+- **💾 Ephemeral Shifts** - Shift instances created only upon booking
+- **📤 Transactional Outbox** - Reliable message delivery with retry logic
+- **🔄 Background Jobs** - Automated report archiving, broadcast processing
+- **🌐 PWA Support** - Progressive Web App with push notifications
+- **🔧 Development Mode** - Enhanced debugging and testing features
 
-## Deployment
+## 🛠 Tech Stack
 
-This application is designed for containerized deployment using Docker and can be deployed using **GitHub Actions** with **GitHub Container Registry** for reliable, automated deployments.
+### Backend (Go 1.24.2+)
+- **[Fuego](https://github.com/go-fuego/fuego)** - Modern HTTP framework with OpenAPI integration
+- **SQLite** - Embedded database with full SQL capabilities
+- **[sqlc](https://sqlc.dev/)** - Type-safe SQL query generation
+- **[golang-migrate](https://github.com/golang-migrate/migrate)** - Database schema migrations
+- **[slog](https://pkg.go.dev/log/slog)** - Structured logging (Go 1.21+)
+- **[robfig/cron](https://github.com/robfig/cron)** - Background job scheduling
+- **[golang-jwt](https://github.com/golang-jwt/jwt)** - JWT authentication
+- **[Swaggo](https://github.com/swaggo/swag)** - Auto-generated OpenAPI documentation
 
-### 🚀 Automated Deployment (Recommended)
-
-The recommended deployment method uses GitHub Actions to build and deploy automatically:
-
-1. **See [GITHUB_DEPLOYMENT.md](GITHUB_DEPLOYMENT.md)** for complete setup instructions
-2. **Push to main branch** → Automatic build and deployment
-3. **Monitor in GitHub Actions tab** → See build status and logs
-
-**Benefits:**
-- ✅ **No memory issues** - Builds on GitHub's powerful runners (7GB RAM)
-- ✅ **Free** - GitHub Container Registry is free for public repos
-- ✅ **Automated** - Deploy on every push to main
-- ✅ **Reliable** - No more hanging builds or failures
-
-### 📦 Manual Deployment
-
-For manual deployments from GitHub Container Registry:
-
-```bash
-# Update the script with your GitHub username
-./deploy-manual.sh [image-tag]
-```
-
-### 🔧 Local Development
-
-## Setup Instructions
+### Frontend (SvelteKit)
+- **[SvelteKit](https://kit.svelte.dev/)** - Full-stack web framework
+- **[TailwindCSS](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[TanStack Query](https://tanstack.com/query)** - Data fetching and caching
+- **[Zod](https://zod.dev/)** - Runtime type validation
+- **[Workbox](https://developers.google.com/web/tools/workbox)** - Service worker and PWA features
 
 ### Prerequisites
 
-1.  **Go:** Ensure you have Go installed (version 1.21 or later is recommended).
-    See [golang.org/dl/](https://golang.org/dl/).
-2.  **golang-migrate CLI:** Install the CLI tool for running database migrations.
-    ```bash
-    go install -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-    ```
-    Ensure `$GOPATH/bin` or `$HOME/go/bin` is in your system's `PATH`.
-3.  **sqlc CLI:** Install the CLI tool for generating Go code from SQL.
-    ```bash
-    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-    ```
-4.  **swag CLI:** Install the CLI tool for generating Swagger documentation.
-    ```bash
-    go install github.com/swaggo/swag/cmd/swag@latest
-    ```
+1. **Go 1.24.2+** - Download from [golang.org/dl/](https://golang.org/dl/)
+2. **Node.js 20+** with **pnpm** - For frontend development
+3. **Development Tools:**
+   ```bash
+   # Database migrations
+   go install -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+   
+   # SQL code generation
+   go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+   
+   # OpenAPI documentation
+   go install github.com/swaggo/swag/cmd/swag@latest
+   ```
 
 ### Project Setup
 
-1.  **Clone the repository (if applicable) or ensure you are in the project root.**
-2.  **Install Go dependencies:**
-    ```bash
-    go mod tidy
-    ```
-3.  **Configuration via `.env` file:**
-    Create a `.env` file in the project root by copying `.env.example` (if one exists) or by creating it manually.
-    This file is used for local development. In production, environment variables should be set directly.
+1. **Clone and install dependencies:**
+   ```bash
+   git clone <repository-url>
+   cd night-owls-go
+   go mod tidy
+   cd app && pnpm install
+   ```
 
-    Example `.env` content:
-    ```env
-    # Server Configuration
-    SERVER_PORT=5888
+2. **Environment Configuration:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-    # Database Configuration
-    DATABASE_PATH=./community_watch.db
+   **Essential Environment Variables:**
+   ```env
+   # Server Configuration
+   SERVER_PORT=5888
+   DATABASE_PATH=./community_watch.db
+   STATIC_DIR=./app/build
+   
+   # Security
+   JWT_SECRET=your-super-secure-jwt-secret-change-this
+   JWT_EXPIRATION_HOURS=24
+   
+   # OTP Configuration
+   OTP_VALIDITY_MINUTES=5
+   OTP_LOG_PATH=./sms_outbox.log
+   
+   # Development
+   DEV_MODE=true
+   LOG_LEVEL=debug
+   LOG_FORMAT=json
+   
+   # Twilio (Optional - for SMS OTP)
+   TWILIO_ACCOUNT_SID=your-twilio-sid
+   TWILIO_AUTH_TOKEN=your-twilio-token
+   TWILIO_VERIFY_SID=your-verify-sid
+   
+   # PWA/Push Notifications (Optional)
+   VAPID_PUBLIC=your-vapid-public-key
+   VAPID_PRIVATE=your-vapid-private-key
+   VAPID_SUBJECT=mailto:admin@example.com
+   ```
 
-    # JWT Configuration
-    JWT_SECRET=a_very_secure_secret_for_development_only_change_this
-    # DEFAULT_SHIFT_DURATION_HOURS=2 # Optional, defaults to 2 hours
+3. **Database Setup:**
+   ```bash
+   # Migrations run automatically on startup, or manually:
+   migrate -database "sqlite3://./community_watch.db" -path internal/db/migrations up
+   ```
 
-    # OTP/SMS Mocking Configuration
-    OTP_LOG_PATH=./sms_outbox.log
-    ```
-    *Note: `JWT_SECRET` should be a strong, unique secret in a production environment.*
+## 🏃‍♂️ Running the Application
 
-### Database Migrations
+### Development Mode
 
-Database migrations are managed using `golang-migrate` and SQL files located in `internal/db/migrations/`.
+1. **Start the backend:**
+   ```bash
+   go run ./cmd/server/main.go
+   ```
 
--   **To apply all pending up migrations:**
-    The application attempts to run migrations automatically on startup using the `DATABASE_PATH` from the config.
-    Alternatively, you can run them manually using the `migrate` CLI (ensure `DATABASE_PATH` in your `.env` points to the correct file location relative to where you run the `migrate` command, or use an absolute path):
-    ```bash
-    # Ensure DATABASE_PATH in .env is correct if it's a relative path
-    # Or provide the database URL directly:
-    migrate -database "sqlite3://$(grep DATABASE_PATH .env | cut -d '=' -f2)" -path internal/db/migrations up
-    ```
+2. **Start the frontend (in another terminal):**
+   ```bash
+   cd app
+   pnpm run dev
+   ```
 
--   **To roll back the last migration:**
-    ```bash
-    migrate -database "sqlite3://$(grep DATABASE_PATH .env | cut -d '=' -f2)" -path internal/db/migrations down 1
-    ```
+3. **Access the application:**
+   - **Frontend:** http://localhost:5173
+   - **Backend API:** http://localhost:5888
+   - **API Documentation:** http://localhost:5888/swagger
+   - **Health Check:** http://localhost:5888/health
 
--   **To create a new migration:**
-    ```bash
-    migrate create -ext sql -dir internal/db/migrations -seq <migration_name>
-    ```
-
-### SQLC Code Generation
-
-If you modify any SQL queries in `internal/db/queries/` or change the schema (and create new migrations), you need to regenerate the Go code for `sqlc`:
+### Production Mode
 
 ```bash
-sqlc generate
-```
+# Build frontend
+cd app && pnpm run build && cd ..
 
-### Swagger Documentation Generation
-
-To generate or update the Swagger documentation after making API changes:
-
-```bash
-swag init -g cmd/server/main.go -o ./docs/swagger
-```
-
-## How to Run
-
-### Development Server
-
-To start the backend server for development:
-
-```bash
+# Start backend (serves both API and built frontend)
 go run ./cmd/server/main.go
 ```
 
-The server will start (by default on port 5888, as per config) and apply database migrations if needed.
-Output, including mock OTPs and other notifications, will be logged to the console (structured JSON) and potentially to `sms_outbox.log` (as per `OTP_LOG_PATH` config).
+Access at: http://localhost:5888
 
-Swagger API documentation will be available at: http://localhost:5888/swagger/index.html
+## 📋 API Documentation
 
-### Running Tests
+The API is fully documented with **OpenAPI/Swagger** and available at `/swagger` when running.
 
-To run all tests:
+### Core Endpoints
 
-```bash
-go test ./...
+#### Authentication
+- `POST /api/auth/register` - Register/login with phone number
+- `POST /api/auth/verify` - Verify OTP and get JWT token
+- `POST /api/auth/dev-login` - Development-only direct login
+
+#### Public Endpoints
+- `GET /schedules` - List available shift schedules
+- `GET /shifts/available` - List available shift slots
+- `GET /api/emergency-contacts` - Get emergency contacts
+- `GET /health` - Health check endpoint
+
+#### Protected User Endpoints (Require JWT)
+- `POST /bookings` - Book a shift
+- `GET /bookings/my` - Get user's bookings
+- `POST /bookings/{id}/checkin` - Check in to a shift
+- `DELETE /bookings/{id}` - Cancel a booking
+- `POST /bookings/{id}/report` - Submit incident report
+- `POST /reports/off-shift` - Submit off-shift report
+- `GET /api/broadcasts` - Get user broadcasts
+- `POST /push/subscribe` - Subscribe to push notifications
+
+#### Admin Endpoints (Require JWT + Admin Role)
+- **Users:** `GET|POST|PUT|DELETE /api/admin/users/**`
+- **Schedules:** `GET|POST|PUT|DELETE /api/admin/schedules/**`
+- **Reports:** `GET|PUT /api/admin/reports/**` (list, archive, unarchive)
+- **Broadcasts:** `GET|POST /api/admin/broadcasts/**`
+- **Dashboard:** `GET /api/admin/dashboard`
+- **Emergency Contacts:** `GET|POST|PUT|DELETE /api/admin/emergency-contacts/**`
+
+### Authentication Flow
+
+1. **Register/Login:** `POST /api/auth/register` with phone number
+2. **Receive OTP:** Via SMS (or check logs in development)
+3. **Verify:** `POST /api/auth/verify` with OTP code
+4. **Use JWT:** Include `Authorization: Bearer <token>` in subsequent requests
+
+## 🏗 Architecture
+
+### Clean Architecture Layers
+
+```
+┌─────────────────────┐
+│   Frontend (SvelteKit)   │
+├─────────────────────┤
+│   API Layer         │  ← HTTP handlers, middleware, routing
+│   (internal/api/)   │
+├─────────────────────┤
+│   Service Layer     │  ← Business logic, orchestration
+│   (internal/service/)│
+├─────────────────────┤
+│   Data Layer        │  ← Database queries, models
+│   (internal/db/)    │
+└─────────────────────┘
 ```
 
-## API Endpoints
+### Key Services
 
-The API is fully documented using Swagger/OpenAPI. When the server is running, you can access the interactive documentation at: http://localhost:5888/swagger/index.html
+- **UserService** - Authentication, user management
+- **ScheduleService** - Shift scheduling, cron parsing
+- **BookingService** - Shift bookings, check-ins
+- **ReportService** - Incident reporting, GPS tracking
+- **BroadcastService** - Message broadcasting to user groups
+- **AdminDashboardService** - Analytics and reporting
+- **EmergencyContactService** - Emergency contact management
+- **ReportArchivingService** - Automated report lifecycle
 
-### Authentication
+### Background Jobs (Cron)
 
--   `POST /auth/register`
-    -   Registers a new user or initiates login by sending an OTP.
-    -   Request: `{ "phone": "+27...", "name": "Optional Name" }`
-    -   Response: `200 OK { "message": "OTP sent..." }`
--   `POST /auth/verify`
-    -   Verifies the OTP and returns a JWT.
-    -   Request: `{ "phone": "+27...", "code": "123456" }`
-    -   Response: `200 OK { "token": "<jwt_token>" }`
+- **Every 1 minute:** Process outbox messages (SMS/push notifications)
+- **Every 30 seconds:** Process pending broadcasts
+- **Daily at 2 AM:** Auto-archive old reports (configurable retention)
 
-### Schedules & Shifts
+## 🧪 Testing
 
--   `GET /schedules`
-    -   Lists defined shift schedules.
--   `GET /shifts/available`
-    -   Lists upcoming available shift slots.
-    -   Query Params: `from` (RFC3339), `to` (RFC3339), `limit` (int)
-    -   Response: `200 OK` with array of `AvailableShiftSlot` objects.
+```bash
+# Run Go tests
+go test ./...
 
-### Bookings (Protected - Requires JWT)
+# Run Go tests with coverage
+go test -v -race -coverprofile=coverage.out ./...
 
--   `POST /bookings`
-    -   Books a shift slot.
-    -   Request: `{ "schedule_id": 1, "start_time": "YYYY-MM-DDTHH:MM:SSZ", "buddy_phone": "...", "buddy_name": "..." }`
-    -   Response: `201 Created` with booking details, or `409 Conflict` / `400 Bad Request`.
--   `PATCH /bookings/{id}/attendance`
-    -   Marks attendance for a booking.
-    -   Request: `{ "attended": true }`
-    -   Response: `200 OK` with updated booking.
+# Run frontend tests
+cd app
+pnpm run test:unit
 
-### Reports (Protected - Requires JWT)
+# Run end-to-end tests
+pnpm run test:e2e
+```
 
--   `POST /bookings/{id}/report`
-    -   Submits an incident report for a booking.
-    -   Request: `{ "severity": 0-2, "message": "..." }`
-    -   Response: `201 Created` with report details.
+## 🔧 Development Tools
 
-## Project Architecture
+### Code Generation
 
-The project follows a clean architecture approach with the following layers:
+```bash
+# Regenerate SQL queries (after schema changes)
+sqlc generate
 
-1. **API Layer (`internal/api/`)**: HTTP handlers, middleware, and request/response models
-2. **Service Layer (`internal/service/`)**: Business logic and orchestration
-3. **Data Layer (`internal/db/`)**: Database queries and models
+# Update OpenAPI documentation
+swag init -g cmd/server/main.go -o ./docs/swagger
 
-The project uses a converter-based approach for transforming database models to API responses, ensuring clean separation between internal data structures and external API contracts.
+# Frontend type checking
+cd app && pnpm run check
+```
 
-## Future Enhancements
+### Database Management
 
-For a comprehensive list of potential future enhancements to the project, see the [ENHANCEMENTS.md](docs/ENHANCEMENTS.md) document. This includes:
+```bash
+# Create new migration
+migrate create -ext sql -dir internal/db/migrations -seq your_migration_name
 
-- Security improvements (rate limiting, JWT enhancements)
-- Error handling and observability enhancements
-- Performance optimizations
-- Architecture improvements
-- Testing improvements
+# Apply migrations
+migrate -database "sqlite3://./community_watch.db" -path internal/db/migrations up
 
-## Contributing
+# Rollback last migration
+migrate -database "sqlite3://./community_watch.db" -path internal/db/migrations down 1
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## 📊 Features in Detail
 
-## Troubleshooting / Known Issues
+### Shift Management
+- **Cron-based scheduling** with timezone support
+- **Seasonal validity** (start/end dates)
+- **Ephemeral shift instances** (created on booking)
+- **Buddy system** for volunteer safety
+- **Attendance tracking** with GPS check-in
 
-### `golang-migrate` "unknown driver" in Tests
+### Reporting System
+- **Three severity levels:** Normal, Suspicion, Incident
+- **GPS coordinates** and accuracy tracking
+- **Automatic archiving** based on age and severity
+- **Off-shift reporting** capability
+- **Admin report management** (archive/unarchive)
 
-During the development of integration tests (specifically in `internal/api/*_test.go`), we encountered persistent "unknown driver 'sqlite3'" (and later "unknown driver 'sqlite'") errors when trying to use `golang-migrate/migrate/v4` programmatically via `migrate.New()` to set up an in-memory SQLite database, despite having the correct blank imports for the database and source drivers (e.g., `_ "github.com/golang-migrate/migrate/v4/database/sqlite"`).
+### User Management
+- **Phone-based authentication** (international support)
+- **Role-based access** (admin/owl)
+- **OTP verification** via Twilio or mock
+- **User profiles** with contact information
 
-This issue occurred even after trying CGo flags, different relative paths for migration files, and ensuring `go mod tidy` was run. The root cause seems to be related to how the `golang-migrate` library registers its drivers or how those registrations are picked up within the specific `go test` binary compilation and execution context for these test packages.
+### Broadcasting
+- **Targeted messaging** by user role/status
+- **Scheduled broadcasts** with automatic processing
+- **Delivery tracking** and retry logic
+- **Audience selection** (all/admins/owls/active users)
 
-**Workaround for Integration Tests:**
-To ensure reliable database schema setup for integration tests, the `newTestApp` helper function in `internal/api/auth_handlers_integration_test.go` (and potentially other future integration test files) manually reads and executes the `.up.sql` migration files directly on the `*sql.DB` connection. This bypasses the programmatic use of `golang-migrate` for test database setup, resolving the driver registration issue in that context.
+## 🚨 Troubleshooting
 
-The main application (`cmd/server/main.go`) uses `golang-migrate` programmatically without issue, as does the `migrate` CLI tool. 
+### Common Issues
+
+1. **Migration Errors:** Ensure database path is writable and migrations folder exists
+2. **Build Failures:** Check Go version (1.24.2+) and run `go mod tidy`
+3. **Frontend Issues:** Ensure Node.js 20+ and run `pnpm install`
+4. **JWT Errors:** Verify `JWT_SECRET` is set and consistent
+5. **OTP Issues:** Check Twilio credentials or enable `DEV_MODE`
+
+### Development Tips
+
+- Use `DEV_MODE=true` for enhanced logging and mock OTP
+- Check `/health` endpoint for system status
+- Monitor `./sms_outbox.log` for OTP codes in development
+- Use `/swagger` for API testing and documentation
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and test thoroughly
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+### Code Standards
+
+- Follow Go best practices and formatting (`go fmt`)
+- Write tests for new functionality
+- Update documentation for API changes
+- Use conventional commit messages
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ for community safety and volunteer coordination** 
