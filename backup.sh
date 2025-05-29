@@ -30,7 +30,7 @@ print_warning() {
 }
 
 # Detect docker compose command
-if command -v "docker compose" &> /dev/null; then
+if docker compose version &> /dev/null; then
     DOCKER_COMPOSE="docker compose"
 elif command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"

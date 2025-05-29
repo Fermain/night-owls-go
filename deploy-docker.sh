@@ -52,9 +52,9 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # Check if docker compose is available (try both V2 and legacy)
-if command -v "docker compose" &> /dev/null; then
+if docker compose version &> /dev/null; then
     DOCKER_COMPOSE="docker compose"
-    print_status "Using Docker Compose V2"
+    print_status "Using Docker Compose V2 (plugin)"
 elif command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
     print_status "Using Docker Compose V1 (legacy)"
