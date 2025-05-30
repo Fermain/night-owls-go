@@ -125,7 +125,14 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
+		
+		// Check for specific user not found error
+		if err.Error() == "user not found - please register first" {
+			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+		}
 		return
 	}
 
@@ -296,7 +303,11 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate JWT token directly using the auth package
-	token, err := auth.GenerateJWT(user.UserID, user.Phone, user.Role, h.config.JWTSecret, h.config.JWTExpirationHours)
+	userName := ""
+	if user.Name.Valid {
+		userName = user.Name.String
+	}
+	token, err := auth.GenerateJWT(user.UserID, user.Phone, userName, user.Role, h.config.JWTSecret, h.config.JWTExpirationHours)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to generate token", h.logger, "error", err.Error())
 		return

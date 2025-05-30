@@ -57,7 +57,7 @@
 			}
 			
 			// Redirect to login with pre-filled phone number
-			goto(`/login?phone=${encodeURIComponent(phoneNumber)}&name=${encodeURIComponent(name)}`);
+			goto(`/login?phone=${encodeURIComponent(phoneNumber)}`);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Registration failed');
 			console.error('Registration error:', error);
@@ -72,19 +72,9 @@
 </svelte:head>
 
 {#if !$isAuthenticated}
-	<div class="grid min-h-svh lg:grid-cols-2">
+	<div class="grid lg:grid-cols-2">
 		<!-- Left side - Form -->
 		<div class="flex flex-col gap-4 p-6 md:p-10">
-			<div class="flex justify-center gap-2 md:justify-start">
-				<a href="/" class="flex items-center gap-2 font-medium">
-					<div
-						class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md"
-					>
-						<ShieldIcon class="size-4" />
-					</div>
-					Night Owls Control
-				</a>
-			</div>
 
 			<div class="flex flex-1 items-center justify-center">
 				<div class="w-full max-w-xs">

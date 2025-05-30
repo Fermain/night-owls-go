@@ -17,16 +17,18 @@ var ( // Define common errors for JWT validation.
 type Claims struct {
 	UserID int64  `json:"user_id"`
 	Phone  string `json:"phone"`
+	Name   string `json:"name"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// GenerateJWT generates a new JWT for a given user ID, phone number, and role.
-func GenerateJWT(userID int64, phone string, role string, jwtSecret string, expirationHours int) (string, error) {
+// GenerateJWT generates a new JWT for a given user ID, phone number, name, and role.
+func GenerateJWT(userID int64, phone string, name string, role string, jwtSecret string, expirationHours int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
 	claims := &Claims{
 		UserID: userID,
 		Phone:  phone,
+		Name:   name,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
