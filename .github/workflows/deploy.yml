@@ -94,7 +94,7 @@ jobs:
           
           # Clean up any existing build directory
           rm -rf app/build
-          mkdir -p app
+          mkdir -p app/build
           
           # Extract the static files
           docker cp temp-extract:/app/static ./app/build || { 
