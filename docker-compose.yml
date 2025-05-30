@@ -3,6 +3,8 @@ services:
     image: ghcr.io/fermain/night-owls-go:latest
     container_name: night-owls-go
     restart: unless-stopped
+    ports:
+      - "5888:5888"
     environment:
       - SERVER_PORT=5888
       - DATABASE_PATH=./data/production.db
