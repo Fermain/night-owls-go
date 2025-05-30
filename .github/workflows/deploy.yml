@@ -58,6 +58,60 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    # Build frontend locally (same as manual deployment approach)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Enable pnpm
+      run: corepack enable pnpm
+
+    - name: Build frontend locally
+      working-directory: ./app
+      run: |
+        echo "📦 Installing dependencies..."
+        pnpm install --frozen-lockfile
+        echo "🔨 Building frontend..."
+        pnpm run build
+        echo "✅ Frontend build complete"
+
+    - name: Verify frontend build
+      run: |
+        if [ ! -d "app/build" ]; then
+          echo "❌ Frontend build failed - build directory not found"
+          exit 1
+        fi
+        if [ ! -f "app/build/index.html" ]; then
+          echo "❌ index.html missing - this will cause 404 errors"
+          exit 1
+        fi
+        echo "✅ Frontend build verification passed"
+        echo "📊 Frontend build contains $(find app/build -type f | wc -l) files"
+
+    # Copy frontend build to server (using ssh-action approach)
+    - name: Prepare server for frontend files
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: mm.nightowls.app
+        username: deploy
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/night-owls-app
+          echo "📦 Preparing for frontend files..."
+          mkdir -p frontend-build
+          rm -rf frontend-build/*
+
+    - name: Upload frontend files
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: mm.nightowls.app
+        username: deploy
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "app/build/*"
+        target: "~/night-owls-app/frontend-build/"
+        strip_components: 2
+
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -65,7 +119,7 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ~/night-owls-go
+          cd ~/night-owls-app
           
           echo "🛑 Stopping containers..."
           docker compose down || docker-compose down || true
@@ -80,43 +134,6 @@ jobs:
           echo "📦 Pulling latest image..."
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
-          echo "🔍 Debug: Checking what's in the Docker image..."
-          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest ls -la /app/
-          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest ls -la /app/static/ || echo "No /app/static directory"
-          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest find /app/static -name "*.html" || echo "No HTML files found"
-          
-          echo "🎨 Extracting SvelteKit build from image..."
-          # TODO: Replace this extraction step with one of:
-          # 1. Separate frontend-only image that Caddy can use directly
-          # 2. Build frontend in CI and save as artifacts
-          # 3. Build frontend directly on host
-          docker create --name temp-extract ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
-          
-          # Clean up any existing build directory
-          rm -rf app/build
-          mkdir -p app/build
-          
-          # Extract the static files
-          docker cp temp-extract:/app/static/. ./app/build/ || { 
-            echo "❌ Failed to extract static files"; 
-            docker logs temp-extract || true;
-            docker rm temp-extract; 
-            exit 1; 
-          }
-          docker rm temp-extract
-          
-          echo "📁 Debug: Checking extracted files structure..."
-          ls -la app/ || echo "No app directory"
-          ls -la app/build/ || echo "No app/build directory"
-          if [ -d "app/build" ]; then
-            echo "📄 Files in app/build:"
-            find app/build -type f | head -10
-            echo "🌐 Looking for index.html:"
-            find app/build -name "index.html" || echo "❌ No index.html found!"
-            echo "📱 Looking for _app directory:"
-            ls -la app/build/_app/ || echo "❌ No _app directory found!"
-          fi
-          
           echo "🚀 Starting application..."
           docker compose up -d --force-recreate || docker-compose up -d --force-recreate
           
@@ -124,7 +141,44 @@ jobs:
           sleep 15
           
           echo "🏥 Health check..."
-          curl -f http://localhost/health && echo "✅ App healthy!" || { echo "❌ App failed"; exit 1; }
+          curl -f http://localhost:5888/health && echo "✅ Backend healthy!" || { echo "❌ Backend failed"; exit 1; }
           
-          echo "🌐 SSL check..."
+          echo "🌐 Frontend check..."
+          curl -f http://localhost/ && echo "✅ Frontend accessible!" || { echo "❌ Frontend failed"; exit 1; }
+          
+          echo "🔐 SSL check..."
           curl -f https://mm.nightowls.app/health && echo "✅ SSL deployed!" || echo "⚠️ SSL pending (may take a few minutes)"
+
+    - name: Final verification
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: mm.nightowls.app
+        username: deploy
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/night-owls-app
+          
+          echo "🔍 Verifying frontend-build directory..."
+          if [ ! -d "frontend-build" ]; then
+            echo "❌ frontend-build directory missing"
+            exit 1
+          fi
+          
+          if [ ! -f "frontend-build/index.html" ]; then
+            echo "❌ index.html missing in frontend-build"
+            exit 1
+          fi
+          
+          echo "📊 Frontend files verification:"
+          ls -la frontend-build/ | head -10
+          
+          echo "🔄 Restarting containers to pick up new frontend files..."
+          docker compose restart caddy
+          
+          echo "⏳ Final health check..."
+          sleep 10
+          curl -f https://mm.nightowls.app/ && echo "✅ Full deployment successful!" || { 
+            echo "❌ Final check failed, checking logs..."
+            docker compose logs caddy --tail=20
+            exit 1
+          }

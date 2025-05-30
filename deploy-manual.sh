@@ -14,11 +14,44 @@ SERVER_USER="deploy"
 
 echo "🚀 Deploying $GITHUB_USER/$REPO_NAME:$IMAGE_TAG to $SERVER"
 
+# Build frontend locally first
+echo "🏗️  Building frontend locally..."
+cd app
+if command -v pnpm &> /dev/null; then
+    echo "📦 Installing dependencies with pnpm..."
+    pnpm install
+    echo "🔨 Building frontend..."
+    pnpm run build
+else
+    echo "📦 Installing dependencies with npm..."
+    npm install
+    echo "🔨 Building frontend..."
+    npm run build
+fi
+
+# Verify build directory exists
+if [ ! -d "build" ]; then
+    echo "❌ Frontend build failed - build directory not found"
+    exit 1
+fi
+
+echo "✅ Frontend build complete"
+cd ..
+
+echo "📦 Copying frontend build and config to server..."
+# Create the directory structure on the server
+ssh $SERVER_USER@$SERVER "mkdir -p ~/night-owls-app/frontend-build"
+# Copy frontend build files
+rsync -avz --delete app/build/ $SERVER_USER@$SERVER:~/night-owls-app/frontend-build/
+# Copy docker-compose.yml if it doesn't exist or is newer
+rsync -avz docker-compose.yml $SERVER_USER@$SERVER:~/night-owls-app/
+# Copy Caddyfile
+rsync -avz Caddyfile $SERVER_USER@$SERVER:~/night-owls-app/
+
 # Deploy to server
-ssh $SERVER_USER@$SERVER << EOF
+ssh $SERVER_USER@$SERVER << 'EOF'
 set -e
 
-cd ~/night-owls-app 2>/dev/null || mkdir -p ~/night-owls-app
 cd ~/night-owls-app
 
 echo "📦 Stopping existing containers..."
@@ -29,45 +62,50 @@ else
     DOCKER_COMPOSE="docker-compose"
 fi
 
-\$DOCKER_COMPOSE down 2>/dev/null || true
+$DOCKER_COMPOSE down 2>/dev/null || true
 
 echo "🧹 Cleaning up old images..."
 docker system prune -f
 
 echo "⬇️  Pulling new image from GitHub Container Registry..."
-docker pull ghcr.io/$GITHUB_USER/$REPO_NAME:$IMAGE_TAG
+docker pull ghcr.io/fermain/night-owls-go:latest
 
-echo "🏷️  Tagging image for docker-compose..."
-docker tag ghcr.io/$GITHUB_USER/$REPO_NAME:$IMAGE_TAG night-owls-go:latest
-
-echo "📋 Ensuring config files are present..."
+echo "📋 Verifying config files..."
 if [ ! -f docker-compose.yml ]; then
-    echo "❌ docker-compose.yml not found. Please copy it to ~/night-owls-app/"
-    echo "   scp docker-compose.yml $SERVER_USER@$SERVER:~/night-owls-app/"
+    echo "❌ docker-compose.yml not found"
     exit 1
 fi
 
 if [ ! -f .env.production ]; then
     echo "❌ .env.production not found. Please copy it to ~/night-owls-app/"
-    echo "   scp .env.production $SERVER_USER@$SERVER:~/night-owls-app/"
+    echo "   scp .env.production deploy@mm.nightowls.app:~/night-owls-app/"
     exit 1
 fi
 
+if [ ! -d frontend-build ]; then
+    echo "❌ frontend-build directory not found"
+    exit 1
+fi
+
+echo "🔍 Frontend files check:"
+ls -la frontend-build/ | head -10
+
 echo "🚀 Starting application..."
-\$DOCKER_COMPOSE up -d
+$DOCKER_COMPOSE up -d
 
 echo "⏳ Waiting for application to start..."
-sleep 10
+sleep 15
 
 echo "🔍 Health check..."
 if curl -f http://localhost:5888/health 2>/dev/null; then
     echo "✅ Application is healthy!"
 else
-    echo "⚠️  Health check failed, but container might still be starting..."
+    echo "⚠️  Health check failed, checking container logs..."
+    $DOCKER_COMPOSE logs --tail=20
 fi
 
 echo "📊 Container status:"
-\$DOCKER_COMPOSE ps
+$DOCKER_COMPOSE ps
 
 echo ""
 echo "🎉 Deployment complete!"

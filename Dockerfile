@@ -1,23 +1,4 @@
-# Build frontend
-FROM node:20-alpine AS frontend-builder
-
-# Install pnpm globally for better caching
-RUN corepack enable pnpm
-
-WORKDIR /app/frontend
-
-# Copy package files first for better layer caching
-COPY app/package.json app/pnpm-lock.yaml* ./
-
-# Install dependencies with cache mount
-RUN --mount=type=cache,target=/root/.local/share/pnpm \
-    pnpm install --frozen-lockfile
-
-# Copy source and build
-COPY app/ ./
-RUN pnpm run build
-
-# Build backend
+# Build backend only (frontend now built locally for deployment efficiency)
 FROM golang:1.24-alpine AS backend-builder
 
 # Install minimal build dependencies
@@ -61,9 +42,6 @@ COPY internal/db/migrations/ ./migrations/
 
 # Copy binaries
 COPY --from=backend-builder /app/night-owls-server .
-
-# Copy frontend build (temporarily kept for extraction - can be removed when using separate frontend image)
-COPY --from=frontend-builder /app/frontend/build ./static
 
 # Set permissions
 RUN chown -R appuser:appgroup /app
