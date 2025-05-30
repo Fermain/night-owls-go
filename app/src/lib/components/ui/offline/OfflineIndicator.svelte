@@ -43,9 +43,9 @@
 				await offlineService.init();
 
 				// Subscribe to offline state changes
-				unsubscribe = offlineService.state.subscribe(state => {
+				unsubscribe = offlineService.state.subscribe((state) => {
 					offlineState = state;
-					
+
 					// Auto-show indicator when going offline or when there are queued items
 					if (!state.isOnline || state.queuedReports > 0) {
 						isVisible = true;
@@ -103,18 +103,18 @@
 
 	function formatRelativeTime(timestamp: string | null): string {
 		if (!timestamp) return 'Never';
-		
+
 		const now = new Date();
 		const time = new Date(timestamp);
 		const diffMs = now.getTime() - time.getTime();
 		const diffMins = Math.floor(diffMs / (1000 * 60));
-		
+
 		if (diffMins < 1) return 'Just now';
 		if (diffMins < 60) return `${diffMins}m ago`;
-		
+
 		const diffHours = Math.floor(diffMins / 60);
 		if (diffHours < 24) return `${diffHours}h ago`;
-		
+
 		const diffDays = Math.floor(diffHours / 24);
 		return `${diffDays}d ago`;
 	}
@@ -135,9 +135,11 @@
 				<Button
 					variant="outline"
 					size="sm"
-					class="shadow-lg border-2 {getStatusColor() === 'destructive' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
-						   getStatusColor() === 'warning' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
-						   'border-green-200 bg-green-50 hover:bg-green-100'}"
+					class="shadow-lg border-2 {getStatusColor() === 'destructive'
+						? 'border-red-200 bg-red-50 hover:bg-red-100'
+						: getStatusColor() === 'warning'
+							? 'border-orange-200 bg-orange-50 hover:bg-orange-100'
+							: 'border-green-200 bg-green-50 hover:bg-green-100'}"
 				>
 					{#if offlineState.syncInProgress}
 						<LoaderIcon class="h-4 w-4 mr-2 animate-spin" />
@@ -165,7 +167,9 @@
 							</div>
 							{#if offlineState.lastOnline}
 								<span class="text-xs text-muted-foreground">
-									{offlineState.isOnline ? 'Connected' : `Last: ${formatRelativeTime(offlineState.lastOnline)}`}
+									{offlineState.isOnline
+										? 'Connected'
+										: `Last: ${formatRelativeTime(offlineState.lastOnline)}`}
 								</span>
 							{/if}
 						</div>
@@ -226,9 +230,9 @@
 							{#if offlineState.syncInProgress}
 								<LoaderIcon class="h-4 w-4 animate-spin text-blue-600" />
 							{:else if offlineState.isOnline}
-								<Button 
-									variant="ghost" 
-									size="sm" 
+								<Button
+									variant="ghost"
+									size="sm"
 									onclick={handleSync}
 									disabled={offlineState.syncInProgress}
 								>
@@ -239,7 +243,7 @@
 								<CloudOffIcon class="h-4 w-4 text-gray-400" />
 							{/if}
 						</div>
-						
+
 						{#if offlineState.lastSync}
 							<p class="text-xs text-muted-foreground">
 								Last sync: {formatRelativeTime(offlineState.lastSync)}
@@ -253,7 +257,8 @@
 							<h5 class="text-sm font-medium text-blue-900 mb-1">Offline Mode</h5>
 							<p class="text-xs text-blue-700">
 								{#if offlineState.emergencyContactsAvailable}
-									Emergency contacts and reporting are available offline. Reports will sync when connection is restored.
+									Emergency contacts and reporting are available offline. Reports will sync when
+									connection is restored.
 								{:else}
 									Limited offline functionality. Emergency calling still works via phone.
 								{/if}
@@ -266,24 +271,22 @@
 						<div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
 							<h5 class="text-sm font-medium text-orange-900 mb-1">Pending Sync</h5>
 							<p class="text-xs text-orange-700">
-								{offlineState.queuedReports} incident report{offlineState.queuedReports > 1 ? 's' : ''} waiting to sync.
-								{offlineState.isOnline ? 'Syncing automatically...' : 'Will sync when connection returns.'}
+								{offlineState.queuedReports} incident report{offlineState.queuedReports > 1
+									? 's'
+									: ''} waiting to sync.
+								{offlineState.isOnline
+									? 'Syncing automatically...'
+									: 'Will sync when connection returns.'}
 							</p>
 						</div>
 					{/if}
 
 					<!-- Close Button -->
 					<div class="flex justify-end">
-						<Button 
-							variant="ghost" 
-							size="sm" 
-							onclick={() => isVisible = false}
-						>
-							Close
-						</Button>
+						<Button variant="ghost" size="sm" onclick={() => (isVisible = false)}>Close</Button>
 					</div>
 				</div>
 			</Popover.Content>
 		</Popover.Root>
 	</div>
-{/if} 
+{/if}

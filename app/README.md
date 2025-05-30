@@ -42,6 +42,7 @@ You can preview the production build with `pnpm run preview`.
 This project uses a comprehensive linting setup. Choose the right command for your needs:
 
 ### Quick Commands (Recommended for Development)
+
 - `pnpm run lint` - Full lint check (includes Prettier + ESLint on all files) - **~5+ minutes**
 - `pnpm run lint:quick` - **Fastest option** - Only shows errors, suppresses warnings - **~50 seconds**
 - `pnpm run lint:errors` - Only fails on errors (warnings allowed) - **~50 seconds**

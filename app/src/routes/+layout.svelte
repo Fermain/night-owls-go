@@ -74,7 +74,7 @@
 				<UnifiedHeader showBreadcrumbs={false} />
 				<!-- Main content area that fills remaining height -->
 				<main class="flex-1 pb-16 md:pb-0 overflow-auto flex">
-						{@render children()}
+					{@render children()}
 				</main>
 			</div>
 			<MobileNav />

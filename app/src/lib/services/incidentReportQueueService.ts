@@ -35,7 +35,9 @@ class IncidentReportQueueService {
 	/**
 	 * Create a new draft report (for offline creation)
 	 */
-	async createDraft(report: Omit<QueuedIncidentReport, 'id' | 'status' | 'createdAt' | 'syncAttempts'>): Promise<string> {
+	async createDraft(
+		report: Omit<QueuedIncidentReport, 'id' | 'status' | 'createdAt' | 'syncAttempts'>
+	): Promise<string> {
 		try {
 			const reportId = crypto.randomUUID();
 			const draftReport: QueuedIncidentReport = {
@@ -76,10 +78,7 @@ class IncidentReportQueueService {
 	 */
 	async getQueuedReports(): Promise<QueuedIncidentReport[]> {
 		try {
-			return await this.db.reports
-				.where('status')
-				.equals('queued')
-				.sortBy('createdAt');
+			return await this.db.reports.where('status').equals('queued').sortBy('createdAt');
 		} catch (error) {
 			console.error('Failed to get queued reports:', error);
 			return [];
@@ -91,10 +90,7 @@ class IncidentReportQueueService {
 	 */
 	async getDraftReports(): Promise<QueuedIncidentReport[]> {
 		try {
-			return await this.db.reports
-				.where('status')
-				.equals('draft')
-				.sortBy('createdAt');
+			return await this.db.reports.where('status').equals('draft').sortBy('createdAt');
 		} catch (error) {
 			console.error('Failed to get draft reports:', error);
 			return [];
@@ -233,7 +229,7 @@ class IncidentReportQueueService {
 			const deletedCount = await this.db.reports
 				.where('status')
 				.equals('synced')
-				.and(report => report.createdAt < cutoffTimestamp)
+				.and((report) => report.createdAt < cutoffTimestamp)
 				.delete();
 
 			if (deletedCount > 0) {
@@ -251,7 +247,7 @@ class IncidentReportQueueService {
 		try {
 			await this.db.open();
 			console.log('📋 Incident report queue database initialized');
-			
+
 			// Cleanup old reports on init
 			await this.cleanupOldReports();
 		} catch (error) {
@@ -261,4 +257,4 @@ class IncidentReportQueueService {
 	}
 }
 
-export const incidentReportQueue = new IncidentReportQueueService(); 
+export const incidentReportQueue = new IncidentReportQueueService();

@@ -26,18 +26,18 @@
 				await offlineService.init();
 
 				// Subscribe to online/offline status
-				unsubscribe = offlineService.state.subscribe(state => {
+				unsubscribe = offlineService.state.subscribe((state) => {
 					isOnline = state.isOnline;
 				});
 
 				// Try to get emergency contacts (offline-first approach)
 				contacts = await offlineService.getEmergencyContacts();
-				
+
 				if (contacts.length > 0) {
 					// We have cached data
 					usingCachedData = !isOnline;
 					loading = false;
-					
+
 					// If online, try to refresh in the background
 					if (isOnline) {
 						try {
@@ -171,7 +171,8 @@
 				{#if !isOnline}
 					<div class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-left">
 						<p class="text-xs text-blue-700">
-							<strong>Emergency calling still works:</strong> You can dial emergency numbers directly using your phone's dialer.
+							<strong>Emergency calling still works:</strong> You can dial emergency numbers directly
+							using your phone's dialer.
 						</p>
 					</div>
 				{/if}
@@ -222,12 +223,12 @@
 					</div>
 				{/each}
 			</div>
-			
+
 			{#if usingCachedData}
 				<div class="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
 					<p class="text-xs text-orange-700">
-						<strong>Note:</strong> These contacts are cached from your last connection. 
-						Phone calls will work normally.
+						<strong>Note:</strong> These contacts are cached from your last connection. Phone calls will
+						work normally.
 					</p>
 				</div>
 			{/if}

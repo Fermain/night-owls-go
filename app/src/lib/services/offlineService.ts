@@ -84,8 +84,8 @@ class OfflineService {
 
 		const updateOnlineStatus = () => {
 			const isOnline = navigator.onLine;
-			
-			this.state.update(state => ({
+
+			this.state.update((state) => ({
 				...state,
 				isOnline,
 				lastOnline: isOnline ? new Date().toISOString() : state.lastOnline
@@ -137,7 +137,7 @@ class OfflineService {
 				incidentReportQueue.getQueueStats()
 			]);
 
-			this.state.update(state => ({
+			this.state.update((state) => ({
 				...state,
 				emergencyContactsAvailable: hasEmergencyContacts,
 				queuedReports: queueStats.drafts + queueStats.queued + queueStats.failed
@@ -169,8 +169,8 @@ class OfflineService {
 			}));
 
 			await emergencyContactStorage.storeContacts(contacts);
-			
-			this.state.update(state => ({
+
+			this.state.update((state) => ({
 				...state,
 				emergencyContactsAvailable: true
 			}));
@@ -223,8 +223,8 @@ class OfflineService {
 	private async syncReport(reportId: string): Promise<boolean> {
 		try {
 			const reports = await incidentReportQueue.getQueuedReports();
-			const report = reports.find(r => r.id === reportId);
-			
+			const report = reports.find((r) => r.id === reportId);
+
 			if (!report) {
 				console.warn('Report not found for sync:', reportId);
 				return false;
@@ -282,7 +282,7 @@ class OfflineService {
 			messages: false
 		};
 
-		this.state.update(state => ({ ...state, syncInProgress: true }));
+		this.state.update((state) => ({ ...state, syncInProgress: true }));
 
 		try {
 			// Sync emergency contacts
@@ -291,18 +291,18 @@ class OfflineService {
 			// Sync queued reports
 			const queuedReports = await incidentReportQueue.getQueuedReports();
 			let syncedCount = 0;
-			
+
 			for (const report of queuedReports) {
 				const synced = await this.syncReport(report.id);
 				if (synced) syncedCount++;
 			}
-			
+
 			status.reports = syncedCount === queuedReports.length;
 
 			// Messages are handled by notificationService separately
 			status.messages = true;
 
-			this.state.update(state => ({
+			this.state.update((state) => ({
 				...state,
 				syncInProgress: false,
 				lastSync: new Date().toISOString()
@@ -310,10 +310,9 @@ class OfflineService {
 
 			// Update capabilities after sync
 			await this.checkOfflineCapabilities();
-
 		} catch (error) {
 			console.error('Failed to sync all data:', error);
-			this.state.update(state => ({ ...state, syncInProgress: false }));
+			this.state.update((state) => ({ ...state, syncInProgress: false }));
 		}
 
 		return status;
@@ -326,7 +325,7 @@ class OfflineService {
 		try {
 			// Try cache first
 			const cachedContacts = await emergencyContactStorage.getContacts();
-			
+
 			if (cachedContacts.length > 0) {
 				return cachedContacts;
 			}
@@ -350,11 +349,14 @@ class OfflineService {
 	 */
 	private setupPeriodicSync(): void {
 		// Sync every 5 minutes when online
-		this.syncInterval = window.setInterval(async () => {
-			if (navigator.onLine) {
-				await this.syncAllData();
-			}
-		}, 5 * 60 * 1000);
+		this.syncInterval = window.setInterval(
+			async () => {
+				if (navigator.onLine) {
+					await this.syncAllData();
+				}
+			},
+			5 * 60 * 1000
+		);
 	}
 
 	/**
@@ -376,4 +378,4 @@ class OfflineService {
 	}
 }
 
-export const offlineService = new OfflineService(); 
+export const offlineService = new OfflineService();

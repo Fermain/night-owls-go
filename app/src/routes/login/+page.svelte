@@ -43,7 +43,13 @@
 
 	// Auto-verify when OTP is complete
 	$effect(() => {
-		if (otpValue.length === OTP_LENGTH && !isLoading && !isAutoVerifying && !verificationSucceeded && step === 'verify') {
+		if (
+			otpValue.length === OTP_LENGTH &&
+			!isLoading &&
+			!isAutoVerifying &&
+			!verificationSucceeded &&
+			step === 'verify'
+		) {
 			handleVerification(); // Don't set isAutoVerifying here - let handleVerification manage it
 		} else if (otpValue.length < OTP_LENGTH) {
 			isAutoVerifying = false;
@@ -60,7 +66,7 @@
 		}
 
 		isLoading = true;
-		
+
 		try {
 			// Save phone number for convenience
 			saveUserData(phoneNumber, ''); // No name for pure login
@@ -75,10 +81,14 @@
 			toast.success('Verification code sent to your phone');
 			step = 'verify';
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : 'Failed to send verification code';
-			
+			const errorMessage =
+				error instanceof Error ? error.message : 'Failed to send verification code';
+
 			// Handle user not found case with helpful messaging
-			if (errorMessage.includes('user not found') || errorMessage.includes('please register first')) {
+			if (
+				errorMessage.includes('user not found') ||
+				errorMessage.includes('please register first')
+			) {
 				toast.error('Account not found. Please create an account first.', {
 					action: {
 						label: 'Register',
@@ -155,9 +165,9 @@
 			if (toastId) {
 				toast.dismiss(toastId);
 			}
-			
+
 			toast.error('Invalid verification code. Please try again.');
-			
+
 			// Clear OTP for retry
 			otpValue = '';
 			console.error('Login verification error:', error);
@@ -235,7 +245,9 @@
 
 				<Button type="submit" class="w-full" disabled={isLoading || !phoneNumber || !phoneValid}>
 					{#if isLoading}
-						<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+						<div
+							class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+						></div>
 						Sending code...
 					{:else}
 						Send verification code
@@ -281,7 +293,9 @@
 					disabled={isLoading || isAutoVerifying || otpValue.length !== OTP_LENGTH}
 				>
 					{#if isLoading || isAutoVerifying}
-						<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+						<div
+							class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+						></div>
 						{isAutoVerifying ? 'Verifying...' : 'Verifying...'}
 					{:else}
 						Sign In
@@ -316,9 +330,7 @@
 		<!-- Help text -->
 		<div class="text-center text-xs text-muted-foreground">
 			{#if step === 'verify'}
-				<p>
-					Didn't receive the code? Check your phone for SMS
-				</p>
+				<p>Didn't receive the code? Check your phone for SMS</p>
 			{:else}
 				<p>By continuing, you agree to our terms of service and privacy policy</p>
 			{/if}

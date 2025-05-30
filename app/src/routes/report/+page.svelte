@@ -78,9 +78,9 @@
 		const initializeService = async () => {
 			try {
 				await offlineService.init();
-				
+
 				// Subscribe to online/offline status
-				unsubscribe = offlineService.state.subscribe(state => {
+				unsubscribe = offlineService.state.subscribe((state) => {
 					isOnline = state.isOnline;
 				});
 			} catch (error) {
@@ -142,7 +142,7 @@
 			// Determine if user is on shift
 			let activeBooking = null;
 			let isOffShift = true;
-			
+
 			if (isOnline) {
 				try {
 					const userBookings = await UserApiService.getMyBookings();
@@ -176,7 +176,8 @@
 				toast.success('Report submitted successfully');
 			} else {
 				toast.success('Report saved offline - will sync when connection returns', {
-					description: 'Your report is safely stored and will be submitted automatically when you reconnect.'
+					description:
+						'Your report is safely stored and will be submitted automatically when you reconnect.'
 				});
 			}
 
@@ -189,7 +190,7 @@
 			goto('/');
 		} catch (error) {
 			console.error('Failed to submit report:', error);
-			
+
 			if (isOnline) {
 				toast.error(error instanceof Error ? error.message : 'Failed to submit report');
 			} else {
@@ -224,7 +225,8 @@
 					<div class="flex-1">
 						<h3 class="font-medium text-orange-900 dark:text-orange-100 text-sm">Offline Mode</h3>
 						<p class="text-xs text-orange-700 dark:text-orange-300">
-							You can still create incident reports. They'll be saved locally and submitted when connection returns.
+							You can still create incident reports. They'll be saved locally and submitted when
+							connection returns.
 						</p>
 					</div>
 					<CloudIcon class="h-5 w-5 text-orange-400" />
@@ -365,7 +367,8 @@
 
 			{#if !isOnline}
 				<p class="text-xs text-center text-orange-600">
-					Reports created offline will be automatically submitted when you reconnect to the internet.
+					Reports created offline will be automatically submitted when you reconnect to the
+					internet.
 				</p>
 			{/if}
 		</Card.Content>

@@ -30,14 +30,14 @@ class EmergencyContactStorageService {
 	 */
 	async storeContacts(contacts: EmergencyContact[]): Promise<void> {
 		try {
-			const contactsToStore = contacts.map(contact => ({
+			const contactsToStore = contacts.map((contact) => ({
 				...contact,
 				lastUpdated: new Date().toISOString()
 			}));
 
 			await this.db.emergencyContacts.clear();
 			await this.db.emergencyContacts.bulkAdd(contactsToStore);
-			
+
 			console.log('📞 Emergency contacts cached for offline access:', contacts.length);
 		} catch (error) {
 			console.error('Failed to store emergency contacts:', error);
@@ -50,9 +50,7 @@ class EmergencyContactStorageService {
 	 */
 	async getContacts(): Promise<EmergencyContact[]> {
 		try {
-			const contacts = await this.db.emergencyContacts
-				.orderBy('displayOrder')
-				.toArray();
+			const contacts = await this.db.emergencyContacts.orderBy('displayOrder').toArray();
 			return contacts;
 		} catch (error) {
 			console.error('Failed to get emergency contacts from storage:', error);
@@ -66,7 +64,7 @@ class EmergencyContactStorageService {
 	async getDefaultContact(): Promise<EmergencyContact | null> {
 		try {
 			const contact = await this.db.emergencyContacts
-				.filter(contact => contact.isDefault === true)
+				.filter((contact) => contact.isDefault === true)
 				.first();
 			return contact || null;
 		} catch (error) {
@@ -93,9 +91,13 @@ class EmergencyContactStorageService {
 	 */
 	async getCacheInfo(): Promise<{ lastUpdated: string | null; count: number }> {
 		try {
-			const contacts = await this.db.emergencyContacts.orderBy('lastUpdated').reverse().limit(1).toArray();
+			const contacts = await this.db.emergencyContacts
+				.orderBy('lastUpdated')
+				.reverse()
+				.limit(1)
+				.toArray();
 			const count = await this.db.emergencyContacts.count();
-			
+
 			return {
 				lastUpdated: contacts[0]?.lastUpdated || null,
 				count
@@ -133,4 +135,4 @@ class EmergencyContactStorageService {
 	}
 }
 
-export const emergencyContactStorage = new EmergencyContactStorageService(); 
+export const emergencyContactStorage = new EmergencyContactStorageService();
