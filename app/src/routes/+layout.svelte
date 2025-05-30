@@ -32,8 +32,10 @@
 	// Import unified header and mobile navigation
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
+	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
+	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
 
 	let { children } = $props();
 
@@ -44,28 +46,19 @@
 			document.documentElement.classList.add('dark');
 		}
 
-		// Register service worker - temporarily disabled for testing
-		// try {
-		// 	const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
-		// 	const registered = await serviceWorkerService.register();
-		//
-		// 	if (registered) {
-		// 		console.log('🔧 Service worker registered successfully');
-		//
-		// 		// Listen for service worker messages
-		// 		navigator.serviceWorker.addEventListener('message', (event) => {
-		// 			console.log('📨 Message from service worker:', event.data);
-		//
-		// 			if (event.data.type === 'SW_ACTIVATED') {
-		// 				console.log('🎉 ' + event.data.message);
-		// 			}
-		// 		});
-		// 	} else {
-		// 		console.log('⚠️ Service worker registration failed');
-		// 	}
-		// } catch (error) {
-		// 	console.error('Service worker registration error:', error);
-		// }
+		// Listen for PWA install prompt
+		window.addEventListener('beforeinstallprompt', (event) => {
+			// Prevent the default prompt
+			event.preventDefault();
+			// Store the event for later use
+			pwaInstallPrompt.set(event as any);
+		});
+
+		// Listen for app installed event
+		window.addEventListener('appinstalled', () => {
+			console.log('PWA was installed');
+			pwaInstallPrompt.set(null);
+		});
 	});
 </script>
 
@@ -76,11 +69,16 @@
 			{@render children()}
 		{:else}
 			<!-- Public layout with header + mobile nav -->
-			<UnifiedHeader showBreadcrumbs={false} showMobileMenu={true} />
-			<main class="pb-16 md:pb-0">
-				{@render children()}
-			</main>
+			<div class="flex flex-col min-h-screen">
+				<UnifiedHeader showBreadcrumbs={false} />
+				<!-- Main content area that fills remaining height -->
+				<main class="flex-1 pb-16 md:pb-0 overflow-auto flex">
+					{@render children()}
+				</main>
+			</div>
 			<MobileNav />
+			<!-- Offline status indicator for public pages -->
+			<OfflineIndicator />
 		{/if}
 	</div>
 

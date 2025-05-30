@@ -81,7 +81,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	// Test 4: Generate an expired token and try to use it
 	userID := int64(999)
 	phoneNumber := "+14155550000"
-	expiredToken, err := auth.GenerateJWT(userID, phoneNumber, "guest", app.Config.JWTSecret, -24) // Negative hours for expired token
+	expiredToken, err := auth.GenerateJWT(userID, phoneNumber, "Test User", "guest", app.Config.JWTSecret, -24) // Negative hours for expired token
 	require.NoError(t, err)
 
 	rr = app.makeRequest(t, "POST", "/bookings", bytes.NewBuffer(bookingReqBody), expiredToken)
@@ -113,7 +113,7 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 	// Create a valid token
 	userID := int64(123)
 	phone := "+1234567890"
-	token, err := auth.GenerateJWT(userID, phone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+	token, err := auth.GenerateJWT(userID, phone, "Test User", "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
 	require.NoError(t, err)
 
 	// Create test handler that requires auth
@@ -152,7 +152,7 @@ func TestAuthMiddleware_ExpiredToken(t *testing.T) {
 		JWTExpirationHours: 1, // 1 hour, we'll test validation after artificial time passage
 	}
 
-	token, err := auth.GenerateJWT(123, "+1234567890", "guest", shortCfg.JWTSecret, -1) // Negative hours to force expiration
+	token, err := auth.GenerateJWT(123, "+1234567890", "Test User", "guest", shortCfg.JWTSecret, -1) // Negative hours to force expiration
 	require.NoError(t, err)
 
 	router := chi.NewRouter()
@@ -246,7 +246,7 @@ func TestAuthMiddleware_ContextValues(t *testing.T) {
 	expectedUserID := int64(456)
 	expectedPhone := "+9876543210"
 
-	token, err := auth.GenerateJWT(expectedUserID, expectedPhone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+	token, err := auth.GenerateJWT(expectedUserID, expectedPhone, "Test User", "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
 	require.NoError(t, err)
 
 	router := chi.NewRouter()
@@ -285,7 +285,7 @@ func TestAuthMiddleware_ConcurrentRequests(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		userID := int64(i + 1)
 		phone := fmt.Sprintf("+123456789%d", i)
-		token, err := auth.GenerateJWT(userID, phone, "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
+		token, err := auth.GenerateJWT(userID, phone, "Test User", "guest", cfg.JWTSecret, cfg.JWTExpirationHours)
 		require.NoError(t, err)
 		tokens[i] = token
 	}
