@@ -50,8 +50,6 @@
 			// Show appropriate message based on OTP method
 			if (response.message.includes('Twilio')) {
 				toast.success('Registration successful! Check your phone for SMS verification code.');
-			} else if (response.message.includes('sms_outbox.log')) {
-				toast.success('Registration successful! Check sms_outbox.log for your verification code.');
 			} else {
 				toast.success(`Registration successful! ${response.message}`);
 			}

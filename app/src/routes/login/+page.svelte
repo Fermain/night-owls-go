@@ -318,9 +318,6 @@
 			{#if step === 'verify'}
 				<p>
 					Didn't receive the code? Check your phone for SMS
-					{#if typeof window !== 'undefined' && window.location.hostname === 'localhost'}
-						or the <code class="font-mono bg-muted px-1 rounded">sms_outbox.log</code> file in development mode
-					{/if}
 				</p>
 			{:else}
 				<p>By continuing, you agree to our terms of service and privacy policy</p>

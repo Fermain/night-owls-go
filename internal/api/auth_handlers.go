@@ -143,10 +143,10 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		// Check if Twilio is configured by looking for credentials
 		cfg := h.config
 		if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
-			response.Message = "OTP sent via Twilio SMS (DEV MODE: check your phone for real SMS)"
+			response.Message = "OTP sent via SMS"
 			h.logger.InfoContext(r.Context(), "Twilio OTP sent in development mode", "phone", phoneE164)
 		} else {
-			response.Message = "OTP sent to sms_outbox.log (DEV MODE: using mock SMS)"
+			response.Message = "Verification code sent"
 			h.logger.InfoContext(r.Context(), "Mock OTP flow used in development mode", "phone", phoneE164)
 			// For mock flow, get the latest OTP from outbox
 			if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
