@@ -65,7 +65,6 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 		OTPValidityMinutes:   5,
 		OutboxBatchSize:      10,
 		OutboxMaxRetries:     3,
-		StaticDir:            "../../app/build",
 		VAPIDPublic:          "test_public_key",
 		VAPIDPrivate:         "test_private_key",
 		VAPIDSubject:         "mailto:test@example.com",
