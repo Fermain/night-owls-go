@@ -144,7 +144,8 @@
 					{#if offlineState.syncInProgress}
 						<LoaderIcon class="h-4 w-4 mr-2 animate-spin" />
 					{:else}
-						<svelte:component this={getStatusIcon()} class="h-4 w-4 mr-2" />
+						{@const StatusIcon = getStatusIcon()}
+						<StatusIcon class="h-4 w-4 mr-2" />
 					{/if}
 					{getStatusText()}
 				</Button>

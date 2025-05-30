@@ -30,15 +30,8 @@ class EmergencyContactStorageService {
 	 */
 	async storeContacts(contacts: EmergencyContact[]): Promise<void> {
 		try {
-			const contactsToStore = contacts.map((contact) => ({
-				...contact,
-				lastUpdated: new Date().toISOString()
-			}));
-
 			await this.db.emergencyContacts.clear();
-			await this.db.emergencyContacts.bulkAdd(contactsToStore);
-
-			console.log('📞 Emergency contacts cached for offline access:', contacts.length);
+			await this.db.emergencyContacts.bulkAdd(contacts);
 		} catch (error) {
 			console.error('Failed to store emergency contacts:', error);
 			throw error;
@@ -114,7 +107,6 @@ class EmergencyContactStorageService {
 	async clearContacts(): Promise<void> {
 		try {
 			await this.db.emergencyContacts.clear();
-			console.log('🗑️ Emergency contacts cache cleared');
 		} catch (error) {
 			console.error('Failed to clear emergency contacts:', error);
 			throw error;

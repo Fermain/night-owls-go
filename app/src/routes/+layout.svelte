@@ -52,7 +52,6 @@
 			event.preventDefault();
 			// Store the event for later use
 			pwaInstallPrompt.set(event as any);
-			console.log('PWA install prompt captured');
 		});
 
 		// Listen for app installed event

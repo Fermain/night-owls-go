@@ -5,12 +5,13 @@
 	import { isAuthenticated } from '$lib/services/userService';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import XIcon from '@lucide/svelte/icons/x';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import { Bell } from 'lucide-svelte';
+	import { notificationStore } from '$lib/services/notificationService';
 
 	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
 
@@ -30,9 +31,9 @@
 		},
 		{
 			href: '/broadcasts',
-			icon: MessageSquareIcon,
+			icon: Bell,
 			label: 'Messages',
-			badge: 2 // TODO: Connect to real notification count
+			badge: $notificationStore.unreadCount
 		},
 		{
 			href: '/report',

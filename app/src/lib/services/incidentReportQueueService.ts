@@ -49,7 +49,6 @@ class IncidentReportQueueService {
 			};
 
 			await this.db.reports.add(draftReport);
-			console.log('📝 Incident report draft created:', reportId);
 			return reportId;
 		} catch (error) {
 			console.error('Failed to create incident report draft:', error);
@@ -66,7 +65,6 @@ class IncidentReportQueueService {
 				status: 'queued',
 				lastAttempt: new Date().toISOString()
 			});
-			console.log('📤 Incident report queued for sync:', reportId);
 		} catch (error) {
 			console.error('Failed to queue incident report:', error);
 			throw error;
@@ -137,7 +135,6 @@ class IncidentReportQueueService {
 				lastAttempt: new Date().toISOString(),
 				error: undefined
 			});
-			console.log('✅ Incident report synced successfully:', reportId);
 		} catch (error) {
 			console.error('Failed to mark report as synced:', error);
 			throw error;
@@ -158,10 +155,8 @@ class IncidentReportQueueService {
 				syncAttempts,
 				error
 			});
-			console.warn('❌ Incident report sync failed:', reportId, error);
 		} catch (err) {
 			console.error('Failed to mark report as failed:', err);
-			throw err;
 		}
 	}
 
@@ -171,10 +166,8 @@ class IncidentReportQueueService {
 	async deleteReport(reportId: string): Promise<void> {
 		try {
 			await this.db.reports.delete(reportId);
-			console.log('🗑️ Incident report deleted:', reportId);
 		} catch (error) {
 			console.error('Failed to delete incident report:', error);
-			throw error;
 		}
 	}
 
@@ -184,10 +177,8 @@ class IncidentReportQueueService {
 	async updateDraft(reportId: string, updates: Partial<QueuedIncidentReport>): Promise<void> {
 		try {
 			await this.db.reports.update(reportId, updates);
-			console.log('📝 Incident report draft updated:', reportId);
 		} catch (error) {
 			console.error('Failed to update incident report draft:', error);
-			throw error;
 		}
 	}
 

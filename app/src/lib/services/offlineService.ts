@@ -69,10 +69,10 @@ class OfflineService {
 			this.setupPeriodicSync();
 
 			this.isInitialized = true;
+			// Keep initialization success log for debugging
 			console.log('🌐 Offline service initialized successfully');
 		} catch (error) {
 			console.error('Failed to initialize offline service:', error);
-			throw error;
 		}
 	}
 
@@ -92,11 +92,9 @@ class OfflineService {
 			}));
 
 			if (isOnline) {
-				console.log('🌐 Network connection restored');
-				this.handleOnlineEvent();
+				this.handleOnline();
 			} else {
-				console.log('📵 Network connection lost');
-				this.handleOfflineEvent();
+				this.handleOffline();
 			}
 		};
 
@@ -110,21 +108,20 @@ class OfflineService {
 	/**
 	 * Handle coming back online
 	 */
-	private async handleOnlineEvent(): Promise<void> {
-		try {
-			// Trigger immediate sync
-			await this.syncAllData();
-		} catch (error) {
-			console.error('Failed to sync data after coming online:', error);
+	private handleOnline() {
+		this.state.update((state) => ({ ...state, isOnline: true }));
+		if (this.isInitialized) {
+			// Trigger sync when coming back online
+			this.syncAllData();
 		}
 	}
 
 	/**
 	 * Handle going offline
 	 */
-	private handleOfflineEvent(): void {
-		console.log('📱 App is now in offline mode');
-		// Could show offline notification here
+	private handleOffline() {
+		this.state.update((state) => ({ ...state, isOnline: false }));
+		// Remove excessive logging
 	}
 
 	/**
