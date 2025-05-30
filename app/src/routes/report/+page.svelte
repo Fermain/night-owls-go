@@ -1,24 +1,29 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { Badge } from '$lib/components/ui/badge';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import SendIcon from '@lucide/svelte/icons/send';
+	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
+	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import { toast } from 'svelte-sonner';
 	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 	import GPSCapture from '$lib/components/ui/gps-capture/GPSCapture.svelte';
 	import { UserApiService } from '$lib/services/api/user';
-	import { ReportsApiService } from '$lib/services/api/reports';
 	import { goto } from '$app/navigation';
+	import { offlineService } from '$lib/services/offlineService';
 
 	// Form state
 	let selectedSeverity = $state('0'); // Default to Normal (severity 0)
 	let reportMessage = $state('');
 	let isSubmitting = $state(false);
+	let isOnline = $state(true);
 	let gpsLocation = $state<{
 		latitude: number;
 		longitude: number;
@@ -66,6 +71,34 @@
 		}
 	];
 
+	// Initialize offline service and monitor status
+	onMount(() => {
+		let unsubscribe: (() => void) | undefined;
+
+		const initializeService = async () => {
+			try {
+				await offlineService.init();
+				
+				// Subscribe to online/offline status
+				unsubscribe = offlineService.state.subscribe(state => {
+					isOnline = state.isOnline;
+				});
+			} catch (error) {
+				console.error('Failed to initialize offline service:', error);
+			}
+		};
+
+		// Start the async initialization
+		initializeService();
+
+		// Return cleanup function
+		return () => {
+			if (unsubscribe) {
+				unsubscribe();
+			}
+		};
+	});
+
 	// Get current time formatted
 	function getCurrentTime() {
 		return new Date().toLocaleString('en-GB', {
@@ -106,36 +139,46 @@
 		isSubmitting = true;
 
 		try {
-			const payload = {
-				severity: parseInt(selectedSeverity),
-				message: reportMessage.trim(),
-				...(gpsLocation && {
-					latitude: gpsLocation.latitude,
-					longitude: gpsLocation.longitude,
-					accuracy: gpsLocation.accuracy,
-					location_timestamp: gpsLocation.timestamp
-				})
-			};
-
-			// Check if user is currently on shift by looking for active bookings
-			const userBookings = await UserApiService.getMyBookings();
-			const now = new Date();
-			const activeBooking = userBookings.find((booking) => {
-				const shiftStart = new Date(booking.shift_start);
-				const shiftEnd = new Date(booking.shift_end);
-				return now >= shiftStart && now <= shiftEnd && booking.checked_in_at;
-			});
-
-			let report;
-			if (activeBooking) {
-				// User is on shift - create regular report
-				report = await ReportsApiService.create(activeBooking.booking_id, payload);
-			} else {
-				// User is off shift - create off-shift report
-				report = await ReportsApiService.createOffShift(payload);
+			// Determine if user is on shift
+			let activeBooking = null;
+			let isOffShift = true;
+			
+			if (isOnline) {
+				try {
+					const userBookings = await UserApiService.getMyBookings();
+					const now = new Date();
+					activeBooking = userBookings.find((booking) => {
+						const shiftStart = new Date(booking.shift_start);
+						const shiftEnd = new Date(booking.shift_end);
+						return now >= shiftStart && now <= shiftEnd && booking.checked_in_at;
+					});
+					isOffShift = !activeBooking;
+				} catch (error) {
+					console.warn('Could not check shift status, assuming off-shift:', error);
+				}
 			}
 
-			toast.success('Report submitted successfully');
+			const reportData = {
+				severity: parseInt(selectedSeverity),
+				message: reportMessage.trim(),
+				latitude: gpsLocation?.latitude,
+				longitude: gpsLocation?.longitude,
+				accuracy: gpsLocation?.accuracy,
+				locationTimestamp: gpsLocation?.timestamp,
+				bookingId: activeBooking?.booking_id,
+				isOffShift
+			};
+
+			// Use offline service (works both online and offline)
+			const reportId = await offlineService.createIncidentReport(reportData);
+
+			if (isOnline) {
+				toast.success('Report submitted successfully');
+			} else {
+				toast.success('Report saved offline - will sync when connection returns', {
+					description: 'Your report is safely stored and will be submitted automatically when you reconnect.'
+				});
+			}
 
 			// Reset form
 			selectedSeverity = '0'; // Reset to default Normal severity
@@ -146,7 +189,14 @@
 			goto('/');
 		} catch (error) {
 			console.error('Failed to submit report:', error);
-			toast.error(error instanceof Error ? error.message : 'Failed to submit report');
+			
+			if (isOnline) {
+				toast.error(error instanceof Error ? error.message : 'Failed to submit report');
+			} else {
+				toast.error('Failed to save report offline', {
+					description: 'Please try again or check your device storage.'
+				});
+			}
 		} finally {
 			isSubmitting = false;
 		}
@@ -165,6 +215,24 @@
 </svelte:head>
 
 <div class="px-4 py-4 space-y-4">
+	<!-- Offline Status Banner -->
+	{#if !isOnline}
+		<Card.Root class="bg-orange-50 border-orange-200 dark:bg-orange-950/50 dark:border-orange-800">
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3">
+					<WifiOffIcon class="h-5 w-5 text-orange-600 dark:text-orange-400" />
+					<div class="flex-1">
+						<h3 class="font-medium text-orange-900 dark:text-orange-100 text-sm">Offline Mode</h3>
+						<p class="text-xs text-orange-700 dark:text-orange-300">
+							You can still create incident reports. They'll be saved locally and submitted when connection returns.
+						</p>
+					</div>
+					<CloudIcon class="h-5 w-5 text-orange-400" />
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{/if}
+
 	<!-- Current Shift Context -->
 	{#if mockCurrentShift && mockCurrentShift.schedule_name && mockCurrentShift.location}
 		<Card.Root class="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
@@ -188,7 +256,15 @@
 	<!-- Report Form -->
 	<Card.Root>
 		<Card.Header>
-			<Card.Title class="text-base">Incident Details</Card.Title>
+			<Card.Title class="flex items-center gap-2 text-base">
+				Incident Details
+				{#if !isOnline}
+					<Badge variant="outline" class="text-xs bg-orange-50 border-orange-200 text-orange-700">
+						<WifiOffIcon class="h-3 w-3 mr-1" />
+						Offline
+					</Badge>
+				{/if}
+			</Card.Title>
 		</Card.Header>
 		<Card.Content class="space-y-6">
 			<!-- Severity Selection -->
@@ -258,6 +334,9 @@
 				<p class="text-xs text-slate-500 dark:text-slate-400">
 					Location data helps emergency services and improves incident response. If GPS fails, you
 					can enter coordinates manually or submit without location data.
+					{#if !isOnline}
+						<span class="text-orange-600"> GPS works offline.</span>
+					{/if}
 				</p>
 			</div>
 
@@ -269,12 +348,26 @@
 				size="lg"
 			>
 				{#if isSubmitting}
-					Submitting...
+					{#if isOnline}
+						Submitting...
+					{:else}
+						Saving offline...
+					{/if}
 				{:else}
 					<SendIcon class="h-4 w-4 mr-2" />
-					Submit Report
+					{#if isOnline}
+						Submit Report
+					{:else}
+						Save Report (Offline)
+					{/if}
 				{/if}
 			</Button>
+
+			{#if !isOnline}
+				<p class="text-xs text-center text-orange-600">
+					Reports created offline will be automatically submitted when you reconnect to the internet.
+				</p>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 
@@ -291,6 +384,9 @@
 					<p class="text-xs text-red-700 dark:text-red-300 mt-1">
 						For immediate threats or emergencies requiring police, medical, or fire response, use
 						the Emergency button in the header to call 999 directly rather than submitting a report.
+						{#if !isOnline}
+							<strong>Emergency calling works offline.</strong>
+						{/if}
 					</p>
 				</div>
 			</div>
