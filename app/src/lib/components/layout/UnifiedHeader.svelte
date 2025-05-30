@@ -12,7 +12,6 @@
 	import { toast } from 'svelte-sonner';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
-	import MenuIcon from '@lucide/svelte/icons/menu';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
@@ -21,11 +20,9 @@
 	// Props for customization
 	let {
 		showBreadcrumbs = false,
-		showMobileMenu = false,
 		customTitle = null
 	}: {
 		showBreadcrumbs?: boolean;
-		showMobileMenu?: boolean;
 		customTitle?: string | null;
 	} = $props();
 
@@ -287,14 +284,6 @@
 					<span class="sm:hidden">Join</span>
 				</Button>
 			</div>
-		{/if}
-
-		<!-- Mobile menu button (optional) -->
-		{#if showMobileMenu}
-			<Button variant="ghost" size="sm" class="h-9 w-9 p-0 md:hidden">
-				<MenuIcon class="h-4 w-4" />
-				<span class="sr-only">Menu</span>
-			</Button>
 		{/if}
 	</div>
 </header>

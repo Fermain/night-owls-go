@@ -72,7 +72,7 @@
 </svelte:head>
 
 {#if !$isAuthenticated}
-	<div class="grid lg:grid-cols-2">
+	<div class="grid lg:grid-cols-2 flex-1">
 		<!-- Left side - Form -->
 		<div class="flex flex-col gap-4 p-6 md:p-10">
 
