@@ -1,0 +1,23 @@
+localhost:80 {
+	root * /srv
+	encode gzip zstd
+
+	# Handle API routes first - these take absolute precedence
+	handle /api/* {
+		reverse_proxy night-owls:5888
+	}
+	
+	handle /health {
+		reverse_proxy night-owls:5888
+	}
+	
+	handle /swagger/* {
+		reverse_proxy night-owls:5888
+	}
+
+	# Handle static files and SPA fallback
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+} 
