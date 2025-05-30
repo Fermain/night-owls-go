@@ -138,10 +138,8 @@
 		<!-- Logo and Title (only for public routes) -->
 		{#if !isAdminRoute}
 			<a href="/" class="flex items-center space-x-2">
-				<div
-					class="h-6 w-6 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center"
-				>
-					<span class="text-primary-foreground text-xs font-bold">NO</span>
+				<div class="h-8 w-8 p-1 flex items-center justify-center">
+					<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 				</div>
 				<span class="hidden font-bold sm:inline-block">
 					{pageTitle}
