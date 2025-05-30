@@ -40,19 +40,19 @@ cd ..
 
 echo "📦 Copying frontend build and config to server..."
 # Create the directory structure on the server
-ssh $SERVER_USER@$SERVER "mkdir -p ~/night-owls-app/frontend-build"
+ssh $SERVER_USER@$SERVER "mkdir -p ~/night-owls-go/frontend-build"
 # Copy frontend build files
-rsync -avz --delete app/build/ $SERVER_USER@$SERVER:~/night-owls-app/frontend-build/
+rsync -avz --delete app/build/ $SERVER_USER@$SERVER:~/night-owls-go/frontend-build/
 # Copy docker-compose.yml if it doesn't exist or is newer
-rsync -avz docker-compose.yml $SERVER_USER@$SERVER:~/night-owls-app/
+rsync -avz docker-compose.yml $SERVER_USER@$SERVER:~/night-owls-go/
 # Copy Caddyfile
-rsync -avz Caddyfile $SERVER_USER@$SERVER:~/night-owls-app/
+rsync -avz Caddyfile $SERVER_USER@$SERVER:~/night-owls-go/
 
 # Deploy to server
 ssh $SERVER_USER@$SERVER << 'EOF'
 set -e
 
-cd ~/night-owls-app
+cd ~/night-owls-go
 
 echo "📦 Stopping existing containers..."
 # Detect Docker Compose version
@@ -77,8 +77,8 @@ if [ ! -f docker-compose.yml ]; then
 fi
 
 if [ ! -f .env.production ]; then
-    echo "❌ .env.production not found. Please copy it to ~/night-owls-app/"
-    echo "   scp .env.production deploy@mm.nightowls.app:~/night-owls-app/"
+    echo "❌ .env.production not found. Please copy it to ~/night-owls-go/"
+    echo "   scp .env.production deploy@mm.nightowls.app:~/night-owls-go/"
     exit 1
 fi
 

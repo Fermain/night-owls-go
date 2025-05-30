@@ -1,7 +1,7 @@
 services:
   night-owls:
     image: ghcr.io/fermain/night-owls-go:latest
-    container_name: night-owls-app
+    container_name: night-owls-go
     restart: unless-stopped
     environment:
       - SERVER_PORT=5888

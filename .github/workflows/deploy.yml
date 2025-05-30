@@ -97,7 +97,7 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ~/night-owls-app
+          cd ~/night-owls-go
           echo "📦 Preparing for frontend files..."
           mkdir -p frontend-build
           rm -rf frontend-build/*
@@ -109,7 +109,7 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: "app/build/*"
-        target: "~/night-owls-app/frontend-build/"
+        target: "~/night-owls-go/frontend-build/"
         strip_components: 2
 
     - name: Deploy to server
@@ -119,7 +119,7 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ~/night-owls-app
+          cd ~/night-owls-go
           
           echo "🛑 Stopping containers..."
           docker compose down || docker-compose down || true
@@ -156,7 +156,7 @@ jobs:
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ~/night-owls-app
+          cd ~/night-owls-go
           
           echo "🔍 Verifying frontend-build directory..."
           if [ ! -d "frontend-build" ]; then
