@@ -56,8 +56,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        build-args: |
-          BUILD_DATE=${{ github.run_id }}-${{ github.run_number }}
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
@@ -81,11 +79,38 @@ jobs:
           echo "📦 Pulling latest image..."
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
+          echo "🔍 Debug: Checking what's in the Docker image..."
+          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest ls -la /app/
+          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest ls -la /app/static/ || echo "No /app/static directory"
+          docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest find /app/static -name "*.html" || echo "No HTML files found"
+          
           echo "🎨 Extracting SvelteKit build from image..."
           docker create --name temp-extract ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
+          
+          # Clean up any existing build directory
           rm -rf app/build
-          docker cp temp-extract:/app/static app/build
+          mkdir -p app
+          
+          # Extract the static files
+          docker cp temp-extract:/app/static ./app/build || { 
+            echo "❌ Failed to extract static files"; 
+            docker logs temp-extract || true;
+            docker rm temp-extract; 
+            exit 1; 
+          }
           docker rm temp-extract
+          
+          echo "📁 Debug: Checking extracted files structure..."
+          ls -la app/ || echo "No app directory"
+          ls -la app/build/ || echo "No app/build directory"
+          if [ -d "app/build" ]; then
+            echo "📄 Files in app/build:"
+            find app/build -type f | head -10
+            echo "🌐 Looking for index.html:"
+            find app/build -name "index.html" || echo "❌ No index.html found!"
+            echo "📱 Looking for _app directory:"
+            ls -la app/build/_app/ || echo "❌ No _app directory found!"
+          fi
           
           echo "🚀 Starting application..."
           docker compose up -d --force-recreate || docker-compose up -d --force-recreate

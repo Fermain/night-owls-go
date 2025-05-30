@@ -1,41 +1,30 @@
 mm.nightowls.app {
-    # Automatic HTTPS with Let's Encrypt (enabled by default)
-    
+    # 1. Static assets
+    root * /srv
+    encode gzip zstd
+
+    # 2. API goes to Go
+    @api path /api/* /health /swagger/* /schedules* /shifts* /bookings* /reports* /push*
+    reverse_proxy @api night-owls:5888
+
+    # 3. Client-side routing fallback
+    try_files {path} /index.html
+    file_server
+
     # Security headers
     header {
-        # Security headers
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "SAMEORIGIN"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "geolocation=(self), microphone=(), camera=()"
-        
-        # Remove server identification
         -Server
     }
 
-    # Serve the SvelteKit build from /srv
-    root * /srv
-    encode gzip zstd
-    
-    # API and backend routes go to Go
-    reverse_proxy /api* night-owls:5888
-    reverse_proxy /health night-owls:5888
-    reverse_proxy /schedules* night-owls:5888
-    reverse_proxy /shifts* night-owls:5888
-    reverse_proxy /bookings* night-owls:5888
-    reverse_proxy /reports* night-owls:5888
-    reverse_proxy /push* night-owls:5888
-    reverse_proxy /swagger* night-owls:5888
-    
     # Static files with immutable cache headers
     @immutable path /_app/immutable/*
     header @immutable Cache-Control "public, max-age=31536000, immutable"
-    
-    # Everything else: try files, fall back to index.html for SPA
-    try_files {path} /index.html
-    file_server
 
     # Logging
     log {

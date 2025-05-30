@@ -1,74 +1,72 @@
 # Build frontend
 FROM node:20-alpine AS frontend-builder
 
-# Add build argument for cache busting
-ARG BUILD_DATE=unknown
-
-# Install pnpm
+# Install pnpm globally for better caching
 RUN corepack enable pnpm
 
 WORKDIR /app/frontend
-COPY app/package.json app/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
 
+# Copy package files first for better layer caching
+COPY app/package.json app/pnpm-lock.yaml* ./
+
+# Install dependencies with cache mount
+RUN --mount=type=cache,target=/root/.local/share/pnpm \
+    pnpm install --frozen-lockfile
+
+# Copy source and build
 COPY app/ ./
-# Force rebuild with timestamp
-RUN echo "Building frontend at ${BUILD_DATE}" && pnpm run build
+RUN pnpm run build
 
 # Build backend
 FROM golang:1.24-alpine AS backend-builder
 
-# Install build dependencies (added git and ca-certificates)
-RUN apk add --no-cache gcc musl-dev sqlite-dev git ca-certificates
+# Install minimal build dependencies
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 
-# Set Go proxy and sumdb settings
+# Optimize Go build environment
 ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOSUMDB=sum.golang.org
-ENV GO111MODULE=on
-ENV GONOSUMDB=github.com/twilio/*
-ENV GOPRIVATE=
 ENV CGO_ENABLED=1
 
 WORKDIR /app
+
+# Copy go mod files first for better caching
 COPY go.mod go.sum ./
 
-# Download modules with cache mount for faster rebuilds (requires BuildKit)
-# Use DOCKER_BUILDKIT=1 docker build . for best performance
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+# Download modules with cache mount
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
+# Copy source and build with optimizations
 COPY . .
-RUN echo "Building Go application..." && \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o night-owls-server ./cmd/server
 
-# Production image
+# Production image - use minimal distroless
 FROM alpine:latest
 
-# Install runtime dependencies
-RUN apk --no-cache add ca-certificates sqlite tzdata
+# Install only essential runtime dependencies
+RUN apk --no-cache add ca-certificates sqlite tzdata wget
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Create necessary directories
-RUN mkdir -p /app/static /app/data /app/migrations
-RUN chown -R appuser:appgroup /app
-
+# Create app directory
 WORKDIR /app
+RUN chown appuser:appgroup /app
 
 # Copy migrations
 COPY internal/db/migrations/ ./migrations/
 
-# Copy backend binary
+# Copy binaries
 COPY --from=backend-builder /app/night-owls-server .
 
-# Copy frontend build
+# Copy frontend build (we're still including it even though Caddy serves it)
 COPY --from=frontend-builder /app/frontend/build ./static
 
-# Debug: Show what was copied
-RUN ls -la /app/static/ && echo "---" && find /app/static -type f -name "*.js" | head -20
-
-# Set correct permissions for static files
-RUN chown -R appuser:appgroup /app/static
+# Set permissions
+RUN chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser
@@ -77,9 +75,9 @@ USER appuser
 EXPOSE 5888
 
 # Set environment
-ENV TZ=UTC
-ENV SERVER_PORT=5888
-ENV DATABASE_PATH=./data/production.db
+ENV TZ=UTC \
+    SERVER_PORT=5888 \
+    DATABASE_PATH=./data/production.db
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
