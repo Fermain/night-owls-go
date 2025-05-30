@@ -12,7 +12,6 @@
 	import { toast } from 'svelte-sonner';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
-	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import StarIcon from '@lucide/svelte/icons/star';
@@ -138,10 +137,8 @@
 		<!-- Logo and Title (only for public routes) -->
 		{#if !isAdminRoute}
 			<a href="/" class="flex items-center space-x-2">
-				<div
-					class="h-6 w-6 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center"
-				>
-					<span class="text-primary-foreground text-xs font-bold">NO</span>
+				<div class="h-8 w-8 p-1 flex items-center justify-center">
+					<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 				</div>
 				<span class="hidden font-bold sm:inline-block">
 					{pageTitle}
@@ -265,14 +262,9 @@
 							<ShieldIcon class="mr-2 h-4 w-4" />
 							<span>Admin Dashboard</span>
 						</DropdownMenu.Item>
+
+						<Separator />
 					{/if}
-
-					<DropdownMenu.Item class="cursor-pointer">
-						<SettingsIcon class="mr-2 h-4 w-4" />
-						<span>Settings</span>
-					</DropdownMenu.Item>
-
-					<Separator />
 
 					<DropdownMenu.Item
 						class="cursor-pointer text-red-600 focus:text-red-600"
