@@ -47,6 +47,7 @@ jobs:
           latest
 
     - name: Build and push Docker image
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -71,7 +72,7 @@ jobs:
           
           echo "🗑️ Removing old containers and images..."
           docker container prune -f
-          docker image prune -f
+          docker image prune -f --filter "label=org.opencontainers.image.source=https://github.com/${{ github.repository }}"
           
           echo "🔐 Logging in to registry..."
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -85,6 +86,10 @@ jobs:
           docker run --rm ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest find /app/static -name "*.html" || echo "No HTML files found"
           
           echo "🎨 Extracting SvelteKit build from image..."
+          # TODO: Replace this extraction step with one of:
+          # 1. Separate frontend-only image that Caddy can use directly
+          # 2. Build frontend in CI and save as artifacts
+          # 3. Build frontend directly on host
           docker create --name temp-extract ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
           # Clean up any existing build directory

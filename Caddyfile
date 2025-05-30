@@ -4,8 +4,12 @@ mm.nightowls.app {
     encode gzip zstd
 
     # 2. API goes to Go
-    @api path /api/* /health /swagger/* /schedules* /shifts* /bookings* /reports* /push*
+    @api path /api/* /health /swagger/*
     reverse_proxy @api night-owls:5888
+    
+    # Legacy endpoints - consider moving to /api/ in future
+    @legacy path /schedules* /shifts* /bookings* /reports* /push*
+    reverse_proxy @legacy night-owls:5888
 
     # 3. Client-side routing fallback
     try_files {path} /index.html

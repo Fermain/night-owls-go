@@ -62,7 +62,7 @@ COPY internal/db/migrations/ ./migrations/
 # Copy binaries
 COPY --from=backend-builder /app/night-owls-server .
 
-# Copy frontend build (we're still including it even though Caddy serves it)
+# Copy frontend build (temporarily kept for extraction - can be removed when using separate frontend image)
 COPY --from=frontend-builder /app/frontend/build ./static
 
 # Set permissions
