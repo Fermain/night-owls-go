@@ -12,7 +12,6 @@
 	import { toast } from 'svelte-sonner';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
-	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import StarIcon from '@lucide/svelte/icons/star';
@@ -263,14 +262,9 @@
 							<ShieldIcon class="mr-2 h-4 w-4" />
 							<span>Admin Dashboard</span>
 						</DropdownMenu.Item>
+
+						<Separator />
 					{/if}
-
-					<DropdownMenu.Item class="cursor-pointer">
-						<SettingsIcon class="mr-2 h-4 w-4" />
-						<span>Settings</span>
-					</DropdownMenu.Item>
-
-					<Separator />
 
 					<DropdownMenu.Item
 						class="cursor-pointer text-red-600 focus:text-red-600"
