@@ -60,29 +60,6 @@
 			console.log('PWA was installed');
 			pwaInstallPrompt.set(null);
 		});
-
-		// Register service worker - temporarily disabled for testing
-		// try {
-		// 	const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
-		// 	const registered = await serviceWorkerService.register();
-		//
-		// 	if (registered) {
-		// 		console.log('🔧 Service worker registered successfully');
-		//
-		// 		// Listen for service worker messages
-		// 		navigator.serviceWorker.addEventListener('message', (event) => {
-		// 			console.log('📨 Message from service worker:', event.data);
-		//
-		// 			if (event.data.type === 'SW_ACTIVATED') {
-		// 				console.log('🎉 ' + event.data.message);
-		// 			}
-		// 		});
-		// 	} else {
-		// 		console.log('⚠️ Service worker registration failed');
-		// 	}
-		// } catch (error) {
-		// 	console.error('Service worker registration error:', error);
-		// }
 	});
 </script>
 
