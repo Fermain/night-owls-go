@@ -1,7 +1,7 @@
 services:
   night-owls:
     image: ghcr.io/fermain/night-owls-go:latest
-    container_name: night-owls-app
+    container_name: night-owls-go
     restart: unless-stopped
     environment:
       - SERVER_PORT=5888
@@ -35,7 +35,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./app/build:/srv
+      - ./frontend-build:/srv
       - caddy_data:/data
       - caddy_config:/config
     networks:
