@@ -27,6 +27,7 @@ export interface ApiError {
 interface JWTPayload {
 	user_id: number;
 	phone: string;
+	name: string;
 	role: string;
 	exp: number;
 	iat: number;
@@ -101,7 +102,7 @@ class AuthService {
 			userSession.set({
 				isAuthenticated: true,
 				id: decodedToken.user_id.toString(),
-				name: name || 'User',
+				name: decodedToken.name || 'User',
 				phone: phoneNumber,
 				role: decodedToken.role as 'admin' | 'owl' | 'guest',
 				token: verifyResponse.token

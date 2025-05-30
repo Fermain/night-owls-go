@@ -125,7 +125,14 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
+		
+		// Check for specific user not found error
+		if err.Error() == "user not found - please register first" {
+			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+		}
 		return
 	}
 
@@ -136,10 +143,10 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		// Check if Twilio is configured by looking for credentials
 		cfg := h.config
 		if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
-			response.Message = "OTP sent via Twilio SMS (DEV MODE: check your phone for real SMS)"
+			response.Message = "OTP sent via SMS"
 			h.logger.InfoContext(r.Context(), "Twilio OTP sent in development mode", "phone", phoneE164)
 		} else {
-			response.Message = "OTP sent to sms_outbox.log (DEV MODE: using mock SMS)"
+			response.Message = "Verification code sent"
 			h.logger.InfoContext(r.Context(), "Mock OTP flow used in development mode", "phone", phoneE164)
 			// For mock flow, get the latest OTP from outbox
 			if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
@@ -296,7 +303,11 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate JWT token directly using the auth package
-	token, err := auth.GenerateJWT(user.UserID, user.Phone, user.Role, h.config.JWTSecret, h.config.JWTExpirationHours)
+	userName := ""
+	if user.Name.Valid {
+		userName = user.Name.String
+	}
+	token, err := auth.GenerateJWT(user.UserID, user.Phone, userName, user.Role, h.config.JWTSecret, h.config.JWTExpirationHours)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to generate token", h.logger, "error", err.Error())
 		return

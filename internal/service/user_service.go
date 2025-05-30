@@ -21,7 +21,7 @@ var (
 )
 
 // JWTGenerator defines a function that generates a JWT token
-type JWTGenerator func(userID int64, phone string, role string, secret string, expiryHours int) (string, error)
+type JWTGenerator func(userID int64, phone string, name string, role string, secret string, expiryHours int) (string, error)
 
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
@@ -66,11 +66,26 @@ func (s *UserService) SetJWTGenerator(generator JWTGenerator) {
 
 // RegisterOrLoginUser handles creating/finding a user, generating an OTP, storing it,
 // and queuing an OTP message to the (mocked) outbox.
+// If name is provided, this is a registration attempt and will create a new user.
+// If name is empty, this is a login attempt and will fail if user doesn't exist.
 func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, name sql.NullString) error {
+	// Debug logging to understand the name parameter
+	s.logger.InfoContext(ctx, "RegisterOrLoginUser called", "phone", phone, "name_valid", name.Valid, "name_string", name.String)
+	
 	user, err := s.querier.GetUserByPhone(ctx, phone)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// User does not exist, create new user
+			// User does not exist
+			s.logger.InfoContext(ctx, "User does not exist", "phone", phone, "name_valid", name.Valid, "name_string", name.String)
+			
+			if !name.Valid || name.String == "" {
+				// This is a login attempt (no name provided) but user doesn't exist
+				s.logger.WarnContext(ctx, "Login attempt for non-existent user", "phone", phone)
+				return errors.New("user not found - please register first")
+			}
+			
+			// This is a registration attempt (name provided), create new user
+			s.logger.InfoContext(ctx, "Creating new user during registration", "phone", phone, "name", name.String)
 			// For development, make all new users admin by default
 			// In production, you'd want more sophisticated role assignment logic
 			defaultRole := "admin" // For development - all users are admin
@@ -85,10 +100,17 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 				s.logger.ErrorContext(ctx, "Failed to create user", "phone", phone, "error", err)
 				return ErrInternalServer
 			}
-			s.logger.InfoContext(ctx, "New user created", "phone", phone, "user_id", user.UserID, "role", defaultRole)
+			s.logger.InfoContext(ctx, "New user created during registration", "phone", phone, "user_id", user.UserID, "role", defaultRole, "name", name.String)
 		} else {
 			s.logger.ErrorContext(ctx, "Failed to get user by phone", "phone", phone, "error", err)
 			return ErrInternalServer
+		}
+	} else {
+		// User exists - log whether this is login or registration attempt
+		if name.Valid && name.String != "" {
+			s.logger.InfoContext(ctx, "Registration attempt for existing user", "phone", phone, "user_id", user.UserID)
+		} else {
+			s.logger.InfoContext(ctx, "Login attempt for existing user", "phone", phone, "user_id", user.UserID)
 		}
 	}
 
@@ -177,7 +199,11 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	// Generate JWT (e.g., valid for 24 hours)
 	// The expiration duration could also come from config.
-	tokenString, err := s.jwtGenerator(user.UserID, user.Phone, user.Role, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
+	userName := ""
+	if user.Name.Valid {
+		userName = user.Name.String
+	}
+	tokenString, err := s.jwtGenerator(user.UserID, user.Phone, userName, user.Role, s.jwtSecret, s.cfg.JWTExpirationHours) // Use from config
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT", "phone", phone, "user_id", user.UserID, "error", err)
 		return "", ErrInternalServer
