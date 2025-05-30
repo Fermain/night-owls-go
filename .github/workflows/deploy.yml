@@ -97,7 +97,7 @@ jobs:
           mkdir -p app/build
           
           # Extract the static files
-          docker cp temp-extract:/app/static ./app/build || { 
+          docker cp temp-extract:/app/static/. ./app/build/ || { 
             echo "❌ Failed to extract static files"; 
             docker logs temp-extract || true;
             docker rm temp-extract; 
