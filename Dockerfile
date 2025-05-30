@@ -2,7 +2,7 @@
 FROM node:20-alpine AS frontend-builder
 
 # Add build argument for cache busting
-ARG BUILD_DATE
+ARG BUILD_DATE=unknown
 
 # Install pnpm
 RUN corepack enable pnpm
