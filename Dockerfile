@@ -79,7 +79,6 @@ EXPOSE 5888
 # Set environment
 ENV TZ=UTC
 ENV SERVER_PORT=5888
-ENV STATIC_DIR=./static
 ENV DATABASE_PATH=./data/production.db
 
 # Health check
