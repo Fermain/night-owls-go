@@ -43,7 +43,6 @@
 	// Check permissions on mount
 	onMount(async () => {
 		await checkLocationPermission();
-
 		// Auto-capture if enabled and permissions granted
 		if (autoCapture && permissionStatus === 'granted' && !capturedLocation) {
 			captureLocation();
