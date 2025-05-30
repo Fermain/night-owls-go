@@ -212,7 +212,9 @@
 					<div>
 						<h1 class="text-3xl font-bold">Report #{report.report_id}</h1>
 						<p class="text-muted-foreground">
-							Submitted {formatRelativeTime(report.created_at)} • {formatShiftTime(report.created_at)}
+							Submitted {formatRelativeTime(report.created_at)} • {formatShiftTime(
+								report.created_at
+							)}
 						</p>
 					</div>
 					<div class="ml-auto flex gap-2">
@@ -412,7 +414,12 @@
 									<Separator />
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Shift Time</span>
-										<p class="text-sm">{formatShiftTime(report.shift_start)} - {format(new Date(report.shift_end), 'HH:mm')}</p>
+										<p class="text-sm">
+											{formatShiftTime(report.shift_start)} - {format(
+												new Date(report.shift_end),
+												'HH:mm'
+											)}
+										</p>
 									</div>
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Duration</span>
@@ -542,4 +549,4 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>

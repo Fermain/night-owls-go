@@ -32,7 +32,7 @@
 	/>
 	<Sidebar.Inset>
 		<!-- Header inside the inset to avoid overlap -->
-		<UnifiedHeader showBreadcrumbs={isAdminRoute} showMobileMenu={false} />
+		<UnifiedHeader showBreadcrumbs={isAdminRoute} />
 		<main class="flex-1 overflow-auto">
 			{@render mainContent()}
 		</main>

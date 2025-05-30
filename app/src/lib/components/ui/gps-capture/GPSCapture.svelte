@@ -27,15 +27,12 @@
 		className?: string;
 	}
 
-	let {
-		onLocationCaptured,
-		onError,
-		autoCapture = false,
-		className = ''
-	}: Props = $props();
+	let { onLocationCaptured, onError, autoCapture = false, className = '' }: Props = $props();
 
 	// State
-	let permissionStatus = $state<'granted' | 'denied' | 'prompt' | 'checking' | 'unsupported'>('checking');
+	let permissionStatus = $state<'granted' | 'denied' | 'prompt' | 'checking' | 'unsupported'>(
+		'checking'
+	);
 	let isCapturing = $state(false);
 	let capturedLocation = $state<GeolocationData | null>(null);
 	let error = $state<string | null>(null);
@@ -46,7 +43,6 @@
 	// Check permissions on mount
 	onMount(async () => {
 		await checkLocationPermission();
-		
 		// Auto-capture if enabled and permissions granted
 		if (autoCapture && permissionStatus === 'granted' && !capturedLocation) {
 			captureLocation();
@@ -66,12 +62,12 @@
 			try {
 				const result = await navigator.permissions.query({ name: 'geolocation' });
 				permissionStatus = result.state as any;
-				
+
 				// Listen for permission changes
 				result.addEventListener('change', () => {
 					permissionStatus = result.state as any;
 				});
-				
+
 				return;
 			} catch (error) {
 				// Fallback to 'prompt' if permissions API fails
@@ -86,7 +82,8 @@
 	// Capture location
 	async function captureLocation() {
 		if (permissionStatus === 'denied') {
-			error = 'Location access denied. Please enable location permissions in your browser settings.';
+			error =
+				'Location access denied. Please enable location permissions in your browser settings.';
 			onError?.(error);
 			return;
 		}
@@ -102,15 +99,11 @@
 
 		try {
 			const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-				navigator.geolocation.getCurrentPosition(
-					resolve,
-					reject,
-					{
-						enableHighAccuracy: true,
-						timeout: 15000,
-						maximumAge: 300000 // 5 minutes
-					}
-				);
+				navigator.geolocation.getCurrentPosition(resolve, reject, {
+					enableHighAccuracy: true,
+					timeout: 15000,
+					maximumAge: 300000 // 5 minutes
+				});
 			});
 
 			const locationData: GeolocationData = {
@@ -122,14 +115,14 @@
 
 			capturedLocation = locationData;
 			onLocationCaptured?.(locationData);
-			
+
 			// Update permission status if successful
 			if (permissionStatus === 'prompt') {
 				permissionStatus = 'granted';
 			}
 		} catch (err) {
 			let errorMessage = 'Location capture failed';
-			
+
 			if (err instanceof GeolocationPositionError) {
 				switch (err.code) {
 					case err.PERMISSION_DENIED:
@@ -233,7 +226,8 @@
 				<div class="flex-1">
 					<p class="text-sm font-medium text-orange-900">Location access denied</p>
 					<p class="text-xs text-orange-700 mt-1">
-						Location permissions have been denied for this site. Reports can be submitted without location data.
+						Location permissions have been denied for this site. Reports can be submitted without
+						location data.
 					</p>
 					<details class="mt-2">
 						<summary class="text-xs text-orange-600 cursor-pointer hover:text-orange-700">
@@ -241,7 +235,9 @@
 						</summary>
 						<div class="mt-1 text-xs text-orange-600 space-y-1">
 							<p><strong>Chrome/Safari:</strong> Click the location icon in the address bar</p>
-							<p><strong>Firefox:</strong> Click the shield icon and select "Allow Location Access"</p>
+							<p>
+								<strong>Firefox:</strong> Click the shield icon and select "Allow Location Access"
+							</p>
 							<p>After enabling, refresh the page and try again.</p>
 						</div>
 					</details>
@@ -249,7 +245,7 @@
 			</div>
 		</div>
 
-	<!-- Unsupported State -->
+		<!-- Unsupported State -->
 	{:else if permissionStatus === 'unsupported'}
 		<div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
 			<div class="flex items-center gap-3">
@@ -261,7 +257,7 @@
 			</div>
 		</div>
 
-	<!-- Checking Permissions State -->
+		<!-- Checking Permissions State -->
 	{:else if permissionStatus === 'checking'}
 		<div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
 			<div class="flex items-center gap-3">
@@ -270,7 +266,7 @@
 			</div>
 		</div>
 
-	<!-- Active Location Interface (when permissions granted or prompt) -->
+		<!-- Active Location Interface (when permissions granted or prompt) -->
 	{:else}
 		<!-- Capturing State -->
 		{#if isCapturing}
@@ -282,7 +278,7 @@
 				</div>
 			</div>
 
-		<!-- Error State -->
+			<!-- Error State -->
 		{:else if error}
 			<div class="flex items-start gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
 				<AlertCircleIcon class="h-5 w-5 text-orange-600 mt-0.5" />
@@ -292,7 +288,7 @@
 				</div>
 			</div>
 
-		<!-- Success State -->
+			<!-- Success State -->
 		{:else if capturedLocation}
 			<div class="p-3 bg-green-50 rounded-lg border border-green-200">
 				<div class="flex items-start gap-2">
@@ -318,7 +314,7 @@
 				</div>
 			</div>
 
-		<!-- Default State -->
+			<!-- Default State -->
 		{:else}
 			<div class="p-4 bg-muted/20 rounded-lg border border-dashed">
 				<div class="text-center">
@@ -334,7 +330,7 @@
 			<div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
 				<div class="flex items-center justify-between mb-3">
 					<h4 class="text-sm font-medium text-blue-900">Manual Location Entry</h4>
-					<Button variant="ghost" size="sm" onclick={() => showManualInput = false}>
+					<Button variant="ghost" size="sm" onclick={() => (showManualInput = false)}>
 						<XIcon class="h-4 w-4" />
 					</Button>
 				</div>
@@ -342,7 +338,12 @@
 					<div class="grid grid-cols-2 gap-3">
 						<div>
 							<Label for="manual-lat" class="text-xs">Latitude</Label>
-							<Input id="manual-lat" bind:value={manualLat} placeholder="-33.9249" class="text-sm" />
+							<Input
+								id="manual-lat"
+								bind:value={manualLat}
+								placeholder="-33.9249"
+								class="text-sm"
+							/>
 						</div>
 						<div>
 							<Label for="manual-lng" class="text-xs">Longitude</Label>
@@ -363,12 +364,7 @@
 		<!-- Action Buttons -->
 		<div class="flex gap-2">
 			{#if !capturedLocation && !isCapturing}
-				<Button
-					variant="outline"
-					onclick={captureLocation}
-					disabled={isCapturing}
-					class="flex-1"
-				>
+				<Button variant="outline" onclick={captureLocation} disabled={isCapturing} class="flex-1">
 					{#if isCapturing}
 						<LoaderIcon class="h-4 w-4 mr-2 animate-spin" />
 						Capturing location...
@@ -378,7 +374,7 @@
 					{/if}
 				</Button>
 				{#if error}
-					<Button variant="ghost" onclick={() => showManualInput = true}>
+					<Button variant="ghost" onclick={() => (showManualInput = true)}>
 						<EditIcon class="h-4 w-4 mr-2" />
 						Manual Entry
 					</Button>
@@ -399,7 +395,7 @@
 						Try Again
 					{/if}
 				</Button>
-				<Button variant="ghost" onclick={() => showManualInput = true}>
+				<Button variant="ghost" onclick={() => (showManualInput = true)}>
 					<EditIcon class="h-4 w-4 mr-2" />
 					Manual Entry
 				</Button>

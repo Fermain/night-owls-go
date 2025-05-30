@@ -53,7 +53,7 @@
 			} else {
 				toast.success(`Registration successful! ${response.message}`);
 			}
-			
+
 			// Redirect to login with pre-filled phone number
 			goto(`/login?phone=${encodeURIComponent(phoneNumber)}`);
 		} catch (error) {
@@ -73,7 +73,6 @@
 	<div class="grid lg:grid-cols-2 flex-1">
 		<!-- Left side - Form -->
 		<div class="flex flex-col gap-4 p-6 md:p-10">
-
 			<div class="flex flex-1 items-center justify-center">
 				<div class="w-full max-w-xs">
 					<div class="flex flex-col gap-6">

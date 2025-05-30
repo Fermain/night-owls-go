@@ -2,13 +2,19 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { 
-		onboardingState, 
-		onboardingActions, 
-		permissionUtils, 
-		pwaUtils, 
+	import {
+		onboardingState,
+		onboardingActions,
+		permissionUtils,
+		pwaUtils,
 		pwaInstallPrompt
 	} from '$lib/stores/onboardingStore';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
@@ -42,15 +48,15 @@
 		// Check current permission status
 		locationPermissionStatus = await permissionUtils.checkLocationPermission();
 		notificationPermissionStatus = permissionUtils.checkNotificationPermission();
-		
+
 		// Update store with current status
 		onboardingActions.updateLocationPermission(locationPermissionStatus as any);
 		onboardingActions.updateNotificationPermission(notificationPermissionStatus as any);
-		
+
 		// Check PWA capabilities
 		canInstallPWA = pwaUtils.canInstallPWA();
 		isPWAInstalled = pwaUtils.isPWA();
-		
+
 		if (isPWAInstalled) {
 			onboardingActions.markPWAInstalled();
 		}
@@ -62,7 +68,7 @@
 		try {
 			const result = await permissionUtils.requestLocationPermission();
 			locationPermissionStatus = result;
-			
+
 			if (result === 'granted') {
 				toast.success('Location access granted! This helps with incident reporting.');
 			} else if (result === 'denied') {
@@ -81,9 +87,9 @@
 		try {
 			const result = await permissionUtils.requestNotificationPermission();
 			notificationPermissionStatus = result;
-			
+
 			if (result === 'granted') {
-				toast.success('Notifications enabled! You\'ll receive important alerts.');
+				toast.success("Notifications enabled! You'll receive important alerts.");
 			} else if (result === 'denied') {
 				toast.warning('Notifications disabled. You can enable them later in settings.');
 			}
@@ -119,7 +125,7 @@
 		} else if (currentStep === 2) {
 			onboardingActions.completePWAPrompt();
 		}
-		
+
 		if (currentStep < totalSteps) {
 			currentStep++;
 		} else {
@@ -162,7 +168,7 @@
 				<h1 class="text-3xl font-bold">Welcome to Night Owls</h1>
 			</div>
 			<p class="text-muted-foreground max-w-2xl mx-auto">
-				Hi {$currentUser?.name || 'there'}! Let's set up your account to get the best experience 
+				Hi {$currentUser?.name || 'there'}! Let's set up your account to get the best experience
 				keeping our community safe.
 			</p>
 		</div>
@@ -174,7 +180,7 @@
 				<span>{progress}% complete</span>
 			</div>
 			<div class="w-full bg-secondary rounded-full h-2">
-				<div 
+				<div
 					class="bg-primary h-2 rounded-full transition-all duration-300"
 					style="width: {progress}%"
 				></div>
@@ -225,11 +231,7 @@
 									</Badge>
 								{/if}
 								{#if locationPermissionStatus !== 'granted'}
-									<Button 
-										size="sm" 
-										onclick={handleLocationPermission}
-										disabled={isLoading}
-									>
+									<Button size="sm" onclick={handleLocationPermission} disabled={isLoading}>
 										Enable
 									</Button>
 								{/if}
@@ -265,11 +267,7 @@
 									</Badge>
 								{/if}
 								{#if notificationPermissionStatus !== 'granted'}
-									<Button 
-										size="sm" 
-										onclick={handleNotificationPermission}
-										disabled={isLoading}
-									>
+									<Button size="sm" onclick={handleNotificationPermission} disabled={isLoading}>
 										Enable
 									</Button>
 								{/if}
@@ -282,9 +280,7 @@
 								<SkipForwardIcon class="h-4 w-4 mr-2" />
 								Skip for now
 							</Button>
-							<Button onclick={nextStep}>
-								Continue
-							</Button>
+							<Button onclick={nextStep}>Continue</Button>
 						</div>
 					</CardContent>
 				</Card>
@@ -306,15 +302,13 @@
 								<CheckCircleIcon class="h-16 w-16 text-green-500 mx-auto mb-4" />
 								<h3 class="text-lg font-medium mb-2">App Already Installed!</h3>
 								<p class="text-muted-foreground">
-									Night Owls is running as an installed app. You'll have offline access 
-									and better performance.
+									Night Owls is running as an installed app. You'll have offline access and better
+									performance.
 								</p>
 							{:else if canInstallPWA && $pwaInstallPrompt}
 								<DownloadIcon class="h-16 w-16 text-primary mx-auto mb-4" />
 								<h3 class="text-lg font-medium mb-2">Install Night Owls App</h3>
-								<p class="text-muted-foreground mb-6">
-									Installing the app gives you:
-								</p>
+								<p class="text-muted-foreground mb-6">Installing the app gives you:</p>
 								<ul class="text-left space-y-2 mb-6 max-w-sm mx-auto">
 									<li class="flex items-center gap-2 text-sm">
 										<CheckCircleIcon class="h-4 w-4 text-green-500" />
@@ -333,12 +327,7 @@
 										Push notifications
 									</li>
 								</ul>
-								<Button 
-									onclick={handlePWAInstall}
-									disabled={isLoading}
-									size="lg"
-									class="mb-4"
-								>
+								<Button onclick={handlePWAInstall} disabled={isLoading} size="lg" class="mb-4">
 									<DownloadIcon class="h-4 w-4 mr-2" />
 									Install App
 								</Button>
@@ -346,8 +335,8 @@
 								<SmartphoneIcon class="h-16 w-16 text-muted-foreground mx-auto mb-4" />
 								<h3 class="text-lg font-medium mb-2">App Installation Not Available</h3>
 								<p class="text-muted-foreground">
-									Your browser doesn't support app installation, but you can still 
-									use Night Owls normally through your browser.
+									Your browser doesn't support app installation, but you can still use Night Owls
+									normally through your browser.
 								</p>
 							{/if}
 						</div>
@@ -358,9 +347,7 @@
 								<SkipForwardIcon class="h-4 w-4 mr-2" />
 								Skip for now
 							</Button>
-							<Button onclick={nextStep}>
-								Continue
-							</Button>
+							<Button onclick={nextStep}>Continue</Button>
 						</div>
 					</CardContent>
 				</Card>
@@ -372,19 +359,17 @@
 							<CheckCircleIcon class="h-5 w-5 text-green-500" />
 							You're All Set!
 						</CardTitle>
-						<CardDescription>
-							Night Owls is ready to help keep our community safe
-						</CardDescription>
+						<CardDescription>Night Owls is ready to help keep our community safe</CardDescription>
 					</CardHeader>
 					<CardContent class="space-y-6">
 						<div class="text-center py-8">
 							<CheckCircleIcon class="h-16 w-16 text-green-500 mx-auto mb-4" />
 							<h3 class="text-lg font-medium mb-2">Welcome to the Team!</h3>
 							<p class="text-muted-foreground mb-6">
-								You're now ready to coordinate with fellow Night Owls, report incidents, 
-								and help keep Mount Moreland safe.
+								You're now ready to coordinate with fellow Night Owls, report incidents, and help
+								keep Mount Moreland safe.
 							</p>
-							
+
 							<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 								<div class="p-4 bg-secondary/50 rounded-lg">
 									<h4 class="font-medium mb-1">Report Incidents</h4>
@@ -409,13 +394,11 @@
 
 						<!-- Actions -->
 						<div class="flex justify-center pt-4">
-							<Button onclick={completeOnboarding} size="lg">
-								Get Started
-							</Button>
+							<Button onclick={completeOnboarding} size="lg">Get Started</Button>
 						</div>
 					</CardContent>
 				</Card>
 			{/if}
 		</div>
 	</div>
-</div> 
+</div>

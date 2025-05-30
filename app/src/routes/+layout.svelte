@@ -32,6 +32,7 @@
 	// Import unified header and mobile navigation
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
+	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
@@ -51,7 +52,6 @@
 			event.preventDefault();
 			// Store the event for later use
 			pwaInstallPrompt.set(event as any);
-			console.log('PWA install prompt captured');
 		});
 
 		// Listen for app installed event
@@ -59,29 +59,6 @@
 			console.log('PWA was installed');
 			pwaInstallPrompt.set(null);
 		});
-
-		// Register service worker - temporarily disabled for testing
-		// try {
-		// 	const { serviceWorkerService } = await import('$lib/services/serviceWorkerService');
-		// 	const registered = await serviceWorkerService.register();
-		//
-		// 	if (registered) {
-		// 		console.log('🔧 Service worker registered successfully');
-		//
-		// 		// Listen for service worker messages
-		// 		navigator.serviceWorker.addEventListener('message', (event) => {
-		// 			console.log('📨 Message from service worker:', event.data);
-		//
-		// 			if (event.data.type === 'SW_ACTIVATED') {
-		// 				console.log('🎉 ' + event.data.message);
-		// 			}
-		// 		});
-		// 	} else {
-		// 		console.log('⚠️ Service worker registration failed');
-		// 	}
-		// } catch (error) {
-		// 	console.error('Service worker registration error:', error);
-		// }
 	});
 </script>
 
@@ -96,10 +73,12 @@
 				<UnifiedHeader showBreadcrumbs={false} />
 				<!-- Main content area that fills remaining height -->
 				<main class="flex-1 pb-16 md:pb-0 overflow-auto flex">
-						{@render children()}
+					{@render children()}
 				</main>
 			</div>
 			<MobileNav />
+			<!-- Offline status indicator for public pages -->
+			<OfflineIndicator />
 		{/if}
 	</div>
 

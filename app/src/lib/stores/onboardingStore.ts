@@ -30,7 +30,10 @@ const initialOnboardingState: OnboardingState = {
 };
 
 // Persisted store for onboarding state
-export const onboardingState = persisted<OnboardingState>('onboarding-state', initialOnboardingState);
+export const onboardingState = persisted<OnboardingState>(
+	'onboarding-state',
+	initialOnboardingState
+);
 
 // Runtime store for PWA install prompt event
 export const pwaInstallPrompt = writable<BeforeInstallPromptEvent | null>(null);
@@ -39,7 +42,7 @@ export const pwaInstallPrompt = writable<BeforeInstallPromptEvent | null>(null);
 export const onboardingActions = {
 	// Mark onboarding as completed
 	completeOnboarding() {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			isCompleted: true,
 			hasCompletedPermissions: true,
@@ -49,7 +52,7 @@ export const onboardingActions = {
 
 	// Mark permissions step as completed
 	completePermissions() {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			hasCompletedPermissions: true
 		}));
@@ -57,7 +60,7 @@ export const onboardingActions = {
 
 	// Mark PWA prompt as completed
 	completePWAPrompt() {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			hasCompletedPWAPrompt: true,
 			pwaInstallPromptShown: true
@@ -66,7 +69,7 @@ export const onboardingActions = {
 
 	// Update location permission status
 	updateLocationPermission(permission: OnboardingState['locationPermission']) {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			locationPermission: permission
 		}));
@@ -74,7 +77,7 @@ export const onboardingActions = {
 
 	// Update notification permission status
 	updateNotificationPermission(permission: OnboardingState['notificationPermission']) {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			notificationPermission: permission
 		}));
@@ -82,7 +85,7 @@ export const onboardingActions = {
 
 	// Mark PWA as installed
 	markPWAInstalled() {
-		onboardingState.update(state => ({
+		onboardingState.update((state) => ({
 			...state,
 			pwaInstalled: true
 		}));
@@ -95,9 +98,11 @@ export const onboardingActions = {
 
 	// Check if user needs onboarding
 	needsOnboarding(currentState: OnboardingState): boolean {
-		return !currentState.isCompleted || 
-			   !currentState.hasCompletedPermissions || 
-			   !currentState.hasCompletedPWAPrompt;
+		return (
+			!currentState.isCompleted ||
+			!currentState.hasCompletedPermissions ||
+			!currentState.hasCompletedPWAPrompt
+		);
 	},
 
 	// Get onboarding progress percentage
@@ -182,17 +187,17 @@ export const pwaUtils = {
 	// Check if app is running as PWA
 	isPWA(): boolean {
 		if (typeof window === 'undefined') return false;
-		
-		return window.matchMedia('(display-mode: standalone)').matches ||
-			   (window.navigator as { standalone?: boolean }).standalone === true ||
-			   document.referrer.includes('android-app://');
+
+		return (
+			window.matchMedia('(display-mode: standalone)').matches ||
+			(window.navigator as { standalone?: boolean }).standalone === true ||
+			document.referrer.includes('android-app://')
+		);
 	},
 
 	// Check if PWA can be installed
 	canInstallPWA(): boolean {
-		return typeof window !== 'undefined' && 
-			   'serviceWorker' in navigator && 
-			   !pwaUtils.isPWA();
+		return typeof window !== 'undefined' && 'serviceWorker' in navigator && !pwaUtils.isPWA();
 	},
 
 	// Show PWA install prompt
@@ -204,19 +209,19 @@ export const pwaUtils = {
 		try {
 			// Show the install prompt
 			await promptEvent.prompt();
-			
+
 			// Wait for user response
 			const choiceResult = await promptEvent.userChoice;
-			
+
 			if (choiceResult.outcome === 'accepted') {
 				onboardingActions.markPWAInstalled();
 				return true;
 			}
-			
+
 			return false;
 		} catch (error) {
 			console.warn('Error showing PWA install prompt:', error);
 			return false;
 		}
 	}
-}; 
+};
