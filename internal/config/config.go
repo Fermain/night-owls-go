@@ -31,7 +31,6 @@ type Config struct {
 	VAPIDPublic  string
 	VAPIDPrivate string
 	VAPIDSubject string
-	StaticDir    string
 
 	// Twilio configuration for SMS OTP
 	TwilioAccountSID string
@@ -64,7 +63,6 @@ func LoadConfig() (*Config, error) {
 
 		// PWA / WebPush defaults
 		VAPIDSubject: "mailto:admin@example.com", // Default VAPID subject
-		StaticDir:    "app/build",                // Default static file directory - Hardcoded as per user request
 	}
 
 	if port := os.Getenv("SERVER_PORT"); port != "" {
@@ -138,9 +136,6 @@ func LoadConfig() (*Config, error) {
 	}
 	if vapidSubject := os.Getenv("VAPID_SUBJECT"); vapidSubject != "" {
 		cfg.VAPIDSubject = vapidSubject
-	}
-	if staticDir := os.Getenv("STATIC_DIR"); staticDir != "" {
-		cfg.StaticDir = staticDir
 	}
 
 	// Load Twilio configuration

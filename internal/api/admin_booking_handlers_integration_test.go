@@ -78,7 +78,6 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 		OTPValidityMinutes:   5,
 		OutboxBatchSize:      10,
 		OutboxMaxRetries:     3,
-		StaticDir:            "../../app/build", // Path relative to internal/api
 		VAPIDPublic:          "test_public_key",
 		VAPIDPrivate:         "test_private_key",
 		VAPIDSubject:         "mailto:test@example.com",

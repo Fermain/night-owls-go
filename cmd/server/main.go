@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -444,92 +442,11 @@ func main() {
 		json.NewEncoder(w).Encode(spec)
 	})
 
-	// --- Serve Static Assets & SPA ---
-	// Static file serving
-	staticPath, err := filepath.Abs(cfg.StaticDir)
-	if err != nil {
-		logger.Error("Failed to get absolute path for static directory", "path", cfg.StaticDir, "error", err)
-		os.Exit(1)
-	}
-	logger.Info("Serving static files from", "path", staticPath)
+	// --- Static File Serving ---
+	// NOTE: Static files and SPA routing are now handled by Caddy
+	// Go server only handles API routes - no static file serving needed
 
-	// Serve index.html for the root path
-	fuego.GetStd(s, "/", func(w http.ResponseWriter, r *http.Request) {
-		indexPage := filepath.Join(staticPath, "index.html")
-		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
-			logger.Error("SPA index.html not found", "path", indexPage)
-			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, indexPage)
-	})
-
-	// Serve static files and fallback to index.html for SPA routes
-	fuego.GetStd(s, "/*filepath", func(w http.ResponseWriter, r *http.Request) {
-		// Enhanced debug logging
-		logger.Info("SPA fallback handler hit", "path", r.URL.Path, "method", r.Method)
-
-		// Check each condition individually for debugging
-		hasApiPrefix := strings.HasPrefix(r.URL.Path, "/api/")
-		hasBookingsPrefix := strings.HasPrefix(r.URL.Path, "/bookings")
-		hasBroadcastsPrefix := strings.HasPrefix(r.URL.Path, "/broadcasts")
-		hasSchedulesPrefix := strings.HasPrefix(r.URL.Path, "/schedules")
-		hasShiftsPrefix := strings.HasPrefix(r.URL.Path, "/shifts/")
-		hasPushPrefix := strings.HasPrefix(r.URL.Path, "/push/")
-		hasReportsPrefix := strings.HasPrefix(r.URL.Path, "/reports/")
-		hasAppPrefix := strings.HasPrefix(r.URL.Path, "/_app/")
-
-		logger.Info("Path prefix checks",
-			"path", r.URL.Path,
-			"api", hasApiPrefix,
-			"bookings", hasBookingsPrefix,
-			"broadcasts", hasBroadcastsPrefix,
-			"schedules", hasSchedulesPrefix,
-			"shifts", hasShiftsPrefix,
-			"push", hasPushPrefix,
-			"reports", hasReportsPrefix,
-			"app", hasAppPrefix)
-
-		// For _app static assets, try to serve them directly and 404 if not found
-		if hasAppPrefix {
-			requestedFilePath := filepath.Join(staticPath, r.URL.Path)
-			stat, err := os.Stat(requestedFilePath)
-			if err == nil && !stat.IsDir() {
-				logger.Info("Serving static file", "path", r.URL.Path, "file", requestedFilePath)
-				http.ServeFile(w, r, requestedFilePath)
-				return
-			}
-			logger.Info("Static file not found, returning 404", "path", r.URL.Path, "file", requestedFilePath)
-			http.NotFound(w, r)
-			return
-		}
-
-		// Don't serve SPA for API requests and other backend routes - let them 404 if not found
-		if hasApiPrefix || hasBookingsPrefix || hasBroadcastsPrefix || hasSchedulesPrefix || hasShiftsPrefix || hasPushPrefix || hasReportsPrefix {
-			logger.Info("Returning 404 for API route", "path", r.URL.Path)
-			http.NotFound(w, r)
-			return
-		}
-
-		logger.Info("Serving SPA for route", "path", r.URL.Path)
-
-		requestedFilePath := filepath.Join(staticPath, r.URL.Path)
-		stat, err := os.Stat(requestedFilePath)
-		if err == nil && !stat.IsDir() {
-			http.ServeFile(w, r, requestedFilePath)
-			return
-		}
-		indexPage := filepath.Join(staticPath, "index.html")
-		if _, err := os.Stat(indexPage); os.IsNotExist(err) {
-			logger.Error("SPA index.html not found", "path", indexPage)
-			http.Error(w, "Internal Server Error: Application not found", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, indexPage)
-	})
-
-	// MIME tweak for webmanifest
-	// This ensures .webmanifest files are served with the correct Content-Type.
+	// MIME tweak for webmanifest (keeping for any remaining Go-served content)
 	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 
 	// --- Start HTTP Server ---

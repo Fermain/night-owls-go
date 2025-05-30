@@ -1,6 +1,9 @@
 # Build frontend
 FROM node:20-alpine AS frontend-builder
 
+# Add build argument for cache busting
+ARG BUILD_DATE=unknown
+
 # Install pnpm
 RUN corepack enable pnpm
 
@@ -9,7 +12,8 @@ COPY app/package.json app/pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
 COPY app/ ./
-RUN pnpm run build
+# Force rebuild with timestamp
+RUN echo "Building frontend at ${BUILD_DATE}" && pnpm run build
 
 # Build backend
 FROM golang:1.24-alpine AS backend-builder
@@ -60,6 +64,12 @@ COPY --from=backend-builder /app/night-owls-server .
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/build ./static
 
+# Debug: Show what was copied
+RUN ls -la /app/static/ && echo "---" && find /app/static -type f -name "*.js" | head -20
+
+# Set correct permissions for static files
+RUN chown -R appuser:appgroup /app/static
+
 # Switch to non-root user
 USER appuser
 
@@ -69,7 +79,6 @@ EXPOSE 5888
 # Set environment
 ENV TZ=UTC
 ENV SERVER_PORT=5888
-ENV STATIC_DIR=./static
 ENV DATABASE_PATH=./data/production.db
 
 # Health check
