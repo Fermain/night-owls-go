@@ -64,6 +64,12 @@ COPY --from=backend-builder /app/night-owls-server .
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/build ./static
 
+# Debug: Show what was copied
+RUN ls -la /app/static/ && echo "---" && find /app/static -type f -name "*.js" | head -20
+
+# Set correct permissions for static files
+RUN chown -R appuser:appgroup /app/static
+
 # Switch to non-root user
 USER appuser
 

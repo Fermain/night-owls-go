@@ -15,77 +15,27 @@ mm.nightowls.app {
         -Server
     }
 
-    # Enable compression
-    encode gzip
-
-    # CRITICAL: Serve static assets directly before any reverse proxy
-    # This ensures _app files are served with correct MIME types
-    handle /_app/* {
-        reverse_proxy night-owls:5888 {
-            header_down Cache-Control "public, max-age=31536000, immutable"
-        }
-    }
+    # Serve the SvelteKit build from /srv
+    root * /srv
+    encode gzip zstd
     
-    handle /favicon.png {
-        reverse_proxy night-owls:5888
-    }
+    # API and backend routes go to Go
+    reverse_proxy /api* night-owls:5888
+    reverse_proxy /health night-owls:5888
+    reverse_proxy /schedules* night-owls:5888
+    reverse_proxy /shifts* night-owls:5888
+    reverse_proxy /bookings* night-owls:5888
+    reverse_proxy /reports* night-owls:5888
+    reverse_proxy /push* night-owls:5888
+    reverse_proxy /swagger* night-owls:5888
     
-    handle /*.js {
-        reverse_proxy night-owls:5888
-    }
+    # Static files with immutable cache headers
+    @immutable path /_app/immutable/*
+    header @immutable Cache-Control "public, max-age=31536000, immutable"
     
-    handle /*.css {
-        reverse_proxy night-owls:5888
-    }
-
-    # API routes
-    handle /api* {
-        reverse_proxy night-owls:5888 {
-            header_up Host {upstream_hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # Backend direct routes (for webhooks, health checks, etc.)
-    handle /health {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /schedules* {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /shifts* {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /bookings* {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /reports* {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /push* {
-        reverse_proxy night-owls:5888
-    }
-    
-    handle /swagger* {
-        reverse_proxy night-owls:5888
-    }
-
-    # Frontend fallback - everything else goes to the SPA
-    handle {
-        reverse_proxy night-owls:5888 {
-            header_up Host {upstream_hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
+    # Everything else: try files, fall back to index.html for SPA
+    try_files {path} /index.html
+    file_server
 
     # Logging
     log {

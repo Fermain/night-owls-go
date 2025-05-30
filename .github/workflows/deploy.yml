@@ -81,6 +81,12 @@ jobs:
           echo "📦 Pulling latest image..."
           docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
           
+          echo "🎨 Extracting SvelteKit build from image..."
+          docker create --name temp-extract ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
+          rm -rf app/build
+          docker cp temp-extract:/app/static app/build
+          docker rm temp-extract
+          
           echo "🚀 Starting application..."
           docker compose up -d --force-recreate || docker-compose up -d --force-recreate
           
