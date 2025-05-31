@@ -125,13 +125,13 @@ self.addEventListener('push', (event: PushEvent) => {
 });
 
 // Notification click event handler
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
-	console.log('Notification clicked:', event);
+self.addEventListener('notificationclick', (_event: NotificationEvent) => {
+	console.log('Notification clicked:', _event);
 
-	event.notification.close();
+	_event.notification.close();
 
-	const data = event.notification.data as PushNotificationData;
-	const action = event.action;
+	const data = _event.notification.data as PushNotificationData;
+	const action = _event.action;
 
 	let url = '/';
 
@@ -157,7 +157,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 	}
 
 	// Open or focus the app window
-	event.waitUntil(
+	_event.waitUntil(
 		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
 			// Check if there's already a window open
 			for (const client of clients) {

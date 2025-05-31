@@ -130,7 +130,6 @@
 		open = false;
 	}
 
-
 	function confirmEmergencyCall() {
 		window.location.href = 'tel:999';
 		showEmergencyConfirm = false;

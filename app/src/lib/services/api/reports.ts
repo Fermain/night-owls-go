@@ -3,7 +3,9 @@ import type { components } from '$lib/types/api';
 
 type ReportResponse = components['schemas']['api.ReportResponse'];
 type AdminReportResponse = components['schemas']['api.AdminReportResponse'];
-type CreateReportRequest = components['schemas']['api.CreateReportRequest'];
+
+// Define report severity levels
+export type ReportSeverity = 0 | 1 | 2; // 0=Normal, 1=Suspicion, 2=Incident
 
 export class ReportsApiService {
 	/**
@@ -122,7 +124,7 @@ export class ReportsApiService {
 		// Handle both JSON response and empty response
 		try {
 			return await response.json();
-		} catch (e) {
+		} catch (_e) {
 			return { ok: response.ok };
 		}
 	}

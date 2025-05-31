@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { isAuthenticated } from '$lib/services/userService';
 	import HomeIcon from '@lucide/svelte/icons/home';
@@ -10,41 +9,10 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 
-	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
-
-	// Navigation items for authenticated users - DEPRECATED
-	// All functionality now consolidated on the home page
-	const navItems = [
-		{
-			href: '/',
-			icon: HomeIcon,
-			label: 'Home',
-			badge: null
-		},
-		{
-			href: '/bookings',
-			icon: CalendarIcon,
-			label: 'My Shifts',
-			badge: null
-		},
-		{
-			href: '/report',
-			icon: AlertTriangleIcon,
-			label: 'Report',
-			badge: null
-		}
-	];
-
-	// Get current route for active state
-	const currentPath = $derived(page.url.pathname);
-
-	function isActiveRoute(href: string): boolean {
-		if (href === '/') return currentPath === '/';
-		return currentPath.startsWith(href);
-	}
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	function closeMenu() {
-		isOpen = false;
+		open = false;
 	}
 </script>
 
@@ -84,13 +52,13 @@
 {:else}
 	<!-- Mobile Menu Button for Unauthenticated Users -->
 	<div class="md:hidden">
-		<Button variant="ghost" size="icon" onclick={() => (isOpen = !isOpen)}>
+		<Button variant="ghost" size="icon" onclick={() => (open = !open)}>
 			<MenuIcon class="h-5 w-5" />
 		</Button>
 	</div>
 
 	<!-- Slide-out Menu for Unauthenticated Users -->
-	{#if isOpen}
+	{#if open}
 		<div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden">
 			<div class="fixed inset-y-0 left-0 z-50 w-3/4 max-w-sm border-r bg-background">
 				<!-- Header -->

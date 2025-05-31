@@ -58,8 +58,8 @@
 		try {
 			locationPermissionStatus = await permissionUtils.checkLocationPermission();
 			notificationPermissionStatus = permissionUtils.checkNotificationPermission();
-		} catch (error) {
-			console.warn('Failed to check permissions:', error);
+		} catch (_error) {
+			console.warn('Failed to check permissions:', _error);
 		} finally {
 			isCheckingPermissions = false;
 		}
@@ -83,7 +83,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Location access denied. You can enable it in browser settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request location permission');
 		}
 	}
@@ -99,7 +99,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Notifications disabled. You can enable them in browser settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request notification permission');
 		}
 	}
