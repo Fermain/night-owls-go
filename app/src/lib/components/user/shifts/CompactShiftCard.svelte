@@ -7,31 +7,21 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import XIcon from '@lucide/svelte/icons/x';
+	import type { AvailableShiftSlot } from '$lib/services/api/user';
 
-	// Define flexible shift interface that can handle multiple data sources
-	interface Shift {
-		// ID fields
+	// Define flexible shift interface that extends AvailableShiftSlot
+	type Shift = AvailableShiftSlot & {
+		// Additional optional fields for booking/shift data
 		id?: number;
 		booking_id?: number;
-		schedule_id?: number;
-
-		// Time fields (different formats for different data sources)
-		start_time?: string;
 		shift_start?: string;
-		end_time?: string;
 		shift_end?: string;
-
-		// Metadata fields
-		schedule_name?: string;
 		buddy_name?: string;
 		can_checkin?: boolean;
-		is_booked?: boolean;
 		is_active?: boolean;
-		timezone?: string;
-
-		// Allow any other properties for flexibility
-		[key: string]: unknown;
-	}
+		user_name?: string;
+		user_phone?: string;
+	};
 
 	let {
 		shift,
@@ -59,17 +49,23 @@
 	);
 
 	// Get the correct booking ID regardless of data structure
-	const bookingId = $derived(shift.id || shift.booking_id || 0);
+	const bookingId = $derived(
+		('id' in shift ? shift.id : undefined) ||
+			('booking_id' in shift ? shift.booking_id : undefined) ||
+			0
+	);
 
-	// Helper functions
-	function formatTime(timeString: string) {
+	// Helper functions with safe null checking
+	function formatTime(timeString: string | undefined): string {
+		if (!timeString) return '--:--';
 		return new Date(timeString).toLocaleTimeString('en-GB', {
 			hour: '2-digit',
 			minute: '2-digit'
 		});
 	}
 
-	function formatDate(timeString: string) {
+	function formatDate(timeString: string | undefined): string {
+		if (!timeString) return 'Unknown date';
 		const date = new Date(timeString);
 		const today = new Date();
 		const tomorrow = new Date(today);
@@ -88,7 +84,8 @@
 		}
 	}
 
-	function getTimeUntil(timeString: string) {
+	function getTimeUntil(timeString: string | undefined): string {
+		if (!timeString) return 'Unknown';
 		const now = new Date();
 		const time = new Date(timeString);
 		const diffMs = time.getTime() - now.getTime();
@@ -158,7 +155,7 @@
 				>
 			</div>
 
-			{#if shift.can_checkin}
+			{#if 'can_checkin' in shift && shift.can_checkin}
 				<Button onclick={onCheckIn} size="sm" class="w-full">
 					<PlayIcon class="h-3 w-3 mr-1" />
 					Check In
