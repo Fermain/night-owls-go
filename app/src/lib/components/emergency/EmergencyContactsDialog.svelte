@@ -130,10 +130,6 @@
 		open = false;
 	}
 
-	// Quick emergency call function for immediate danger
-	function callEmergency() {
-		showEmergencyConfirm = true;
-	}
 
 	function confirmEmergencyCall() {
 		window.location.href = 'tel:999';
