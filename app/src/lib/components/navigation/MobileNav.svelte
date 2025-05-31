@@ -26,7 +26,7 @@
 		{
 			href: '/bookings',
 			icon: CalendarIcon,
-			label: 'My Commitments',
+			label: 'My Shifts',
 			badge: null
 		},
 		{
