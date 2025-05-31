@@ -307,6 +307,13 @@
 				</div>
 			</div>
 
+			<!-- GPS Location Capture -->
+			<GPSCapture
+				autoCapture={false}
+				onLocationCaptured={handleLocationCaptured}
+				onError={handleLocationError}
+			/>
+
 			<!-- Message Input -->
 			<div class="space-y-2">
 				<Label for="message" class="text-base font-medium">Incident Description *</Label>
@@ -321,22 +328,6 @@
 					<span>Be specific about location, time, and circumstances</span>
 					<span>{reportMessage.length}/1000</span>
 				</div>
-			</div>
-
-			<!-- GPS Location Capture -->
-			<div class="space-y-2">
-				<GPSCapture
-					autoCapture={false}
-					onLocationCaptured={handleLocationCaptured}
-					onError={handleLocationError}
-					className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
-				/>
-				<p class="text-xs text-slate-500 dark:text-slate-400">
-					Location data helps emergency services and improves incident response.
-					{#if !isOnline}
-						<span class="text-orange-600"> GPS works offline.</span>
-					{/if}
-				</p>
 			</div>
 
 			<!-- Submit Button -->

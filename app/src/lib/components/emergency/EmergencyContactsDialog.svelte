@@ -156,29 +156,7 @@
 					</Badge>
 				{/if}
 			</Dialog.Title>
-			<Dialog.Description>
-				Quick access to emergency services and security response
-				{#if usingCachedData}
-					<span class="text-orange-600"> - Using cached data</span>
-				{/if}
-			</Dialog.Description>
 		</Dialog.Header>
-
-		<!-- Emergency 999 Button -->
-		<div class="mb-4">
-			<Button 
-				variant="destructive" 
-				onclick={callEmergency}
-				class="w-full"
-				size="lg"
-			>
-				<PhoneIcon class="h-4 w-4 mr-2" />
-				Emergency Services (999)
-			</Button>
-			<p class="text-xs text-muted-foreground text-center mt-1">
-				For immediate life-threatening emergencies
-			</p>
-		</div>
 
 		<div class="border-t pt-4">
 			{#if loading}
