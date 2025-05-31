@@ -201,6 +201,11 @@
 	<div class="w-full max-w-md mx-auto flex flex-col gap-6">
 		<!-- Header -->
 		<div class="flex flex-col gap-2 text-center">
+			<div class="flex justify-center mb-4">
+				<div class="h-12 w-12 p-2 flex items-center justify-center">
+					<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
+				</div>
+			</div>
 			<h1 class="text-2xl font-semibold tracking-tight">
 				{step === 'request' ? 'Sign In to Night Owls' : 'Enter verification code'}
 			</h1>
