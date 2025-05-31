@@ -163,7 +163,9 @@
 		</div>
 	{:else if capturedLocation}
 		<!-- Location captured successfully -->
-		<div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+		<div
+			class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+		>
 			<div class="flex items-center gap-2">
 				<CheckCircleIcon class="h-4 w-4 text-green-600" />
 				<div>
@@ -185,7 +187,9 @@
 		</div>
 	{:else if error}
 		<!-- Error with retry option -->
-		<div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+		<div
+			class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200"
+		>
 			<div class="flex items-center gap-2">
 				<AlertCircleIcon class="h-4 w-4 text-orange-600" />
 				<div>
@@ -205,9 +209,9 @@
 		</div>
 	{:else}
 		<!-- Default state - offer to capture location -->
-		<Button 
-			variant="outline" 
-			onclick={captureLocation} 
+		<Button
+			variant="outline"
+			onclick={captureLocation}
 			disabled={isCapturing}
 			size="sm"
 			class="w-full"

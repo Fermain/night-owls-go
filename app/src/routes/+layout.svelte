@@ -30,7 +30,7 @@
 	onMount(() => {
 		// Initialize notification service
 		notificationStore.init();
-		
+
 		// Only fetch notifications if user is authenticated
 		if ($userSession.isAuthenticated) {
 			notificationStore.fetchNotifications();

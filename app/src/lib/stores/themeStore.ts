@@ -15,42 +15,39 @@ const initialThemeState: ThemeState = {
 export const themeState = persisted<ThemeState>('theme-state', initialThemeState);
 
 // Derived store that calculates the actual theme to apply
-export const actualTheme: Readable<'light' | 'dark'> = derived(
-	themeState,
-	(state, set) => {
-		if (typeof window === 'undefined') {
-			set('light');
-			return;
-		}
-
-		if (state.mode === 'system') {
-			// Listen to system preference changes
-			const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-			
-			const updateTheme = () => {
-				set(mediaQuery.matches ? 'dark' : 'light');
-			};
-			
-			// Set initial value
-			updateTheme();
-			
-			// Listen for changes
-			mediaQuery.addEventListener('change', updateTheme);
-			
-			// Cleanup
-			return () => {
-				mediaQuery.removeEventListener('change', updateTheme);
-			};
-		} else {
-			set(state.mode as 'light' | 'dark');
-		}
+export const actualTheme: Readable<'light' | 'dark'> = derived(themeState, (state, set) => {
+	if (typeof window === 'undefined') {
+		set('light');
+		return;
 	}
-);
+
+	if (state.mode === 'system') {
+		// Listen to system preference changes
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+		const updateTheme = () => {
+			set(mediaQuery.matches ? 'dark' : 'light');
+		};
+
+		// Set initial value
+		updateTheme();
+
+		// Listen for changes
+		mediaQuery.addEventListener('change', updateTheme);
+
+		// Cleanup
+		return () => {
+			mediaQuery.removeEventListener('change', updateTheme);
+		};
+	} else {
+		set(state.mode as 'light' | 'dark');
+	}
+});
 
 // Actions for theme management
 export const themeActions = {
 	setMode(mode: ThemeMode) {
-		themeState.update(state => ({
+		themeState.update((state) => ({
 			...state,
 			mode
 		}));
@@ -59,11 +56,11 @@ export const themeActions = {
 	// Apply theme to document
 	applyTheme(theme: 'light' | 'dark') {
 		if (typeof document === 'undefined') return;
-		
+
 		if (theme === 'dark') {
 			document.documentElement.classList.add('dark');
 		} else {
 			document.documentElement.classList.remove('dark');
 		}
 	}
-}; 
+};

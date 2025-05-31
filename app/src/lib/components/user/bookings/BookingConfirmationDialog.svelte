@@ -59,10 +59,10 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', { 
-				weekday: 'short', 
-				month: 'short', 
-				day: 'numeric' 
+			dateLabel = start.toLocaleDateString('en-GB', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric'
 			});
 		}
 
@@ -82,9 +82,7 @@
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Commit to Shift</Dialog.Title>
-			<Dialog.Description>
-				Confirm your commitment to this patrol shift.
-			</Dialog.Description>
+			<Dialog.Description>Confirm your commitment to this patrol shift.</Dialog.Description>
 		</Dialog.Header>
 
 		{#if shift}
@@ -111,20 +109,11 @@
 			</div>
 
 			<Dialog.Footer>
-				<Button 
-					variant="outline" 
-					onclick={handleCancel}
-					disabled={isLoading}
-				>
-					Cancel
-				</Button>
-				<Button 
-					onclick={handleConfirm}
-					disabled={isLoading}
-				>
+				<Button variant="outline" onclick={handleCancel} disabled={isLoading}>Cancel</Button>
+				<Button onclick={handleConfirm} disabled={isLoading}>
 					{isLoading ? 'Committing...' : 'Commit to Shift'}
 				</Button>
 			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>
-</Dialog.Root> 
+</Dialog.Root>

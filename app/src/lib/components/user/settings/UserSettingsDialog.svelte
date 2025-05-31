@@ -154,8 +154,12 @@
 								: 'border-border hover:border-primary/30 opacity-75 hover:opacity-100'}"
 							onclick={() => handleThemeChange(option.value)}
 						>
-							<IconComponent class="h-4 w-4 {isSelected ? 'text-primary' : 'text-muted-foreground'}" />
-							<span class="text-xs {isSelected ? 'font-medium' : 'text-muted-foreground'}">{option.label}</span>
+							<IconComponent
+								class="h-4 w-4 {isSelected ? 'text-primary' : 'text-muted-foreground'}"
+							/>
+							<span class="text-xs {isSelected ? 'font-medium' : 'text-muted-foreground'}"
+								>{option.label}</span
+							>
 						</button>
 					{/each}
 				</div>
@@ -166,20 +170,30 @@
 				<h3 class="text-sm font-medium mb-2">Permissions</h3>
 				<div class="space-y-2">
 					<!-- Location Permission -->
-					<div class="flex items-center justify-between p-2 border rounded-lg
+					<div
+						class="flex items-center justify-between p-2 border rounded-lg
 						{locationGranted
-							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75' 
-							: 'border-border'
-						}">
+							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75'
+							: 'border-border'}"
+					>
 						<div class="flex items-center gap-2 flex-1">
-							<MapPinIcon class="h-4 w-4 {locationGranted ? 'text-green-600 dark:text-green-400' : 'text-primary'}" />
-							<span class="text-sm {locationGranted ? 'text-green-800 dark:text-green-200' : ''}">Location</span>
+							<MapPinIcon
+								class="h-4 w-4 {locationGranted
+									? 'text-green-600 dark:text-green-400'
+									: 'text-primary'}"
+							/>
+							<span class="text-sm {locationGranted ? 'text-green-800 dark:text-green-200' : ''}"
+								>Location</span
+							>
 						</div>
 						<div class="flex items-center gap-2">
 							{#if locationPermissionStatus}
 								{@const badgeInfo = getPermissionBadge(locationPermissionStatus)}
 								{@const BadgeIcon = badgeInfo.icon}
-								<Badge variant={badgeInfo.variant} class="text-xs {locationGranted ? 'opacity-75' : ''}">
+								<Badge
+									variant={badgeInfo.variant}
+									class="text-xs {locationGranted ? 'opacity-75' : ''}"
+								>
 									<BadgeIcon class="h-3 w-3 mr-1" />
 									{badgeInfo.text}
 								</Badge>
@@ -198,20 +212,31 @@
 					</div>
 
 					<!-- Notification Permission -->
-					<div class="flex items-center justify-between p-2 border rounded-lg
+					<div
+						class="flex items-center justify-between p-2 border rounded-lg
 						{notificationGranted
-							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75' 
-							: 'border-border'
-						}">
+							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75'
+							: 'border-border'}"
+					>
 						<div class="flex items-center gap-2 flex-1">
-							<BellIcon class="h-4 w-4 {notificationGranted ? 'text-green-600 dark:text-green-400' : 'text-primary'}" />
-							<span class="text-sm {notificationGranted ? 'text-green-800 dark:text-green-200' : ''}">Notifications</span>
+							<BellIcon
+								class="h-4 w-4 {notificationGranted
+									? 'text-green-600 dark:text-green-400'
+									: 'text-primary'}"
+							/>
+							<span
+								class="text-sm {notificationGranted ? 'text-green-800 dark:text-green-200' : ''}"
+								>Notifications</span
+							>
 						</div>
 						<div class="flex items-center gap-2">
 							{#if notificationPermissionStatus}
 								{@const badgeInfo = getPermissionBadge(notificationPermissionStatus)}
 								{@const BadgeIcon = badgeInfo.icon}
-								<Badge variant={badgeInfo.variant} class="text-xs {notificationGranted ? 'opacity-75' : ''}">
+								<Badge
+									variant={badgeInfo.variant}
+									class="text-xs {notificationGranted ? 'opacity-75' : ''}"
+								>
 									<BadgeIcon class="h-3 w-3 mr-1" />
 									{badgeInfo.text}
 								</Badge>
@@ -236,4 +261,4 @@
 			<Button onclick={() => (open = false)} class="w-full">Close</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
-</Dialog.Root> 
+</Dialog.Root>

@@ -26,7 +26,7 @@
 
 	// State for cancellation confirmation dialog
 	let showCancelDialog = $state(false);
-	let shiftToCancel = $state<{id: number, details: string} | null>(null);
+	let shiftToCancel = $state<{ id: number; details: string } | null>(null);
 
 	// Query for available shifts (next 7 days)
 	const availableShiftsQuery = createQuery({
@@ -142,11 +142,11 @@
 	function handleCancelShift(shiftId: number) {
 		// Find the shift details for the confirmation dialog
 		let shiftDetails = '';
-		
+
 		if (nextShift && nextShift.id === shiftId) {
 			shiftDetails = formatShiftTimeFromBooking(nextShift);
 		} else {
-			const additionalShift = additionalShifts.find(shift => shift.booking_id === shiftId);
+			const additionalShift = additionalShifts.find((shift) => shift.booking_id === shiftId);
 			if (additionalShift) {
 				shiftDetails = formatShiftTimeCompact(additionalShift);
 			}
@@ -194,10 +194,10 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', { 
-				weekday: 'short', 
-				month: 'short', 
-				day: 'numeric' 
+			dateLabel = start.toLocaleDateString('en-GB', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric'
 			});
 		}
 
@@ -229,9 +229,9 @@
 		} else if (start.toDateString() === dayAfterTomorrow.toDateString()) {
 			dateLabel = start.toLocaleDateString('en-GB', { weekday: 'short' });
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', { 
-				month: 'short', 
-				day: 'numeric' 
+			dateLabel = start.toLocaleDateString('en-GB', {
+				month: 'short',
+				day: 'numeric'
 			});
 		}
 
@@ -293,10 +293,10 @@
 								{/if}
 							</div>
 							{#if canCancel}
-								<Button 
-									onclick={() => handleCancelShift(shift.booking_id)} 
-									variant="outline" 
-									size="sm" 
+								<Button
+									onclick={() => handleCancelShift(shift.booking_id)}
+									variant="outline"
+									size="sm"
 									class="ml-3 text-muted-foreground hover:text-destructive hover:border-destructive"
 									disabled={$cancelBookingMutation.isPending}
 								>
@@ -401,7 +401,7 @@
 </div>
 
 <!-- Booking Confirmation Dialog -->
-<BookingConfirmationDialog 
+<BookingConfirmationDialog
 	bind:open={showBookingDialog}
 	bind:shift={selectedShift}
 	isLoading={$bookingMutation.isPending}
@@ -410,7 +410,7 @@
 />
 
 <!-- Cancellation Confirmation Dialog -->
-<CancellationConfirmationDialog 
+<CancellationConfirmationDialog
 	bind:open={showCancelDialog}
 	shiftDetails={shiftToCancel?.details || ''}
 	isLoading={$cancelBookingMutation.isPending}

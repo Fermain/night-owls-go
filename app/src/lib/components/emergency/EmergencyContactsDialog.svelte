@@ -209,9 +209,7 @@
 								<div
 									class="w-10 h-10 bg-background rounded-full flex items-center justify-center border"
 								>
-									<IconComponent
-										class="h-5 w-5 {getContactColor(contact.name)}"
-									/>
+									<IconComponent class="h-5 w-5 {getContactColor(contact.name)}" />
 								</div>
 							</div>
 							<div class="flex-grow min-w-0">
@@ -242,8 +240,8 @@
 				{#if usingCachedData}
 					<div class="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
 						<p class="text-xs text-orange-700">
-							<strong>Note:</strong> These contacts are cached from your last connection. Phone calls will
-							work normally.
+							<strong>Note:</strong> These contacts are cached from your last connection. Phone calls
+							will work normally.
 						</p>
 					</div>
 				{/if}
@@ -265,25 +263,18 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+		<div
+			class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg"
+		>
 			<p class="text-sm text-red-700 dark:text-red-300">
-				⚠️ This action will initiate an emergency call to 999. Only proceed if this is a genuine emergency.
+				⚠️ This action will initiate an emergency call to 999. Only proceed if this is a genuine
+				emergency.
 			</p>
 		</div>
 
 		<Dialog.Footer>
-			<Button 
-				variant="outline" 
-				onclick={cancelEmergencyCall}
-			>
-				Cancel
-			</Button>
-			<Button 
-				variant="destructive"
-				onclick={confirmEmergencyCall}
-			>
-				Call Emergency Services
-			</Button>
+			<Button variant="outline" onclick={cancelEmergencyCall}>Cancel</Button>
+			<Button variant="destructive" onclick={confirmEmergencyCall}>Call Emergency Services</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
-</Dialog.Root> 
+</Dialog.Root>

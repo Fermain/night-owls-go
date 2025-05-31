@@ -156,21 +156,11 @@
 	<div class="flex flex-1 items-center justify-end space-x-2">
 		<!-- Report button (only for authenticated users, not on report page) -->
 		{#if $isAuthenticated && !isReportPage}
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={handleReport}
-				class="hidden sm:flex"
-			>
+			<Button variant="outline" size="sm" onclick={handleReport} class="hidden sm:flex">
 				<AlertTriangleIcon class="h-4 w-4 mr-2" />
 				Report
 			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={handleReport}
-				class="sm:hidden h-9 w-9 p-0"
-			>
+			<Button variant="outline" size="sm" onclick={handleReport} class="sm:hidden h-9 w-9 p-0">
 				<AlertTriangleIcon class="h-4 w-4" />
 				<span class="sr-only">Report</span>
 			</Button>
@@ -260,10 +250,7 @@
 						<Separator />
 					{/if}
 
-					<DropdownMenu.Item
-						class="cursor-pointer"
-						onclick={handleSettings}
-					>
+					<DropdownMenu.Item class="cursor-pointer" onclick={handleSettings}>
 						<SettingsIcon class="mr-2 h-4 w-4" />
 						<span>Settings</span>
 					</DropdownMenu.Item>

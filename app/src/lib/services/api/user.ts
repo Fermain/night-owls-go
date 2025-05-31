@@ -112,14 +112,14 @@ export class UserApiService {
 		console.log('🚀 cancelBooking called with:', bookingId);
 		const url = `/bookings/${bookingId}`;
 		console.log('📡 Making DELETE request to:', url);
-		
+
 		const response = await authenticatedFetch(url, {
 			method: 'DELETE'
 		});
 
 		console.log('📨 Response status:', response.status);
 		console.log('📨 Response URL:', response.url);
-		
+
 		if (!response.ok) {
 			const errorText = await response.text();
 			console.error('❌ Response error:', errorText);
