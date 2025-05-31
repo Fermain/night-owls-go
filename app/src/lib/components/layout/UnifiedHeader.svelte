@@ -41,7 +41,7 @@
 	const isReportPage = $derived(page.url.pathname === '/report');
 
 	// Get current page title based on route and context
-	const pageTitle = $derived.by(() => {
+	const _pageTitle = $derived.by(() => {
 		if (customTitle) return customTitle;
 
 		const pathname = page.url.pathname;
@@ -69,7 +69,7 @@
 	});
 
 	// Generate breadcrumbs for admin pages
-	const breadcrumbs = $derived.by(() => {
+	const _breadcrumbs = $derived.by(() => {
 		if (!showBreadcrumbs || !isAdminRoute) return [];
 
 		const pathSegments = page.url.pathname.split('/').filter(Boolean);

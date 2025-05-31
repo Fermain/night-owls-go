@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { isAuthenticated } from '$lib/services/userService';
-	import HomeIcon from '@lucide/svelte/icons/home';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import XIcon from '@lucide/svelte/icons/x';

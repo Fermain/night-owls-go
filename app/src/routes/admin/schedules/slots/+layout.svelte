@@ -98,7 +98,7 @@
 	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
 
 	// Utility Functions
-	function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
+	function _formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
 		if (!startTimeIso || !endTimeIso) return 'N/A';
 		try {
 			const startDate = new Date(startTimeIso);

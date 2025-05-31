@@ -72,7 +72,7 @@
 			saveUserData(phoneNumber, ''); // No name for pure login
 
 			// Request OTP for login (using register endpoint which handles both cases)
-			const response = await authService.register({
+			const _response = await authService.register({
 				phone: phoneNumber
 				// No name - this is pure login
 			});

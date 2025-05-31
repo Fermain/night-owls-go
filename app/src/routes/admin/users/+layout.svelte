@@ -94,7 +94,7 @@
 	});
 
 	// Bulk actions functions
-	function toggleBulkMode() {
+	function _toggleBulkMode() {
 		bulkMode = !bulkMode;
 		if (!bulkMode) {
 			selectedUserIds.clear();

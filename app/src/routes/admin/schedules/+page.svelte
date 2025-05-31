@@ -22,7 +22,7 @@
 	const isError = $derived($schedulesQuery.isError || $shiftsQuery.isError);
 	const error = $derived($schedulesQuery.error || $shiftsQuery.error || undefined);
 
-	function handleCreateNew() {
+	function _handleCreateNew() {
 		selectedScheduleForForm.set(undefined);
 		goto('/admin/schedules/new');
 	}
