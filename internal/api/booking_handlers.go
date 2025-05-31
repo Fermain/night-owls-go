@@ -106,7 +106,7 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := c.Context().Value("user_id").(int64)
+	userID, ok := c.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
 		return nil, fuego.UnauthorizedError{
@@ -221,7 +221,7 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := c.Context().Value("user_id").(int64)
+	userID, ok := c.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
 		return SuccessResponse{}, fuego.UnauthorizedError{
@@ -285,7 +285,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := c.Context().Value("user_id").(int64)
+	userID, ok := c.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
 		return SuccessResponse{}, fuego.UnauthorizedError{
@@ -353,7 +353,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(int64)
+	userID, ok := r.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(r.Context(), "User ID not found in context", "handler", "BookingHandler")
 		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
@@ -409,7 +409,7 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(int64)
+	userID, ok := r.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(r.Context(), "User ID not found in context", "handler", "BookingHandler")
 		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
@@ -453,7 +453,7 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get the user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(int64)
+	userID, ok := r.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(r.Context(), "User ID not found in context", "handler", "BookingHandler")
 		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
