@@ -2,7 +2,6 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
