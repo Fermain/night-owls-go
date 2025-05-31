@@ -110,9 +110,23 @@
 	<div class="border-l-4 border-l-primary bg-primary/5 rounded-r-lg p-4">
 		<div class="flex items-center justify-between mb-2">
 			<span class="text-sm font-medium">My next shift</span>
-			<Badge variant="secondary" class="text-xs">
-				{getTimeUntil(shift.start_time)}
-			</Badge>
+			<div class="flex flex-col items-end gap-1">
+				<Badge variant="secondary" class="text-xs">
+					{getTimeUntil(shift.start_time)}
+				</Badge>
+				{#if canCancel}
+					<Button 
+						onclick={() => onCancel?.(bookingId)} 
+						variant="outline" 
+						size="sm" 
+						class="text-xs px-2 py-1 h-6 text-muted-foreground hover:text-destructive hover:border-destructive"
+						disabled={isLoading}
+					>
+						<XIcon class="h-3 w-3 mr-1" />
+						Cancel
+					</Button>
+				{/if}
+			</div>
 		</div>
 		
 		<div class="space-y-2">
@@ -121,26 +135,12 @@
 				<span>{formatDate(shift.start_time)} • {formatTime(shift.start_time)} - {formatTime(shift.end_time)}</span>
 			</div>
 			
-			<div class="flex gap-2">
-				{#if shift.can_checkin}
-					<Button onclick={onCheckIn} size="sm" class="flex-1">
-						<PlayIcon class="h-3 w-3 mr-1" />
-						Check In
-					</Button>
-				{/if}
-				{#if canCancel}
-					<Button 
-						onclick={() => onCancel?.(bookingId)} 
-						variant="outline" 
-						size="sm" 
-						class="text-muted-foreground hover:text-destructive hover:border-destructive"
-						disabled={isLoading}
-					>
-						<XIcon class="h-3 w-3 mr-1" />
-						Cancel
-					</Button>
-				{/if}
-			</div>
+			{#if shift.can_checkin}
+				<Button onclick={onCheckIn} size="sm" class="w-full">
+					<PlayIcon class="h-3 w-3 mr-1" />
+					Check In
+				</Button>
+			{/if}
 		</div>
 	</div>
 {:else if type === 'active'}

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { createQuery, createMutation } from '@tanstack/svelte-query';
 	import { canCancelBooking } from '$lib/utils/bookings';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
@@ -16,6 +15,7 @@
 	import { toast } from 'svelte-sonner';
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
 	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
+	import CancellationConfirmationDialog from '$lib/components/user/bookings/CancellationConfirmationDialog.svelte';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -156,12 +156,6 @@
 		showCancelDialog = true;
 	}
 
-	function confirmCancelShift() {
-		if (shiftToCancel) {
-			$cancelBookingMutation.mutate(shiftToCancel.id);
-		}
-	}
-
 	function handleBookShift(shift: AvailableShiftSlot) {
 		selectedShift = shift;
 		showBookingDialog = true;
@@ -174,6 +168,17 @@
 	function handleBookingCancel() {
 		showBookingDialog = false;
 		selectedShift = null;
+	}
+
+	function handleCancellationConfirm() {
+		if (shiftToCancel) {
+			$cancelBookingMutation.mutate(shiftToCancel.id);
+		}
+	}
+
+	function handleCancellationCancel() {
+		showCancelDialog = false;
+		shiftToCancel = null;
 	}
 
 	function formatShiftTimeFromBooking(shift: any) {
@@ -405,45 +410,10 @@
 />
 
 <!-- Cancellation Confirmation Dialog -->
-<Dialog.Root bind:open={showCancelDialog}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title class="flex items-center gap-2">
-				<AlertTriangleIcon class="h-5 w-5" />
-				Cancel Shift
-			</Dialog.Title>	
-			<Dialog.Description>
-				Are you sure you want to cancel your commitment to this shift?
-			</Dialog.Description>
-		</Dialog.Header>
-
-		{#if shiftToCancel}
-		<div class="p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-
-			<p class="text-sm text-amber-700 dark:text-amber-300">
-				{shiftToCancel.details}
-			</p>
-		</div>
-
-			<Dialog.Footer>
-				<Button 
-					variant="outline" 
-					onclick={() => {
-						showCancelDialog = false;
-						shiftToCancel = null;
-					}}
-					disabled={$cancelBookingMutation.isPending}
-				>
-					Keep Shift
-				</Button>
-				<Button 
-					variant="destructive"
-					onclick={confirmCancelShift}
-					disabled={$cancelBookingMutation.isPending}
-				>
-					{$cancelBookingMutation.isPending ? 'Cancelling...' : 'Cancel Shift'}
-				</Button>
-			</Dialog.Footer>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
+<CancellationConfirmationDialog 
+	bind:open={showCancelDialog}
+	shiftDetails={shiftToCancel?.details || ''}
+	isLoading={$cancelBookingMutation.isPending}
+	onConfirm={handleCancellationConfirm}
+	onCancel={handleCancellationCancel}
+/>
