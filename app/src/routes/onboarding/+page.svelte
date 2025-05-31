@@ -118,7 +118,7 @@
 			onboardingActions.completePermissions();
 		} else if (currentStep === 2) {
 			onboardingActions.completePWAPrompt();
-			completeOnboarding();
+			handleCompleteOnboardingStep();
 			return;
 		}
 
@@ -133,10 +133,15 @@
 			toast.info('Permissions skipped. You can enable them later in settings.');
 		} else if (currentStep === 2) {
 			toast.info('App installation skipped. You can install it later.');
-			completeOnboarding();
+			handleCompleteOnboardingStep();
 			return;
 		}
 		nextStep();
+	}
+
+	// Handle completion when reaching the end of onboarding
+	function handleCompleteOnboardingStep() {
+		completeOnboarding();
 	}
 
 	// Complete onboarding

@@ -18,6 +18,7 @@
 	let error = $state('');
 	let isOnline = $state(true);
 	let usingCachedData = $state(false);
+	let showEmergencyConfirm = $state(false);
 
 	onMount(() => {
 		let unsubscribe: (() => void) | undefined;
@@ -131,10 +132,17 @@
 
 	// Quick emergency call function for immediate danger
 	function callEmergency() {
-		if (confirm('This will call emergency services immediately. Continue?')) {
-			window.location.href = 'tel:999';
-			open = false;
-		}
+		showEmergencyConfirm = true;
+	}
+
+	function confirmEmergencyCall() {
+		window.location.href = 'tel:999';
+		showEmergencyConfirm = false;
+		open = false;
+	}
+
+	function cancelEmergencyCall() {
+		showEmergencyConfirm = false;
 	}
 </script>
 
@@ -241,5 +249,41 @@
 				{/if}
 			{/if}
 		</div>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Emergency Call Confirmation Dialog -->
+<Dialog.Root bind:open={showEmergencyConfirm}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title class="flex items-center gap-2">
+				<AlertTriangleIcon class="h-5 w-5 text-red-500" />
+				Emergency Call
+			</Dialog.Title>
+			<Dialog.Description>
+				This will call emergency services immediately. Are you sure you want to proceed?
+			</Dialog.Description>
+		</Dialog.Header>
+
+		<div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+			<p class="text-sm text-red-700 dark:text-red-300">
+				⚠️ This action will initiate an emergency call to 999. Only proceed if this is a genuine emergency.
+			</p>
+		</div>
+
+		<Dialog.Footer>
+			<Button 
+				variant="outline" 
+				onclick={cancelEmergencyCall}
+			>
+				Cancel
+			</Button>
+			<Button 
+				variant="destructive"
+				onclick={confirmEmergencyCall}
+			>
+				Call Emergency Services
+			</Button>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root> 
