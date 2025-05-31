@@ -7,6 +7,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
+	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
@@ -26,8 +27,9 @@
 		customTitle?: string | null;
 	} = $props();
 
-	// State for emergency dialog
+	// State for dialogs
 	let emergencyDialogOpen = $state(false);
+	let reportDialogOpen = $state(false);
 
 	// Determine if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
@@ -86,6 +88,11 @@
 		emergencyDialogOpen = true;
 	}
 
+	// Handle report dialog
+	function handleReport() {
+		reportDialogOpen = true;
+	}
+
 	// Get user initials for avatar
 	const userInitials = $derived.by(() => {
 		if (!$currentUser?.name) return 'U';
@@ -124,6 +131,13 @@
 </script>
 
 <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+	<!-- Logo and Title -->
+	<a href="/" class="flex items-center space-x-2">
+		<div class="h-8 w-8 p-1 flex items-center justify-center">
+			<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
+		</div>
+	</a>
+
 	<!-- Sidebar trigger for admin routes -->
 	{#if isAdminRoute}
 		<Sidebar.Trigger class="-ml-1" />
@@ -137,7 +151,7 @@
 			<Button
 				variant="outline"
 				size="sm"
-				onclick={() => (window.location.href = '/report')}
+				onclick={handleReport}
 				class="hidden sm:flex"
 			>
 				<AlertTriangleIcon class="h-4 w-4 mr-2" />
@@ -146,7 +160,7 @@
 			<Button
 				variant="outline"
 				size="sm"
-				onclick={() => (window.location.href = '/report')}
+				onclick={handleReport}
 				class="sm:hidden h-9 w-9 p-0"
 			>
 				<AlertTriangleIcon class="h-4 w-4" />
@@ -265,3 +279,6 @@
 
 <!-- Emergency Contacts Dialog -->
 <EmergencyContactsDialog bind:open={emergencyDialogOpen} />
+
+<!-- Report Dialog -->
+<ReportDialog bind:open={reportDialogOpen} />

@@ -158,7 +158,7 @@
 	<title>Messages - Night Owls</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background">
+<div class="min-h-screen bg-background flex-1">
 	<!-- Header -->
 	<header class="bg-background border-b border-border sticky top-0 z-40">
 		<div class="px-4 py-3">

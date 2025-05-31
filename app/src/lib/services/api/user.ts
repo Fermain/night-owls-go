@@ -32,6 +32,9 @@ export interface CreateBookingRequest {
 export interface CreateReportRequest {
 	severity: number; // 0=low, 1=normal, 2=high
 	message: string;
+	latitude?: number | null;
+	longitude?: number | null;
+	accuracy?: number | null;
 }
 
 export interface ReportResponse {
@@ -134,6 +137,35 @@ export class UserApiService {
 		if (!response.ok) {
 			const errorText = await response.text();
 			throw new Error(`Failed to submit report: ${errorText}`);
+		}
+		return response.json();
+	}
+
+	/**
+	 * Create a shift report for a specific booking
+	 */
+	static async createShiftReport(
+		bookingId: number,
+		request: CreateReportRequest
+	): Promise<ReportResponse> {
+		return this.submitReport(bookingId, request);
+	}
+
+	/**
+	 * Create an off-shift report (not associated with a booking)
+	 */
+	static async createOffShiftReport(request: CreateReportRequest): Promise<ReportResponse> {
+		const response = await authenticatedFetch('/reports/off-shift', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(request)
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Failed to submit off-shift report: ${errorText}`);
 		}
 		return response.json();
 	}

@@ -139,7 +139,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-md">
+	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<AlertTriangleIcon class="h-5 w-5 text-red-500" />
@@ -191,7 +191,7 @@
 					<p class="text-sm">No emergency contacts configured</p>
 				</div>
 			{:else}
-				<div class="space-y-3 max-h-64 overflow-y-auto">
+				<div class="space-y-3 overflow-y-auto">
 					{#each contacts as contact (contact.id)}
 						{@const IconComponent = getContactIcon(contact.name)}
 						<div

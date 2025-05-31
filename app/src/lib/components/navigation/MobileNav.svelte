@@ -15,7 +15,8 @@
 
 	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
 
-	// Navigation items for authenticated users
+	// Navigation items for authenticated users - DEPRECATED
+	// All functionality now consolidated on the home page
 	const navItems = [
 		{
 			href: '/',
@@ -51,7 +52,9 @@
 </script>
 
 {#if $isAuthenticated}
-	<!-- Bottom Tab Navigation for Authenticated Users -->
+	<!-- Bottom Tab Navigation DEPRECATED - All functionality now on home page -->
+	<!-- Keeping this code commented for potential future use -->
+	<!--
 	<nav
 		class="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border md:hidden"
 	>
@@ -80,6 +83,7 @@
 			{/each}
 		</div>
 	</nav>
+	-->
 {:else}
 	<!-- Mobile Menu Button for Unauthenticated Users -->
 	<div class="md:hidden">
@@ -95,10 +99,8 @@
 				<!-- Header -->
 				<div class="flex items-center justify-between p-4 border-b">
 					<div class="flex items-center gap-2">
-						<div
-							class="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center"
-						>
-							<span class="text-primary-foreground text-sm font-bold">NO</span>
+						<div class="h-8 w-8 flex items-center justify-center">
+							<img src="/logo.png" alt="Mount Moreland Night Owls" class="h-6 w-6 object-contain" />
 						</div>
 						<span class="font-semibold">Mount Moreland Night Owls</span>
 					</div>
