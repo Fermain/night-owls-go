@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { canCancelBooking } from '$lib/utils/bookings';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
+	import XIcon from '@lucide/svelte/icons/x';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 
 	let {
@@ -13,6 +15,7 @@
 		onBook,
 		onCheckIn,
 		onCheckOut,
+		onCancel,
 		isLoading = false
 	}: {
 		shift: any;
@@ -20,8 +23,19 @@
 		onBook?: (shift: any) => void;
 		onCheckIn?: () => void;
 		onCheckOut?: () => void;
+		onCancel?: (shiftId: number) => void;
 		isLoading?: boolean;
 	} = $props();
+
+	// Check if cancellation is allowed (2 hours before start time)
+	const canCancel = $derived(
+		(type === 'next' || type === 'active') && 
+		onCancel && 
+		canCancelBooking(shift.start_time || shift.shift_start)
+	);
+
+	// Get the correct booking ID regardless of data structure
+	const bookingId = $derived(shift.id || shift.booking_id);
 
 	// Helper functions
 	function formatTime(timeString: string) {
@@ -107,12 +121,26 @@
 				<span>{formatDate(shift.start_time)} • {formatTime(shift.start_time)} - {formatTime(shift.end_time)}</span>
 			</div>
 			
-			{#if shift.can_checkin}
-				<Button onclick={onCheckIn} size="sm" class="w-full">
-					<PlayIcon class="h-3 w-3 mr-1" />
-					Check In
-				</Button>
-			{/if}
+			<div class="flex gap-2">
+				{#if shift.can_checkin}
+					<Button onclick={onCheckIn} size="sm" class="flex-1">
+						<PlayIcon class="h-3 w-3 mr-1" />
+						Check In
+					</Button>
+				{/if}
+				{#if canCancel}
+					<Button 
+						onclick={() => onCancel?.(bookingId)} 
+						variant="outline" 
+						size="sm" 
+						class="text-muted-foreground hover:text-destructive hover:border-destructive"
+						disabled={isLoading}
+					>
+						<XIcon class="h-3 w-3 mr-1" />
+						Cancel
+					</Button>
+				{/if}
+			</div>
 		</div>
 	</div>
 {:else if type === 'active'}
@@ -132,10 +160,22 @@
 			</div>
 			
 			<div class="flex gap-2">
-				<Button onclick={onCheckOut} variant="destructive" size="sm" class="w-full">
+				<Button onclick={onCheckOut} variant="destructive" size="sm" class="flex-1">
 					<SquareIcon class="h-3 w-3 mr-1" />
 					Check Out
 				</Button>
+				{#if canCancel}
+					<Button 
+						onclick={() => onCancel?.(bookingId)} 
+						variant="outline" 
+						size="sm" 
+						class="text-muted-foreground hover:text-destructive hover:border-destructive"
+						disabled={isLoading}
+					>
+						<XIcon class="h-3 w-3 mr-1" />
+						Cancel
+					</Button>
+				{/if}
 			</div>
 		</div>
 	</div>

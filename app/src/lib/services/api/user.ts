@@ -109,14 +109,23 @@ export class UserApiService {
 	 * Cancel a booking
 	 */
 	static async cancelBooking(bookingId: number): Promise<void> {
-		const response = await authenticatedFetch(`/bookings/${bookingId}`, {
+		console.log('🚀 cancelBooking called with:', bookingId);
+		const url = `/bookings/${bookingId}`;
+		console.log('📡 Making DELETE request to:', url);
+		
+		const response = await authenticatedFetch(url, {
 			method: 'DELETE'
 		});
 
+		console.log('📨 Response status:', response.status);
+		console.log('📨 Response URL:', response.url);
+		
 		if (!response.ok) {
 			const errorText = await response.text();
+			console.error('❌ Response error:', errorText);
 			throw new Error(`Failed to cancel booking: ${errorText}`);
 		}
+		console.log('✅ Booking cancelled successfully');
 	}
 
 	/**

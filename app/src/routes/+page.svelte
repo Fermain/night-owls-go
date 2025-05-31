@@ -2,11 +2,11 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Label } from '$lib/components/ui/label';
-	import { Input } from '$lib/components/ui/input';
 	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import { canCancelBooking } from '$lib/utils/bookings';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { userSession } from '$lib/stores/authStore';
 	import {
 		UserApiService,
@@ -15,6 +15,7 @@
 	} from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
+	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -22,7 +23,10 @@
 	// State for booking confirmation dialog
 	let showBookingDialog = $state(false);
 	let selectedShift = $state<AvailableShiftSlot | null>(null);
-	let buddyName = $state('');
+
+	// State for cancellation confirmation dialog
+	let showCancelDialog = $state(false);
+	let shiftToCancel = $state<{id: number, details: string} | null>(null);
 
 	// Query for available shifts (next 7 days)
 	const availableShiftsQuery = createQuery({
@@ -100,10 +104,27 @@
 			$availableShiftsQuery.refetch();
 			$userBookingsQuery.refetch();
 			showBookingDialog = false;
-			resetBookingForm();
+			selectedShift = null;
 		},
 		onError: (error) => {
 			toast.error(`Failed to commit to shift: ${error.message}`);
+		}
+	});
+
+	// Mutation for canceling booking
+	const cancelBookingMutation = createMutation({
+		mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
+		onSuccess: () => {
+			toast.success('Shift cancelled successfully!');
+			$userBookingsQuery.refetch();
+			$availableShiftsQuery.refetch();
+			showCancelDialog = false;
+			shiftToCancel = null;
+		},
+		onError: (error) => {
+			toast.error(`Failed to cancel shift: ${error.message}`);
+			showCancelDialog = false;
+			shiftToCancel = null;
 		}
 	});
 
@@ -118,29 +139,44 @@
 		toast.success('Checked out successfully!');
 	}
 
+	function handleCancelShift(shiftId: number) {
+		// Find the shift details for the confirmation dialog
+		let shiftDetails = '';
+		
+		if (nextShift && nextShift.id === shiftId) {
+			shiftDetails = formatShiftTimeFromBooking(nextShift);
+		} else {
+			const additionalShift = additionalShifts.find(shift => shift.booking_id === shiftId);
+			if (additionalShift) {
+				shiftDetails = formatShiftTimeCompact(additionalShift);
+			}
+		}
+
+		shiftToCancel = { id: shiftId, details: shiftDetails };
+		showCancelDialog = true;
+	}
+
+	function confirmCancelShift() {
+		if (shiftToCancel) {
+			$cancelBookingMutation.mutate(shiftToCancel.id);
+		}
+	}
+
 	function handleBookShift(shift: AvailableShiftSlot) {
 		selectedShift = shift;
 		showBookingDialog = true;
 	}
 
-	function resetBookingForm() {
+	function handleBookingConfirm(request: CreateBookingRequest) {
+		$bookingMutation.mutate(request);
+	}
+
+	function handleBookingCancel() {
+		showBookingDialog = false;
 		selectedShift = null;
-		buddyName = '';
 	}
 
-	function handleBookingConfirm() {
-		if (!selectedShift) return;
-
-		const bookingRequest: CreateBookingRequest = {
-			schedule_id: selectedShift.schedule_id,
-			start_time: selectedShift.start_time,
-			buddy_name: buddyName.trim() || undefined
-		};
-
-		$bookingMutation.mutate(bookingRequest);
-	}
-
-	function formatShiftTime(shift: AvailableShiftSlot) {
+	function formatShiftTimeFromBooking(shift: any) {
 		const start = new Date(shift.start_time);
 		const end = new Date(shift.end_time);
 		const today = new Date();
@@ -221,6 +257,8 @@
 					type={nextShift.is_active ? 'active' : 'next'}
 					onCheckIn={handleCheckIn}
 					onCheckOut={handleCheckOut}
+					onCancel={handleCancelShift}
+					isLoading={$cancelBookingMutation.isPending}
 				/>
 			{:else}
 				<Card.Root>
@@ -234,30 +272,36 @@
 
 			<!-- Additional Upcoming Shifts -->
 			{#if additionalShifts.length > 0}
-				<Card.Root>
-					<Card.Header class="pb-3">
-						<Card.Title class="text-sm">Upcoming</Card.Title>
-					</Card.Header>
-					<Card.Content class="pt-0">
-						<div class="space-y-1">
-							{#each additionalShifts as shift (shift.booking_id)}
-								<div class="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-sm">
-									<div class="flex-1 min-w-0">
-										<!-- <div class="text-sm font-medium truncate">{shift.schedule_name}</div> -->
-										<div class="text-xs text-muted-foreground">
-											{formatShiftTimeCompact(shift)}
-										</div>
-									</div>
-									{#if shift.buddy_name}
-										<div class="text-xs text-muted-foreground ml-2">
-											with {shift.buddy_name}
-										</div>
-									{/if}
+				<div class="space-y-1">
+					<h3 class="text-sm font-medium text-muted-foreground px-1 mb-2">Upcoming shifts</h3>
+					{#each additionalShifts as shift (shift.booking_id)}
+						{@const canCancel = canCancelBooking(shift.shift_start)}
+						<div class="flex items-center justify-between p-2 bg-muted/30 rounded-lg border">
+							<div class="flex-1 min-w-0">
+								<div class="text-xs text-muted-foreground mt-0.5">
+									{formatShiftTimeCompact(shift)}
 								</div>
-							{/each}
+								{#if shift.buddy_name}
+									<div class="text-xs text-muted-foreground mt-0.5">
+										with {shift.buddy_name}
+									</div>
+								{/if}
+							</div>
+							{#if canCancel}
+								<Button 
+									onclick={() => handleCancelShift(shift.booking_id)} 
+									variant="outline" 
+									size="sm" 
+									class="ml-3 text-muted-foreground hover:text-destructive hover:border-destructive"
+									disabled={$cancelBookingMutation.isPending}
+								>
+									<XIcon class="h-3 w-3 mr-1" />
+									Cancel
+								</Button>
+							{/if}
 						</div>
-					</Card.Content>
-				</Card.Root>
+					{/each}
+				</div>
 			{/if}
 
 			<!-- Available Shifts -->
@@ -352,51 +396,52 @@
 </div>
 
 <!-- Booking Confirmation Dialog -->
-<Dialog.Root bind:open={showBookingDialog}>
-	<Dialog.Content class="sm:max-w-md">
+<BookingConfirmationDialog 
+	bind:open={showBookingDialog}
+	bind:shift={selectedShift}
+	isLoading={$bookingMutation.isPending}
+	onConfirm={handleBookingConfirm}
+	onCancel={handleBookingCancel}
+/>
+
+<!-- Cancellation Confirmation Dialog -->
+<Dialog.Root bind:open={showCancelDialog}>
+	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Commit to Shift</Dialog.Title>
+			<Dialog.Title class="flex items-center gap-2">
+				<AlertTriangleIcon class="h-5 w-5" />
+				Cancel Shift
+			</Dialog.Title>	
 			<Dialog.Description>
-				Confirm your commitment to this patrol shift.
+				Are you sure you want to cancel your commitment to this shift?
 			</Dialog.Description>
 		</Dialog.Header>
 
-		{#if selectedShift}
-			<div class="space-y-4 py-4">
-				<!-- Shift Details -->
-				<div class="p-4 bg-muted rounded-lg">
-					<h4 class="font-medium text-sm mb-1">{selectedShift.schedule_name}</h4>
-					<p class="text-sm text-muted-foreground">{formatShiftTime(selectedShift)}</p>
-				</div>
+		{#if shiftToCancel}
+		<div class="p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
 
-				<!-- Optional Buddy Name -->
-				<div class="space-y-2">
-					<Label for="buddy-name">Buddy Name (Optional)</Label>
-					<Input
-						id="buddy-name"
-						bind:value={buddyName}
-						placeholder="Enter your patrol buddy's name"
-						disabled={$bookingMutation.isPending}
-					/>
-					<p class="text-xs text-muted-foreground">
-						If you're patrolling with someone, add their name here
-					</p>
-				</div>
-			</div>
+			<p class="text-sm text-amber-700 dark:text-amber-300">
+				{shiftToCancel.details}
+			</p>
+		</div>
 
 			<Dialog.Footer>
 				<Button 
 					variant="outline" 
-					onclick={() => (showBookingDialog = false)}
-					disabled={$bookingMutation.isPending}
+					onclick={() => {
+						showCancelDialog = false;
+						shiftToCancel = null;
+					}}
+					disabled={$cancelBookingMutation.isPending}
 				>
-					Cancel
+					Keep Shift
 				</Button>
 				<Button 
-					onclick={handleBookingConfirm}
-					disabled={$bookingMutation.isPending}
+					variant="destructive"
+					onclick={confirmCancelShift}
+					disabled={$cancelBookingMutation.isPending}
 				>
-					{$bookingMutation.isPending ? 'Committing...' : 'Commit to Shift'}
+					{$cancelBookingMutation.isPending ? 'Cancelling...' : 'Cancel Shift'}
 				</Button>
 			</Dialog.Footer>
 		{/if}
