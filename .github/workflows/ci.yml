@@ -69,7 +69,7 @@ jobs:
           go tool cover -func=coverage.out
 
       - name: Go - Security scan
-        uses: securego/gosec@master
+        uses: securego/gosec@v2.22.4
         with:
           args: ./...
 
