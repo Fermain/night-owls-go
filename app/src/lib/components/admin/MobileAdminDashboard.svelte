@@ -29,7 +29,6 @@
 	const metrics = $derived(data?.metrics);
 	const memberContributions = $derived(data?.member_contributions || []);
 	const qualityMetrics = $derived(data?.quality_metrics);
-	const problematicSlots = $derived(data?.problematic_slots || []);
 
 	// Critical status assessment
 	const criticalStatus = $derived.by(() => {
@@ -171,7 +170,7 @@
 
 					{#if criticalStatus?.issues && criticalStatus.issues.length > 0}
 						<div class="space-y-2">
-							{#each criticalStatus.issues as issue}
+							{#each criticalStatus.issues as issue, index (index)}
 								<div class="flex items-center justify-between">
 									<span class="text-sm">{issue.message}</span>
 									<Badge
@@ -308,7 +307,7 @@
 					<Badge variant="secondary" class="text-xs">{needsAttention.length}</Badge>
 				</h3>
 				<div class="space-y-2">
-					{#each needsAttention as member}
+					{#each needsAttention as member (member.name)}
 						<div
 							class="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg"
 						>

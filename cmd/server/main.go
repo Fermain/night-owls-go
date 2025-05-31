@@ -69,7 +69,9 @@ func main() {
 	startTime := time.Now() // Track server start time for health check uptime
 
 	// Force timezone to UTC
-	os.Setenv("TZ", "UTC")
+	if err := os.Setenv("TZ", "UTC"); err != nil {
+		log.Printf("Warning: Failed to set timezone to UTC: %v", err)
+	}
 
 	// Use Overload to force .env file values to override any existing environment variables
 	err := godotenv.Overload()
@@ -259,30 +261,36 @@ func main() {
 		if err := dbConn.Ping(); err != nil {
 			dbStatus = "down"
 			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			if err := json.NewEncoder(w).Encode(map[string]interface{}{
 				"status":   "unhealthy",
 				"database": dbStatus,
 				"error":    err.Error(),
-			})
+			}); err != nil {
+				slog.Error("Failed to encode health check error response", "error", err)
+			}
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":   "healthy",
 			"database": dbStatus,
 			"uptime":   time.Since(startTime).String(),
 			"version":  "1.0.0", // TODO: Use build version
-		})
+		}); err != nil {
+			slog.Error("Failed to encode health check response", "error", err)
+		}
 	})
 
 	// API health check endpoint
 	fuego.GetStd(s, "/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewEncoder(w).Encode(map[string]string{
 			"status":  "ok",
 			"service": "night-owls-api",
-		})
+		}); err != nil {
+			slog.Error("Failed to encode API health check response", "error", err)
+		}
 	})
 
 	// Protected routes (require auth)
@@ -354,7 +362,9 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			logger.Error("Failed to encode broadcast processing response", "error", err)
+		}
 	})
 
 	// Debug endpoint to manually trigger report archiving
@@ -372,7 +382,9 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			logger.Error("Failed to encode archive reports response", "error", err)
+		}
 	})
 
 	// Debug endpoint to get archiving statistics
@@ -385,7 +397,9 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(stats)
+		if err := json.NewEncoder(w).Encode(stats); err != nil {
+			logger.Error("Failed to encode archiving stats response", "error", err)
+		}
 	})
 
 	// Simple test handler - mimicking working admin handlers
@@ -403,7 +417,9 @@ func main() {
 
 		// Use the same response pattern as other handlers
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(broadcasts)
+		if err := json.NewEncoder(w).Encode(broadcasts); err != nil {
+			logger.Error("Failed to encode simple test response", "error", err)
+		}
 	})
 
 	// Admin Dashboard
@@ -439,7 +455,9 @@ func main() {
 		spec := s.Engine.OutputOpenAPISpec()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(spec)
+		if err := json.NewEncoder(w).Encode(spec); err != nil {
+			logger.Error("Failed to encode OpenAPI spec", "error", err)
+		}
 	})
 
 	// --- Static File Serving ---
@@ -447,7 +465,9 @@ func main() {
 	// Go server only handles API routes - no static file serving needed
 
 	// MIME tweak for webmanifest (keeping for any remaining Go-served content)
-	mime.AddExtensionType(".webmanifest", "application/manifest+json")
+	if err := mime.AddExtensionType(".webmanifest", "application/manifest+json"); err != nil {
+		logger.Warn("Failed to add MIME type for webmanifest", "error", err)
+	}
 
 	// --- Start HTTP Server ---
 	httpServer := &http.Server{
