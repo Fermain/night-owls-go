@@ -23,7 +23,7 @@ type LogFileMessageSender struct {
 // It ensures the directory for the log file exists.
 func NewLogFileMessageSender(logFilePath string, logger *slog.Logger) (*LogFileMessageSender, error) {
 	dir := filepath.Dir(logFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create directory for OTP log file %s: %w", dir, err)
 	}
 
@@ -42,7 +42,7 @@ func (s *LogFileMessageSender) Send(recipient, messageType, payload string) erro
 		payload,
 	)
 
-	file, err := os.OpenFile(s.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(s.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		s.logger.Error("Failed to open OTP log file for writing", "path", s.logFilePath, "error", err)
 		return fmt.Errorf("failed to open OTP log file %s: %w", s.logFilePath, err)

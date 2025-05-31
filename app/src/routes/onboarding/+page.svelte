@@ -2,16 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
+	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import {
-		onboardingState,
 		onboardingActions,
 		permissionUtils,
 		pwaUtils,
@@ -41,7 +34,7 @@
 	let canInstallPWA = $state(false);
 	let isPWAInstalled = $state(false);
 
-	const totalSteps = 3;
+	const totalSteps = 2;
 
 	// Initialize component state
 	onMount(async () => {
@@ -50,8 +43,12 @@
 		notificationPermissionStatus = permissionUtils.checkNotificationPermission();
 
 		// Update store with current status
-		onboardingActions.updateLocationPermission(locationPermissionStatus as any);
-		onboardingActions.updateNotificationPermission(notificationPermissionStatus as any);
+		onboardingActions.updateLocationPermission(
+			locationPermissionStatus as 'granted' | 'denied' | 'prompt' | 'unknown'
+		);
+		onboardingActions.updateNotificationPermission(
+			notificationPermissionStatus as 'granted' | 'denied' | 'default' | 'unknown'
+		);
 
 		// Check PWA capabilities
 		canInstallPWA = pwaUtils.canInstallPWA();
@@ -74,7 +71,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Location access denied. You can enable it later in settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request location permission');
 		} finally {
 			isLoading = false;
@@ -93,7 +90,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Notifications disabled. You can enable them later in settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request notification permission');
 		} finally {
 			isLoading = false;
@@ -111,7 +108,7 @@
 			} else {
 				toast.info('App installation cancelled');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to install app');
 		} finally {
 			isLoading = false;
@@ -124,12 +121,12 @@
 			onboardingActions.completePermissions();
 		} else if (currentStep === 2) {
 			onboardingActions.completePWAPrompt();
+			handleCompleteOnboardingStep();
+			return;
 		}
 
 		if (currentStep < totalSteps) {
 			currentStep++;
-		} else {
-			completeOnboarding();
 		}
 	}
 
@@ -139,8 +136,15 @@
 			toast.info('Permissions skipped. You can enable them later in settings.');
 		} else if (currentStep === 2) {
 			toast.info('App installation skipped. You can install it later.');
+			handleCompleteOnboardingStep();
+			return;
 		}
 		nextStep();
+	}
+
+	// Handle completion when reaching the end of onboarding
+	function handleCompleteOnboardingStep() {
+		completeOnboarding();
 	}
 
 	// Complete onboarding
@@ -157,25 +161,29 @@
 	<title>Welcome - Night Owls Setup</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-	<div class="container mx-auto px-4 py-8">
+<div
+	class="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col"
+>
+	<div class="container mx-auto px-4 py-4 sm:py-6 flex-1 flex flex-col">
 		<!-- Header -->
-		<div class="text-center mb-8">
-			<div class="flex items-center justify-center mb-4">
-				<div class="h-12 w-12 bg-primary rounded-lg flex items-center justify-center mr-3">
-					<img src="/logo.png" alt="Night Owls" class="h-8 w-8" />
+		<div class="text-center mb-4 sm:mb-6">
+			<div class="flex items-center justify-center mb-3">
+				<div
+					class="h-8 w-8 sm:h-10 sm:w-10 bg-primary rounded-lg flex items-center justify-center mr-2"
+				>
+					<img src="/logo.png" alt="Night Owls" class="h-6 w-6 sm:h-8 sm:w-8" />
 				</div>
-				<h1 class="text-3xl font-bold">Welcome to Night Owls</h1>
+				<h1 class="text-xl sm:text-2xl md:text-3xl font-bold">Welcome to Night Owls</h1>
 			</div>
-			<p class="text-muted-foreground max-w-2xl mx-auto">
+			<p class="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
 				Hi {$currentUser?.name || 'there'}! Let's set up your account to get the best experience
 				keeping our community safe.
 			</p>
 		</div>
 
 		<!-- Progress indicator -->
-		<div class="max-w-2xl mx-auto mb-8">
-			<div class="flex items-center justify-between text-sm text-muted-foreground mb-2">
+		<div class="max-w-xl mx-auto mb-4 sm:mb-6">
+			<div class="flex items-center justify-between text-xs sm:text-sm text-muted-foreground mb-2">
 				<span>Step {currentStep} of {totalSteps}</span>
 				<span>{progress}% complete</span>
 			</div>
@@ -188,50 +196,53 @@
 		</div>
 
 		<!-- Onboarding Steps -->
-		<div class="max-w-2xl mx-auto">
+		<div class="max-w-xl mx-auto flex-1 flex flex-col justify-center">
 			{#if currentStep === 1}
 				<!-- Step 1: Permissions -->
-				<Card class="mb-6">
-					<CardHeader>
-						<CardTitle class="flex items-center gap-2">
+				<Card.Root class="mb-4 sm:mb-6">
+					<Card.Header class="pb-3">
+						<Card.Title class="flex items-center gap-2 text-lg">
 							<MapPinIcon class="h-5 w-5" />
-							Location & Notification Permissions
-						</CardTitle>
-						<CardDescription>
-							Enable these permissions to get the full Night Owls experience
-						</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-6">
+							Permissions
+						</Card.Title>
+						<Card.Description class="text-sm">
+							Enable these to get the full experience
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="space-y-4">
 						<!-- Location Permission -->
-						<div class="flex items-center justify-between p-4 border rounded-lg">
-							<div class="flex items-center gap-3">
-								<MapPinIcon class="h-5 w-5 text-primary" />
-								<div>
-									<h3 class="font-medium">Location Access</h3>
-									<p class="text-sm text-muted-foreground">
-										Helps with accurate incident reporting
-									</p>
+						<div class="flex items-start justify-between p-3 border rounded-lg">
+							<div class="flex items-start gap-3 flex-1 min-w-0">
+								<MapPinIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+								<div class="min-w-0 flex-1">
+									<h3 class="font-medium text-sm">Location Access</h3>
+									<p class="text-xs text-muted-foreground">Helps with incident reporting</p>
 								</div>
 							</div>
-							<div class="flex items-center gap-2">
+							<div class="flex items-center gap-2 flex-shrink-0">
 								{#if locationPermissionStatus === 'granted'}
-									<Badge variant="default" class="flex items-center gap-1">
+									<Badge variant="default" class="flex items-center gap-1 text-xs">
 										<CheckCircleIcon class="h-3 w-3" />
 										Granted
 									</Badge>
 								{:else if locationPermissionStatus === 'denied'}
-									<Badge variant="destructive" class="flex items-center gap-1">
+									<Badge variant="destructive" class="flex items-center gap-1 text-xs">
 										<XCircleIcon class="h-3 w-3" />
 										Denied
 									</Badge>
 								{:else}
-									<Badge variant="secondary" class="flex items-center gap-1">
+									<Badge variant="secondary" class="flex items-center gap-1 text-xs">
 										<XCircleIcon class="h-3 w-3" />
 										Unknown
 									</Badge>
 								{/if}
 								{#if locationPermissionStatus !== 'granted'}
-									<Button size="sm" onclick={handleLocationPermission} disabled={isLoading}>
+									<Button
+										size="sm"
+										onclick={handleLocationPermission}
+										disabled={isLoading}
+										class="text-xs px-2 py-1"
+									>
 										Enable
 									</Button>
 								{/if}
@@ -239,35 +250,38 @@
 						</div>
 
 						<!-- Notification Permission -->
-						<div class="flex items-center justify-between p-4 border rounded-lg">
-							<div class="flex items-center gap-3">
-								<BellIcon class="h-5 w-5 text-primary" />
-								<div>
-									<h3 class="font-medium">Notifications</h3>
-									<p class="text-sm text-muted-foreground">
-										Receive important safety alerts and updates
-									</p>
+						<div class="flex items-start justify-between p-3 border rounded-lg">
+							<div class="flex items-start gap-3 flex-1 min-w-0">
+								<BellIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+								<div class="min-w-0 flex-1">
+									<h3 class="font-medium text-sm">Notifications</h3>
+									<p class="text-xs text-muted-foreground">Receive important alerts</p>
 								</div>
 							</div>
-							<div class="flex items-center gap-2">
+							<div class="flex items-center gap-2 flex-shrink-0">
 								{#if notificationPermissionStatus === 'granted'}
-									<Badge variant="default" class="flex items-center gap-1">
+									<Badge variant="default" class="flex items-center gap-1 text-xs">
 										<CheckCircleIcon class="h-3 w-3" />
 										Granted
 									</Badge>
 								{:else if notificationPermissionStatus === 'denied'}
-									<Badge variant="destructive" class="flex items-center gap-1">
+									<Badge variant="destructive" class="flex items-center gap-1 text-xs">
 										<XCircleIcon class="h-3 w-3" />
 										Denied
 									</Badge>
 								{:else}
-									<Badge variant="secondary" class="flex items-center gap-1">
+									<Badge variant="secondary" class="flex items-center gap-1 text-xs">
 										<XCircleIcon class="h-3 w-3" />
 										Unknown
 									</Badge>
 								{/if}
 								{#if notificationPermissionStatus !== 'granted'}
-									<Button size="sm" onclick={handleNotificationPermission} disabled={isLoading}>
+									<Button
+										size="sm"
+										onclick={handleNotificationPermission}
+										disabled={isLoading}
+										class="text-xs px-2 py-1"
+									>
 										Enable
 									</Button>
 								{/if}
@@ -275,28 +289,28 @@
 						</div>
 
 						<!-- Actions -->
-						<div class="flex justify-between pt-4">
-							<Button variant="outline" onclick={skipStep}>
+						<div class="flex justify-between pt-3">
+							<Button variant="outline" onclick={skipStep} size="sm">
 								<SkipForwardIcon class="h-4 w-4 mr-2" />
-								Skip for now
+								Skip
 							</Button>
-							<Button onclick={nextStep}>Continue</Button>
+							<Button onclick={nextStep} size="sm">Continue</Button>
 						</div>
-					</CardContent>
-				</Card>
+					</Card.Content>
+				</Card.Root>
 			{:else if currentStep === 2}
 				<!-- Step 2: PWA Installation -->
-				<Card class="mb-6">
-					<CardHeader>
-						<CardTitle class="flex items-center gap-2">
+				<Card.Root class="mb-6">
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
 							<SmartphoneIcon class="h-5 w-5" />
 							Install App for Offline Use
-						</CardTitle>
-						<CardDescription>
+						</Card.Title>
+						<Card.Description>
 							Install Night Owls as an app for better performance and offline access
-						</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-6">
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="space-y-6">
 						<div class="text-center py-8">
 							{#if isPWAInstalled}
 								<CheckCircleIcon class="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -349,55 +363,8 @@
 							</Button>
 							<Button onclick={nextStep}>Continue</Button>
 						</div>
-					</CardContent>
-				</Card>
-			{:else if currentStep === 3}
-				<!-- Step 3: Completion -->
-				<Card class="mb-6">
-					<CardHeader>
-						<CardTitle class="flex items-center gap-2">
-							<CheckCircleIcon class="h-5 w-5 text-green-500" />
-							You're All Set!
-						</CardTitle>
-						<CardDescription>Night Owls is ready to help keep our community safe</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-6">
-						<div class="text-center py-8">
-							<CheckCircleIcon class="h-16 w-16 text-green-500 mx-auto mb-4" />
-							<h3 class="text-lg font-medium mb-2">Welcome to the Team!</h3>
-							<p class="text-muted-foreground mb-6">
-								You're now ready to coordinate with fellow Night Owls, report incidents, and help
-								keep Mount Moreland safe.
-							</p>
-
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-								<div class="p-4 bg-secondary/50 rounded-lg">
-									<h4 class="font-medium mb-1">Report Incidents</h4>
-									<p class="text-muted-foreground">
-										Quickly report security issues or suspicious activity
-									</p>
-								</div>
-								<div class="p-4 bg-secondary/50 rounded-lg">
-									<h4 class="font-medium mb-1">Join Shifts</h4>
-									<p class="text-muted-foreground">
-										Sign up for patrol shifts and coordinate with your team
-									</p>
-								</div>
-								<div class="p-4 bg-secondary/50 rounded-lg">
-									<h4 class="font-medium mb-1">Stay Connected</h4>
-									<p class="text-muted-foreground">
-										Receive broadcasts and stay updated on community safety
-									</p>
-								</div>
-							</div>
-						</div>
-
-						<!-- Actions -->
-						<div class="flex justify-center pt-4">
-							<Button onclick={completeOnboarding} size="lg">Get Started</Button>
-						</div>
-					</CardContent>
-				</Card>
+					</Card.Content>
+				</Card.Root>
 			{/if}
 		</div>
 	</div>

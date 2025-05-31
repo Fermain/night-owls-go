@@ -501,7 +501,7 @@ func exportSeededData(seedData SeedData, filePath string, logger *slog.Logger) e
 		Data:       seedData,
 	}
 
-	file, err := os.Create(filePath)
+	file, err := os.Create(filePath) // #nosec G304 - filePath is explicitly provided by user via command line flag
 	if err != nil {
 		return fmt.Errorf("failed to create export file: %w", err)
 	}

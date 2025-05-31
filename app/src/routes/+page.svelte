@@ -1,26 +1,32 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import { canCancelBooking } from '$lib/utils/bookings';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import ClockIcon from '@lucide/svelte/icons/clock';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import PlayIcon from '@lucide/svelte/icons/play';
-	import SquareIcon from '@lucide/svelte/icons/square';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { userSession } from '$lib/stores/authStore';
-	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 	import {
 		UserApiService,
 		type AvailableShiftSlot,
 		type CreateBookingRequest
 	} from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
+	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
+	import CancellationConfirmationDialog from '$lib/components/user/bookings/CancellationConfirmationDialog.svelte';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
+
+	// State for booking confirmation dialog
+	let showBookingDialog = $state(false);
+	let selectedShift = $state<AvailableShiftSlot | null>(null);
+
+	// State for cancellation confirmation dialog
+	let showCancelDialog = $state(false);
+	let shiftToCancel = $state<{ id: number; details: string } | null>(null);
 
 	// Query for available shifts (next 7 days)
 	const availableShiftsQuery = createQuery({
@@ -42,12 +48,12 @@
 			return UserApiService.getMyBookings();
 		},
 		enabled: $userSession.isAuthenticated,
-		retry: false // Don't retry if user is not authenticated
+		retry: false
 	});
 
 	// Derived data
 	const availableShifts = $derived($availableShiftsQuery.data ?? []);
-	const unfillableShifts = $derived(availableShifts.slice(0, 3)); // Show first 3 as examples
+	const unfillableShifts = $derived(availableShifts.slice(0, 5)); // Show first 5
 
 	// Find next shift from user bookings
 	const nextShift = $derived.by(() => {
@@ -77,67 +83,167 @@
 		};
 	});
 
+	// Find additional upcoming shifts (after the next one)
+	const additionalShifts = $derived.by(() => {
+		if (!$userBookingsQuery.data) return [];
+
+		const now = new Date();
+		const upcomingBookings = $userBookingsQuery.data
+			.filter((booking) => new Date(booking.shift_start) > now)
+			.sort((a, b) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+
+		// Return all upcoming shifts except the first one (which is the "next shift")
+		return upcomingBookings.slice(1).slice(0, 3); // Show up to 3 additional shifts
+	});
+
 	// Mutations for booking
 	const bookingMutation = createMutation({
 		mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
 		onSuccess: () => {
-			toast.success('Shift booked successfully!');
+			toast.success('Shift committed successfully!');
 			$availableShiftsQuery.refetch();
+			$userBookingsQuery.refetch();
+			showBookingDialog = false;
+			selectedShift = null;
 		},
 		onError: (error) => {
-			toast.error(`Failed to book shift: ${error.message}`);
+			toast.error(`Failed to commit to shift: ${error.message}`);
 		}
 	});
 
-	// Helper functions
-	function formatTime(timeString: string) {
-		return new Date(timeString).toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
+	// Mutation for canceling booking
+	const cancelBookingMutation = createMutation({
+		mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
+		onSuccess: () => {
+			toast.success('Shift cancelled successfully!');
+			$userBookingsQuery.refetch();
+			$availableShiftsQuery.refetch();
+			showCancelDialog = false;
+			shiftToCancel = null;
+		},
+		onError: (error) => {
+			toast.error(`Failed to cancel shift: ${error.message}`);
+			showCancelDialog = false;
+			shiftToCancel = null;
+		}
+	});
 
-	function getTimeUntil(timeString: string) {
-		const now = new Date();
-		const time = new Date(timeString);
-		const diffMs = time.getTime() - now.getTime();
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-		if (diffMs < 0) return 'Started';
-		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
-		return `${diffMins}m`;
-	}
-
+	// Event handlers
 	function handleCheckIn() {
-		// TODO: Implement with real booking attendance API
 		console.log('Checking in to shift...');
 		toast.success('Checked in successfully!');
 	}
 
 	function handleCheckOut() {
-		// TODO: Implement with real booking attendance API
 		console.log('Checking out of shift...');
 		toast.success('Checked out successfully!');
 	}
 
-	function handleQuickReport() {
-		// TODO: Navigate to report page with booking context
-		window.location.href = '/report';
-	}
+	function handleCancelShift(shiftId: number) {
+		// Find the shift details for the confirmation dialog
+		let shiftDetails = '';
 
-	function handleEmergency() {
-		if (confirm('Call emergency services?')) {
-			window.location.href = 'tel:999';
+		if (nextShift && nextShift.id === shiftId) {
+			shiftDetails = formatShiftTimeFromBooking(nextShift);
+		} else {
+			const additionalShift = additionalShifts.find((shift) => shift.booking_id === shiftId);
+			if (additionalShift) {
+				shiftDetails = formatShiftTimeCompact(additionalShift);
+			}
 		}
+
+		shiftToCancel = { id: shiftId, details: shiftDetails };
+		showCancelDialog = true;
 	}
 
 	function handleBookShift(shift: AvailableShiftSlot) {
-		goto(`/bookings?scheduleId=${shift.schedule_id}&startTime=${shift.start_time}`);
+		selectedShift = shift;
+		showBookingDialog = true;
 	}
 
-	function handleViewMyBookings() {
-		goto('/bookings/my');
+	function handleBookingConfirm(request: CreateBookingRequest) {
+		$bookingMutation.mutate(request);
+	}
+
+	function handleBookingCancel() {
+		showBookingDialog = false;
+		selectedShift = null;
+	}
+
+	function handleCancellationConfirm() {
+		if (shiftToCancel) {
+			$cancelBookingMutation.mutate(shiftToCancel.id);
+		}
+	}
+
+	function handleCancellationCancel() {
+		showCancelDialog = false;
+		shiftToCancel = null;
+	}
+
+	function formatShiftTimeFromBooking(shift: { start_time: string; end_time: string }) {
+		const start = new Date(shift.start_time);
+		const end = new Date(shift.end_time);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(today.getDate() + 1);
+
+		let dateLabel = '';
+		if (start.toDateString() === today.toDateString()) {
+			dateLabel = 'Today';
+		} else if (start.toDateString() === tomorrow.toDateString()) {
+			dateLabel = 'Tomorrow';
+		} else {
+			dateLabel = start.toLocaleDateString('en-GB', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric'
+			});
+		}
+
+		const timeRange = `${start.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit'
+		})} - ${end.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit'
+		})}`;
+
+		return `${dateLabel} • ${timeRange}`;
+	}
+
+	function formatShiftTimeCompact(booking: { shift_start: string; shift_end: string }) {
+		const start = new Date(booking.shift_start);
+		const end = new Date(booking.shift_end);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(today.getDate() + 1);
+		const dayAfterTomorrow = new Date(today);
+		dayAfterTomorrow.setDate(today.getDate() + 2);
+
+		let dateLabel = '';
+		if (start.toDateString() === today.toDateString()) {
+			dateLabel = 'Today';
+		} else if (start.toDateString() === tomorrow.toDateString()) {
+			dateLabel = 'Tomorrow';
+		} else if (start.toDateString() === dayAfterTomorrow.toDateString()) {
+			dateLabel = start.toLocaleDateString('en-GB', { weekday: 'short' });
+		} else {
+			dateLabel = start.toLocaleDateString('en-GB', {
+				month: 'short',
+				day: 'numeric'
+			});
+		}
+
+		const timeRange = `${start.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit'
+		})} - ${end.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit'
+		})}`;
+
+		return `${dateLabel} • ${timeRange}`;
 	}
 </script>
 
@@ -145,62 +251,65 @@
 	<title>Mount Moreland Night Owls</title>
 </svelte:head>
 
-<div class="bg-background">
+<div class="bg-background flex-1">
 	{#if currentUser.isAuthenticated}
 		<!-- Authenticated Dashboard -->
 		<div class="p-4 space-y-4">
-			<!-- My Next Shift -->
+			<!-- My Next/Active Shift -->
 			{#if nextShift}
-				<Card.Root class="border-l-4 border-l-primary">
-					<Card.Header class="pb-3">
-						<div class="flex items-center justify-between">
-							<Card.Title class="text-base">My next shift</Card.Title>
-							<Badge variant={nextShift.is_active ? 'default' : 'secondary'}>
-								{nextShift.is_active ? 'Active' : getTimeUntil(nextShift.start_time)}
-							</Badge>
-						</div>
-					</Card.Header>
-					<Card.Content class="pt-0 space-y-3">
-						<div class="text-sm text-muted-foreground">
-							{nextShift.schedule_name}
-						</div>
-
-						<div class="flex items-center text-sm">
-							<ClockIcon class="h-4 w-4 mr-2 text-muted-foreground" />
-							<span>{formatTime(nextShift.start_time)} - {formatTime(nextShift.end_time)}</span>
-						</div>
-
-						<div class="flex gap-2">
-							{#if nextShift.is_active}
-								<Button onclick={handleCheckOut} variant="destructive" class="flex-1">
-									<SquareIcon class="h-4 w-4 mr-2" />
-									Check Out
-								</Button>
-								<Button onclick={handleQuickReport} variant="outline">
-									<AlertTriangleIcon class="h-4 w-4 mr-2" />
-									Report
-								</Button>
-							{:else if nextShift.can_checkin}
-								<Button onclick={handleCheckIn} class="flex-1">
-									<PlayIcon class="h-4 w-4 mr-2" />
-									Check In
-								</Button>
-							{/if}
-						</div>
-					</Card.Content>
-				</Card.Root>
+				<CompactShiftCard
+					shift={nextShift}
+					type={nextShift.is_active ? 'active' : 'next'}
+					onCheckIn={handleCheckIn}
+					onCheckOut={handleCheckOut}
+					onCancel={handleCancelShift}
+					isLoading={$cancelBookingMutation.isPending}
+				/>
 			{:else}
 				<Card.Root>
 					<Card.Content class="text-center py-6">
 						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 						<h3 class="text-sm font-medium mb-1">No upcoming shifts</h3>
-						<p class="text-xs text-muted-foreground mb-3">Check available shifts below</p>
-						<Button size="sm" href="/bookings" variant="outline">Browse Shifts</Button>
+						<p class="text-xs text-muted-foreground">Commit to shifts below</p>
 					</Card.Content>
 				</Card.Root>
 			{/if}
 
-			<!-- Unfilled Shifts -->
+			<!-- Additional Upcoming Shifts -->
+			{#if additionalShifts.length > 0}
+				<div class="space-y-1">
+					<h3 class="text-sm font-medium text-muted-foreground px-1 mb-2">Upcoming shifts</h3>
+					{#each additionalShifts as shift (shift.booking_id)}
+						{@const canCancel = canCancelBooking(shift.shift_start)}
+						<div class="flex items-center justify-between p-2 bg-muted/30 rounded-lg border">
+							<div class="flex-1 min-w-0">
+								<div class="text-xs text-muted-foreground mt-0.5">
+									{formatShiftTimeCompact(shift)}
+								</div>
+								{#if shift.buddy_name}
+									<div class="text-xs text-muted-foreground mt-0.5">
+										with {shift.buddy_name}
+									</div>
+								{/if}
+							</div>
+							{#if canCancel}
+								<Button
+									onclick={() => handleCancelShift(shift.booking_id)}
+									variant="outline"
+									size="sm"
+									class="ml-3 text-muted-foreground hover:text-destructive hover:border-destructive"
+									disabled={$cancelBookingMutation.isPending}
+								>
+									<XIcon class="h-3 w-3 mr-1" />
+									Cancel
+								</Button>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- Available Shifts -->
 			{#if $availableShiftsQuery.isLoading}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
@@ -221,37 +330,24 @@
 			{:else if unfillableShifts.length > 0}
 				<Card.Root>
 					<Card.Header class="pb-3">
-						<Card.Title class="text-base">Available shifts</Card.Title>
+						<div class="flex items-center justify-between">
+							<Card.Title class="text-base">Available shifts</Card.Title>
+							{#if availableShifts.length > 5}
+								<span class="text-sm text-muted-foreground">
+									Showing 5 of {availableShifts.length}
+								</span>
+							{/if}
+						</div>
 					</Card.Header>
 					<Card.Content class="pt-0">
-						{#each unfillableShifts as shift, i (`${shift.schedule_id}-${shift.start_time}`)}
-							<div class="flex items-center justify-between py-3">
-								<div class="flex-1">
-									<div class="text-sm font-medium">{shift.schedule_name}</div>
-									<div class="text-xs text-muted-foreground">
-										{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
-									</div>
-									<div class="text-xs text-orange-600 dark:text-orange-400">Available now</div>
-								</div>
-								<Button
-									size="sm"
-									onclick={() => handleBookShift(shift)}
-									disabled={$bookingMutation.isPending}
-								>
-									{$bookingMutation.isPending ? 'Booking...' : 'Book'}
-								</Button>
-							</div>
-							{#if i < unfillableShifts.length - 1}
-								<Separator class="my-2" />
-							{/if}
+						{#each unfillableShifts as shift (`${shift.schedule_id}-${shift.start_time}`)}
+							<CompactShiftCard
+								{shift}
+								type="available"
+								onBook={handleBookShift}
+								isLoading={$bookingMutation.isPending}
+							/>
 						{/each}
-						{#if availableShifts.length > 3}
-							<div class="mt-4 text-center">
-								<a href="/bookings" class="text-sm text-primary hover:underline">
-									View all {availableShifts.length} available shifts →
-								</a>
-							</div>
-						{/if}
 					</Card.Content>
 				</Card.Root>
 			{:else}
@@ -263,9 +359,6 @@
 					</Card.Content>
 				</Card.Root>
 			{/if}
-
-			<!-- Emergency Contacts -->
-			<EmergencyContacts />
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->
@@ -275,7 +368,7 @@
 				<div class="text-center max-w-4xl">
 					<div class="mb-8">
 						<div class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-8">
-							<div class="h-20 w-20 flex items-center justify-center">
+							<div class="h-40 w-40 flex items-center justify-center">
 								<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 							</div>
 						</div>
@@ -306,3 +399,21 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Booking Confirmation Dialog -->
+<BookingConfirmationDialog
+	bind:open={showBookingDialog}
+	bind:shift={selectedShift}
+	isLoading={$bookingMutation.isPending}
+	onConfirm={handleBookingConfirm}
+	onCancel={handleBookingCancel}
+/>
+
+<!-- Cancellation Confirmation Dialog -->
+<CancellationConfirmationDialog
+	bind:open={showCancelDialog}
+	shiftDetails={shiftToCancel?.details || ''}
+	isLoading={$cancelBookingMutation.isPending}
+	onConfirm={handleCancellationConfirm}
+	onCancel={handleCancellationCancel}
+/>

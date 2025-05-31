@@ -74,7 +74,7 @@
 			try {
 				const errorData = await response.json();
 				errorMsg = errorData.message || errorData.error || errorMsg;
-			} catch (e) {
+			} catch (_e) {
 				/* ignore */
 			}
 			toast.error(`Failed to fetch upcoming shifts: ${errorMsg}`);
@@ -159,7 +159,7 @@
 			const formatHourWithAmPm = (date: Date) => {
 				let h = date.getHours();
 				const m = date.getMinutes();
-				const ampm = h >= 12 ? 'PM' : 'AM';
+				const _ampm = h >= 12 ? 'PM' : 'AM';
 				h = h % 12;
 				h = h ? h : 12;
 				return h + (m === 0 ? '' : `:${m.toString().padStart(2, '0')}`);

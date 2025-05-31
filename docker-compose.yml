@@ -18,6 +18,10 @@ services:
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
       - TWILIO_VERIFY_SID=${TWILIO_VERIFY_SID:-}
       - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
     volumes:
       - night_owls_data:/app/data
     networks:

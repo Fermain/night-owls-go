@@ -54,10 +54,10 @@
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
 			queryClient.invalidateQueries({ queryKey: ['available-shifts'] });
-			toast.success('Booking cancelled successfully!');
+			toast.success('Commitment cancelled successfully!');
 		},
 		onError: (error) => {
-			toast.error(`Failed to cancel booking: ${error.message}`);
+			toast.error(`Failed to cancel commitment: ${error.message}`);
 		}
 	});
 
@@ -68,10 +68,10 @@
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
 			queryClient.invalidateQueries({ queryKey: ['available-shifts'] });
-			toast.success('Shift booked successfully!');
+			toast.success('Shift committed successfully!');
 		},
 		onError: (error) => {
-			toast.error(`Failed to book shift: ${error.message}`);
+			toast.error(`Failed to commit to shift: ${error.message}`);
 		}
 	});
 
@@ -105,7 +105,7 @@
 		return 'pending';
 	}
 
-	function canCancelBooking(startTime: string): boolean {
+	function canCancelCommitment(startTime: string): boolean {
 		const now = new Date();
 		const start = new Date(startTime);
 		const cancellationDeadline = new Date(start.getTime() - 2 * 60 * 60 * 1000); // 2 hours before
@@ -116,8 +116,8 @@
 		$checkInMutation.mutate(bookingId);
 	}
 
-	function handleCancelBooking(bookingId: number) {
-		if (confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+	function handleCancelCommitment(bookingId: number) {
+		if (confirm('Are you sure you want to cancel this commitment? This action cannot be undone.')) {
 			$cancelMutation.mutate(bookingId);
 		}
 	}
@@ -131,12 +131,12 @@
 </script>
 
 <svelte:head>
-	<title>My Shifts - Night Owls</title>
+	<title>My Commitments - Night Owls</title>
 </svelte:head>
 
 <div class="container mx-auto p-4 pb-20 md:pb-6 space-y-6">
 	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">My Shifts</h1>
+		<h1 class="text-2xl font-bold">My Commitments</h1>
 	</div>
 
 	{#if !$userSession.isAuthenticated}
@@ -150,11 +150,6 @@
 	{:else}
 		<!-- My Bookings Section -->
 		<div class="space-y-4">
-			<div class="flex items-center justify-between">
-				<h2 class="text-xl font-semibold">My Bookings</h2>
-				<Badge variant="outline">{bookings.length} shifts</Badge>
-			</div>
-
 			{#if isLoadingBookings}
 				<div class="space-y-4">
 					{#each Array(3) as _, i (i)}
@@ -173,7 +168,7 @@
 				<Card.Root>
 					<Card.Content class="pt-6">
 						<p class="text-destructive text-center">
-							Error loading bookings: {bookingsError.message}
+							Error loading commitments: {bookingsError.message}
 						</p>
 					</Card.Content>
 				</Card.Root>
@@ -182,9 +177,10 @@
 					<Card.Content class="pt-6 text-center space-y-4">
 						<CalendarIcon class="h-12 w-12 mx-auto text-muted-foreground" />
 						<div>
-							<h3 class="font-semibold">No bookings yet</h3>
+							<h3 class="font-semibold">No commitments yet</h3>
 							<p class="text-muted-foreground">
-								You haven't booked any shifts. Check out available shifts below to get started.
+								You haven't committed to any shifts. Check out available shifts below to get
+								started.
 							</p>
 						</div>
 					</Card.Content>
@@ -197,14 +193,14 @@
 							booking.shift_end,
 							booking.checked_in_at
 						)}
-						{@const canCancel = canCancelBooking(booking.shift_start)}
+						{@const canCancel = canCancelCommitment(booking.shift_start)}
 						<Card.Root>
 							<Card.Header>
 								<div class="flex items-center justify-between">
 									<div>
 										<Card.Title class="text-lg">{booking.schedule_name}</Card.Title>
 										<Card.Description>
-											Booking #{booking.booking_id}
+											Commitment #{booking.booking_id}
 										</Card.Description>
 									</div>
 									<Badge
@@ -291,7 +287,7 @@
 													size="sm"
 													variant="outline"
 													disabled={$cancelMutation.isPending}
-													onclick={() => handleCancelBooking(booking.booking_id)}
+													onclick={() => handleCancelCommitment(booking.booking_id)}
 												>
 													<XCircleIcon class="h-4 w-4 mr-1" />
 													Cancel
@@ -380,14 +376,14 @@
 
 								<Separator />
 								<div class="flex items-center justify-between">
-									<p class="text-sm text-muted-foreground">Book this shift</p>
+									<p class="text-sm text-muted-foreground">Commit to this shift</p>
 									<Button
 										size="sm"
 										disabled={$bookShiftMutation.isPending}
 										onclick={() => handleBookShift(shift)}
 									>
 										<PlusIcon class="h-4 w-4 mr-1" />
-										Book Shift
+										Commit
 									</Button>
 								</div>
 							</Card.Content>

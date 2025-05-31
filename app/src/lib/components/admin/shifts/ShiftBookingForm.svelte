@@ -20,7 +20,6 @@
 	import type { UserData } from '$lib/schemas/user';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { goto } from '$app/navigation';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 
@@ -203,10 +202,6 @@
 		assignmentError = null;
 	}
 
-	function handleBackToCalendar() {
-		goto('/admin/shifts');
-	}
-
 	// Generate proper shift title following "XYZ Night 0-2AM" convention
 	function getShiftTitle(startTimeIso: string, endTimeIso: string): string {
 		try {
@@ -235,7 +230,7 @@
 </script>
 
 <div class="p-6">
-	<div class="max-w-2xl mx-auto">
+	<div>
 		<!-- Header with shift title -->
 		<div class="mb-6">
 			<div class="flex items-center justify-between">
@@ -244,7 +239,6 @@
 					heading={getShiftTitle(selectedShift.start_time, selectedShift.end_time)}
 					subheading="Manage shift assignment and team details"
 				/>
-				<Button variant="outline" onclick={handleBackToCalendar}>← Back</Button>
 			</div>
 			<div class="flex items-center gap-4 mt-4">
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -497,9 +491,6 @@
 								placeholder="Enter buddy name (spouse, family member, etc.)"
 								class="w-full"
 							/>
-							<p class="text-xs text-muted-foreground">
-								Buddy can be anyone - they don't need to be a registered user
-							</p>
 						</div>
 
 						<!-- Error Display -->

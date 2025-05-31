@@ -7,7 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
-	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { isAuthenticated } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import { onboardingActions, onboardingState } from '$lib/stores/onboardingStore';
 	import type { E164Number } from 'svelte-tel-input/types';
@@ -72,7 +72,7 @@
 			saveUserData(phoneNumber, ''); // No name for pure login
 
 			// Request OTP for login (using register endpoint which handles both cases)
-			const response = await authService.register({
+			const _response = await authService.register({
 				phone: phoneNumber
 				// No name - this is pure login
 			});

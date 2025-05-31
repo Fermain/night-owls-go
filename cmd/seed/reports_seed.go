@@ -81,6 +81,7 @@ func seedReports(querier db.Querier) error {
 		}
 
 		// 30% chance of having a report
+		// #nosec G404
 		if rand.Float32() > 0.3 {
 			continue
 		}
@@ -88,6 +89,7 @@ func seedReports(querier db.Querier) error {
 		// Determine severity based on realistic distribution
 		// 60% normal, 30% suspicion, 10% incident
 		var severity int64
+		// #nosec G404
 		randVal := rand.Float32()
 		if randVal < 0.6 {
 			severity = 0 // Normal
@@ -99,6 +101,7 @@ func seedReports(querier db.Querier) error {
 
 		// Select a random message for this severity level
 		messages := reportMessages[int(severity)]
+		// #nosec G404
 		message := messages[rand.Intn(len(messages))]
 
 		// Create the report
