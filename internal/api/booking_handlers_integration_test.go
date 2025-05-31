@@ -124,10 +124,11 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	rr = app.makeRequest(t, "POST", checkinPath, nil, userToken)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Mark check-in failed: %s", rr.Body.String())
-	var successResp map[string]string
-	err = json.Unmarshal(rr.Body.Bytes(), &successResp)
+	var checkedInBooking api.BookingResponse
+	err = json.Unmarshal(rr.Body.Bytes(), &checkedInBooking)
 	require.NoError(t, err)
-	assert.Equal(t, "Check-in recorded successfully", successResp["message"])
+	assert.NotNil(t, checkedInBooking.CheckedInAt, "CheckedInAt should be set after check-in")
+	assert.Equal(t, createdBooking.BookingID, checkedInBooking.BookingID)
 
 	// --- Test PATCH /bookings/{id}/attendance (by another user - Forbidden) ---
 	// Register and login another user

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -81,6 +82,32 @@ func toBookingResponse(booking db.Booking) *BookingResponse {
 	return resp
 }
 
+// mapServiceErrorToHTTP maps service layer errors to appropriate HTTP status codes
+func mapServiceErrorToHTTP(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrBookingConflict):
+		return http.StatusConflict, err.Error()
+	case errors.Is(err, service.ErrBookingNotFound):
+		return http.StatusNotFound, err.Error()
+	case errors.Is(err, service.ErrScheduleNotFound):
+		return http.StatusNotFound, err.Error()
+	case errors.Is(err, service.ErrUserNotFound):
+		return http.StatusNotFound, err.Error()
+	case errors.Is(err, service.ErrForbiddenUpdate):
+		return http.StatusForbidden, err.Error()
+	case errors.Is(err, service.ErrShiftTimeInvalid):
+		return http.StatusBadRequest, err.Error()
+	case errors.Is(err, service.ErrCheckInTooEarly):
+		return http.StatusBadRequest, err.Error()
+	case errors.Is(err, service.ErrBookingCannotBeCancelled):
+		return http.StatusBadRequest, err.Error()
+	case errors.Is(err, service.ErrInternalServer):
+		return http.StatusInternalServerError, "Internal server error"
+	default:
+		return http.StatusBadRequest, err.Error()
+	}
+}
+
 // CreateBookingFuego handles POST /bookings with Fuego typed handler
 // @Summary Create a new booking
 // @Description Create a new booking for a shift
@@ -127,10 +154,11 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 	booking, err := h.service.CreateBooking(c.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
+		status, detail := mapServiceErrorToHTTP(err)
 		return nil, fuego.HTTPError{
 			Err:    err,
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
+			Status: status,
+			Detail: detail,
 		}
 	}
 
@@ -227,10 +255,11 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 	_, err = h.service.MarkCheckIn(c.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to mark check-in", "booking_id", bookingID, "user_id", userID, "error", err)
+		status, detail := mapServiceErrorToHTTP(err)
 		return SuccessResponse{}, fuego.HTTPError{
 			Err:    err,
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
+			Status: status,
+			Detail: detail,
 		}
 	}
 
@@ -290,10 +319,11 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	err = h.service.CancelBooking(c.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to cancel booking", "booking_id", bookingID, "user_id", userID, "error", err)
+		status, detail := mapServiceErrorToHTTP(err)
 		return SuccessResponse{}, fuego.HTTPError{
 			Err:    err,
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
+			Status: status,
+			Detail: detail,
 		}
 	}
 
@@ -356,7 +386,8 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	err = h.service.CancelBooking(r.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to cancel booking", "booking_id", bookingID, "user_id", userID, "error", err)
-		RespondWithError(w, http.StatusBadRequest, err.Error(), h.logger)
+		status, detail := mapServiceErrorToHTTP(err)
+		RespondWithError(w, status, detail, h.logger)
 		return
 	}
 
@@ -370,7 +401,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 // @Tags bookings
 // @Produce json
 // @Param id path int true "Booking ID"
-// @Success 200 {object} SuccessResponse "Check-in recorded successfully"
+// @Success 200 {object} BookingResponse "Check-in recorded successfully"
 // @Failure 400 {object} ErrorResponse "Invalid booking ID or check-in not allowed"
 // @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
 // @Failure 403 {object} ErrorResponse "Not authorized to check in for this booking"
@@ -409,16 +440,17 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.InfoContext(r.Context(), "Processing check-in", "booking_id", bookingID, "user_id", userID)
 
-	// Note: MarkCheckIn returns (db.Booking, error) but we don't need the booking for the legacy response
-	_, err = h.service.MarkCheckIn(r.Context(), bookingID, userID)
+	// MarkCheckIn returns the updated booking with check-in timestamp
+	updatedBooking, err := h.service.MarkCheckIn(r.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to mark check-in", "booking_id", bookingID, "user_id", userID, "error", err)
-		RespondWithError(w, http.StatusBadRequest, err.Error(), h.logger)
+		status, detail := mapServiceErrorToHTTP(err)
+		RespondWithError(w, status, detail, h.logger)
 		return
 	}
 
 	h.logger.InfoContext(r.Context(), "Check-in recorded successfully", "booking_id", bookingID, "user_id", userID)
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Check-in recorded successfully"}, h.logger)
+	RespondWithJSON(w, http.StatusOK, toBookingResponse(updatedBooking), h.logger)
 }
 
 // CreateBookingHandler handles POST /bookings (legacy chi handler for tests)
@@ -462,7 +494,8 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 	booking, err := h.service.CreateBooking(r.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
-		RespondWithError(w, http.StatusBadRequest, err.Error(), h.logger)
+		status, detail := mapServiceErrorToHTTP(err)
+		RespondWithError(w, status, detail, h.logger)
 		return
 	}
 
