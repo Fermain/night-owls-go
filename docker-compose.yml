@@ -16,6 +16,7 @@ services:
       - OTP_LOG_PATH=./data/logs/sms_outbox.log
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_VERIFY_SID=${TWILIO_VERIFY_SID:-}
       - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
     volumes:
       - night_owls_data:/app/data
