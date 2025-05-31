@@ -117,10 +117,11 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	// Send OTP - use Twilio if configured, otherwise fall back to mock flow
 	if s.twilioOTP != nil {
 		// Use Twilio Verify to send real SMS OTP
+		s.logger.InfoContext(ctx, "Attempting to send OTP via Twilio", "phone", phone)
 		err = s.twilioOTP.StartSMS(ctx, phone)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to send Twilio OTP", "phone", phone, "error", err)
-			return ErrInternalServer
+			return fmt.Errorf("failed to send SMS: %w", err)
 		}
 		s.logger.InfoContext(ctx, "Twilio OTP sent successfully", "phone", phone)
 		
@@ -128,6 +129,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 		return nil
 	} else {
 		// Fall back to mock OTP flow for development/testing
+		s.logger.InfoContext(ctx, "Using mock OTP flow (Twilio not configured)", "phone", phone)
 		otp, err := auth.GenerateOTP()
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to generate OTP", "phone", phone, "error", err)

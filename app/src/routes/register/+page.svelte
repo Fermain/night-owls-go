@@ -176,7 +176,9 @@
 			<div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5"></div>
 			<div class="absolute inset-0 flex flex-col justify-center p-10 text-center">
 				<div class="mx-auto max-w-md">
-					<ShieldIcon class="mx-auto mb-6 h-16 w-16 text-primary" />
+					<div class="h-16 w-16 mx-auto mb-6 flex items-center justify-center">
+						<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
+					</div>
 					<h2 class="mb-4 text-2xl font-bold">Stronger Together</h2>
 					<p class="text-muted-foreground">
 						Join your neighbors in keeping our community safe. Coordinate patrols, share important

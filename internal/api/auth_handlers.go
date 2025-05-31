@@ -130,23 +130,33 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		// Check for specific user not found error
 		if err.Error() == "user not found - please register first" {
 			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())
+		} else if strings.Contains(err.Error(), "failed to send SMS") {
+			// Twilio-specific error
+			RespondWithError(w, http.StatusInternalServerError, "Failed to send SMS verification code", h.logger, "error", err.Error())
 		} else {
 			RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
 		}
 		return
 	}
 
-	response := RegisterResponse{Message: "OTP sent successfully"}
+	// Determine response message based on configuration
+	var response RegisterResponse
+	cfg := h.config
+	if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
+		response.Message = "Verification code sent via SMS"
+		h.logger.InfoContext(r.Context(), "SMS sent via Twilio", "phone", phoneE164)
+	} else {
+		response.Message = "Verification code sent (development mode)"
+		h.logger.InfoContext(r.Context(), "Using mock OTP flow", "phone", phoneE164)
+	}
 
 	// In development mode, provide helpful information about the OTP flow
 	if h.config.DevMode {
-		// Check if Twilio is configured by looking for credentials
-		cfg := h.config
 		if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
-			response.Message = "OTP sent via SMS"
+			// Twilio is configured in dev mode
 			h.logger.InfoContext(r.Context(), "Twilio OTP sent in development mode", "phone", phoneE164)
 		} else {
-			response.Message = "Verification code sent"
+			// Mock flow in dev mode - include OTP for testing
 			h.logger.InfoContext(r.Context(), "Mock OTP flow used in development mode", "phone", phoneE164)
 			// For mock flow, get the latest OTP from outbox
 			if otp := h.getLatestOTPFromOutbox(r.Context(), phoneE164); otp != "" {
