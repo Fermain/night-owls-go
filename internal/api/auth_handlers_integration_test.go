@@ -199,7 +199,7 @@ func TestAuthEndpoints_RegisterAndVerify_Success(t *testing.T) {
 	var regResp api.RegisterResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &regResp)
 	require.NoError(t, err)
-	assert.Contains(t, regResp.Message, "OTP sent")
+	assert.Contains(t, regResp.Message, "Verification code sent")
 
 	user, err := app.Querier.GetUserByPhone(context.Background(), phone)
 	require.NoError(t, err)
