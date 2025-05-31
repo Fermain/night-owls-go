@@ -180,8 +180,8 @@
 				</p>
 			</div>
 		{:else if analytics}
-			<!-- Main Metrics Cards -->
-			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+			<!-- Main Metrics Cards - Hidden on mobile -->
+			<div class="hidden lg:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
 				<!-- Fill Rate -->
 				<Card.Root class="p-6">
 					<div class="flex items-center gap-3">
@@ -267,8 +267,36 @@
 				</Card.Root>
 			</div>
 
-			<!-- Time-based Metrics Row -->
-			<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+			<!-- Mobile-only compact metrics -->
+			<div class="lg:hidden mb-6">
+				<div class="grid grid-cols-2 gap-4 mb-4">
+					<Card.Root class="p-4">
+						<div class="text-center">
+							<p class="text-xs text-muted-foreground">Fill Rate</p>
+							<p class="text-xl font-bold">{metrics?.fillRate.toFixed(1) || 0}%</p>
+						</div>
+					</Card.Root>
+					<Card.Root class="p-4">
+						<div class="text-center">
+							<p class="text-xs text-muted-foreground">Urgent (24h)</p>
+							<p class="text-xl font-bold text-red-600">{metrics?.urgentUnfilled || 0}</p>
+						</div>
+					</Card.Root>
+				</div>
+				{#if (metrics?.urgentUnfilled || 0) > 0}
+					<div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+						<div class="flex items-center gap-2">
+							<AlertTriangleIcon class="h-4 w-4 text-red-600" />
+							<p class="text-sm font-medium text-red-800 dark:text-red-200">
+								{(metrics?.urgentUnfilled || 0)} urgent shift{(metrics?.urgentUnfilled || 0) > 1 ? 's' : ''} need immediate attention
+							</p>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Time-based Metrics Row - Hidden on mobile -->
+			<div class="hidden lg:grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 				<Card.Root class="p-6">
 					<div class="flex items-center gap-3">
 						<div class="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
@@ -318,8 +346,8 @@
 				</Card.Root>
 			</div>
 
-			<!-- Quick Actions -->
-			<Card.Root class="p-6 mb-8">
+			<!-- Quick Actions - Hidden on mobile -->
+			<Card.Root class="hidden lg:block p-6 mb-8">
 				<div class="flex items-center gap-2 mb-4">
 					<PlusIcon class="h-5 w-5 text-muted-foreground" />
 					<h2 class="text-lg font-semibold">Quick Actions</h2>

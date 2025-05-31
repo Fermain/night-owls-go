@@ -259,6 +259,14 @@
 							<ShieldIcon class="mr-2 h-4 w-4" />
 							<span>Admin Dashboard</span>
 						</DropdownMenu.Item>
+						
+						<DropdownMenu.Item
+							class="cursor-pointer"
+							onclick={() => (window.location.href = '/')}
+						>
+							<UserIcon class="mr-2 h-4 w-4" />
+							<span>User Dashboard</span>
+						</DropdownMenu.Item>
 
 						<Separator />
 					{/if}
