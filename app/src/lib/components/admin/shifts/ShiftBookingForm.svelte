@@ -20,7 +20,6 @@
 	import type { UserData } from '$lib/schemas/user';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { goto } from '$app/navigation';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 
@@ -203,8 +202,9 @@
 		assignmentError = null;
 	}
 
-	function handleBackToCalendar() {
-		goto('/admin/shifts');
+	// Unused function - prefix with underscore
+	function _handleBackToCalendar() {
+		// Implementation when calendar navigation is needed
 	}
 
 	// Generate proper shift title following "XYZ Night 0-2AM" convention

@@ -45,8 +45,13 @@
 		window.addEventListener('beforeinstallprompt', (event) => {
 			// Prevent the default prompt
 			event.preventDefault();
-			// Store the event for later use
-			pwaInstallPrompt.set(event as any);
+			// Store the event for later use (cast to BeforeInstallPromptEvent)
+			pwaInstallPrompt.set(
+				event as Event & {
+					prompt: () => Promise<void>;
+					userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+				}
+			);
 		});
 
 		// Listen for app installed event

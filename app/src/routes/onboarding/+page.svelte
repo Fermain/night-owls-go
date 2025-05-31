@@ -43,8 +43,12 @@
 		notificationPermissionStatus = permissionUtils.checkNotificationPermission();
 
 		// Update store with current status
-		onboardingActions.updateLocationPermission(locationPermissionStatus as any);
-		onboardingActions.updateNotificationPermission(notificationPermissionStatus as any);
+		onboardingActions.updateLocationPermission(
+			locationPermissionStatus as 'granted' | 'denied' | 'prompt' | 'unknown'
+		);
+		onboardingActions.updateNotificationPermission(
+			notificationPermissionStatus as 'granted' | 'denied' | 'default' | 'unknown'
+		);
 
 		// Check PWA capabilities
 		canInstallPWA = pwaUtils.canInstallPWA();
@@ -67,7 +71,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Location access denied. You can enable it later in settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request location permission');
 		} finally {
 			isLoading = false;
@@ -86,7 +90,7 @@
 			} else if (result === 'denied') {
 				toast.warning('Notifications disabled. You can enable them later in settings.');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to request notification permission');
 		} finally {
 			isLoading = false;
@@ -104,7 +108,7 @@
 			} else {
 				toast.info('App installation cancelled');
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast.error('Failed to install app');
 		} finally {
 			isLoading = false;

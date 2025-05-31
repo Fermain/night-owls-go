@@ -8,6 +8,31 @@
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import XIcon from '@lucide/svelte/icons/x';
 
+	// Define flexible shift interface that can handle multiple data sources
+	interface Shift {
+		// ID fields
+		id?: number;
+		booking_id?: number;
+		schedule_id?: number;
+
+		// Time fields (different formats for different data sources)
+		start_time?: string;
+		shift_start?: string;
+		end_time?: string;
+		shift_end?: string;
+
+		// Metadata fields
+		schedule_name?: string;
+		buddy_name?: string;
+		can_checkin?: boolean;
+		is_booked?: boolean;
+		is_active?: boolean;
+		timezone?: string;
+
+		// Allow any other properties for flexibility
+		[key: string]: unknown;
+	}
+
 	let {
 		shift,
 		type = 'available', // 'available' | 'next' | 'active'
@@ -17,9 +42,9 @@
 		onCancel,
 		isLoading = false
 	}: {
-		shift: any;
+		shift: Shift;
 		type?: 'available' | 'next' | 'active';
-		onBook?: (shift: any) => void;
+		onBook?: (shift: Shift) => void;
 		onCheckIn?: () => void;
 		onCheckOut?: () => void;
 		onCancel?: (shiftId: number) => void;
@@ -30,11 +55,11 @@
 	const canCancel = $derived(
 		(type === 'next' || type === 'active') &&
 			onCancel &&
-			canCancelBooking(shift.start_time || shift.shift_start)
+			canCancelBooking(shift.start_time || shift.shift_start || '')
 	);
 
 	// Get the correct booking ID regardless of data structure
-	const bookingId = $derived(shift.id || shift.booking_id);
+	const bookingId = $derived(shift.id || shift.booking_id || 0);
 
 	// Helper functions
 	function formatTime(timeString: string) {

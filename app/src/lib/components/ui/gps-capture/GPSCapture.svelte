@@ -53,15 +53,15 @@
 		if ('permissions' in navigator) {
 			try {
 				const result = await navigator.permissions.query({ name: 'geolocation' });
-				permissionStatus = result.state as any;
+				permissionStatus = result.state as 'granted' | 'denied' | 'prompt';
 
 				// Listen for permission changes
 				result.addEventListener('change', () => {
-					permissionStatus = result.state as any;
+					permissionStatus = result.state as 'granted' | 'denied' | 'prompt';
 				});
 
 				return;
-			} catch (error) {
+			} catch (_error) {
 				// Fallback to 'prompt' if permissions API fails
 				permissionStatus = 'prompt';
 			}

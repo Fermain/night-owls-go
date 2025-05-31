@@ -18,6 +18,15 @@
 		timestamp: string;
 	}
 
+	// Define the report data interface
+	interface ReportData {
+		severity: number;
+		message: string;
+		latitude: number | null;
+		longitude: number | null;
+		accuracy: number | null;
+	}
+
 	// Props
 	let {
 		open = $bindable(false),
@@ -64,7 +73,7 @@
 
 	// Create report mutation
 	const reportMutation = createMutation({
-		mutationFn: (data: any) => {
+		mutationFn: (data: ReportData) => {
 			if (bookingId) {
 				return UserApiService.createShiftReport(bookingId, data);
 			} else {

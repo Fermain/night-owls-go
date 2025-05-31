@@ -60,7 +60,7 @@
 						try {
 							await offlineService.cacheEmergencyContacts();
 							contacts = await offlineService.getEmergencyContacts();
-						} catch (fetchError) {
+						} catch (_fetchError) {
 							error = 'Failed to load emergency contacts';
 						}
 					} else {
@@ -143,6 +143,11 @@
 
 	function cancelEmergencyCall() {
 		showEmergencyConfirm = false;
+	}
+
+	function _callEmergency(number: string) {
+		// Implementation for emergency calling
+		window.location.href = `tel:${number}`;
 	}
 </script>
 

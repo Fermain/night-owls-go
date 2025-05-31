@@ -181,7 +181,7 @@
 		shiftToCancel = null;
 	}
 
-	function formatShiftTimeFromBooking(shift: any) {
+	function formatShiftTimeFromBooking(shift: { start_time: string; end_time: string }) {
 		const start = new Date(shift.start_time);
 		const end = new Date(shift.end_time);
 		const today = new Date();
@@ -212,7 +212,7 @@
 		return `${dateLabel} • ${timeRange}`;
 	}
 
-	function formatShiftTimeCompact(booking: any) {
+	function formatShiftTimeCompact(booking: { shift_start: string; shift_end: string }) {
 		const start = new Date(booking.shift_start);
 		const end = new Date(booking.shift_end);
 		const today = new Date();
