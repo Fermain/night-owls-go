@@ -7,6 +7,7 @@
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
+	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
@@ -25,6 +26,9 @@
 		showBreadcrumbs?: boolean;
 		customTitle?: string | null;
 	} = $props();
+
+	// State for emergency dialog
+	let emergencyDialogOpen = $state(false);
 
 	// Determine if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
@@ -80,9 +84,7 @@
 
 	// Handle emergency call
 	function handleEmergency() {
-		if (confirm('This will call emergency services immediately. Continue?')) {
-			window.location.href = 'tel:999';
-		}
+		emergencyDialogOpen = true;
 	}
 
 	// Get user initials for avatar
@@ -292,3 +294,6 @@
 		{/if}
 	</div>
 </header>
+
+<!-- Emergency Contacts Dialog -->
+<EmergencyContactsDialog bind:open={emergencyDialogOpen} />

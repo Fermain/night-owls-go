@@ -13,7 +13,6 @@
 	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
 	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import { toast } from 'svelte-sonner';
-	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 	import GPSCapture from '$lib/components/ui/gps-capture/GPSCapture.svelte';
 	import { UserApiService } from '$lib/services/api/user';
 	import { goto } from '$app/navigation';
@@ -371,7 +370,4 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
-
-	<!-- Emergency Contacts -->
-	<EmergencyContacts />
 </div>

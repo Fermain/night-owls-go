@@ -10,7 +10,6 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { userSession } from '$lib/stores/authStore';
-	import EmergencyContacts from '$lib/components/emergency/EmergencyContacts.svelte';
 	import {
 		UserApiService,
 		type AvailableShiftSlot,
@@ -257,9 +256,6 @@
 					</Card.Content>
 				</Card.Root>
 			{/if}
-
-			<!-- Emergency Contacts -->
-			<EmergencyContacts />
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->
