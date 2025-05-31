@@ -8,6 +8,7 @@
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
+	import UserSettingsDialog from '$lib/components/user/settings/UserSettingsDialog.svelte';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
@@ -17,6 +18,7 @@
 	import StarIcon from '@lucide/svelte/icons/star';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 
 	// Props for customization
 	let {
@@ -30,6 +32,7 @@
 	// State for dialogs
 	let emergencyDialogOpen = $state(false);
 	let reportDialogOpen = $state(false);
+	let settingsDialogOpen = $state(false);
 
 	// Determine if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
@@ -91,6 +94,11 @@
 	// Handle report dialog
 	function handleReport() {
 		reportDialogOpen = true;
+	}
+
+	// Handle settings dialog
+	function handleSettings() {
+		settingsDialogOpen = true;
 	}
 
 	// Get user initials for avatar
@@ -253,6 +261,14 @@
 					{/if}
 
 					<DropdownMenu.Item
+						class="cursor-pointer"
+						onclick={handleSettings}
+					>
+						<SettingsIcon class="mr-2 h-4 w-4" />
+						<span>Settings</span>
+					</DropdownMenu.Item>
+
+					<DropdownMenu.Item
 						class="cursor-pointer text-red-600 focus:text-red-600"
 						onclick={handleLogout}
 					>
@@ -282,3 +298,6 @@
 
 <!-- Report Dialog -->
 <ReportDialog bind:open={reportDialogOpen} />
+
+<!-- Settings Dialog -->
+<UserSettingsDialog bind:open={settingsDialogOpen} />
