@@ -7,7 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
-	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { isAuthenticated } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import { onboardingActions, onboardingState } from '$lib/stores/onboardingStore';
 	import type { E164Number } from 'svelte-tel-input/types';

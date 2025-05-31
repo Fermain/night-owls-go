@@ -5,7 +5,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import {
-		onboardingState,
 		onboardingActions,
 		permissionUtils,
 		pwaUtils,

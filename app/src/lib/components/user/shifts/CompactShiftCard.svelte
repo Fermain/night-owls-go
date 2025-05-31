@@ -7,7 +7,6 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import XIcon from '@lucide/svelte/icons/x';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 
 	let {
 		shift,

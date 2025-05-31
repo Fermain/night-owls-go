@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { isAuthenticated } from '$lib/services/userService';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
@@ -10,8 +9,6 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import XIcon from '@lucide/svelte/icons/x';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import { Bell } from 'lucide-svelte';
-	import { notificationStore } from '$lib/services/notificationService';
 
 	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
 

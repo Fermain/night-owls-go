@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import GPSCapture from '$lib/components/ui/gps-capture/GPSCapture.svelte';
 	import { createMutation } from '@tanstack/svelte-query';

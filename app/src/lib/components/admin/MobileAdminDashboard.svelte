@@ -7,12 +7,10 @@
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { AdminDashboardData } from '$lib/queries/admin/dashboard';
 
 	let {

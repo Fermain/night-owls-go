@@ -8,7 +8,6 @@
 	import { toast } from 'svelte-sonner';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
-	import ShieldIcon from 'lucide-svelte/icons/shield';
 	import type { E164Number } from 'svelte-tel-input/types';
 
 	$effect(() => {
