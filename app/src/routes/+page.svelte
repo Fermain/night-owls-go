@@ -275,7 +275,7 @@
 				<div class="text-center max-w-4xl">
 					<div class="mb-8">
 						<div class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-8">
-							<div class="h-20 w-20 flex items-center justify-center">
+							<div class="h-40 w-40 flex items-center justify-center">
 								<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 							</div>
 						</div>

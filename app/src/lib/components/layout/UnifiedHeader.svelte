@@ -131,32 +131,32 @@
 
 	<!-- Left side: Logo/Title and Breadcrumbs -->
 	<div class="mr-4 flex items-center gap-4">
-		<!-- Logo and Title (only for public routes) -->
-		{#if !isAdminRoute}
-			<a href="/" class="flex items-center space-x-2">
-				<div class="h-8 w-8 p-1 flex items-center justify-center">
-					<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
-				</div>
-				<span class="hidden font-bold sm:inline-block">
-					{pageTitle}
-				</span>
-			</a>
-		{/if}
+		<!-- Logo and Title -->
+		<a href={isAdminRoute ? "/admin" : "/"} class="flex items-center space-x-2">
+			<div class="h-8 w-8 p-1 flex items-center justify-center">
+				<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
+			</div>
+			<span class="hidden font-bold sm:inline-block">
+				{isAdminRoute ? "Admin" : pageTitle}
+			</span>
+		</a>
 
 		<!-- Breadcrumbs for admin pages -->
 		{#if showBreadcrumbs && breadcrumbs.length > 0}
-			<Breadcrumb.Root>
-				<Breadcrumb.List>
-					{#each breadcrumbs as crumb, i (crumb.href)}
-						<Breadcrumb.Item class="hidden md:block">
-							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-						</Breadcrumb.Item>
-						{#if i < breadcrumbs.length - 1}
-							<Breadcrumb.Separator class="hidden md:block" />
-						{/if}
-					{/each}
-				</Breadcrumb.List>
-			</Breadcrumb.Root>
+			<div class="ml-2">
+				<Breadcrumb.Root>
+					<Breadcrumb.List>
+						{#each breadcrumbs as crumb, i (crumb.href)}
+							<Breadcrumb.Item class="hidden md:block">
+								<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+							</Breadcrumb.Item>
+							{#if i < breadcrumbs.length - 1}
+								<Breadcrumb.Separator class="hidden md:block" />
+							{/if}
+						{/each}
+					</Breadcrumb.List>
+				</Breadcrumb.Root>
+			</div>
 		{/if}
 	</div>
 
