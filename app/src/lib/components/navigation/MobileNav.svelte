@@ -26,14 +26,8 @@
 		{
 			href: '/bookings',
 			icon: CalendarIcon,
-			label: 'My Shifts',
+			label: 'My Commitments',
 			badge: null
-		},
-		{
-			href: '/broadcasts',
-			icon: Bell,
-			label: 'Messages',
-			badge: $notificationStore.unreadCount
 		},
 		{
 			href: '/report',

@@ -284,11 +284,15 @@
 					</Card.Root>
 				</div>
 				{#if (metrics?.urgentUnfilled || 0) > 0}
-					<div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+					<div
+						class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4"
+					>
 						<div class="flex items-center gap-2">
 							<AlertTriangleIcon class="h-4 w-4 text-red-600" />
 							<p class="text-sm font-medium text-red-800 dark:text-red-200">
-								{(metrics?.urgentUnfilled || 0)} urgent shift{(metrics?.urgentUnfilled || 0) > 1 ? 's' : ''} need immediate attention
+								{metrics?.urgentUnfilled || 0} urgent shift{(metrics?.urgentUnfilled || 0) > 1
+									? 's'
+									: ''} need immediate attention
 							</p>
 						</div>
 					</div>

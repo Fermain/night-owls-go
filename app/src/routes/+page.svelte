@@ -81,11 +81,11 @@
 	const bookingMutation = createMutation({
 		mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
 		onSuccess: () => {
-			toast.success('Shift booked successfully!');
+			toast.success('Shift committed successfully!');
 			$availableShiftsQuery.refetch();
 		},
 		onError: (error) => {
-			toast.error(`Failed to book shift: ${error.message}`);
+			toast.error(`Failed to commit to shift: ${error.message}`);
 		}
 	});
 
@@ -126,12 +126,6 @@
 		window.location.href = '/report';
 	}
 
-	function handleEmergency() {
-		if (confirm('Call emergency services?')) {
-			window.location.href = 'tel:999';
-		}
-	}
-
 	function handleBookShift(shift: AvailableShiftSlot) {
 		goto(`/bookings?scheduleId=${shift.schedule_id}&startTime=${shift.start_time}`);
 	}
@@ -145,7 +139,7 @@
 	<title>Mount Moreland Night Owls</title>
 </svelte:head>
 
-<div class="bg-background">
+<div class="bg-background flex-1">
 	{#if currentUser.isAuthenticated}
 		<!-- Authenticated Dashboard -->
 		<div class="p-4 space-y-4">
@@ -238,7 +232,7 @@
 									onclick={() => handleBookShift(shift)}
 									disabled={$bookingMutation.isPending}
 								>
-									{$bookingMutation.isPending ? 'Booking...' : 'Book'}
+									{$bookingMutation.isPending ? 'Committing...' : 'Commit'}
 								</Button>
 							</div>
 							{#if i < unfillableShifts.length - 1}

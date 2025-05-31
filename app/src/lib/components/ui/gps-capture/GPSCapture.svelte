@@ -351,7 +351,7 @@
 						</div>
 					</div>
 					<p class="text-xs text-blue-700">
-						Enter coordinates in decimal degrees format (e.g., -33.9249, 18.4241 for Cape Town)
+						Enter coordinates in decimal degrees format (e.g., -29.8587, 31.0218)
 					</p>
 					<Button onclick={handleManualLocationSubmit} size="sm" class="w-full">
 						<CheckCircleIcon class="h-4 w-4 mr-2" />

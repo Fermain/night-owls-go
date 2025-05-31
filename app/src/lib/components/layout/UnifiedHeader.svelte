@@ -51,7 +51,7 @@
 
 		// Public routes
 		if (pathname === '/') return 'Mount Moreland Night Owls';
-		if (pathname === '/bookings') return 'My Shifts';
+		if (pathname === '/bookings') return 'My Commitments';
 		if (pathname === '/broadcasts') return 'Messages';
 		if (pathname === '/report') return 'Report Incident';
 		if (pathname === '/login') return 'Sign In';
@@ -132,12 +132,12 @@
 	<!-- Left side: Logo/Title and Breadcrumbs -->
 	<div class="mr-4 flex items-center gap-4">
 		<!-- Logo and Title -->
-		<a href={isAdminRoute ? "/admin" : "/"} class="flex items-center space-x-2">
+		<a href={isAdminRoute ? '/admin' : '/'} class="flex items-center space-x-2">
 			<div class="h-8 w-8 p-1 flex items-center justify-center">
 				<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 			</div>
 			<span class="hidden font-bold sm:inline-block">
-				{isAdminRoute ? "Admin" : pageTitle}
+				{isAdminRoute ? 'Admin' : pageTitle}
 			</span>
 		</a>
 
@@ -259,11 +259,8 @@
 							<ShieldIcon class="mr-2 h-4 w-4" />
 							<span>Admin Dashboard</span>
 						</DropdownMenu.Item>
-						
-						<DropdownMenu.Item
-							class="cursor-pointer"
-							onclick={() => (window.location.href = '/')}
-						>
+
+						<DropdownMenu.Item class="cursor-pointer" onclick={() => (window.location.href = '/')}>
 							<UserIcon class="mr-2 h-4 w-4" />
 							<span>User Dashboard</span>
 						</DropdownMenu.Item>

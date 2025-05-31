@@ -215,7 +215,7 @@
 	<title>Report Incident - Night Owls</title>
 </svelte:head>
 
-<div class="px-4 py-4 space-y-4">
+<div class="space-y-4">
 	<!-- Offline Status Banner -->
 	{#if !isOnline}
 		<Card.Root class="bg-orange-50 border-orange-200 dark:bg-orange-950/50 dark:border-orange-800">
@@ -326,7 +326,6 @@
 
 			<!-- GPS Location Capture -->
 			<div class="space-y-2">
-				<Label class="text-base font-medium">Location Information (Optional)</Label>
 				<GPSCapture
 					autoCapture={false}
 					onLocationCaptured={handleLocationCaptured}
@@ -334,8 +333,7 @@
 					className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3"
 				/>
 				<p class="text-xs text-slate-500 dark:text-slate-400">
-					Location data helps emergency services and improves incident response. If GPS fails, you
-					can enter coordinates manually or submit without location data.
+					Location data helps emergency services and improves incident response.
 					{#if !isOnline}
 						<span class="text-orange-600"> GPS works offline.</span>
 					{/if}
@@ -376,23 +374,4 @@
 
 	<!-- Emergency Contacts -->
 	<EmergencyContacts />
-
-	<!-- Emergency Notice -->
-	<Card.Root class="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50">
-		<Card.Content class="p-4">
-			<div class="flex items-start gap-3">
-				<AlertTriangleIcon class="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
-				<div class="flex-1">
-					<h3 class="font-medium text-red-900 dark:text-red-100 text-sm">Emergency Situations</h3>
-					<p class="text-xs text-red-700 dark:text-red-300 mt-1">
-						For immediate threats or emergencies requiring police, medical, or fire response, use
-						the Emergency button in the header to call 999 directly rather than submitting a report.
-						{#if !isOnline}
-							<strong>Emergency calling works offline.</strong>
-						{/if}
-					</p>
-				</div>
-			</div>
-		</Card.Content>
-	</Card.Root>
 </div>

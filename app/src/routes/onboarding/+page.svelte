@@ -153,18 +153,23 @@
 	<title>Welcome - Night Owls Setup</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col">
+<div
+	class="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col"
+>
 	<div class="container mx-auto px-4 py-4 sm:py-6 flex-1 flex flex-col">
 		<!-- Header -->
 		<div class="text-center mb-4 sm:mb-6">
 			<div class="flex items-center justify-center mb-3">
-				<div class="h-8 w-8 sm:h-10 sm:w-10 bg-primary rounded-lg flex items-center justify-center mr-2">
+				<div
+					class="h-8 w-8 sm:h-10 sm:w-10 bg-primary rounded-lg flex items-center justify-center mr-2"
+				>
 					<img src="/logo.png" alt="Night Owls" class="h-6 w-6 sm:h-8 sm:w-8" />
 				</div>
 				<h1 class="text-xl sm:text-2xl md:text-3xl font-bold">Welcome to Night Owls</h1>
 			</div>
 			<p class="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-				Hi {$currentUser?.name || 'there'}! Let's set up your account to get the best experience keeping our community safe.
+				Hi {$currentUser?.name || 'there'}! Let's set up your account to get the best experience
+				keeping our community safe.
 			</p>
 		</div>
 
@@ -203,9 +208,7 @@
 								<MapPinIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
 								<div class="min-w-0 flex-1">
 									<h3 class="font-medium text-sm">Location Access</h3>
-									<p class="text-xs text-muted-foreground">
-										Helps with incident reporting
-									</p>
+									<p class="text-xs text-muted-foreground">Helps with incident reporting</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-2 flex-shrink-0">
@@ -226,7 +229,12 @@
 									</Badge>
 								{/if}
 								{#if locationPermissionStatus !== 'granted'}
-									<Button size="sm" onclick={handleLocationPermission} disabled={isLoading} class="text-xs px-2 py-1">
+									<Button
+										size="sm"
+										onclick={handleLocationPermission}
+										disabled={isLoading}
+										class="text-xs px-2 py-1"
+									>
 										Enable
 									</Button>
 								{/if}
@@ -239,9 +247,7 @@
 								<BellIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
 								<div class="min-w-0 flex-1">
 									<h3 class="font-medium text-sm">Notifications</h3>
-									<p class="text-xs text-muted-foreground">
-										Receive important alerts
-									</p>
+									<p class="text-xs text-muted-foreground">Receive important alerts</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-2 flex-shrink-0">
@@ -262,7 +268,12 @@
 									</Badge>
 								{/if}
 								{#if notificationPermissionStatus !== 'granted'}
-									<Button size="sm" onclick={handleNotificationPermission} disabled={isLoading} class="text-xs px-2 py-1">
+									<Button
+										size="sm"
+										onclick={handleNotificationPermission}
+										disabled={isLoading}
+										class="text-xs px-2 py-1"
+									>
 										Enable
 									</Button>
 								{/if}
