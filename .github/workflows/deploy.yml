@@ -8,14 +8,26 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  GO_VERSION: '1.24.2'
+  NODE_VERSION: '20'
 
 jobs:
-  build-and-deploy:
+  ci:
+    name: Run CI
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build:
+    name: Build & Push Image
     runs-on: ubuntu-latest
+    needs: ci
     environment: Production
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
       
     steps:
     - name: Checkout repository
@@ -57,17 +69,35 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        platforms: linux/amd64
 
-    # Build frontend locally (same as manual deployment approach)
+  frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: ${{ env.NODE_VERSION }}
 
     - name: Enable pnpm
       run: corepack enable pnpm
 
-    - name: Build frontend locally
+    - name: Cache pnpm dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pnpm-store
+          app/node_modules
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('app/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Build frontend
       working-directory: ./app
       run: |
         echo "📦 Installing dependencies..."
@@ -89,28 +119,24 @@ jobs:
         echo "✅ Frontend build verification passed"
         echo "📊 Frontend build contains $(find app/build -type f | wc -l) files"
 
-    # Copy frontend build to server (using ssh-action approach)
-    - name: Prepare server for frontend files
-      uses: appleboy/ssh-action@v1.0.3
+    - name: Upload frontend artifacts
+      uses: actions/upload-artifact@v4
       with:
-        host: mm.nightowls.app
-        username: deploy
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd ~/night-owls-go
-          echo "📦 Preparing for frontend files..."
-          mkdir -p frontend-build
-          rm -rf frontend-build/*
+        name: frontend-build
+        path: app/build/
+        retention-days: 1
 
-    - name: Upload frontend files
-      uses: appleboy/scp-action@v0.1.7
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, frontend]
+    environment: Production
+    steps:
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v4
       with:
-        host: mm.nightowls.app
-        username: deploy
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "app/build/*"
-        target: "~/night-owls-go/frontend-build/"
-        strip_components: 2
+        name: frontend-build
+        path: frontend-build/
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
@@ -124,7 +150,7 @@ jobs:
           echo "🛑 Stopping containers..."
           docker compose down || docker-compose down || true
           
-          echo "🗑️ Removing old containers and images..."
+          echo "🗑️ Cleaning up..."
           docker container prune -f
           docker image prune -f --filter "label=org.opencontainers.image.source=https://github.com/${{ github.repository }}"
           
@@ -132,24 +158,25 @@ jobs:
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           echo "📦 Pulling latest image..."
-          docker pull ghcr.io/${{ steps.image_name.outputs.IMAGE_NAME_LOWER }}:latest
+          docker pull ${{ needs.build.outputs.image }}
           
           echo "🚀 Starting application..."
-          docker compose up -d --force-recreate || docker-compose up -d --force-recreate
+          docker compose up -d --force-recreate
           
           echo "⏳ Waiting for application..."
           sleep 15
-          
-          echo "🏥 Health check..."
-          curl -f http://localhost:5888/health && echo "✅ Backend healthy!" || { echo "❌ Backend failed"; exit 1; }
-          
-          echo "🌐 Frontend check..."
-          curl -f http://localhost/ && echo "✅ Frontend accessible!" || { echo "❌ Frontend failed"; exit 1; }
-          
-          echo "🔐 SSL check..."
-          curl -f https://mm.nightowls.app/health && echo "✅ SSL deployed!" || echo "⚠️ SSL pending (may take a few minutes)"
 
-    - name: Final verification
+    - name: Upload frontend files
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: mm.nightowls.app
+        username: deploy
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "frontend-build/*"
+        target: "~/night-owls-go/frontend-build/"
+        strip_components: 1
+
+    - name: Final deployment steps
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: mm.nightowls.app
@@ -158,27 +185,35 @@ jobs:
         script: |
           cd ~/night-owls-go
           
-          echo "🔍 Verifying frontend-build directory..."
-          if [ ! -d "frontend-build" ]; then
-            echo "❌ frontend-build directory missing"
-            exit 1
-          fi
-          
-          if [ ! -f "frontend-build/index.html" ]; then
-            echo "❌ index.html missing in frontend-build"
-            exit 1
-          fi
-          
-          echo "📊 Frontend files verification:"
-          ls -la frontend-build/ | head -10
-          
-          echo "🔄 Restarting containers to pick up new frontend files..."
+          echo "🔄 Restarting Caddy to pick up new frontend files..."
           docker compose restart caddy
           
           echo "⏳ Final health check..."
           sleep 10
-          curl -f https://mm.nightowls.app/ && echo "✅ Full deployment successful!" || { 
-            echo "❌ Final check failed, checking logs..."
+          
+          # Backend health check
+          if curl -f http://localhost:5888/health > /dev/null 2>&1; then
+            echo "✅ Backend healthy!"
+          else
+            echo "❌ Backend failed"
+            docker compose logs night-owls --tail=20
+            exit 1
+          fi
+          
+          # Frontend check
+          if curl -f http://localhost/ > /dev/null 2>&1; then
+            echo "✅ Frontend accessible!"
+          else
+            echo "❌ Frontend failed"
             docker compose logs caddy --tail=20
             exit 1
-          }
+          fi
+          
+          # SSL check (allow to fail since it might take time)
+          if curl -f https://mm.nightowls.app/health > /dev/null 2>&1; then
+            echo "✅ SSL deployed!"
+          else
+            echo "⚠️ SSL pending (may take a few minutes)"
+          fi
+          
+          echo "🎉 Deployment completed successfully!"
