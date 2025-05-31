@@ -202,11 +202,6 @@
 		assignmentError = null;
 	}
 
-	// Unused function - prefix with underscore
-	function _handleBackToCalendar() {
-		// Implementation when calendar navigation is needed
-	}
-
 	// Generate proper shift title following "XYZ Night 0-2AM" convention
 	function getShiftTitle(startTimeIso: string, endTimeIso: string): string {
 		try {
