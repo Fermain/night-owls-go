@@ -3,7 +3,6 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import * as Card from '$lib/components/ui/card';
 	import { themeState, themeActions, type ThemeMode } from '$lib/stores/themeStore';
 	import { permissionUtils } from '$lib/stores/onboardingStore';
 	import { toast } from 'svelte-sonner';
@@ -26,24 +25,25 @@
 	let notificationPermissionStatus = $state<string>('unknown');
 	let isCheckingPermissions = $state(false);
 
+	// Computed permission statuses for styling
+	const locationGranted = $derived(locationPermissionStatus === 'granted');
+	const notificationGranted = $derived(notificationPermissionStatus === 'granted');
+
 	// Theme options
 	const themeOptions = [
 		{
 			value: 'light' as ThemeMode,
 			label: 'Light',
-			description: 'Light theme always',
 			icon: SunIcon
 		},
 		{
 			value: 'dark' as ThemeMode,
 			label: 'Dark',
-			description: 'Dark theme always',
 			icon: MoonIcon
 		},
 		{
 			value: 'system' as ThemeMode,
 			label: 'System',
-			description: 'Follows system preference',
 			icon: MonitorIcon
 		}
 	];
@@ -130,119 +130,110 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content>
+	<Dialog.Content class="max-w-sm">
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<SettingsIcon class="h-5 w-5" />
 				Settings
-			</Dialog.Title> 
+			</Dialog.Title>
 		</Dialog.Header>
 
-		<div class="space-y-6">
-			<div class="grid grid-cols-1 gap-3">
-        {#each themeOptions as option (option.value)}
-          {@const IconComponent = option.icon}
-          <button
-            type="button"
-            class="flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all
-              {selectedTheme === option.value
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'}"
-            onclick={() => handleThemeChange(option.value)}
-          >
-            <IconComponent class="h-5 w-5 mt-0.5 text-primary" />
-            <div class="flex-1">
-              <div class="font-medium text-sm">{option.label}</div>
-              <div class="text-xs text-muted-foreground mt-0.5">
-                {option.description}
-              </div>
-            </div>
-            {#if selectedTheme === option.value}
-              <CheckCircleIcon class="h-5 w-5 text-primary" />
-            {/if}
-          </button>
-        {/each}
-      </div>
+		<div class="space-y-4">
+			<!-- Theme Options -->
+			<div>
+				<h3 class="text-sm font-medium mb-2">Theme</h3>
+				<div class="grid grid-cols-3 gap-2">
+					{#each themeOptions as option (option.value)}
+						{@const IconComponent = option.icon}
+						{@const isSelected = selectedTheme === option.value}
+						<button
+							type="button"
+							class="flex flex-col items-center gap-1 p-2 rounded-lg border-2 text-center transition-all
+								{isSelected
+								? 'border-primary bg-primary/5'
+								: 'border-border hover:border-primary/30 opacity-75 hover:opacity-100'}"
+							onclick={() => handleThemeChange(option.value)}
+						>
+							<IconComponent class="h-4 w-4 {isSelected ? 'text-primary' : 'text-muted-foreground'}" />
+							<span class="text-xs {isSelected ? 'font-medium' : 'text-muted-foreground'}">{option.label}</span>
+						</button>
+					{/each}
+				</div>
+			</div>
 
-			<div class="space-y-4">
-        <!-- Location Permission -->
-        <div class="flex items-start justify-between p-3 border rounded-lg">
-          <div class="flex items-start gap-3 flex-1 min-w-0">
-            <MapPinIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div class="min-w-0 flex-1">
-              <h3 class="font-medium text-sm">Location Access</h3>
-              <p class="text-xs text-muted-foreground mt-0.5">
-                Helps with incident reporting and emergency services
-              </p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            {#if locationPermissionStatus}
-              {@const badgeInfo = getPermissionBadge(locationPermissionStatus)}
-              {@const BadgeIcon = badgeInfo.icon}
-              <Badge variant={badgeInfo.variant} class="flex items-center gap-1 text-xs">
-                <BadgeIcon class="h-3 w-3" />
-                {badgeInfo.text}
-              </Badge>
-            {/if}
-            {#if locationPermissionStatus !== 'granted'}
-              <Button
-                size="sm"
-                onclick={handleLocationPermission}
-                disabled={isCheckingPermissions}
-                class="text-xs px-2 py-1"
-              >
-                Enable
-              </Button>
-            {/if}
-          </div>
-        </div>
+			<!-- Permissions -->
+			<div>
+				<h3 class="text-sm font-medium mb-2">Permissions</h3>
+				<div class="space-y-2">
+					<!-- Location Permission -->
+					<div class="flex items-center justify-between p-2 border rounded-lg
+						{locationGranted
+							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75' 
+							: 'border-border'
+						}">
+						<div class="flex items-center gap-2 flex-1">
+							<MapPinIcon class="h-4 w-4 {locationGranted ? 'text-green-600 dark:text-green-400' : 'text-primary'}" />
+							<span class="text-sm {locationGranted ? 'text-green-800 dark:text-green-200' : ''}">Location</span>
+						</div>
+						<div class="flex items-center gap-2">
+							{#if locationPermissionStatus}
+								{@const badgeInfo = getPermissionBadge(locationPermissionStatus)}
+								{@const BadgeIcon = badgeInfo.icon}
+								<Badge variant={badgeInfo.variant} class="text-xs {locationGranted ? 'opacity-75' : ''}">
+									<BadgeIcon class="h-3 w-3 mr-1" />
+									{badgeInfo.text}
+								</Badge>
+							{/if}
+							{#if !locationGranted}
+								<Button
+									size="sm"
+									onclick={handleLocationPermission}
+									disabled={isCheckingPermissions}
+									class="text-xs px-2 py-1 h-6"
+								>
+									Enable
+								</Button>
+							{/if}
+						</div>
+					</div>
 
-        <!-- Notification Permission -->
-        <div class="flex items-start justify-between p-3 border rounded-lg">
-          <div class="flex items-start gap-3 flex-1 min-w-0">
-            <BellIcon class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div class="min-w-0 flex-1">
-              <h3 class="font-medium text-sm">Notifications</h3>
-              <p class="text-xs text-muted-foreground mt-0.5">
-                Receive important alerts and emergency broadcasts
-              </p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            {#if notificationPermissionStatus}
-              {@const badgeInfo = getPermissionBadge(notificationPermissionStatus)}
-              {@const BadgeIcon = badgeInfo.icon}
-              <Badge variant={badgeInfo.variant} class="flex items-center gap-1 text-xs">
-                <BadgeIcon class="h-3 w-3" />
-                {badgeInfo.text}
-              </Badge>
-            {/if}
-            {#if notificationPermissionStatus !== 'granted'}
-              <Button
-                size="sm"
-                onclick={handleNotificationPermission}
-                disabled={isCheckingPermissions}
-                class="text-xs px-2 py-1"
-              >
-                Enable
-              </Button>
-            {/if}
-          </div>
-        </div>
-
-        {#if locationPermissionStatus === 'denied' || notificationPermissionStatus === 'denied'}
-          <div class="p-3 bg-muted rounded-lg">
-            <p class="text-xs text-muted-foreground">
-              <strong>Note:</strong> If permissions are denied, you can manually enable them in your browser's site settings.
-            </p>
-          </div>
-        {/if}
-      </div>
+					<!-- Notification Permission -->
+					<div class="flex items-center justify-between p-2 border rounded-lg
+						{notificationGranted
+							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75' 
+							: 'border-border'
+						}">
+						<div class="flex items-center gap-2 flex-1">
+							<BellIcon class="h-4 w-4 {notificationGranted ? 'text-green-600 dark:text-green-400' : 'text-primary'}" />
+							<span class="text-sm {notificationGranted ? 'text-green-800 dark:text-green-200' : ''}">Notifications</span>
+						</div>
+						<div class="flex items-center gap-2">
+							{#if notificationPermissionStatus}
+								{@const badgeInfo = getPermissionBadge(notificationPermissionStatus)}
+								{@const BadgeIcon = badgeInfo.icon}
+								<Badge variant={badgeInfo.variant} class="text-xs {notificationGranted ? 'opacity-75' : ''}">
+									<BadgeIcon class="h-3 w-3 mr-1" />
+									{badgeInfo.text}
+								</Badge>
+							{/if}
+							{#if !notificationGranted}
+								<Button
+									size="sm"
+									onclick={handleNotificationPermission}
+									disabled={isCheckingPermissions}
+									class="text-xs px-2 py-1 h-6"
+								>
+									Enable
+								</Button>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
-		<Dialog.Footer>
-			<Button onclick={() => (open = false)}>Close</Button>
+		<Dialog.Footer class="pt-4">
+			<Button onclick={() => (open = false)} class="w-full">Close</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root> 
