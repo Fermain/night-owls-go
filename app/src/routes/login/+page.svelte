@@ -198,7 +198,7 @@
 </svelte:head>
 
 <div class="flex flex-1 flex-col items-center justify-center gap-6 p-4 md:p-10">
-	<div class="flex w-full max-w-sm flex-col gap-6">
+	<div class="w-full max-w-md mx-auto flex flex-col gap-6">
 		<!-- Header -->
 		<div class="flex flex-col gap-2 text-center">
 			<h1 class="text-2xl font-semibold tracking-tight">
