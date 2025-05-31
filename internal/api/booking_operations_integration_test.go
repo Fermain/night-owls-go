@@ -239,8 +239,9 @@ func TestBookingOperations_CreateBooking_Success(t *testing.T) {
 	shiftStartTime := parsedCron.Next(startOfTomorrow)
 
 	createRequest := api.CreateBookingRequest{
-		ShiftID:   schedule.ScheduleID,
-		BuddyName: &user.Name.String,
+		ScheduleID: schedule.ScheduleID,
+		StartTime:  shiftStartTime,
+		BuddyName:  &user.Name.String,
 	}
 	payloadBytes, _ := json.Marshal(createRequest)
 
@@ -280,11 +281,12 @@ func TestBookingOperations_CreateBooking_DuplicateSlot(t *testing.T) {
 
 	parsedCron, err := cronexpr.Parse(schedule.CronExpr)
 	require.NoError(t, err)
-	_ = parsedCron.Next(startOfTomorrow) // Acknowledge but don't use
+	shiftStartTime := parsedCron.Next(startOfTomorrow)
 
 	createRequest := api.CreateBookingRequest{
-		ShiftID:   schedule.ScheduleID,
-		BuddyName: &user1.Name.String,
+		ScheduleID: schedule.ScheduleID,
+		StartTime:  shiftStartTime,
+		BuddyName:  &user1.Name.String,
 	}
 	payloadBytes, _ := json.Marshal(createRequest)
 

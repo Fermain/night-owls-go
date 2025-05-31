@@ -39,8 +39,9 @@ func NewBookingHandler(service *service.BookingService, logger *slog.Logger) *Bo
 
 // Request types for Fuego
 type CreateBookingRequest struct {
-	ShiftID   int64   `json:"shift_id" validate:"required"`
-	BuddyName *string `json:"buddy_name,omitempty"`
+	ScheduleID int64     `json:"schedule_id" validate:"required"`
+	StartTime  time.Time `json:"start_time" validate:"required"`
+	BuddyName  *string   `json:"buddy_name,omitempty"`
 }
 
 type SuccessResponse struct {
@@ -115,7 +116,7 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 		}
 	}
 
-	h.logger.InfoContext(c.Context(), "Creating booking", "shift_id", req.ShiftID, "user_id", userID, "buddy_name", req.BuddyName)
+	h.logger.InfoContext(c.Context(), "Creating booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "buddy_name", req.BuddyName)
 
 	// Convert buddy name to sql.NullString
 	var buddyName sql.NullString
@@ -123,19 +124,9 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 		buddyName = sql.NullString{String: *req.BuddyName, Valid: true}
 	}
 
-	// For now, we'll need to convert from ShiftID to ScheduleID and StartTime
-	// This might require additional service methods or refactoring
-	// For the migration, I'll assume ShiftID maps to ScheduleID and we need a start time
-	// This is a temporary implementation that needs proper shift resolution
-	
-	// TODO: This needs to be replaced with proper shift-to-booking conversion
-	// For now, treating ShiftID as ScheduleID and using current time as placeholder
-	scheduleID := req.ShiftID
-	startTime := time.Now().UTC() // This should come from shift data
-	
-	booking, err := h.service.CreateBooking(c.Context(), userID, scheduleID, startTime, sql.NullString{}, buddyName)
+	booking, err := h.service.CreateBooking(c.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
-		h.logger.ErrorContext(c.Context(), "Failed to create booking", "shift_id", req.ShiftID, "user_id", userID, "error", err)
+		h.logger.ErrorContext(c.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
 		return nil, fuego.HTTPError{
 			Err:    err,
 			Status: http.StatusBadRequest,
@@ -143,7 +134,7 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 		}
 	}
 
-	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "shift_id", req.ShiftID, "user_id", userID)
+	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
 
 	// Set the success status code for creation
 	c.SetStatus(http.StatusCreated)
@@ -460,7 +451,7 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	h.logger.InfoContext(r.Context(), "Creating booking", "shift_id", req.ShiftID, "user_id", userID, "buddy_name", req.BuddyName)
+	h.logger.InfoContext(r.Context(), "Creating booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "buddy_name", req.BuddyName)
 
 	// Convert buddy name to sql.NullString
 	var buddyName sql.NullString
@@ -468,24 +459,14 @@ func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Req
 		buddyName = sql.NullString{String: *req.BuddyName, Valid: true}
 	}
 
-	// For now, we'll need to convert from ShiftID to ScheduleID and StartTime
-	// This might require additional service methods or refactoring
-	// For the migration, I'll assume ShiftID maps to ScheduleID and we need a start time
-	// This is a temporary implementation that needs proper shift resolution
-	
-	// TODO: This needs to be replaced with proper shift-to-booking conversion
-	// For now, treating ShiftID as ScheduleID and using current time as placeholder
-	scheduleID := req.ShiftID
-	startTime := time.Now().UTC() // This should come from shift data
-	
-	booking, err := h.service.CreateBooking(r.Context(), userID, scheduleID, startTime, sql.NullString{}, buddyName)
+	booking, err := h.service.CreateBooking(r.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
-		h.logger.ErrorContext(r.Context(), "Failed to create booking", "shift_id", req.ShiftID, "user_id", userID, "error", err)
+		h.logger.ErrorContext(r.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
 		RespondWithError(w, http.StatusBadRequest, err.Error(), h.logger)
 		return
 	}
 
-	h.logger.InfoContext(r.Context(), "Booking created successfully", "booking_id", booking.BookingID, "shift_id", req.ShiftID, "user_id", userID)
+	h.logger.InfoContext(r.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
 
 	RespondWithJSON(w, http.StatusCreated, toBookingResponse(booking), h.logger)
 }
