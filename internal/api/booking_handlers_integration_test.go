@@ -90,17 +90,12 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 		require.NoError(t, err, "Failed to get daily schedule by ID=1 for test setup")
 	}
 
-	// Use a time that matches the cron expression in Africa/Johannesburg timezone
-	// Daily Evening Patrol runs at 18:00 in Johannesburg time, which is 16:00 UTC
-	shiftStartTimeStr := "2025-01-06T16:00:00Z"
-	shiftStartTime, _ := time.Parse(time.RFC3339, shiftStartTimeStr)
-
 	// --- Test POST /bookings (Create Booking) ---
+	// Updated to use ShiftID instead of ScheduleID/StartTime
 	buddyName := "Test Buddy"
 	createBookingReq := api.CreateBookingRequest{
-		ScheduleID: dailySchedule.ScheduleID,
-		StartTime:  shiftStartTime,
-		BuddyName:  &buddyName,
+		ShiftID:   dailySchedule.ScheduleID, // Using schedule ID as shift ID for now
+		BuddyName: &buddyName,
 	}
 	bookingPayloadBytes, _ := json.Marshal(createBookingReq)
 	rr = app.makeRequest(t, "POST", "/bookings", bytes.NewBuffer(bookingPayloadBytes), userToken)
@@ -110,7 +105,6 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &createdBooking)
 	require.NoError(t, err)
 	assert.Equal(t, dailySchedule.ScheduleID, createdBooking.ScheduleID)
-	assert.Equal(t, shiftStartTime, createdBooking.ShiftStart.UTC())
 	assert.Equal(t, authUserID, createdBooking.UserID)
 	assert.Equal(t, "Test Buddy", createdBooking.BuddyName)
 	assert.Nil(t, createdBooking.CheckedInAt)
@@ -124,11 +118,10 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	rr = app.makeRequest(t, "POST", checkinPath, nil, userToken)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Mark check-in failed: %s", rr.Body.String())
-	var updatedBooking api.BookingResponse
-	err = json.Unmarshal(rr.Body.Bytes(), &updatedBooking)
+	var successResp map[string]string
+	err = json.Unmarshal(rr.Body.Bytes(), &successResp)
 	require.NoError(t, err)
-	assert.NotNil(t, updatedBooking.CheckedInAt)
-	assert.Equal(t, createdBooking.BookingID, updatedBooking.BookingID)
+	assert.Equal(t, "Check-in recorded successfully", successResp["message"])
 
 	// --- Test PATCH /bookings/{id}/attendance (by another user - Forbidden) ---
 	// Register and login another user

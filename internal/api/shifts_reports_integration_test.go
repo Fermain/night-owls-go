@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url" // For URL query parameters
 	"testing"
-	"time"
 
 	"night-owls-go/internal/api" // For claims if needed for other tests
 	"night-owls-go/internal/service"
@@ -65,12 +64,9 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	// Active Jan 1, 2025 - Dec 31, 2025.
 	// Target shift: Monday, Jan 6, 2025, at 18:00 Johannesburg time (16:00 UTC)
 	targetScheduleID := int64(1)                // Assuming Daily Evening Patrol is ID 1 from seed
-	shiftStartTimeStr := "2025-01-06T16:00:00Z" // 18:00 Johannesburg time = 16:00 UTC
-	shiftStartTime, _ := time.Parse(time.RFC3339, shiftStartTimeStr)
 
 	createBookingReq := api.CreateBookingRequest{
-		ScheduleID: targetScheduleID,
-		StartTime:  shiftStartTime,
+		ShiftID: targetScheduleID, // Using schedule ID as shift ID for migration
 	}
 	bookingPayloadBytes, _ := json.Marshal(createBookingReq)
 	rrBooking := app.makeRequest(t, "POST", "/bookings", bytes.NewBuffer(bookingPayloadBytes), userToken)

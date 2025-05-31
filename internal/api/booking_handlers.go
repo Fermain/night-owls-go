@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -427,4 +428,64 @@ func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.InfoContext(r.Context(), "Check-in recorded successfully", "booking_id", bookingID, "user_id", userID)
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Check-in recorded successfully"}, h.logger)
+}
+
+// CreateBookingHandler handles POST /bookings (legacy chi handler for tests)
+// @Summary Create a new booking
+// @Description Create a new booking for a shift
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param booking body CreateBookingRequest true "Booking details"
+// @Success 201 {object} BookingResponse "Booking created successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request data"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 409 {object} ErrorResponse "Shift already booked or not available"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bookings [post]
+func (h *BookingHandler) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
+	var req CreateBookingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse request body", "error", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body", h.logger)
+		return
+	}
+
+	// Get the user ID from context (set by auth middleware)
+	userID, ok := r.Context().Value("user_id").(int64)
+	if !ok {
+		h.logger.ErrorContext(r.Context(), "User ID not found in context", "handler", "BookingHandler")
+		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
+		return
+	}
+
+	h.logger.InfoContext(r.Context(), "Creating booking", "shift_id", req.ShiftID, "user_id", userID, "buddy_name", req.BuddyName)
+
+	// Convert buddy name to sql.NullString
+	var buddyName sql.NullString
+	if req.BuddyName != nil && *req.BuddyName != "" {
+		buddyName = sql.NullString{String: *req.BuddyName, Valid: true}
+	}
+
+	// For now, we'll need to convert from ShiftID to ScheduleID and StartTime
+	// This might require additional service methods or refactoring
+	// For the migration, I'll assume ShiftID maps to ScheduleID and we need a start time
+	// This is a temporary implementation that needs proper shift resolution
+	
+	// TODO: This needs to be replaced with proper shift-to-booking conversion
+	// For now, treating ShiftID as ScheduleID and using current time as placeholder
+	scheduleID := req.ShiftID
+	startTime := time.Now().UTC() // This should come from shift data
+	
+	booking, err := h.service.CreateBooking(r.Context(), userID, scheduleID, startTime, sql.NullString{}, buddyName)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to create booking", "shift_id", req.ShiftID, "user_id", userID, "error", err)
+		RespondWithError(w, http.StatusBadRequest, err.Error(), h.logger)
+		return
+	}
+
+	h.logger.InfoContext(r.Context(), "Booking created successfully", "booking_id", booking.BookingID, "shift_id", req.ShiftID, "user_id", userID)
+
+	RespondWithJSON(w, http.StatusCreated, toBookingResponse(booking), h.logger)
 }

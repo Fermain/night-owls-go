@@ -229,7 +229,7 @@ func TestBookingOperations_CreateBooking_Success(t *testing.T) {
 	user, token := app.createTestUserAndLogin(t, "+15550001001", "Test User", "owl")
 	schedule := app.createTestSchedule(t)
 
-	// Calculate next shift time
+	// Calculate next shift time (for future reference, but not used in new API)
 	locUTC, _ := time.LoadLocation("UTC")
 	tomorrow := time.Now().In(locUTC).AddDate(0, 0, 1)
 	startOfTomorrow := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, locUTC)
@@ -239,8 +239,8 @@ func TestBookingOperations_CreateBooking_Success(t *testing.T) {
 	shiftStartTime := parsedCron.Next(startOfTomorrow)
 
 	createRequest := api.CreateBookingRequest{
-		ScheduleID: schedule.ScheduleID,
-		StartTime:  shiftStartTime,
+		ShiftID:   schedule.ScheduleID,
+		BuddyName: &user.Name.String,
 	}
 	payloadBytes, _ := json.Marshal(createRequest)
 
@@ -269,22 +269,22 @@ func TestBookingOperations_CreateBooking_DuplicateSlot(t *testing.T) {
 	app := newBookingTestApp(t)
 	defer app.DB.Close()
 
-	_, token1 := app.createTestUserAndLogin(t, "+15550001001", "User One", "owl")
+	user1, token1 := app.createTestUserAndLogin(t, "+15550001001", "User One", "owl")
 	_, token2 := app.createTestUserAndLogin(t, "+15550001002", "User Two", "owl")
 	schedule := app.createTestSchedule(t)
 
-	// Calculate next shift time
+	// Calculate next shift time (not used but kept for future use)
 	locUTC, _ := time.LoadLocation("UTC")
 	tomorrow := time.Now().In(locUTC).AddDate(0, 0, 1)
 	startOfTomorrow := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, locUTC)
 
 	parsedCron, err := cronexpr.Parse(schedule.CronExpr)
 	require.NoError(t, err)
-	shiftStartTime := parsedCron.Next(startOfTomorrow)
+	_ = parsedCron.Next(startOfTomorrow) // Acknowledge but don't use
 
 	createRequest := api.CreateBookingRequest{
-		ScheduleID: schedule.ScheduleID,
-		StartTime:  shiftStartTime,
+		ShiftID:   schedule.ScheduleID,
+		BuddyName: &user1.Name.String,
 	}
 	payloadBytes, _ := json.Marshal(createRequest)
 
