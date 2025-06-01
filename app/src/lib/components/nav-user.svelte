@@ -12,14 +12,7 @@
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import { userStore, logout } from '$lib/stores/authStore';
 
-	// Safe sidebar context access
-	function getSidebarContext() {
-		try {
-			return useSidebar();
-		} catch {
-			return null;
-		}
-	}
+	const sidebar = useSidebar();
 
 	// Get current user from auth store
 	const currentUser = $derived($userStore);
@@ -99,7 +92,7 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content
 				class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
-				side={getSidebarContext()?.isMobile ? 'bottom' : 'right'}
+				side={sidebar?.isMobile ? 'bottom' : 'right'}
 				align="end"
 				sideOffset={4}
 			>
