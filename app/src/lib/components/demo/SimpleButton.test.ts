@@ -41,8 +41,10 @@ describe('Component Testing Demo', () => {
 		// This shows how we'd test form components
 		const formHtml = `
       <form>
-        <input type="text" name="username" required />
-        <input type="email" name="email" required />
+        <label for="username">Username</label>
+        <input id="username" type="text" name="username" required />
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" required />
         <button type="submit">Submit</button>
       </form>
     `;
