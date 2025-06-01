@@ -72,8 +72,13 @@ export function setSidebar(props: SidebarStateProps): SidebarState {
 /**
  * Retrieves the `SidebarState` instance from the context. This is a class instance,
  * so you cannot destructure it.
- * @returns The `SidebarState` instance.
+ * @returns The `SidebarState` instance, or null if not available.
  */
-export function useSidebar(): SidebarState {
-	return getContext(Symbol.for(SYMBOL_KEY));
+export function useSidebar(): SidebarState | null {
+	try {
+		return getContext(Symbol.for(SYMBOL_KEY));
+	} catch {
+		// Return null if context is not available (e.g., during SSR or outside component lifecycle)
+		return null;
+	}
 }
