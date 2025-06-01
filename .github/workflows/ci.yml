@@ -80,6 +80,10 @@ jobs:
         working-directory: ./app
         run: pnpm install --frozen-lockfile
 
+      - name: Frontend - Lint
+        working-directory: ./app
+        run: pnpm run lint:fast
+
       - name: Frontend - Type check
         working-directory: ./app
         run: pnpm run check
