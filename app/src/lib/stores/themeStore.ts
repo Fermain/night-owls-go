@@ -1,5 +1,6 @@
 import { persisted } from 'svelte-persisted-store';
 import { derived, type Readable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -16,7 +17,8 @@ export const themeState = persisted<ThemeState>('theme-state', initialThemeState
 
 // Derived store that calculates the actual theme to apply
 export const actualTheme: Readable<'light' | 'dark'> = derived(themeState, (state, set) => {
-	if (typeof window === 'undefined') {
+	// Default to light theme during SSR or when browser APIs aren't available
+	if (!browser) {
 		set('light');
 		return;
 	}
@@ -55,7 +57,7 @@ export const themeActions = {
 
 	// Apply theme to document
 	applyTheme(theme: 'light' | 'dark') {
-		if (typeof document === 'undefined') return;
+		if (!browser) return;
 
 		if (theme === 'dark') {
 			document.documentElement.classList.add('dark');

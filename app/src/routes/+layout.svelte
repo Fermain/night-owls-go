@@ -4,7 +4,8 @@
 	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	import { actualTheme, themeActions } from '$lib/stores/themeStore';
+	// TEMPORARILY COMMENTING OUT THEME STORE TO TEST
+	// import { actualTheme, themeActions } from '$lib/stores/themeStore';
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
@@ -24,7 +25,12 @@
 	});
 
 	// Check if we're in admin area (defensive check for SSR/hydration)
-	const isAdminRoute = $derived(page?.url?.pathname?.startsWith('/admin') ?? false);
+	// Use a getter function to avoid accessing page during initialization
+	const isAdminRoute = $derived.by(() => {
+		// During SSR or before hydration, page might not be available
+		// Use optional chaining and provide a safe default
+		return page?.url?.pathname?.startsWith('/admin') ?? false;
+	});
 
 	// Initialize notification service and theme on app startup
 	onMount(() => {
@@ -36,10 +42,11 @@
 			notificationStore.fetchNotifications();
 		}
 
+		// TEMPORARILY COMMENTING OUT THEME STORE TO TEST
 		// Apply theme based on store
-		const unsubscribe = actualTheme.subscribe((theme) => {
-			themeActions.applyTheme(theme);
-		});
+		// const unsubscribe = actualTheme.subscribe((theme) => {
+		// 	themeActions.applyTheme(theme);
+		// });
 
 		// Listen for PWA install prompt
 		window.addEventListener('beforeinstallprompt', (event) => {
@@ -60,7 +67,8 @@
 			pwaInstallPrompt.set(null);
 		});
 
-		return unsubscribe;
+		// TEMPORARILY COMMENTING OUT THEME STORE TO TEST
+		// return unsubscribe;
 	});
 </script>
 

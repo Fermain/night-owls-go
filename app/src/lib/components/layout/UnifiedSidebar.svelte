@@ -36,16 +36,8 @@
 		searchTerm?: string;
 	} = $props();
 
-	// Safe sidebar context access - returns null if not in sidebar context
-	function getSafeSidebarContext() {
-		try {
-			return useSidebar();
-		} catch {
-			return null;
-		}
-	}
-
-	const sidebar = getSafeSidebarContext();
+	// Call useSidebar directly during component initialization
+	const sidebar = useSidebar();
 	const navigation = $derived($contextualNavigation);
 
 	// Determine which navigation items to show based on mode and user role

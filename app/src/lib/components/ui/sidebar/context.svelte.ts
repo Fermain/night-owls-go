@@ -75,10 +75,7 @@ export function setSidebar(props: SidebarStateProps): SidebarState {
  * @returns The `SidebarState` instance, or null if not available.
  */
 export function useSidebar(): SidebarState | null {
-	try {
-		return getContext(Symbol.for(SYMBOL_KEY));
-	} catch {
-		// Return null if context is not available (e.g., during SSR or outside component lifecycle)
-		return null;
-	}
+	// getContext can return undefined if the context doesn't exist
+	// We handle this gracefully by returning null
+	return getContext(Symbol.for(SYMBOL_KEY)) ?? null;
 }

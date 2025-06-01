@@ -4,7 +4,6 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
@@ -96,12 +95,6 @@
 			<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 		</div>
 	</a>
-
-	<!-- Sidebar trigger for admin routes (only if sidebar is available) -->
-	{#if isAdminRoute}
-		<Sidebar.Trigger class="-ml-1" />
-		<Separator orientation="vertical" class="mr-2 h-4" />
-	{/if}
 
 	<!-- Right side: User actions -->
 	<div class="flex flex-1 items-center justify-end space-x-2">

@@ -12,16 +12,8 @@
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import { userStore, logout } from '$lib/stores/authStore';
 
-	// Safe sidebar context access - returns null if not in sidebar context
-	function getSafebarContext() {
-		try {
-			return useSidebar();
-		} catch {
-			return null;
-		}
-	}
-
-	const sidebar = getSafebarContext();
+	// Call useSidebar directly during component initialization
+	const sidebar = useSidebar();
 
 	// Get current user from auth store
 	const currentUser = $derived($userStore);
