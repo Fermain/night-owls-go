@@ -15,38 +15,7 @@
 </script>
 
 {#if $isAuthenticated}
-	<!-- Bottom Tab Navigation DEPRECATED - All functionality now on home page -->
-	<!-- Keeping this code commented for potential future use -->
-	<!--
-	<nav
-		class="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border md:hidden"
-	>
-		<div class="flex items-center justify-around px-2 py-2">
-			{#each navItems as item (item.href)}
-				{@const IconComponent = item.icon}
-				{@const isActive = isActiveRoute(item.href)}
-				<a
-					href={item.href}
-					class="flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs transition-colors
-						{isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
-				>
-					<div class="relative">
-						<IconComponent class="h-5 w-5 mb-1" />
-						{#if item.badge}
-							<Badge
-								variant="destructive"
-								class="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center"
-							>
-								{item.badge}
-							</Badge>
-						{/if}
-					</div>
-					<span class="truncate max-w-full">{item.label}</span>
-				</a>
-			{/each}
-		</div>
-	</nav>
-	-->
+	<!-- For authenticated users, mobile navigation is handled by the main layout -->
 {:else}
 	<!-- Mobile Menu Button for Unauthenticated Users -->
 	<div class="md:hidden">

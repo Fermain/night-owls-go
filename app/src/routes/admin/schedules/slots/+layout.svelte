@@ -13,7 +13,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { formatDistanceToNow } from 'date-fns';
 	import { authenticatedFetch } from '$lib/utils/api';
@@ -95,7 +95,7 @@
 	];
 
 	// Get selected shift from URL
-	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
+	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
 	// Utility Functions
 	function _formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
@@ -281,7 +281,7 @@
 			<a
 				href={item.url}
 				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight"
-				class:active={$page.url.pathname === '/admin/schedules/slots' && !shiftStartTimeFromUrl}
+				class:active={page.url.pathname === '/admin/schedules/slots' && !shiftStartTimeFromUrl}
 				onclick={(event) => {
 					event.preventDefault();
 					goToDashboard();
