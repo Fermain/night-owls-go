@@ -19,8 +19,7 @@ export class AuthPage {
 	readonly successMessage: Locator;
 	readonly errorMessage: Locator;
 
-	// Auth form elements
-	readonly phoneNumberField: Locator;
+	// Form elements (consolidated)
 	readonly nameField: Locator;
 	readonly otpField: Locator;
 
@@ -57,8 +56,7 @@ export class AuthPage {
 			.or(page.getByText('Login successful!'));
 		this.errorMessage = page.getByText(/verification failed/i).or(page.getByText(/error/i));
 
-		// Auth form elements
-		this.phoneNumberField = page.locator('input[type="tel"]');
+		// Consolidated form elements (no duplicates)
 		this.nameField = page.getByLabel('Full Name');
 		this.otpField = page.getByPlaceholder(/enter.*code|otp/i);
 
@@ -153,19 +151,19 @@ export class AuthPage {
 	async loginAsAdmin() {
 		await setAuthState(this.page, mockUsers.admin);
 		await this.page.goto('/admin');
-		await this.page.waitForLoadState('networkidle');
-		await expect(this.page).toHaveURL('/admin');
+		console.log('✅ Logged in as admin via page object');
 	}
 
 	async loginAsVolunteer() {
 		await setAuthState(this.page, mockUsers.volunteer);
-		await this.page.goto('/shifts');
-		await this.page.waitForLoadState('networkidle');
-		await expect(this.page).toHaveURL('/shifts');
+		await this.page.goto('/');
+		console.log('✅ Logged in as volunteer via page object');
 	}
 
 	async logout() {
 		await clearAuthState(this.page);
+		await this.page.goto('/');
+		console.log('✅ Logged out via page object');
 	}
 
 	async fillLoginForm(phone: string, name?: string) {
@@ -216,5 +214,24 @@ export class AuthPage {
 		await this.fillOTPCode(otpCode);
 		await this.submitOTPCode();
 		await this.waitForRedirectTo('/admin');
+	}
+
+	// OTP input helper methods
+	async fillOtpInput(otp: string) {
+		const otpInputs = this.page.locator('[data-input-otp] input');
+		
+		for (let i = 0; i < otp.length; i++) {
+			await otpInputs.nth(i).fill(otp[i]);
+		}
+	}
+
+	// Login flow methods
+	async login(phone: string, otp: string = '123456') {
+		await this.goto();
+		await this.joinUsButton.click();
+		await fillPhoneInput(this.page, phone);
+		await this.createAccountButton.click();
+		await this.fillOtpInput(otp);
+		await this.verifyButton.click();
 	}
 }

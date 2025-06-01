@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('🔍 Navigation Debug', () => {
-	test('Debug shifts route navigation issue', async ({ page }) => {
-		// Test each route individually to isolate the issue
+	test('Debug navigation routes', async ({ page }) => {
+		// Test each route individually to isolate issues (removed non-existent /shifts route)
 		const routes = [
 			{ path: '/', name: 'Homepage' },
 			{ path: '/login', name: 'Login' },
 			{ path: '/register', name: 'Register' },
-			{ path: '/shifts', name: 'Shifts' },
 			{ path: '/admin', name: 'Admin' }
 		];
 
@@ -47,27 +46,12 @@ test.describe('🔍 Navigation Debug', () => {
 				console.log(`- Child elements: ${hasContent}`);
 			}
 
-			// For shifts route specifically, check auth state
-			if (route.path === '/shifts') {
-				const authState = await page.evaluate(() => {
-					const authData = localStorage.getItem('user-session');
-					return authData ? JSON.parse(authData) : null;
-				});
-				console.log(`- Auth state:`, authState);
-
-				// Check for specific content we expect on unauthenticated shifts page
-				const hasSignInMessage = await page
-					.getByText('Please sign in to view available shifts')
-					.isVisible();
-				console.log(`- Has sign-in message: ${hasSignInMessage}`);
-			}
-
 			console.log('---');
 		}
 	});
 
 	test('Alternative body visibility check', async ({ page }) => {
-		await page.goto('/shifts');
+		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
 		// Try different ways to check if the page is properly loaded
@@ -77,11 +61,7 @@ test.describe('🔍 Navigation Debug', () => {
 			hasMainContent: await page.locator('main, div, [role="main"]').first().isVisible(),
 			hasText: ((await page.textContent('body')) || '').length > 0,
 			specificContent: await page
-				.getByText('Available Shifts')
-				.isVisible()
-				.catch(() => false),
-			signInMessage: await page
-				.getByText('Please sign in')
+				.getByText('Night Owls')
 				.isVisible()
 				.catch(() => false)
 		};
@@ -96,7 +76,7 @@ test.describe('🔍 Navigation Debug', () => {
 		}
 	});
 
-	test('Debug shifts route with console monitoring', async ({ page }) => {
+	test('Debug page loading with console monitoring', async ({ page }) => {
 		// Monitor console errors
 		const consoleErrors: string[] = [];
 		page.on('console', (msg) => {
@@ -113,8 +93,8 @@ test.describe('🔍 Navigation Debug', () => {
 			}
 		});
 
-		console.log('Navigating to /shifts...');
-		await page.goto('/shifts');
+		console.log('Navigating to homepage...');
+		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
 		// Wait a bit more to ensure component mounting
@@ -135,25 +115,19 @@ test.describe('🔍 Navigation Debug', () => {
 		const svelteKitElements = await page.locator('[data-sveltekit]').count();
 		console.log('SvelteKit elements found:', svelteKitElements);
 
-		// Check if the main div from the shifts page exists
-		const mainDiv = await page.locator('.min-h-screen.bg-gradient-to-br').count();
-		console.log('Main shifts div found:', mainDiv);
-
-		// Try to find the specific unauthenticated content
-		const cardContent = await page
-			.locator('[data-testid], .text-center, text="Please sign in"')
-			.count();
-		console.log('Card/auth content elements:', cardContent);
+		// Check for homepage content
+		const nightOwlsText = await page.getByText('Night Owls').count();
+		console.log('Night Owls text found:', nightOwlsText);
 	});
 
-	test('Check if shifts page JavaScript is executing', async ({ page }) => {
+	test('Check if page JavaScript is executing', async ({ page }) => {
 		// Add a custom script to check if the page is actually loading
 		await page.addInitScript(() => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(window as any).pageLoadTest = 'init-script-executed';
 		});
 
-		await page.goto('/shifts');
+		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
 		// Check if our init script ran

@@ -1,150 +1,91 @@
-import { type Page } from '@playwright/test';
-
-export interface MockUser {
-	id: string;
-	name: string;
-	phone: string;
-	role: 'admin' | 'owl' | 'guest';
-	token: string;
-}
+import type { Page } from '@playwright/test';
 
 export const mockUsers = {
 	admin: {
-		id: '1',
-		name: 'Alice Admin',
 		phone: '+27821234567',
-		role: 'admin' as const,
-		token: 'mock-admin-token'
+		name: 'Admin User',
+		role: 'admin',
+		token: 'mock-admin-token-12345'
 	},
 	volunteer: {
-		id: '2', 
-		name: 'Bob Volunteer',
-		phone: '+27821234568',
-		role: 'owl' as const,
-		token: 'mock-volunteer-token'
-	},
-	guest: {
-		id: '3',
-		name: 'Charlie Guest', 
-		phone: '+27821234569',
-		role: 'guest' as const,
-		token: 'mock-guest-token'
+		phone: '+27827654321',
+		name: 'Volunteer User',
+		role: 'volunteer',
+		token: 'mock-volunteer-token-67890'
 	}
 };
 
-/**
- * Set authentication state in localStorage to bypass login for tests
- * This must be called after navigating to a page to avoid security errors
- */
-export async function setAuthState(page: Page, user: MockUser) {
-	// Navigate to homepage first to establish proper origin
-	await page.goto('/');
-	
+export async function setAuthState(page: Page, user: typeof mockUsers.admin | typeof mockUsers.volunteer) {
 	await page.evaluate((userData) => {
-		const userSessionData = {
+		const authData = {
+			user: {
+				id: 1,
+				name: userData.name,
+				phone: userData.phone,
+				role: userData.role
+			},
+			token: userData.token,
 			isAuthenticated: true,
-			id: userData.id,
-			name: userData.name, 
-			phone: userData.phone,
-			role: userData.role,
-			token: userData.token
+			lastLogin: new Date().toISOString()
 		};
-		localStorage.setItem('user-session', JSON.stringify(userSessionData));
+		
+		localStorage.setItem('user-session', JSON.stringify(authData));
+		localStorage.setItem('auth-token', userData.token);
 	}, user);
 	
-	// Wait for state to be set
-	await page.waitForTimeout(200);
+	console.log(`✅ Auth state set for ${user.role}: ${user.name}`);
 }
 
-/**
- * Clear authentication state 
- */
 export async function clearAuthState(page: Page) {
 	await page.evaluate(() => {
 		localStorage.removeItem('user-session');
+		localStorage.removeItem('auth-token');
 	});
+	
+	console.log('✅ Auth state cleared');
 }
 
-/**
- * Login as admin and navigate to admin dashboard
- */
 export async function loginAsAdmin(page: Page) {
 	await setAuthState(page, mockUsers.admin);
 	await page.goto('/admin');
-	await page.waitForLoadState('networkidle');
+	console.log('✅ Logged in as admin');
 }
 
-/**
- * Login as volunteer and navigate to shifts page
- */
 export async function loginAsVolunteer(page: Page) {
 	await setAuthState(page, mockUsers.volunteer);
-	await page.goto('/shifts');
-	await page.waitForLoadState('networkidle');
-}
-
-/**
- * Login as guest 
- */
-export async function loginAsGuest(page: Page) {
-	await setAuthState(page, mockUsers.guest);
 	await page.goto('/');
-	await page.waitForLoadState('networkidle');
+	console.log('✅ Logged in as volunteer');
 }
 
-/**
- * Verify current authentication state
- */
-export async function getAuthState(page: Page) {
-	return await page.evaluate(() => {
-		const userSession = localStorage.getItem('user-session');
-		return userSession ? JSON.parse(userSession) : null;
-	});
-}
-
-/**
- * Set up API mocks for authentication routes
- */
 export async function setupAuthMocks(page: Page) {
-	// Mock authentication verification endpoint
+	// Mock the registration API
+	await page.route('**/api/auth/register', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				message: 'Verification code sent to your phone',
+				dev_otp: '123456'
+			})
+		});
+	});
+
+	// Mock the verification API
 	await page.route('**/api/auth/verify', async (route) => {
-		const authState = await getAuthState(page);
-		
-		if (authState && authState.isAuthenticated) {
-			await route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					success: true,
-					user: authState,
-					token: authState.token
-				})
-			});
-		} else {
-			await route.fulfill({
-				status: 401,
-				contentType: 'application/json', 
-				body: JSON.stringify({ error: 'Unauthorized' })
-			});
-		}
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				token: 'mock-jwt-token-12345',
+				user: {
+					id: 1,
+					name: 'Test User',
+					phone: '+27821234567',
+					role: 'volunteer'
+				}
+			})
+		});
 	});
-	
-	// Mock user profile endpoint
-	await page.route('**/api/user/profile', async (route) => {
-		const authState = await getAuthState(page);
-		
-		if (authState && authState.isAuthenticated) {
-			await route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify(authState)
-			});
-		} else {
-			await route.fulfill({
-				status: 401,
-				contentType: 'application/json',
-				body: JSON.stringify({ error: 'Unauthorized' })
-			});
-		}
-	});
+
+	console.log('✅ Auth API mocks set up');
 } 

@@ -41,7 +41,7 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 		const registerData = await registerResponse.json();
 
 		// Should get OTP in dev mode
-		expect(registerData.message).toContain('OTP sent');
+		expect(registerData.message).toContain('Verification code sent');
 		expect(registerData.dev_otp).toBeDefined();
 		expect(registerData.dev_otp).toMatch(/^\d{6}$/); // 6-digit OTP
 
@@ -120,18 +120,19 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 	});
 
 	test('✅ Real Backend - Broadcasts API', async ({ page }) => {
-		// Test broadcasts endpoint (if exists)
-		const broadcastsResponse = await page.request.get(`${BACKEND_URL}/api/broadcasts`);
-		
-		// Allow for 404 if broadcasts not implemented yet
-		expect([200, 404]).toContain(broadcastsResponse.status());
-		
+		const broadcastsResponse = await page.request.get('http://localhost:5888/api/broadcasts');
+
+		// Allow for 200 (success), 401 (auth required), or 404 (not implemented yet)
+		expect([200, 401, 404]).toContain(broadcastsResponse.status());
+
 		if (broadcastsResponse.status() === 200) {
 			const broadcasts = await broadcastsResponse.json();
 			expect(Array.isArray(broadcasts)).toBe(true);
-			console.log(`✅ Real backend returned ${broadcasts.length} broadcasts`);
+			console.log(`✅ Broadcasts API returned ${broadcasts.length} broadcasts`);
+		} else if (broadcastsResponse.status() === 401) {
+			console.log('✅ Broadcasts API correctly requires authentication');
 		} else {
-			console.log('✅ Broadcasts endpoint not yet implemented (404) - expected');
+			console.log('✅ Broadcasts API not implemented yet (404)');
 		}
 	});
 

@@ -28,14 +28,14 @@ test('🔍 Form Validation Diagnostic - Button Enable Conditions', async ({ page
 	for (const phoneFormat of phoneFormats) {
 		await phoneField.clear();
 		await phoneField.fill(phoneFormat);
-		await page.waitForTimeout(500); // Allow for validation
 		
-		const isEnabled = await createAccountButton.isEnabled();
-		console.log(`🔍 Phone format "${phoneFormat}" - Button enabled: ${isEnabled}`);
-		
-		if (isEnabled) {
+		// Wait for validation to complete by checking button state
+		try {
+			await expect(createAccountButton).toBeEnabled({ timeout: 1000 });
 			console.log(`✅ SUCCESS: Button enabled with format: "${phoneFormat}"`);
 			break;
+		} catch {
+			console.log(`🔍 Phone format "${phoneFormat}" - Button still disabled`);
 		}
 	}
 	

@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { setupApiMocks } from './setup/api-mocks';
 
 test.describe('Smoke Tests', () => {
 	test('app loads successfully', async ({ page }) => {
@@ -12,45 +11,40 @@ test.describe('Smoke Tests', () => {
 		await expect(page.locator('html')).toBeVisible();
 	});
 
-	test('MSW intercepts API calls', async ({ page }) => {
-		// Set up route interception directly in this test
-		await page.route('**/api/ping', async (route) => {
-			await route.fulfill({
-				status: 501,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					message: 'MSW intercepted - ping endpoint mocked',
-					intercepted: true
-				})
-			});
-		});
-
-		// Test that our route interception is working
-		const response = await page.request.post('/api/ping', {
-			data: { test: 'data' }
-		});
-
-		// Route should intercept this and return our mock response (501 indicates interception)
-		expect(response.status()).toBe(501);
+	test('registration form UI works', async ({ page }) => {
+		// Test the registration UI instead of API calls
+		await page.goto('/register');
 		
-		const responseData = await response.json();
-		expect(responseData.intercepted).toBe(true);
-		expect(responseData.message).toContain('MSW intercepted');
+		// Verify form elements are present and interactive
+		const nameField = page.getByLabel('Full Name');
+		const phoneField = page.locator('input[type="tel"]');
+		const createButton = page.getByRole('button', { name: /create account/i });
+		
+		await expect(nameField).toBeVisible();
+		await expect(phoneField).toBeVisible();
+		await expect(createButton).toBeVisible();
+		
+		// Verify we can interact with the form
+		await nameField.fill('Test User');
+		await expect(nameField).toHaveValue('Test User');
+		
+		console.log('✅ Registration form UI is functional');
 	});
 
-	test('API mocks work for e2e tests', async ({ page }) => {
-		// Set up all API mocks for this test
-		await setupApiMocks(page);
-		
-		// Navigate to a page that might make API calls
+	test('navigation works correctly', async ({ page }) => {
+		// Test navigation between key pages
 		await page.goto('/');
 		
-		// Test that emergency contacts API is mocked
-		const emergencyResponse = await page.request.get('/api/emergency-contacts');
-		expect(emergencyResponse.status()).toBe(200);
+		// Test navigation to registration
+		const becomeOwlLink = page.getByRole('link', { name: /become an owl/i });
+		await expect(becomeOwlLink).toBeVisible();
+		await becomeOwlLink.click();
+		await expect(page).toHaveURL('/register');
 		
-		const emergencyData = await emergencyResponse.json();
-		expect(Array.isArray(emergencyData)).toBe(true);
-		expect(emergencyData.length).toBeGreaterThan(0);
+		// Test navigation to login
+		await page.goto('/login');
+		await expect(page.locator('body')).toBeVisible();
+		
+		console.log('✅ Navigation between pages works correctly');
 	});
 });
