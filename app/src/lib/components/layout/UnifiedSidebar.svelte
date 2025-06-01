@@ -36,7 +36,16 @@
 		searchTerm?: string;
 	} = $props();
 
-	const sidebar = useSidebar();
+	// Safe sidebar context access - returns null if not in sidebar context
+	function getSafeSidebarContext() {
+		try {
+			return useSidebar();
+		} catch {
+			return null;
+		}
+	}
+
+	const sidebar = getSafeSidebarContext();
 	const navigation = $derived($contextualNavigation);
 
 	// Determine which navigation items to show based on mode and user role
