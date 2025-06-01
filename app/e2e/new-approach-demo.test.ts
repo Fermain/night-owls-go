@@ -6,14 +6,14 @@ test.describe('New E2E Approach Demo', () => {
 	test('✅ Fast page loading verification', async ({ page }) => {
 		await page.goto('/');
 
-		// Verify the homepage loads correctly
+		// Verify the homepage loads correctly with current heading
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: /mount moreland night owls/i })
 		).toBeVisible();
 
-		// Verify key navigation elements
-		await expect(page.getByRole('link', { name: 'Join Us' }).first()).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Sign In' }).first()).toBeVisible();
+		// Verify modern navigation elements
+		await expect(page.getByRole('link', { name: /become an owl/i })).toBeVisible();
+		await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible();
 	});
 
 	test('✅ Page Object Model pattern works', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('New E2E Approach Demo', () => {
 		// Demonstrate clean, maintainable Page Object usage
 		await authPage.goto();
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		// Navigate to register page using Page Object
@@ -60,7 +60,7 @@ test.describe('New E2E Approach Demo', () => {
 		// Start unauthenticated
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		// Simulate admin login using our Page Object
@@ -76,7 +76,7 @@ test.describe('New E2E Approach Demo', () => {
 		// Return to homepage - should see unauthenticated view
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 	});
 
@@ -136,7 +136,7 @@ test.describe('New E2E Approach Demo', () => {
 		// Test that we can recover from navigation errors
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 	});
 
@@ -150,5 +150,15 @@ test.describe('New E2E Approach Demo', () => {
 				end_date: '2024-12-31'
 			}
 		});
+	});
+
+	test('should load homepage and show authentication options', async ({ page }) => {
+		await page.goto('/');
+
+		// Modern homepage should show current CTA button text
+		await expect(page.getByRole('link', { name: /become an owl/i })).toBeVisible();
+		
+		// Should show current heading
+		await expect(page.getByRole('heading', { name: /mount moreland night owls/i })).toBeVisible();
 	});
 });

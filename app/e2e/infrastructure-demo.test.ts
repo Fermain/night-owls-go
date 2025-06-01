@@ -4,14 +4,14 @@ test.describe('E2E Infrastructure Demo', () => {
 	test('Homepage loads with correct content', async ({ page }) => {
 		await page.goto('/');
 
-		// Verify the main heading exists (from the homepage)
+		// Verify the main heading exists (current heading text)
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: /mount moreland night owls/i })
 		).toBeVisible();
 
-		// Verify we can see auth links (there are multiple, so get the first one)
-		await expect(page.getByRole('link', { name: 'Join Us' }).first()).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Sign In' }).first()).toBeVisible();
+		// Verify we can see modern auth buttons
+		await expect(page.getByRole('link', { name: /become an owl/i })).toBeVisible();
+		await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible();
 	});
 
 	test('MSW intercepts and mocks authentication registration', async ({ page }) => {
@@ -139,7 +139,7 @@ test.describe('E2E Infrastructure Demo', () => {
 		// Go to homepage (unauthenticated)
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		// Simulate login by setting localStorage
@@ -161,5 +161,13 @@ test.describe('E2E Infrastructure Demo', () => {
 		// Should now see authenticated dashboard
 		await expect(page.getByText('Evening, Test')).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Emergency' })).toBeVisible();
+	});
+
+	test('should display homepage with "Become an Owl" CTA', async ({ page }) => {
+		await page.goto('/');
+
+		// Check for the modern CTA button text
+		await expect(page.getByRole('link', { name: /become an owl/i })).toBeVisible();
+		await expect(page.getByText('Mount Moreland Night Owls')).toBeVisible();
 	});
 });

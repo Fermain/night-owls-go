@@ -117,7 +117,7 @@
 <!-- Shared logo component -->
 {#snippet logoSection()}
 	<div
-		class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
+		class="flex aspect-square size-8 items-center justify-center"
 	>
 		<img src="/logo.png" alt="Mount Moreland Night Owls" class="h-6 w-6 object-contain" />
 	</div>

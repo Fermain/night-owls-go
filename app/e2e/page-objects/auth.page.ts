@@ -1,4 +1,6 @@
 import { type Page, type Locator, expect } from '@playwright/test';
+import { fillPhoneInput } from '../utils/form-helpers';
+import { setAuthState, mockUsers, clearAuthState } from '../utils/auth-helpers';
 
 export class AuthPage {
 	readonly page: Page;
@@ -17,13 +19,26 @@ export class AuthPage {
 	readonly successMessage: Locator;
 	readonly errorMessage: Locator;
 
+	// Auth form elements
+	readonly phoneNumberField: Locator;
+	readonly nameField: Locator;
+	readonly otpField: Locator;
+
+	// Buttons - Updated to current text
+	readonly loginButton: Locator;
+	readonly registerButton: Locator;
+
+	// Links
+	readonly loginLink: Locator;
+	readonly registerLink: Locator;
+
 	constructor(page: Page) {
 		this.page = page;
 
 		// Registration page
 		this.registerHeading = page.getByRole('heading', { name: 'Join the Night Owls Control' });
 		this.nameInput = page.getByLabel('Full Name');
-		this.phoneInput = page.getByLabel('Phone Number');
+		this.phoneInput = page.locator('input[type="tel"]');
 		this.createAccountButton = page.getByRole('button', { name: 'Create account' });
 
 		// Login page
@@ -34,13 +49,26 @@ export class AuthPage {
 		this.goBackButton = page.getByRole('button', { name: 'Wrong phone number? Go back' });
 
 		// Homepage
-		this.joinUsButton = page.getByRole('button', { name: 'Join Us' });
+		this.joinUsButton = page.getByRole('link', { name: /become an owl/i });
 
 		// Messages
 		this.successMessage = page
 			.getByText('Registration successful!')
 			.or(page.getByText('Login successful!'));
 		this.errorMessage = page.getByText(/verification failed/i).or(page.getByText(/error/i));
+
+		// Auth form elements
+		this.phoneNumberField = page.locator('input[type="tel"]');
+		this.nameField = page.getByLabel('Full Name');
+		this.otpField = page.getByPlaceholder(/enter.*code|otp/i);
+
+		// Buttons - Updated to current text
+		this.loginButton = page.getByRole('button', { name: /send verification code|sign in/i });
+		this.registerButton = page.getByRole('button', { name: /create account/i });
+
+		// Links
+		this.loginLink = page.getByRole('link', { name: /sign in/i });
+		this.registerLink = page.getByRole('link', { name: /create.*account|register/i });
 	}
 
 	async goto() {
@@ -70,7 +98,7 @@ export class AuthPage {
 
 	async fillRegistrationForm(name: string, phone: string) {
 		await this.page.getByLabel('Full Name').fill(name);
-		await this.page.getByLabel('Phone Number').fill(phone);
+		await fillPhoneInput(this.page, phone);
 	}
 
 	async submitRegistration() {
@@ -83,7 +111,7 @@ export class AuthPage {
 	}
 
 	async fillPhoneForLogin(phone: string) {
-		await this.phoneInput.fill(phone);
+		await fillPhoneInput(this.page, phone);
 		await this.sendCodeButton.click();
 		await expect(this.loginHeading).toBeVisible();
 	}
@@ -123,70 +151,28 @@ export class AuthPage {
 	}
 
 	async loginAsAdmin() {
-		await this.page.goto('/');
-
-		// Set the correct localStorage structure matching UserSessionData interface
-		await this.page.evaluate(() => {
-			const userSessionData = {
-				isAuthenticated: true,
-				id: '1', // Must be string, not number
-				name: 'Alice Admin',
-				phone: '+27821234567',
-				role: 'admin', // Must match UserRole type exactly
-				token: 'mock-jwt-token'
-			};
-			localStorage.setItem('user-session', JSON.stringify(userSessionData));
-		});
-
-		// Wait a moment for the store to update
-		await this.page.waitForTimeout(500);
-
-		// Navigate to admin and handle potential redirect
+		await setAuthState(this.page, mockUsers.admin);
 		await this.page.goto('/admin');
 		await this.page.waitForLoadState('networkidle');
-
-		// Verify we stayed on admin (not redirected to login)
 		await expect(this.page).toHaveURL('/admin');
 	}
 
 	async loginAsVolunteer() {
-		await this.page.goto('/');
-
-		// Set the correct localStorage structure for volunteer (owl role)
-		await this.page.evaluate(() => {
-			const userSessionData = {
-				isAuthenticated: true,
-				id: '2', // Must be string, not number
-				name: 'Bob Volunteer',
-				phone: '+27821234568',
-				role: 'owl', // Must match UserRole type exactly
-				token: 'mock-jwt-token'
-			};
-			localStorage.setItem('user-session', JSON.stringify(userSessionData));
-		});
-
-		// Wait a moment for the store to update
-		await this.page.waitForTimeout(500);
-
-		// Navigate to shifts page
+		await setAuthState(this.page, mockUsers.volunteer);
 		await this.page.goto('/shifts');
 		await this.page.waitForLoadState('networkidle');
-
-		// Verify we're on shifts page
 		await expect(this.page).toHaveURL('/shifts');
 	}
 
 	async logout() {
-		await this.page.evaluate(() => {
-			localStorage.removeItem('user-session');
-		});
+		await clearAuthState(this.page);
 	}
 
 	async fillLoginForm(phone: string, name?: string) {
 		if (name) {
 			await this.page.getByLabel('Name (optional)').fill(name);
 		}
-		await this.page.getByLabel('Phone Number').fill(phone);
+		await fillPhoneInput(this.page, phone);
 	}
 
 	async submitLoginForm() {

@@ -10,7 +10,7 @@ test.describe('🚀 E2E Success Demo - New Approach Working', () => {
 
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		const loadTime = Date.now() - startTime;
@@ -30,7 +30,7 @@ test.describe('🚀 E2E Success Demo - New Approach Working', () => {
 		// Demonstrate navigation using Page Objects
 		await authPage.goto();
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		await authPage.gotoLogin();
@@ -83,7 +83,7 @@ test.describe('🚀 E2E Success Demo - New Approach Working', () => {
 		// No OTP services required
 
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		console.log('✅ Tests run with ZERO external dependencies');
@@ -132,7 +132,7 @@ test.describe('🚀 E2E Success Demo - New Approach Working', () => {
 		// Recovery to valid route
 		await page.goto('/');
 		await expect(
-			page.getByRole('heading', { name: 'Protecting Our Community Together' })
+			page.getByRole('heading', { name: 'Mount Moreland Night Owls' })
 		).toBeVisible();
 
 		console.log('✅ Application handles errors gracefully');
