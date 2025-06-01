@@ -11,6 +11,7 @@
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
+	import { onMount } from 'svelte';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
@@ -23,6 +24,14 @@
 	let emergencyDialogOpen = $state(false);
 	let reportDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
+
+	// State to track if component is mounted to prevent Dialog lifecycle errors
+	let mounted = $state(false);
+
+	// Mount handler to prevent Dialog lifecycle errors
+	onMount(() => {
+		mounted = true;
+	});
 
 	// Determine if we're in admin area (defensive check for SSR/hydration)
 	const isAdminRoute = $derived(page?.url?.pathname?.startsWith('/admin') ?? false);
@@ -225,10 +234,12 @@
 </header>
 
 <!-- Emergency Contacts Dialog -->
-<EmergencyContactsDialog bind:open={emergencyDialogOpen} />
+{#if mounted}
+	<EmergencyContactsDialog bind:open={emergencyDialogOpen} />
 
-<!-- Report Dialog -->
-<ReportDialog bind:open={reportDialogOpen} />
+	<!-- Report Dialog -->
+	<ReportDialog bind:open={reportDialogOpen} />
 
-<!-- Settings Dialog -->
-<UserSettingsDialog bind:open={settingsDialogOpen} />
+	<!-- Settings Dialog -->
+	<UserSettingsDialog bind:open={settingsDialogOpen} />
+{/if}

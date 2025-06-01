@@ -16,6 +16,7 @@
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
 	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
 	import CancellationConfirmationDialog from '$lib/components/user/bookings/CancellationConfirmationDialog.svelte';
+	import { onMount } from 'svelte';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -28,41 +29,88 @@
 	let showCancelDialog = $state(false);
 	let shiftToCancel = $state<{ id: number; details: string } | null>(null);
 
-	// Query for available shifts (next 7 days)
-	const availableShiftsQuery = createQuery({
-		queryKey: ['available-shifts'],
-		queryFn: () => {
-			const from = new Date().toISOString();
-			const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-			return UserApiService.getAvailableShifts({ from, to, limit: 10 });
-		}
-	});
+	// Query states - will be initialized in onMount
+	let availableShiftsQuery = $state<any>(null);
+	let userBookingsQuery = $state<any>(null);
+	let bookingMutation = $state<any>(null);
+	let cancelBookingMutation = $state<any>(null);
 
-	// Query for user's bookings (only if authenticated)
-	const userBookingsQuery = createQuery({
-		queryKey: ['user-bookings'],
-		queryFn: () => {
-			if (!$userSession.isAuthenticated) {
-				throw new Error('User not authenticated');
+	// State to track if component is mounted to prevent Dialog lifecycle errors
+	let mounted = $state(false);
+
+	// Initialize queries after component is mounted to avoid lifecycle errors
+	onMount(() => {
+		// Query for available shifts (next 7 days)
+		availableShiftsQuery = createQuery({
+			queryKey: ['available-shifts'],
+			queryFn: () => {
+				const from = new Date().toISOString();
+				const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+				return UserApiService.getAvailableShifts({ from, to, limit: 10 });
 			}
-			return UserApiService.getMyBookings();
-		},
-		enabled: $userSession.isAuthenticated,
-		retry: false
+		});
+
+		// Query for user's bookings (only if authenticated)
+		userBookingsQuery = createQuery({
+			queryKey: ['user-bookings'],
+			queryFn: () => {
+				if (!$userSession.isAuthenticated) {
+					throw new Error('User not authenticated');
+				}
+				return UserApiService.getMyBookings();
+			},
+			enabled: $userSession.isAuthenticated,
+			retry: false
+		});
+
+		// Mutations for booking
+		bookingMutation = createMutation({
+			mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
+			onSuccess: () => {
+				toast.success('Shift committed successfully!');
+				availableShiftsQuery?.refetch();
+				userBookingsQuery?.refetch();
+				showBookingDialog = false;
+				selectedShift = null;
+			},
+			onError: (error: any) => {
+				toast.error(`Failed to commit to shift: ${error.message}`);
+			}
+		});
+
+		// Mutation for canceling booking
+		cancelBookingMutation = createMutation({
+			mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
+			onSuccess: () => {
+				toast.success('Shift cancelled successfully!');
+				userBookingsQuery?.refetch();
+				availableShiftsQuery?.refetch();
+				showCancelDialog = false;
+				shiftToCancel = null;
+			},
+			onError: (error: any) => {
+				toast.error(`Failed to cancel shift: ${error.message}`);
+				showCancelDialog = false;
+				shiftToCancel = null;
+			}
+		});
+
+		// Mark component as mounted to allow Dialog components to be rendered
+		mounted = true;
 	});
 
-	// Derived data
-	const availableShifts = $derived($availableShiftsQuery.data ?? []);
+	// Derived data - with null checks since queries are initialized in onMount
+	const availableShifts = $derived(availableShiftsQuery?.data ?? []);
 	const unfillableShifts = $derived(availableShifts.slice(0, 5)); // Show first 5
 
 	// Find next shift from user bookings
 	const nextShift = $derived.by(() => {
-		if (!$userBookingsQuery.data) return null;
+		if (!userBookingsQuery?.data) return null;
 
 		const now = new Date();
-		const upcomingBookings = $userBookingsQuery.data
-			.filter((booking) => new Date(booking.shift_start) > now)
-			.sort((a, b) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		const upcomingBookings = userBookingsQuery.data
+			.filter((booking: any) => new Date(booking.shift_start) > now)
+			.sort((a: any, b: any) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
 
 		if (upcomingBookings.length === 0) return null;
 
@@ -85,47 +133,15 @@
 
 	// Find additional upcoming shifts (after the next one)
 	const additionalShifts = $derived.by(() => {
-		if (!$userBookingsQuery.data) return [];
+		if (!userBookingsQuery?.data) return [];
 
 		const now = new Date();
-		const upcomingBookings = $userBookingsQuery.data
-			.filter((booking) => new Date(booking.shift_start) > now)
-			.sort((a, b) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		const upcomingBookings = userBookingsQuery.data
+			.filter((booking: any) => new Date(booking.shift_start) > now)
+			.sort((a: any, b: any) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
 
 		// Return all upcoming shifts except the first one (which is the "next shift")
 		return upcomingBookings.slice(1).slice(0, 3); // Show up to 3 additional shifts
-	});
-
-	// Mutations for booking
-	const bookingMutation = createMutation({
-		mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
-		onSuccess: () => {
-			toast.success('Shift committed successfully!');
-			$availableShiftsQuery.refetch();
-			$userBookingsQuery.refetch();
-			showBookingDialog = false;
-			selectedShift = null;
-		},
-		onError: (error) => {
-			toast.error(`Failed to commit to shift: ${error.message}`);
-		}
-	});
-
-	// Mutation for canceling booking
-	const cancelBookingMutation = createMutation({
-		mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
-		onSuccess: () => {
-			toast.success('Shift cancelled successfully!');
-			$userBookingsQuery.refetch();
-			$availableShiftsQuery.refetch();
-			showCancelDialog = false;
-			shiftToCancel = null;
-		},
-		onError: (error) => {
-			toast.error(`Failed to cancel shift: ${error.message}`);
-			showCancelDialog = false;
-			shiftToCancel = null;
-		}
 	});
 
 	// Event handlers
@@ -146,7 +162,7 @@
 		if (nextShift && nextShift.id === shiftId) {
 			shiftDetails = formatShiftTimeFromBooking(nextShift);
 		} else {
-			const additionalShift = additionalShifts.find((shift) => shift.booking_id === shiftId);
+			const additionalShift = additionalShifts.find((shift: any) => shift.booking_id === shiftId);
 			if (additionalShift) {
 				shiftDetails = formatShiftTimeCompact(additionalShift);
 			}
@@ -162,7 +178,7 @@
 	}
 
 	function handleBookingConfirm(request: CreateBookingRequest) {
-		$bookingMutation.mutate(request);
+		bookingMutation?.mutate(request);
 	}
 
 	function handleBookingCancel() {
@@ -172,7 +188,7 @@
 
 	function handleCancellationConfirm() {
 		if (shiftToCancel) {
-			$cancelBookingMutation.mutate(shiftToCancel.id);
+			cancelBookingMutation?.mutate(shiftToCancel.id);
 		}
 	}
 
@@ -310,7 +326,17 @@
 			{/if}
 
 			<!-- Available Shifts -->
-			{#if $availableShiftsQuery.isLoading}
+			{#if !availableShiftsQuery}
+				<!-- Loading state while queries are being initialized -->
+				<Card.Root>
+					<Card.Content class="text-center py-8">
+						<div
+							class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
+						></div>
+						<p class="text-sm text-muted-foreground">Initializing...</p>
+					</Card.Content>
+				</Card.Root>
+			{:else if availableShiftsQuery.isLoading}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
 						<div
@@ -319,12 +345,12 @@
 						<p class="text-sm text-muted-foreground">Loading available shifts...</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if $availableShiftsQuery.isError}
+			{:else if availableShiftsQuery.isError}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
 						<AlertTriangleIcon class="h-8 w-8 mx-auto mb-2 text-destructive" />
 						<h3 class="text-sm font-medium mb-1">Error loading shifts</h3>
-						<p class="text-xs text-muted-foreground">{$availableShiftsQuery.error?.message}</p>
+						<p class="text-xs text-muted-foreground">{availableShiftsQuery.error?.message}</p>
 					</Card.Content>
 				</Card.Root>
 			{:else if unfillableShifts.length > 0}
@@ -345,7 +371,7 @@
 								{shift}
 								type="available"
 								onBook={handleBookShift}
-								isLoading={$bookingMutation.isPending}
+								isLoading={bookingMutation?.isPending ?? false}
 							/>
 						{/each}
 					</Card.Content>
@@ -401,19 +427,21 @@
 </div>
 
 <!-- Booking Confirmation Dialog -->
-<BookingConfirmationDialog
-	bind:open={showBookingDialog}
-	bind:shift={selectedShift}
-	isLoading={$bookingMutation.isPending}
-	onConfirm={handleBookingConfirm}
-	onCancel={handleBookingCancel}
-/>
+{#if mounted}
+	<BookingConfirmationDialog
+		bind:open={showBookingDialog}
+		bind:shift={selectedShift}
+		isLoading={bookingMutation?.isPending ?? false}
+		onConfirm={handleBookingConfirm}
+		onCancel={handleBookingCancel}
+	/>
 
-<!-- Cancellation Confirmation Dialog -->
-<CancellationConfirmationDialog
-	bind:open={showCancelDialog}
-	shiftDetails={shiftToCancel?.details || ''}
-	isLoading={$cancelBookingMutation.isPending}
-	onConfirm={handleCancellationConfirm}
-	onCancel={handleCancellationCancel}
-/>
+	<!-- Cancellation Confirmation Dialog -->
+	<CancellationConfirmationDialog
+		bind:open={showCancelDialog}
+		shiftDetails={shiftToCancel?.details || ''}
+		isLoading={cancelBookingMutation?.isPending ?? false}
+		onConfirm={handleCancellationConfirm}
+		onCancel={handleCancellationCancel}
+	/>
+{/if}
