@@ -5,7 +5,6 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
@@ -31,17 +30,6 @@
 
 	// Determine if we're on the report page
 	const isReportPage = $derived(page.url.pathname === '/report');
-
-	// Check if sidebar context is available (safe for public routes)
-	// Only check when needed to avoid lifecycle errors during SSR/hydration
-	function isSidebarAvailable(): boolean {
-		try {
-			const sidebar = useSidebar();
-			return sidebar !== null;
-		} catch {
-			return false;
-		}
-	}
 
 	// Handle logout
 	function handleLogout() {
@@ -110,7 +98,7 @@
 	</a>
 
 	<!-- Sidebar trigger for admin routes (only if sidebar is available) -->
-	{#if isAdminRoute && isSidebarAvailable()}
+	{#if isAdminRoute}
 		<Sidebar.Trigger class="-ml-1" />
 		<Separator orientation="vertical" class="mr-2 h-4" />
 	{/if}
