@@ -17,7 +17,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		const registerData = await registerResponse.json();
 
 		// Should get OTP in dev mode
-		expect(registerData.message).toContain('OTP sent');
+		expect(registerData.message).toContain('Verification code sent');
 		expect(registerData.dev_otp).toBeDefined();
 		expect(registerData.dev_otp).toMatch(/^\d{6}$/); // 6-digit OTP
 

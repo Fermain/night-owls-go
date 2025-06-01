@@ -71,6 +71,165 @@ export const mockShifts = [
 ];
 
 export async function setupApiMocks(page: Page) {
+	// Mock ping endpoint for MSW testing
+	await page.route('**/api/ping', async (route) => {
+		await route.fulfill({
+			status: 501,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				message: 'MSW intercepted - ping endpoint mocked',
+				intercepted: true
+			})
+		});
+	});
+
+	// Mock broadcasts endpoint  
+	await page.route('**/api/broadcasts**', async (route) => {
+		if (route.request().method() === 'GET') {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify([
+					{
+						id: 1,
+						message: 'Community safety reminder: Please report suspicious activity',
+						audience: 'all_users',
+						recipient_count: 42,
+						status: 'sent',
+						push_enabled: true,
+						created_at: new Date().toISOString()
+					},
+					{
+						id: 2,
+						message: 'Patrol schedule updated for this weekend',
+						audience: 'owls_only',
+						recipient_count: 15,
+						status: 'pending',
+						push_enabled: false,
+						created_at: new Date(Date.now() - 86400000).toISOString()
+					}
+				])
+			});
+		} else if (route.request().method() === 'POST') {
+			const body = JSON.parse(route.request().postData() || '{}');
+			await route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					id: Date.now(),
+					...body,
+					status: 'sent',
+					created_at: new Date().toISOString()
+				})
+			});
+		}
+	});
+
+	// Mock admin dashboard endpoint
+	await page.route('**/api/admin/dashboard**', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				shifts: {
+					total_upcoming: 12,
+					unassigned: 3,
+					assigned: 9
+				},
+				users: {
+					total: 45,
+					active_this_month: 23,
+					new_this_week: 2
+				},
+				recent_activity: [
+					{
+						id: 1,
+						type: 'shift_booking',
+						description: 'John Doe booked Morning Patrol',
+						timestamp: new Date().toISOString()
+					},
+					{
+						id: 2,
+						type: 'user_registered',
+						description: 'New user Jane Smith registered',
+						timestamp: new Date(Date.now() - 3600000).toISOString()
+					}
+				]
+			})
+		});
+	});
+
+	// Mock admin schedules all-slots endpoint
+	await page.route('**/api/admin/schedules/all-slots**', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify([
+				{
+					id: 1,
+					schedule_id: 1,
+					schedule_name: 'Morning Patrol',
+					start_time: '2024-12-25T08:00:00Z',
+					end_time: '2024-12-25T12:00:00Z',
+					is_assigned: false,
+					assigned_user_name: null,
+					buddy_name: null
+				},
+				{
+					id: 2,
+					schedule_id: 2,
+					schedule_name: 'Evening Watch',
+					start_time: '2024-12-25T18:00:00Z',
+					end_time: '2024-12-25T22:00:00Z',
+					is_assigned: true,
+					assigned_user_name: 'John Doe',
+					buddy_name: 'Jane Smith'
+				}
+			])
+		});
+	});
+
+	// Mock emergency contacts endpoint
+	await page.route('**/api/emergency-contacts', async (route) => {
+		if (route.request().method() === 'GET') {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify([
+					{
+						id: 1,
+						name: 'Emergency Services',
+						phone: '112',
+						type: 'emergency'
+					},
+					{
+						id: 2,
+						name: 'Local Police',
+						phone: '10111',
+						type: 'police'
+					},
+					{
+						id: 3,
+						name: 'Medical Emergency',
+						phone: '999',
+						type: 'medical'
+					}
+				])
+			});
+		} else if (route.request().method() === 'POST') {
+			const body = JSON.parse(route.request().postData() || '{}');
+			await route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					id: Date.now(),
+					...body,
+					created_at: new Date().toISOString()
+				})
+			});
+		}
+	});
+
 	// Mock authentication endpoints
 	await page.route('**/api/auth/register', async (route) => {
 		const request = route.request();

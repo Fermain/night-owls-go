@@ -22,13 +22,16 @@
 		"lint:unused": "eslint --fix . --ext .ts,.js,.svelte --rule 'unused-imports/no-unused-imports: error'",
 		"test:unit": "vitest",
 		"test": "pnpm run test:unit -- --run && pnpm run test:e2e",
+		"test:integration": "playwright test integration-real-api.test.ts",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:debug": "playwright test --debug",
+		"test:e2e:smoke": "playwright test smoke.test.ts",
 		"test:e2e:critical": "playwright test critical-user-journeys.test.ts",
 		"convert:swagger": "swagger2openapi ../docs/swagger/swagger.json -o ../docs/swagger/openapi.json",
 		"generate:api-types": "pnpm dlx swagger2openapi ../docs/swagger/swagger.json --outfile ../docs/swagger/openapi-converted.json && pnpm dlx openapi-typescript ../docs/swagger/openapi-converted.json --output src/lib/types/api.d.ts",
-		"generate:api-types:all": "pnpm run convert:swagger && pnpm run generate:api-types"
+		"generate:api-types:all": "pnpm run convert:swagger && pnpm run generate:api-types",
+		"test:all": "pnpm run test:unit -- --run && pnpm run test:integration && pnpm run test:e2e"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

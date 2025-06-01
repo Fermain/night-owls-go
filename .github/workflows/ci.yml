@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 env:
   GO_VERSION: '1.24.2'
@@ -82,7 +83,7 @@ jobs:
 
       - name: Frontend - Lint
         working-directory: ./app
-        run: pnpm run lint:fast
+        run: pnpm run lint
 
       - name: Frontend - Type check
         working-directory: ./app
@@ -92,9 +93,9 @@ jobs:
         working-directory: ./app
         run: pnpm run build
 
-      - name: Frontend - Test
+      - name: Frontend - Unit Tests
         working-directory: ./app
-        run: pnpm run test:unit
+        run: pnpm run test:unit -- --run
 
   security:
     name: Security Scan

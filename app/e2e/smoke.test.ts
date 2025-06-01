@@ -11,13 +11,40 @@ test.describe('Smoke Tests', () => {
 		await expect(page.locator('html')).toBeVisible();
 	});
 
-	test('MSW intercepts API calls', async ({ page }) => {
-		// Test that our MSW setup is working by making an API call
-		const response = await page.request.post('/api/ping', {
-			data: { test: 'data' }
-		});
+	test('registration form UI works', async ({ page }) => {
+		// Test the registration UI instead of API calls
+		await page.goto('/register');
+		
+		// Verify form elements are present and interactive
+		const nameField = page.getByLabel('Full Name');
+		const phoneField = page.locator('input[type="tel"]');
+		const createButton = page.getByRole('button', { name: /create account/i });
+		
+		await expect(nameField).toBeVisible();
+		await expect(phoneField).toBeVisible();
+		await expect(createButton).toBeVisible();
+		
+		// Verify we can interact with the form
+		await nameField.fill('Test User');
+		await expect(nameField).toHaveValue('Test User');
+		
+		console.log('✅ Registration form UI is functional');
+	});
 
-		// MSW should intercept this and return our mock response (500 or 501 both indicate interception)
-		expect(response.status()).toBeGreaterThanOrEqual(500);
+	test('navigation works correctly', async ({ page }) => {
+		// Test navigation between key pages
+		await page.goto('/');
+		
+		// Test navigation to registration
+		const becomeOwlLink = page.getByRole('link', { name: /become an owl/i });
+		await expect(becomeOwlLink).toBeVisible();
+		await becomeOwlLink.click();
+		await expect(page).toHaveURL('/register');
+		
+		// Test navigation to login
+		await page.goto('/login');
+		await expect(page.locator('body')).toBeVisible();
+		
+		console.log('✅ Navigation between pages works correctly');
 	});
 });

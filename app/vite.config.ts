@@ -1,10 +1,14 @@
+/// <reference types="vitest" />
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
 	const isE2ETesting = process.env.NODE_ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
+	
+	// Check if we're running tests (Vitest sets this environment variable)
+	const isTesting = process.env.VITEST === 'true' || mode === 'test';
 
 	return {
 		plugins: [
@@ -94,6 +98,20 @@ export default defineConfig(() => {
 				}
 			})
 		],
+
+		// 👇 Fix for Svelte 5 + Vitest: use browser build during tests
+		resolve: {
+			conditions: isTesting ? ['browser'] : [],
+		},
+
+		test: {
+			environment: 'jsdom',
+			include: ['src/**/*.{test,spec}.{js,ts}'],
+			exclude: ['e2e/**/*'],
+			globals: true,
+			setupFiles: [],
+		},
+
 		server: {
 			proxy: isE2ETesting
 				? undefined
