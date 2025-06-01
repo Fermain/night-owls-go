@@ -36,7 +36,15 @@
 		searchTerm?: string;
 	} = $props();
 
-	const sidebar = useSidebar();
+	// Safe sidebar context access
+	function getSidebarContext() {
+		try {
+			return useSidebar();
+		} catch {
+			return null;
+		}
+	}
+
 	const navigation = $derived($contextualNavigation);
 
 	// Determine which navigation items to show based on mode and user role
@@ -203,7 +211,7 @@
 
 						<DropdownMenu.Content
 							class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
-							side={sidebar?.isMobile ? 'bottom' : 'right'}
+							side={getSidebarContext()?.isMobile ? 'bottom' : 'right'}
 							align="end"
 							sideOffset={4}
 						>
