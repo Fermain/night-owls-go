@@ -2,11 +2,11 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Integration Tests - Real API Backend (Updated for Current Architecture)
- * 
+ *
  * These tests use the actual Go backend on localhost:5888
  * Purpose: Test real API integration, data flow, and backend functionality
  * Requirements: Go backend must be running on localhost:5888
- * 
+ *
  * Updated: December 2024 - Reflects current API endpoints
  */
 
@@ -72,7 +72,10 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 
 		// Should get 200 or valid response (not 401 Unauthorized)
 		expect(protectedResponse.status()).not.toBe(401);
-		console.log('✅ Protected endpoint accessible with JWT token, status:', protectedResponse.status());
+		console.log(
+			'✅ Protected endpoint accessible with JWT token, status:',
+			protectedResponse.status()
+		);
 	});
 
 	test('✅ Real Backend - Invalid OTP Rejection', async ({ page }) => {
@@ -106,10 +109,10 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 	test('✅ Real Backend - Current Shifts Endpoint', async ({ page }) => {
 		// Test the current shifts endpoint (not deprecated /shifts/available)
 		const shiftsResponse = await page.request.get(`${BACKEND_URL}/shifts/available`);
-		
+
 		// Should get a valid response (200 or 404 if no shifts)
 		expect([200, 404]).toContain(shiftsResponse.status());
-		
+
 		if (shiftsResponse.status() === 200) {
 			const shifts = await shiftsResponse.json();
 			expect(Array.isArray(shifts)).toBe(true);
@@ -139,10 +142,10 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 	test('✅ Real Backend - Admin Dashboard Endpoints', async ({ page }) => {
 		// Test admin dashboard endpoint (if exists)
 		const dashboardResponse = await page.request.get(`${BACKEND_URL}/api/admin/dashboard`);
-		
+
 		// Allow for 401 (unauthorized) or 404 (not implemented)
 		expect([200, 401, 404]).toContain(dashboardResponse.status());
-		
+
 		if (dashboardResponse.status() === 200) {
 			const dashboard = await dashboardResponse.json();
 			expect(dashboard).toBeDefined();
@@ -153,4 +156,4 @@ test.describe('🔗 Real API Integration Tests - Current Endpoints', () => {
 			console.log('✅ Admin dashboard endpoint not yet implemented (404) - expected');
 		}
 	});
-}); 
+});

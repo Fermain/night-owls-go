@@ -83,7 +83,7 @@ export async function setupApiMocks(page: Page) {
 		});
 	});
 
-	// Mock broadcasts endpoint  
+	// Mock broadcasts endpoint
 	await page.route('**/api/broadcasts**', async (route) => {
 		if (route.request().method() === 'GET') {
 			await route.fulfill({

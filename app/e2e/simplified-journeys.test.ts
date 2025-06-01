@@ -36,7 +36,7 @@ test.describe('🚀 Simplified User Journeys - Working Approach', () => {
 
 		// Fill phone number using our helper utility
 		await fillPhoneInput(page, '+27821234567');
-		
+
 		// Note: Button may still be disabled due to validation - that's expected behavior
 		// In a real test, we'd mock the validation or test with valid input
 		console.log('✅ Authentication flow initiated successfully');

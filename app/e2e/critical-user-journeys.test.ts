@@ -71,34 +71,34 @@ test.describe('🔥 Critical User Journeys - Core Application Flows', () => {
 		// Step 1: Start unauthenticated and verify initial state
 		await page.goto('/');
 		await expect(page.getByText('Mount Moreland Night Owls')).toBeVisible();
-		
+
 		// Step 2: Set auth state as volunteer
 		await authPage.loginAsVolunteer();
-		
+
 		// Step 3: Verify auth state persists across navigation
 		await page.goto('/register');
 		await expect(page.locator('body')).toBeVisible();
-		
+
 		await page.goto('/login');
 		await expect(page.locator('body')).toBeVisible();
-		
+
 		// Step 4: Verify auth state is actually set in localStorage
 		const authState = await page.evaluate(() => {
 			const userData = localStorage.getItem('user-session');
 			return userData ? JSON.parse(userData) : null;
 		});
-		
+
 		expect(authState).toBeTruthy();
 		expect(authState.isAuthenticated).toBe(true);
 		expect(authState.user.role).toBe('volunteer');
 
 		// Step 5: Clear auth state and verify cleanup
 		await authPage.logout();
-		
+
 		const clearedAuthState = await page.evaluate(() => {
 			return localStorage.getItem('user-session');
 		});
-		
+
 		expect(clearedAuthState).toBeNull();
 
 		console.log('✅ Authentication state persistence working');
@@ -106,13 +106,13 @@ test.describe('🔥 Critical User Journeys - Core Application Flows', () => {
 
 	test('🎯 Error Recovery Journey', async ({ page }) => {
 		// Test application recovery from errors
-		
+
 		// Navigate to non-existent page
 		await page.goto('/this-page-does-not-exist');
-		
+
 		// Should handle gracefully (not crash)
 		await expect(page.locator('body')).toBeVisible();
-		
+
 		// Recovery - navigate back to working page
 		await page.goto('/');
 		await expect(page.getByText('Mount Moreland Night Owls')).toBeVisible();

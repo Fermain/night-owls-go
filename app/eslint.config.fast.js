@@ -56,4 +56,4 @@ export default ts.config(
 	{
 		ignores: ['.DS_Store', 'build/', '.svelte-kit/', 'package/', 'dist/']
 	}
-); 
+);

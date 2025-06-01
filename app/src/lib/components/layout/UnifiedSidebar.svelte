@@ -116,9 +116,7 @@
 
 <!-- Shared logo component -->
 {#snippet logoSection()}
-	<div
-		class="flex aspect-square size-8 items-center justify-center"
-	>
+	<div class="flex aspect-square size-8 items-center justify-center">
 		<img src="/logo.png" alt="Mount Moreland Night Owls" class="h-6 w-6 object-contain" />
 	</div>
 {/snippet}
@@ -205,7 +203,7 @@
 
 						<DropdownMenu.Content
 							class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
-							side={sidebar.isMobile ? 'bottom' : 'right'}
+							side={sidebar?.isMobile ? 'bottom' : 'right'}
 							align="end"
 							sideOffset={4}
 						>

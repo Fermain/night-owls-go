@@ -25,7 +25,7 @@ test.describe('✅ Success Demo - Working Test Patterns', () => {
 
 	test('✅ Registration form displays and accepts input', async ({ page }) => {
 		const authPage = new AuthPage(page);
-		
+
 		await page.goto('/register');
 		await expect(authPage.nameInput).toBeVisible();
 		await expect(authPage.phoneInput).toBeVisible();
@@ -55,7 +55,7 @@ test.describe('✅ Success Demo - Working Test Patterns', () => {
 
 	test('✅ Admin protection redirects work', async ({ page }) => {
 		await page.goto('/admin');
-		
+
 		// Should redirect to login page
 		await expect(page).toHaveURL('/login');
 
@@ -65,7 +65,7 @@ test.describe('✅ Success Demo - Working Test Patterns', () => {
 	test('✅ API mocking is functioning', async ({ page }) => {
 		// This test demonstrates that our setupApiMocks() function works
 		await page.goto('/register');
-		
+
 		// The mocks should be active for this test
 		const authPage = new AuthPage(page);
 		await expect(authPage.nameInput).toBeVisible();

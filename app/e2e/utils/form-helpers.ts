@@ -6,18 +6,18 @@ import { type Page } from '@playwright/test';
  */
 export async function fillPhoneInput(page: Page, phoneNumber: string) {
 	const phoneField = page.locator('input[type="tel"]');
-	
+
 	// Clear the field first
 	await phoneField.clear();
-	
+
 	// Type character by character to trigger validation
 	await phoneField.type(phoneNumber, { delay: 50 });
-	
+
 	// Trigger validation events
 	await phoneField.dispatchEvent('input');
 	await phoneField.dispatchEvent('change');
 	await phoneField.blur();
-	
+
 	// Wait for validation to complete
 	await page.waitForTimeout(500);
 }
@@ -27,14 +27,14 @@ export async function fillPhoneInput(page: Page, phoneNumber: string) {
  */
 export async function fillRegistrationForm(page: Page, name: string, phone: string) {
 	const nameField = page.getByLabel('Full Name');
-	
+
 	// Fill name field
 	await nameField.fill(name);
 	await nameField.blur();
-	
+
 	// Fill phone field with proper validation
 	await fillPhoneInput(page, phone);
-	
+
 	// Wait for all validation to complete
 	await page.waitForTimeout(1000);
 }
@@ -46,14 +46,14 @@ export async function waitForSubmitButton(page: Page, buttonText: RegExp, timeou
 	const button = page.getByRole('button', { name: buttonText });
 	await button.waitFor({ state: 'visible' });
 	await button.waitFor({ state: 'attached' });
-	
+
 	// Wait for the button to be enabled
 	await button.waitFor({ state: 'visible', timeout });
-	
+
 	// Check if enabled with polling
 	let attempts = 0;
 	const maxAttempts = timeout / 200;
-	
+
 	while (attempts < maxAttempts) {
 		const isEnabled = await button.isEnabled();
 		if (isEnabled) {
@@ -62,6 +62,6 @@ export async function waitForSubmitButton(page: Page, buttonText: RegExp, timeou
 		await page.waitForTimeout(200);
 		attempts++;
 	}
-	
+
 	throw new Error(`Submit button did not become enabled within ${timeout}ms`);
-} 
+}
