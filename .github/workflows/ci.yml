@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 env:
   GO_VERSION: '1.24.2'
@@ -92,9 +93,9 @@ jobs:
         working-directory: ./app
         run: pnpm run build
 
-      - name: Frontend - Test
+      - name: Frontend - Unit Tests
         working-directory: ./app
-        run: pnpm run test:unit
+        run: pnpm run test:unit -- --run
 
   security:
     name: Security Scan

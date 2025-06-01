@@ -71,6 +71,59 @@ export const mockShifts = [
 ];
 
 export async function setupApiMocks(page: Page) {
+	// Mock ping endpoint for MSW testing
+	await page.route('**/api/ping', async (route) => {
+		await route.fulfill({
+			status: 501,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				message: 'MSW intercepted - ping endpoint mocked',
+				intercepted: true
+			})
+		});
+	});
+
+	// Mock emergency contacts endpoint
+	await page.route('**/api/emergency-contacts', async (route) => {
+		if (route.request().method() === 'GET') {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify([
+					{
+						id: 1,
+						name: 'Emergency Services',
+						phone: '112',
+						type: 'emergency'
+					},
+					{
+						id: 2,
+						name: 'Local Police',
+						phone: '10111',
+						type: 'police'
+					},
+					{
+						id: 3,
+						name: 'Medical Emergency',
+						phone: '999',
+						type: 'medical'
+					}
+				])
+			});
+		} else if (route.request().method() === 'POST') {
+			const body = JSON.parse(route.request().postData() || '{}');
+			await route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					id: Date.now(),
+					...body,
+					created_at: new Date().toISOString()
+				})
+			});
+		}
+	});
+
 	// Mock authentication endpoints
 	await page.route('**/api/auth/register', async (route) => {
 		const request = route.request();
