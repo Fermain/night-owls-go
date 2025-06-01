@@ -219,7 +219,7 @@ export class AuthPage {
 	// OTP input helper methods
 	async fillOtpInput(otp: string) {
 		const otpInputs = this.page.locator('[data-input-otp] input');
-		
+
 		for (let i = 0; i < otp.length; i++) {
 			await otpInputs.nth(i).fill(otp[i]);
 		}

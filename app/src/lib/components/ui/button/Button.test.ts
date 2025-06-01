@@ -23,12 +23,12 @@ describe('Button Component', () => {
 
 		// Clean up and test secondary variant separately
 		document.body.innerHTML = '';
-		
+
 		render(ButtonTestWrapper, {
-			variant: 'secondary', 
+			variant: 'secondary',
 			text: 'Cancel'
 		});
-		
+
 		button = screen.getByRole('button', { name: 'Cancel' });
 		expect(button).toHaveClass('bg-secondary');
 	});
@@ -45,12 +45,12 @@ describe('Button Component', () => {
 
 		// Clean up and test large size separately
 		document.body.innerHTML = '';
-		
+
 		render(ButtonTestWrapper, {
-			size: 'lg', 
+			size: 'lg',
 			text: 'Large'
 		});
-		
+
 		button = screen.getByRole('button', { name: 'Large' });
 		expect(button).toHaveClass('h-10');
 	});
@@ -90,11 +90,11 @@ describe('Button Component', () => {
 		});
 
 		const button = screen.getByRole('button');
-		
+
 		// Verify button is actually disabled
 		expect(button).toBeDisabled();
 		expect(button).toHaveClass('disabled:pointer-events-none');
-		
+
 		// In real browsers, disabled buttons with pointer-events:none won't receive clicks.
 		// However, fireEvent.click() bypasses this CSS and directly triggers events.
 		// This is expected Testing Library behavior - it tests the handler, not browser behavior.
@@ -103,7 +103,7 @@ describe('Button Component', () => {
 		// Since fireEvent bypasses CSS pointer-events, the click will fire.
 		// The real protection comes from CSS in actual usage.
 		expect(handleClick).toHaveBeenCalledTimes(1);
-		
+
 		// The important thing is that the button IS marked as disabled
 		expect(button).toBeDisabled();
 	});

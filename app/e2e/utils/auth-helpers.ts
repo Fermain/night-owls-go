@@ -15,7 +15,10 @@ export const mockUsers = {
 	}
 };
 
-export async function setAuthState(page: Page, user: typeof mockUsers.admin | typeof mockUsers.volunteer) {
+export async function setAuthState(
+	page: Page,
+	user: typeof mockUsers.admin | typeof mockUsers.volunteer
+) {
 	await page.evaluate((userData) => {
 		const authData = {
 			user: {
@@ -28,11 +31,11 @@ export async function setAuthState(page: Page, user: typeof mockUsers.admin | ty
 			isAuthenticated: true,
 			lastLogin: new Date().toISOString()
 		};
-		
+
 		localStorage.setItem('user-session', JSON.stringify(authData));
 		localStorage.setItem('auth-token', userData.token);
 	}, user);
-	
+
 	console.log(`✅ Auth state set for ${user.role}: ${user.name}`);
 }
 
@@ -41,7 +44,7 @@ export async function clearAuthState(page: Page) {
 		localStorage.removeItem('user-session');
 		localStorage.removeItem('auth-token');
 	});
-	
+
 	console.log('✅ Auth state cleared');
 }
 
@@ -88,4 +91,4 @@ export async function setupAuthMocks(page: Page) {
 	});
 
 	console.log('✅ Auth API mocks set up');
-} 
+}
