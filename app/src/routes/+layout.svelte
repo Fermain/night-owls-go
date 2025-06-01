@@ -8,7 +8,6 @@
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
