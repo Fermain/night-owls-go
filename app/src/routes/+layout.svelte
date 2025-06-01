@@ -4,8 +4,7 @@
 	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	// TEMPORARILY COMMENTING OUT THEME STORE TO TEST
-	// import { actualTheme, themeActions } from '$lib/stores/themeStore';
+	import { actualTheme, themeActions } from '$lib/stores/themeStore';
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
@@ -42,11 +41,10 @@
 			notificationStore.fetchNotifications();
 		}
 
-		// TEMPORARILY COMMENTING OUT THEME STORE TO TEST
 		// Apply theme based on store
-		// const unsubscribe = actualTheme.subscribe((theme) => {
-		// 	themeActions.applyTheme(theme);
-		// });
+		const unsubscribe = actualTheme.subscribe((theme) => {
+			themeActions.applyTheme(theme);
+		});
 
 		// Listen for PWA install prompt
 		window.addEventListener('beforeinstallprompt', (event) => {

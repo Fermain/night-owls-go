@@ -1,4 +1,4 @@
-import { persisted } from 'svelte-persisted-store';
+import { persisted } from '$lib/utils/persisted';
 import { writable } from 'svelte/store';
 
 // Interface for PWA install prompt event
