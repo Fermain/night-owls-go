@@ -35,8 +35,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ env.GO_VERSION }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
             ${{ runner.os }}-go-
 
       - name: Setup Node.js
