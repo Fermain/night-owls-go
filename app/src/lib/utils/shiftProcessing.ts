@@ -40,7 +40,7 @@ export function processScheduleData(shifts: AdminShiftSlot[]): ScheduleMetric[] 
 	});
 
 	return Array.from(scheduleStats.entries())
-		.map(([id, stats]) => ({
+		.map(([_id, stats]) => ({
 			schedule: stats.name,
 			total: stats.total,
 			filled: stats.filled,

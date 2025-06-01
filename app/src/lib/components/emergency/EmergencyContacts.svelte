@@ -57,7 +57,7 @@
 						try {
 							await offlineService.cacheEmergencyContacts();
 							contacts = await offlineService.getEmergencyContacts();
-						} catch (fetchError) {
+						} catch (_fetchError) {
 							error = 'Failed to load emergency contacts';
 						}
 					} else {

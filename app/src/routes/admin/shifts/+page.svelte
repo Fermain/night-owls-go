@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import type { AdminShiftSlot } from '$lib/types';
 	import EnhancedShiftsDashboard from '$lib/components/dashboard/EnhancedShiftsDashboard.svelte';
 	import ShiftBookingForm from '$lib/components/admin/shifts/ShiftBookingForm.svelte';
@@ -9,7 +9,7 @@
 
 	// State
 	let selectedShift = $state<AdminShiftSlot | null>(null);
-	let shiftStartTimeFromUrl = $derived($page.url.searchParams.get('shiftStartTime'));
+	let shiftStartTimeFromUrl = $derived(page.url.searchParams.get('shiftStartTime'));
 
 	const queryClient = useQueryClient();
 

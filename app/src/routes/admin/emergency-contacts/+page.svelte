@@ -22,8 +22,7 @@
 					throw new Error('Failed to load emergency contacts');
 				}
 				return response.json();
-			},
-			enabled: !!contactId() // Only fetch if we have a contact ID
+			}
 		})
 	);
 

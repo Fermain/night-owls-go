@@ -108,10 +108,6 @@
 			<div class="space-y-4">
 				<div class="flex items-center justify-between">
 					<h2 class="text-xl font-semibold">Existing Schedules</h2>
-					<Button onclick={handleCreateNew} size="sm">
-						<PlusIcon class="h-4 w-4 mr-2" />
-						New Schedule
-					</Button>
 				</div>
 
 				{#if $schedulesQuery.isLoading}

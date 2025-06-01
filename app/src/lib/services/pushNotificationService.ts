@@ -33,7 +33,7 @@ class PushNotificationService {
 			// Wait for service worker to be ready or register it
 			try {
 				this.registration = await navigator.serviceWorker.ready;
-			} catch (error) {
+			} catch (_error) {
 				console.log('Service worker not ready, attempting registration...');
 				// Import and use our service worker registration service
 				const { serviceWorkerService } = await import('./serviceWorkerService');

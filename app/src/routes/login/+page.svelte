@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { Label } from '$lib/components/ui/label';
 	import { PhoneInput } from '$lib/components/ui/phone-input';
 	import * as InputOTP from '$lib/components/ui/input-otp';
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
-	import { isAuthenticated, currentUser } from '$lib/services/userService';
+	import { isAuthenticated } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import { onboardingActions, onboardingState } from '$lib/stores/onboardingStore';
 	import type { E164Number } from 'svelte-tel-input/types';
@@ -26,7 +26,7 @@
 	});
 
 	// Get phone from URL params (from register redirect)
-	const urlPhone = $page.url.searchParams.get('phone');
+	const urlPhone = page.url.searchParams.get('phone');
 
 	// Simple state management for pure login flow
 	let step = $state<'request' | 'verify'>(urlPhone ? 'verify' : 'request');
@@ -72,7 +72,7 @@
 			saveUserData(phoneNumber, ''); // No name for pure login
 
 			// Request OTP for login (using register endpoint which handles both cases)
-			const response = await authService.register({
+			await authService.register({
 				phone: phoneNumber
 				// No name - this is pure login
 			});

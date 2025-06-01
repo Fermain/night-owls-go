@@ -2,11 +2,13 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
+	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
+	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
+	import UserSettingsDialog from '$lib/components/user/settings/UserSettingsDialog.svelte';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
@@ -16,61 +18,18 @@
 	import StarIcon from '@lucide/svelte/icons/star';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 
-	// Props for customization
-	let {
-		showBreadcrumbs = false,
-		customTitle = null
-	}: {
-		showBreadcrumbs?: boolean;
-		customTitle?: string | null;
-	} = $props();
+	// State for dialogs
+	let emergencyDialogOpen = $state(false);
+	let reportDialogOpen = $state(false);
+	let settingsDialogOpen = $state(false);
 
 	// Determine if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
 
 	// Determine if we're on the report page
 	const isReportPage = $derived(page.url.pathname === '/report');
-
-	// Get current page title based on route and context
-	const pageTitle = $derived.by(() => {
-		if (customTitle) return customTitle;
-
-		const pathname = page.url.pathname;
-
-		// Admin routes
-		if (pathname.startsWith('/admin')) {
-			if (pathname === '/admin') return 'Dashboard';
-			if (pathname.startsWith('/admin/users')) return 'Users';
-			if (pathname.startsWith('/admin/shifts')) return 'Shifts';
-			if (pathname.startsWith('/admin/schedules')) return 'Schedules';
-			if (pathname.startsWith('/admin/broadcasts')) return 'Broadcasts';
-			if (pathname.startsWith('/admin/reports')) return 'Reports';
-			return 'Admin';
-		}
-
-		// Public routes
-		if (pathname === '/') return 'Mount Moreland Night Owls';
-		if (pathname === '/bookings') return 'My Shifts';
-		if (pathname === '/broadcasts') return 'Messages';
-		if (pathname === '/report') return 'Report Incident';
-		if (pathname === '/login') return 'Sign In';
-		if (pathname === '/register') return 'Join Community';
-
-		return 'Mount Moreland Night Owls';
-	});
-
-	// Generate breadcrumbs for admin pages
-	const breadcrumbs = $derived.by(() => {
-		if (!showBreadcrumbs || !isAdminRoute) return [];
-
-		const pathSegments = page.url.pathname.split('/').filter(Boolean);
-		return pathSegments.map((segment, index) => {
-			const href = '/' + pathSegments.slice(0, index + 1).join('/');
-			const label = segment.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-			return { label, href };
-		});
-	});
 
 	// Handle logout
 	function handleLogout() {
@@ -80,9 +39,17 @@
 
 	// Handle emergency call
 	function handleEmergency() {
-		if (confirm('This will call emergency services immediately. Continue?')) {
-			window.location.href = 'tel:999';
-		}
+		emergencyDialogOpen = true;
+	}
+
+	// Handle report dialog
+	function handleReport() {
+		reportDialogOpen = true;
+	}
+
+	// Handle settings dialog
+	function handleSettings() {
+		settingsDialogOpen = true;
 	}
 
 	// Get user initials for avatar
@@ -123,62 +90,28 @@
 </script>
 
 <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+	<!-- Logo and Title -->
+	<a href="/" class="flex items-center space-x-2">
+		<div class="h-8 w-8 p-1 flex items-center justify-center">
+			<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
+		</div>
+	</a>
+
 	<!-- Sidebar trigger for admin routes -->
 	{#if isAdminRoute}
 		<Sidebar.Trigger class="-ml-1" />
 		<Separator orientation="vertical" class="mr-2 h-4" />
 	{/if}
 
-	<!-- Left side: Logo/Title and Breadcrumbs -->
-	<div class="mr-4 flex items-center gap-4">
-		<!-- Logo and Title (only for public routes) -->
-		{#if !isAdminRoute}
-			<a href="/" class="flex items-center space-x-2">
-				<div class="h-8 w-8 p-1 flex items-center justify-center">
-					<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
-				</div>
-				<span class="hidden font-bold sm:inline-block">
-					{pageTitle}
-				</span>
-			</a>
-		{/if}
-
-		<!-- Breadcrumbs for admin pages -->
-		{#if showBreadcrumbs && breadcrumbs.length > 0}
-			<Breadcrumb.Root>
-				<Breadcrumb.List>
-					{#each breadcrumbs as crumb, i (crumb.href)}
-						<Breadcrumb.Item class="hidden md:block">
-							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-						</Breadcrumb.Item>
-						{#if i < breadcrumbs.length - 1}
-							<Breadcrumb.Separator class="hidden md:block" />
-						{/if}
-					{/each}
-				</Breadcrumb.List>
-			</Breadcrumb.Root>
-		{/if}
-	</div>
-
 	<!-- Right side: User actions -->
 	<div class="flex flex-1 items-center justify-end space-x-2">
 		<!-- Report button (only for authenticated users, not on report page) -->
 		{#if $isAuthenticated && !isReportPage}
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => (window.location.href = '/report')}
-				class="hidden sm:flex"
-			>
+			<Button variant="outline" size="sm" onclick={handleReport} class="hidden sm:flex">
 				<AlertTriangleIcon class="h-4 w-4 mr-2" />
 				Report
 			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => (window.location.href = '/report')}
-				class="sm:hidden h-9 w-9 p-0"
-			>
+			<Button variant="outline" size="sm" onclick={handleReport} class="sm:hidden h-9 w-9 p-0">
 				<AlertTriangleIcon class="h-4 w-4" />
 				<span class="sr-only">Report</span>
 			</Button>
@@ -260,8 +193,18 @@
 							<span>Admin Dashboard</span>
 						</DropdownMenu.Item>
 
+						<DropdownMenu.Item class="cursor-pointer" onclick={() => (window.location.href = '/')}>
+							<UserIcon class="mr-2 h-4 w-4" />
+							<span>User Dashboard</span>
+						</DropdownMenu.Item>
+
 						<Separator />
 					{/if}
+
+					<DropdownMenu.Item class="cursor-pointer" onclick={handleSettings}>
+						<SettingsIcon class="mr-2 h-4 w-4" />
+						<span>Settings</span>
+					</DropdownMenu.Item>
 
 					<DropdownMenu.Item
 						class="cursor-pointer text-red-600 focus:text-red-600"
@@ -287,3 +230,12 @@
 		{/if}
 	</div>
 </header>
+
+<!-- Emergency Contacts Dialog -->
+<EmergencyContactsDialog bind:open={emergencyDialogOpen} />
+
+<!-- Report Dialog -->
+<ReportDialog bind:open={reportDialogOpen} />
+
+<!-- Settings Dialog -->
+<UserSettingsDialog bind:open={settingsDialogOpen} />

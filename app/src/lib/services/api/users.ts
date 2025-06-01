@@ -87,7 +87,7 @@ export class UsersApiService {
 		// Handle both JSON response and empty response
 		try {
 			return await response.json();
-		} catch (e) {
+		} catch (_e) {
 			return { ok: response.ok };
 		}
 	}

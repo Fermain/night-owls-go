@@ -4,9 +4,15 @@
 	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	// SvelteKit environment module
+	import { actualTheme, themeActions } from '$lib/stores/themeStore';
+	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
+	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
+	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
+	import { notificationStore } from '$lib/services/notificationService';
+	import { userSession } from '$lib/stores/authStore';
+	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
 
-	// For client-side only SPA as per SvelteKit SPA guide
+	let { children } = $props();
 
 	let queryClient = new QueryClient({
 		defaultOptions: {
@@ -20,38 +26,32 @@
 	// Check if we're in admin area
 	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
 
-	// Initialize notification service on app startup
+	// Initialize notification service and theme on app startup
 	onMount(() => {
+		// Initialize notification service
 		notificationStore.init();
+
 		// Only fetch notifications if user is authenticated
 		if ($userSession.isAuthenticated) {
 			notificationStore.fetchNotifications();
 		}
-	});
 
-	// Import unified header and mobile navigation
-	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
-	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
-	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
-	import { notificationStore } from '$lib/services/notificationService';
-	import { userSession } from '$lib/stores/authStore';
-	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
-
-	let { children } = $props();
-
-	onMount(async () => {
-		// Set dark mode preference
-		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-		if (prefersDark) {
-			document.documentElement.classList.add('dark');
-		}
+		// Apply theme based on store
+		const unsubscribe = actualTheme.subscribe((theme) => {
+			themeActions.applyTheme(theme);
+		});
 
 		// Listen for PWA install prompt
 		window.addEventListener('beforeinstallprompt', (event) => {
 			// Prevent the default prompt
 			event.preventDefault();
-			// Store the event for later use
-			pwaInstallPrompt.set(event as any);
+			// Store the event for later use (cast to BeforeInstallPromptEvent)
+			pwaInstallPrompt.set(
+				event as Event & {
+					prompt: () => Promise<void>;
+					userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+				}
+			);
 		});
 
 		// Listen for app installed event
@@ -59,6 +59,8 @@
 			console.log('PWA was installed');
 			pwaInstallPrompt.set(null);
 		});
+
+		return unsubscribe;
 	});
 </script>
 
@@ -70,9 +72,9 @@
 		{:else}
 			<!-- Public layout with header + mobile nav -->
 			<div class="flex flex-col min-h-screen">
-				<UnifiedHeader showBreadcrumbs={false} />
+				<UnifiedHeader />
 				<!-- Main content area that fills remaining height -->
-				<main class="flex-1 pb-16 md:pb-0 overflow-auto flex">
+				<main class="flex-1 overflow-auto flex">
 					{@render children()}
 				</main>
 			</div>

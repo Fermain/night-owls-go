@@ -1,110 +1,38 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { isAuthenticated } from '$lib/services/userService';
-	import HomeIcon from '@lucide/svelte/icons/home';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import XIcon from '@lucide/svelte/icons/x';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import { Bell } from 'lucide-svelte';
-	import { notificationStore } from '$lib/services/notificationService';
 
-	let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
-
-	// Navigation items for authenticated users
-	const navItems = [
-		{
-			href: '/',
-			icon: HomeIcon,
-			label: 'Home',
-			badge: null
-		},
-		{
-			href: '/bookings',
-			icon: CalendarIcon,
-			label: 'My Shifts',
-			badge: null
-		},
-		{
-			href: '/broadcasts',
-			icon: Bell,
-			label: 'Messages',
-			badge: $notificationStore.unreadCount
-		},
-		{
-			href: '/report',
-			icon: AlertTriangleIcon,
-			label: 'Report',
-			badge: null
-		}
-	];
-
-	// Get current route for active state
-	const currentPath = $derived(page.url.pathname);
-
-	function isActiveRoute(href: string): boolean {
-		if (href === '/') return currentPath === '/';
-		return currentPath.startsWith(href);
-	}
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	function closeMenu() {
-		isOpen = false;
+		open = false;
 	}
 </script>
 
 {#if $isAuthenticated}
-	<!-- Bottom Tab Navigation for Authenticated Users -->
-	<nav
-		class="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border md:hidden"
-	>
-		<div class="flex items-center justify-around px-2 py-2">
-			{#each navItems as item (item.href)}
-				{@const IconComponent = item.icon}
-				{@const isActive = isActiveRoute(item.href)}
-				<a
-					href={item.href}
-					class="flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs transition-colors
-						{isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
-				>
-					<div class="relative">
-						<IconComponent class="h-5 w-5 mb-1" />
-						{#if item.badge}
-							<Badge
-								variant="destructive"
-								class="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center"
-							>
-								{item.badge}
-							</Badge>
-						{/if}
-					</div>
-					<span class="truncate max-w-full">{item.label}</span>
-				</a>
-			{/each}
-		</div>
-	</nav>
+	<!-- For authenticated users, mobile navigation is handled by the main layout -->
 {:else}
 	<!-- Mobile Menu Button for Unauthenticated Users -->
 	<div class="md:hidden">
-		<Button variant="ghost" size="icon" onclick={() => (isOpen = !isOpen)}>
+		<Button variant="ghost" size="icon" onclick={() => (open = !open)}>
 			<MenuIcon class="h-5 w-5" />
 		</Button>
 	</div>
 
 	<!-- Slide-out Menu for Unauthenticated Users -->
-	{#if isOpen}
+	{#if open}
 		<div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden">
 			<div class="fixed inset-y-0 left-0 z-50 w-3/4 max-w-sm border-r bg-background">
 				<!-- Header -->
 				<div class="flex items-center justify-between p-4 border-b">
 					<div class="flex items-center gap-2">
-						<div
-							class="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded flex items-center justify-center"
-						>
-							<span class="text-primary-foreground text-sm font-bold">NO</span>
+						<div class="h-8 w-8 flex items-center justify-center">
+							<img src="/logo.png" alt="Mount Moreland Night Owls" class="h-6 w-6 object-contain" />
 						</div>
 						<span class="font-semibold">Mount Moreland Night Owls</span>
 					</div>

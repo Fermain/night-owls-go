@@ -14,7 +14,7 @@ export const scheduleZodSchema = z
 					try {
 						cronstrue.toString(val);
 						return true;
-					} catch (e) {
+					} catch (_e) {
 						return false;
 					}
 				},

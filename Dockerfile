@@ -38,7 +38,7 @@ WORKDIR /app
 RUN chown appuser:appgroup /app
 
 # Copy migrations
-COPY internal/db/migrations/ ./migrations/
+COPY internal/db/migrations/ ./internal/db/migrations/
 
 # Copy binaries
 COPY --from=backend-builder /app/night-owls-server .

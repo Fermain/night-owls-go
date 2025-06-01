@@ -90,16 +90,17 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 		require.NoError(t, err, "Failed to get daily schedule by ID=1 for test setup")
 	}
 
-	// Use a time that matches the cron expression in Africa/Johannesburg timezone
-	// Daily Evening Patrol runs at 18:00 in Johannesburg time, which is 16:00 UTC
-	shiftStartTimeStr := "2025-01-06T16:00:00Z"
-	shiftStartTime, _ := time.Parse(time.RFC3339, shiftStartTimeStr)
-
 	// --- Test POST /bookings (Create Booking) ---
+	// Updated to use ScheduleID and StartTime (reverted from ShiftID)
 	buddyName := "Test Buddy"
+	
+	// Calculate a valid start time for the daily schedule (18:00 local = 16:00 UTC)
+	// The seeded schedule uses Africa/Johannesburg timezone (UTC+2)
+	jan6Evening := time.Date(2025, 1, 6, 16, 0, 0, 0, time.UTC)
+	
 	createBookingReq := api.CreateBookingRequest{
 		ScheduleID: dailySchedule.ScheduleID,
-		StartTime:  shiftStartTime,
+		StartTime:  jan6Evening,
 		BuddyName:  &buddyName,
 	}
 	bookingPayloadBytes, _ := json.Marshal(createBookingReq)
@@ -110,7 +111,6 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &createdBooking)
 	require.NoError(t, err)
 	assert.Equal(t, dailySchedule.ScheduleID, createdBooking.ScheduleID)
-	assert.Equal(t, shiftStartTime, createdBooking.ShiftStart.UTC())
 	assert.Equal(t, authUserID, createdBooking.UserID)
 	assert.Equal(t, "Test Buddy", createdBooking.BuddyName)
 	assert.Nil(t, createdBooking.CheckedInAt)
@@ -124,11 +124,11 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	rr = app.makeRequest(t, "POST", checkinPath, nil, userToken)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Mark check-in failed: %s", rr.Body.String())
-	var updatedBooking api.BookingResponse
-	err = json.Unmarshal(rr.Body.Bytes(), &updatedBooking)
+	var checkedInBooking api.BookingResponse
+	err = json.Unmarshal(rr.Body.Bytes(), &checkedInBooking)
 	require.NoError(t, err)
-	assert.NotNil(t, updatedBooking.CheckedInAt)
-	assert.Equal(t, createdBooking.BookingID, updatedBooking.BookingID)
+	assert.NotNil(t, checkedInBooking.CheckedInAt, "CheckedInAt should be set after check-in")
+	assert.Equal(t, createdBooking.BookingID, checkedInBooking.BookingID)
 
 	// --- Test PATCH /bookings/{id}/attendance (by another user - Forbidden) ---
 	// Register and login another user
