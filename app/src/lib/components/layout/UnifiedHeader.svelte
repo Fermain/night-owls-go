@@ -25,8 +25,8 @@
 	let reportDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
 
-	// Determine if we're in admin area
-	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
+	// Determine if we're in admin area (defensive check for SSR/hydration)
+	const isAdminRoute = $derived(page?.url?.pathname?.startsWith('/admin') ?? false);
 
 	// Determine if we're on the report page
 	const isReportPage = $derived(page.url.pathname === '/report');
