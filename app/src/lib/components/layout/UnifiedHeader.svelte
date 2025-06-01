@@ -33,10 +33,15 @@
 	const isReportPage = $derived(page.url.pathname === '/report');
 
 	// Check if sidebar context is available (safe for public routes)
-	const sidebarAvailable = $derived.by(() => {
-		const sidebar = useSidebar();
-		return sidebar !== null;
-	});
+	// Only check when needed to avoid lifecycle errors during SSR/hydration
+	function isSidebarAvailable(): boolean {
+		try {
+			const sidebar = useSidebar();
+			return sidebar !== null;
+		} catch {
+			return false;
+		}
+	}
 
 	// Handle logout
 	function handleLogout() {
@@ -105,7 +110,7 @@
 	</a>
 
 	<!-- Sidebar trigger for admin routes (only if sidebar is available) -->
-	{#if isAdminRoute && sidebarAvailable}
+	{#if isAdminRoute && isSidebarAvailable()}
 		<Sidebar.Trigger class="-ml-1" />
 		<Separator orientation="vertical" class="mr-2 h-4" />
 	{/if}
