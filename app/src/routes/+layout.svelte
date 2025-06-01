@@ -8,6 +8,7 @@
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
@@ -23,8 +24,8 @@
 		}
 	});
 
-	// Check if we're in admin area
-	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
+	// Check if we're in admin area (defensive check for SSR/hydration)
+	const isAdminRoute = $derived(page?.url?.pathname?.startsWith('/admin') ?? false);
 
 	// Initialize notification service and theme on app startup
 	onMount(() => {
@@ -65,24 +66,26 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-	<div class="min-h-screen bg-background text-foreground">
-		{#if isAdminRoute}
-			<!-- Admin layout uses existing sidebar system -->
-			{@render children()}
-		{:else}
-			<!-- Public layout with header + mobile nav -->
-			<div class="flex flex-col min-h-screen">
-				<UnifiedHeader />
-				<!-- Main content area that fills remaining height -->
-				<main class="flex-1 overflow-auto flex">
-					{@render children()}
-				</main>
-			</div>
-			<MobileNav />
-			<!-- Offline status indicator for public pages -->
-			<OfflineIndicator />
-		{/if}
-	</div>
+	<Sidebar.Provider>
+		<div class="min-h-screen bg-background text-foreground">
+			{#if isAdminRoute}
+				<!-- Admin layout needs Sidebar context for UnifiedHeader Sidebar.Trigger -->
+				{@render children()}
+			{:else}
+				<!-- Public layout with header + mobile nav -->
+				<div class="flex flex-col min-h-screen">
+					<UnifiedHeader />
+					<!-- Main content area that fills remaining height -->
+					<main class="flex-1 overflow-auto flex">
+						{@render children()}
+					</main>
+				</div>
+				<MobileNav />
+				<!-- Offline status indicator for public pages -->
+				<OfflineIndicator />
+			{/if}
+		</div>
+	</Sidebar.Provider>
 
 	<Toaster position="top-center" />
 </QueryClientProvider>
