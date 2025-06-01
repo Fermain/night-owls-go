@@ -57,7 +57,7 @@
 		isCheckingPermissions = true;
 		try {
 			locationPermissionStatus = await permissionUtils.checkLocationPermission();
-			notificationPermissionStatus = permissionUtils.checkNotificationPermission();
+			notificationPermissionStatus = await permissionUtils.checkNotificationPermission();
 		} catch (_error) {
 			console.warn('Failed to check permissions:', _error);
 		} finally {

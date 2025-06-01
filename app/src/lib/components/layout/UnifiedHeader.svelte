@@ -20,15 +20,6 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 
-	// Props for customization
-	let {
-		showBreadcrumbs = false,
-		customTitle = null
-	}: {
-		showBreadcrumbs?: boolean;
-		customTitle?: string | null;
-	} = $props();
-
 	// State for dialogs
 	let emergencyDialogOpen = $state(false);
 	let reportDialogOpen = $state(false);
@@ -39,46 +30,6 @@
 
 	// Determine if we're on the report page
 	const isReportPage = $derived(page.url.pathname === '/report');
-
-	// Get current page title based on route and context
-	const _pageTitle = $derived.by(() => {
-		if (customTitle) return customTitle;
-
-		const pathname = page.url.pathname;
-
-		// Admin routes
-		if (pathname.startsWith('/admin')) {
-			if (pathname === '/admin') return 'Dashboard';
-			if (pathname.startsWith('/admin/users')) return 'Users';
-			if (pathname.startsWith('/admin/shifts')) return 'Shifts';
-			if (pathname.startsWith('/admin/schedules')) return 'Schedules';
-			if (pathname.startsWith('/admin/broadcasts')) return 'Broadcasts';
-			if (pathname.startsWith('/admin/reports')) return 'Reports';
-			return 'Admin';
-		}
-
-		// Public routes
-		if (pathname === '/') return 'Mount Moreland Night Owls';
-		if (pathname === '/bookings') return 'My Commitments';
-		if (pathname === '/broadcasts') return 'Messages';
-		if (pathname === '/report') return 'Report Incident';
-		if (pathname === '/login') return 'Sign In';
-		if (pathname === '/register') return 'Join Community';
-
-		return 'Mount Moreland Night Owls';
-	});
-
-	// Generate breadcrumbs for admin pages
-	const _breadcrumbs = $derived.by(() => {
-		if (!showBreadcrumbs || !isAdminRoute) return [];
-
-		const pathSegments = page.url.pathname.split('/').filter(Boolean);
-		return pathSegments.map((segment, index) => {
-			const href = '/' + pathSegments.slice(0, index + 1).join('/');
-			const label = segment.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-			return { label, href };
-		});
-	});
 
 	// Handle logout
 	function handleLogout() {

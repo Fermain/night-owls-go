@@ -72,7 +72,7 @@
 		{:else}
 			<!-- Public layout with header + mobile nav -->
 			<div class="flex flex-col min-h-screen">
-				<UnifiedHeader showBreadcrumbs={false} />
+				<UnifiedHeader />
 				<!-- Main content area that fills remaining height -->
 				<main class="flex-1 overflow-auto flex">
 					{@render children()}

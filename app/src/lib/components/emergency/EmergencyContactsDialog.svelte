@@ -139,11 +139,6 @@
 	function cancelEmergencyCall() {
 		showEmergencyConfirm = false;
 	}
-
-	function _callEmergency(number: string) {
-		// Implementation for emergency calling
-		window.location.href = `tel:${number}`;
-	}
 </script>
 
 <Dialog.Root bind:open>
