@@ -9,8 +9,11 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import type { AvailableShiftSlot } from '$lib/services/api/user';
 
-	// Define flexible shift interface that extends AvailableShiftSlot
-	type Shift = AvailableShiftSlot & {
+	// Define flexible shift interface that works with different data structures
+	type Shift = Partial<AvailableShiftSlot> & {
+		// Required timing fields (from either structure)
+		start_time?: string;
+		end_time?: string;
 		// Additional optional fields for booking/shift data
 		id?: number;
 		booking_id?: number;
@@ -34,7 +37,7 @@
 	}: {
 		shift: Shift;
 		type?: 'available' | 'next' | 'active';
-		onBook?: (shift: Shift) => void;
+		onBook?: (shift: AvailableShiftSlot) => void;
 		onCheckIn?: () => void;
 		onCheckOut?: () => void;
 		onCancel?: (shiftId: number) => void;
@@ -116,7 +119,12 @@
 				{getTimeUntil(shift.start_time)} away
 			</div>
 		</div>
-		<Button size="sm" onclick={() => onBook?.(shift)} disabled={isLoading} class="ml-4 shrink-0">
+		<Button
+			size="sm"
+			onclick={() => onBook?.(shift as AvailableShiftSlot)}
+			disabled={isLoading}
+			class="ml-4 shrink-0"
+		>
 			<PlusIcon class="h-3 w-3 mr-1" />
 			{isLoading ? 'Booking...' : 'Commit'}
 		</Button>
