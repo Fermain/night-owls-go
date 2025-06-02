@@ -6,7 +6,6 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import UserIcon from '@lucide/svelte/icons/user';
 	import { createMutation } from '@tanstack/svelte-query';
 	import {
 		UserApiService,
@@ -287,7 +286,7 @@
 								: 's'}:
 						</p>
 						<ul class="list-disc list-inside space-y-0.5 max-h-20 overflow-y-auto">
-							{#each selectedShifts.slice(0, 5) as shift}
+							{#each selectedShifts.slice(0, 5) as shift (getShiftId(shift))}
 								<li>{shift.schedule_name} - {formatShiftTime(shift.start_time, shift.end_time)}</li>
 							{/each}
 							{#if selectedShifts.length > 5}
