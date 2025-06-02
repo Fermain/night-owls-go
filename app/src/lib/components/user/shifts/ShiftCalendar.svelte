@@ -31,11 +31,19 @@
 		monthOffset: number;
 	}
 
+	// Type for calendar cell (can be day or month title)
+	interface CalendarCell {
+		type: 'day' | 'month-title' | 'empty';
+		dayData?: CalendarDay;
+		monthName?: string;
+		monthOffset?: number;
+	}
+
 	// Type for month grid
 	interface MonthGrid {
 		monthName: string;
 		monthOffset: number;
-		weeks: (CalendarDay | null)[][];
+		weeks: CalendarCell[][];
 	}
 
 	// Calculate how many months to show based on selected day range
@@ -50,7 +58,7 @@
 	// Get current date for calendar
 	const today = new Date();
 
-	// Generate separate month grids with proper tessellation
+	// Generate separate month grids with month names in empty cells
 	const calendarData = $derived.by(() => {
 		const monthGrids: MonthGrid[] = [];
 		let firstMonthName = '';
@@ -65,6 +73,13 @@
 				month: 'long',
 				year: monthsToShow > 1 ? 'numeric' : undefined
 			});
+
+			// Short month name for empty cells
+			const shortMonthName = currentMonth
+				.toLocaleDateString('en-GB', {
+					month: 'short'
+				})
+				.toUpperCase();
 
 			if (monthOffset === 0) {
 				firstMonthName = monthName;
@@ -87,11 +102,20 @@
 			cumulativeDayCount += startingDayOfWeek + daysInMonth;
 
 			// Create month grid
-			const monthDays: (CalendarDay | null)[] = [];
+			const monthCells: CalendarCell[] = [];
 
 			// Add empty cells for days before month starts
 			for (let i = 0; i < startingDayOfWeek; i++) {
-				monthDays.push(null);
+				if (monthOffset > 0 && i === Math.floor(startingDayOfWeek / 2)) {
+					// Use middle empty cell for month name (only for non-first months)
+					monthCells.push({
+						type: 'month-title',
+						monthName: shortMonthName,
+						monthOffset
+					});
+				} else {
+					monthCells.push({ type: 'empty' });
+				}
 			}
 
 			// Add days of the month
@@ -119,7 +143,7 @@
 					return now >= shiftStart && now <= shiftEnd;
 				});
 
-				monthDays.push({
+				const dayData: CalendarDay = {
 					day,
 					date,
 					dateString,
@@ -129,16 +153,21 @@
 					isPast: date < today && date.toDateString() !== today.toDateString(),
 					isOnDuty,
 					monthOffset
+				};
+
+				monthCells.push({
+					type: 'day',
+					dayData
 				});
 			}
 
-			// Group days into weeks
-			const weeks: (CalendarDay | null)[][] = [];
-			for (let i = 0; i < monthDays.length; i += 7) {
-				const week = monthDays.slice(i, i + 7);
+			// Group cells into weeks
+			const weeks: CalendarCell[][] = [];
+			for (let i = 0; i < monthCells.length; i += 7) {
+				const week = monthCells.slice(i, i + 7);
 				// Pad the last week if necessary
 				while (week.length < 7) {
-					week.push(null);
+					week.push({ type: 'empty' });
 				}
 				weeks.push(week);
 			}
@@ -209,52 +238,53 @@
 			</div>
 		</div>
 
-		<!-- Separate Month Grids -->
+		<!-- Seamless Month Grids -->
 		<div class="space-y-8">
 			{#each calendarData.monthGrids as monthGrid, monthIndex (monthGrid.monthOffset)}
 				<div class="px-4">
-					<!-- Month title (for subsequent months) -->
-					{#if monthIndex > 0}
-						<div class="text-center mb-4">
-							<div
-								class="text-sm font-medium text-muted-foreground bg-background px-3 py-1 rounded-full border inline-block"
-							>
-								{monthGrid.monthName}
-							</div>
-						</div>
-					{/if}
-
-					<!-- Month grid -->
+					<!-- Month grid with embedded month names -->
 					<div class="space-y-1">
 						{#each monthGrid.weeks as week, weekIndex (weekIndex)}
 							<div class="grid grid-cols-7 gap-1">
-								{#each week as dayData, dayIndex (dayIndex)}
-									{#if dayData === null}
+								{#each week as cell, cellIndex (cellIndex)}
+									{#if cell.type === 'empty'}
 										<!-- Empty cell for padding -->
 										<div class="aspect-square"></div>
-									{:else}
+									{:else if cell.type === 'month-title'}
+										<!-- Month name in empty cell -->
+										<div
+											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-center {getMonthBackground(
+												cell.monthOffset || 0
+											)}"
+										>
+											<span class="text-xs font-bold text-muted-foreground/70 transform -rotate-12">
+												{cell.monthName}
+											</span>
+										</div>
+									{:else if cell.type === 'day' && cell.dayData}
+										<!-- Regular day cell -->
 										<div
 											class="aspect-square border-2 rounded relative p-1
-												{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
-												{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-												{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
-												{getMonthBackground(dayData.monthOffset)}
+												{cell.dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
+												{cell.dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
+												{cell.dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
+												{getMonthBackground(cell.dayData.monthOffset)}
 											"
 										>
 											<!-- Day number -->
 											<div
 												class="absolute top-1 left-1 text-xs font-medium leading-none
-												{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
+												{cell.dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
 											"
 											>
-												{dayData.day}
+												{cell.dayData.day}
 											</div>
 
 											<!-- Shift slots container -->
 											<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
-												{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
-													{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
-													{@const isActive = isShiftActive(shift, dayData.userShifts)}
+												{#each cell.dayData.shifts as shift, shiftIndex (shift.start_time)}
+													{@const isBooked = isUserBookedForShift(shift, cell.dayData.userShifts)}
+													{@const isActive = isShiftActive(shift, cell.dayData.userShifts)}
 
 													<button
 														class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
@@ -265,7 +295,7 @@
 															: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
 														"
 														onclick={() => !isBooked && onShiftSelect(shift)}
-														disabled={isBooked || dayData.isPast}
+														disabled={isBooked || cell.dayData.isPast}
 														title={isBooked
 															? 'Already booked'
 															: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
