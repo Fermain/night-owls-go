@@ -16,26 +16,29 @@ mm.nightowls.app {
         reverse_proxy night-owls:5888
     }
     
-    # Route ALL HTTP methods for backend API endpoints to the Go backend
-    handle /schedules* {
+    # Route specific API endpoints to backend (avoiding frontend page conflicts)
+    handle /schedules {
         reverse_proxy night-owls:5888
     }
     
-    handle /shifts* {
+    handle /shifts/available {
         reverse_proxy night-owls:5888
     }
     
-    handle /bookings* {
+    handle /bookings/my {
         reverse_proxy night-owls:5888
     }
     
-    handle /reports* {
+    handle /push/vapid-public {
         reverse_proxy night-owls:5888
     }
     
-    handle /push* {
-        reverse_proxy night-owls:5888
+    # Route write operations for API endpoints to backend
+    @api_writes {
+        method POST PUT PATCH DELETE
+        path /schedules* /shifts* /bookings* /reports* /push*
     }
+    reverse_proxy @api_writes night-owls:5888
 
     # Handle static files and SPA fallback
     handle {
