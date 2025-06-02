@@ -103,14 +103,12 @@
 			const monthCells: CalendarCell[] = [];
 
 			// Add empty cells for days before month starts
-			const monthNameChars =
-				monthOffset > 0 && startingDayOfWeek > 0 ? shortMonthName.split('') : [];
 			for (let i = 0; i < startingDayOfWeek; i++) {
-				if (monthOffset > 0 && startingDayOfWeek > 0 && i < monthNameChars.length) {
-					// Distribute month name characters across available empty cells
+				if (monthOffset > 0 && i === 0 && startingDayOfWeek > 0) {
+					// Use first empty cell for full month name with overflow (only for non-first months)
 					monthCells.push({
 						type: 'month-title',
-						monthName: monthNameChars[i],
+						monthName: shortMonthName,
 						monthOffset
 					});
 				} else {
@@ -251,11 +249,11 @@
 										<!-- Empty cell for padding -->
 										<div class="aspect-square"></div>
 									{:else if cell.type === 'month-title'}
-										<!-- Month name character in empty cell -->
+										<!-- Month name with overflow in first empty cell -->
 										<div
-											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-center"
+											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-start overflow-visible z-10"
 										>
-											<span class="text-sm font-bold text-muted-foreground">
+											<span class="text-sm font-bold text-muted-foreground whitespace-nowrap pl-1">
 												{cell.monthName}
 											</span>
 										</div>
