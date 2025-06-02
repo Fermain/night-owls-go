@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import { formatTime } from '$lib/utils/shiftFormatting';
 	import type { AvailableShiftSlot, UserBooking } from '$lib/services/api/user';
 
 	let {
@@ -96,17 +97,28 @@
 	// Day names
 	const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-	function handleDayClick(dayData: CalendarDay) {
-		if (dayData?.shifts?.length > 0) {
-			// If there's only one shift, select it directly
-			if (dayData.shifts.length === 1) {
-				onShiftSelect(dayData.shifts[0]);
-			} else {
-				// If multiple shifts, select the first one for now
-				// In a more complex implementation, you might show a picker
-				onShiftSelect(dayData.shifts[0]);
-			}
-		}
+	// Check if user is booked for a specific shift
+	function isUserBookedForShift(shift: AvailableShiftSlot, userShifts: UserBooking[]): boolean {
+		return userShifts.some((booking) => {
+			const shiftStart = new Date(shift.start_time).getTime();
+			const bookingStart = new Date(booking.shift_start).getTime();
+			return Math.abs(shiftStart - bookingStart) < 60000; // Within 1 minute tolerance
+		});
+	}
+
+	// Check if a specific shift is currently active
+	function isShiftActive(shift: AvailableShiftSlot, userShifts: UserBooking[]): boolean {
+		const now = new Date();
+		return userShifts.some((booking) => {
+			const shiftStart = new Date(shift.start_time).getTime();
+			const bookingStart = new Date(booking.shift_start).getTime();
+			const bookingEnd = new Date(booking.shift_end);
+			return (
+				Math.abs(shiftStart - bookingStart) < 60000 &&
+				now >= new Date(booking.shift_start) &&
+				now <= bookingEnd
+			);
+		});
 	}
 </script>
 
@@ -117,7 +129,7 @@
 			<Card.Title class="text-base">Shift Calendar</Card.Title>
 		</div>
 		<p class="text-sm text-muted-foreground">
-			{monthName} • Click highlighted dates to commit to shifts
+			{monthName} • Click individual shift slots to commit
 		</p>
 	</Card.Header>
 	<Card.Content>
@@ -139,35 +151,59 @@
 						<!-- Empty cell for padding -->
 						<div class="aspect-square"></div>
 					{:else}
-						<button
-							class="aspect-square p-1 rounded border-2 text-sm transition-colors relative
-								{dayData.shifts.length > 0
-								? 'bg-primary/10 hover:bg-primary/20 text-primary font-medium border-primary/30'
-								: dayData.isPast
-									? 'text-muted-foreground bg-muted/30 cursor-not-allowed border-muted/50'
-									: 'hover:bg-muted/50 text-muted-foreground border-muted/30'}
+						<div
+							class="aspect-square border-2 rounded relative p-1
+								{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
 								{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-								{dayData.isOnDuty ? 'bg-green-100 border-green-400 text-green-800 font-bold' : ''}
+								{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
 							"
-							onclick={() => handleDayClick(dayData)}
-							disabled={dayData.shifts.length === 0}
 						>
-							<div class="flex flex-col items-center justify-center h-full">
-								<span class="text-xs leading-none">
-									{dayData.day}
-								</span>
-								{#if dayData.userShifts.length > 0}
-									<span class="text-lg leading-none mt-0.5">🦉</span>
-								{/if}
-								{#if dayData.shifts.length > 1 && dayData.userShifts.length === 0}
-									<div
-										class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center"
+							<!-- Day number - positioned absolutely so it doesn't interfere with content flow -->
+							<div
+								class="absolute top-1 left-1 text-xs font-medium leading-none
+								{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
+							"
+							>
+								{dayData.day}
+							</div>
+
+							<!-- Shift slots container -->
+							<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
+								{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
+									{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
+									{@const isActive = isShiftActive(shift, dayData.userShifts)}
+
+									<button
+										class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
+											{isBooked
+											? isActive
+												? 'bg-green-600 text-white font-bold'
+												: 'bg-blue-100 text-blue-800 border border-blue-300'
+											: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
+										"
+										onclick={() => !isBooked && onShiftSelect(shift)}
+										disabled={isBooked || dayData.isPast}
+										title={isBooked
+											? 'Already booked'
+											: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
 									>
-										{dayData.shifts.length}
+										<span class="truncate flex-1 text-left leading-none">
+											{formatTime(shift.start_time)}
+										</span>
+										{#if isBooked}
+											<span class="ml-1 leading-none">🦉</span>
+										{/if}
+									</button>
+								{/each}
+
+								<!-- Show message if no shifts available -->
+								{#if dayData.shifts.length === 0 && !dayData.isPast}
+									<div class="text-xs text-muted-foreground text-center mt-2 leading-tight">
+										No shifts
 									</div>
 								{/if}
 							</div>
-						</button>
+						</div>
 					{/if}
 				{/each}
 			</div>
@@ -176,20 +212,20 @@
 		<!-- Legend -->
 		<div class="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
 			<div class="flex items-center gap-1">
-				<div class="w-3 h-3 bg-primary/10 border-2 border-primary/30 rounded"></div>
-				<span>Available shifts</span>
+				<div class="w-3 h-3 bg-primary/10 border border-primary/30 rounded"></div>
+				<span>Available slot</span>
 			</div>
 			<div class="flex items-center gap-1">
-				<span class="text-lg">🦉</span>
-				<span>My shifts</span>
+				<span class="text-base">🦉</span>
+				<span>My booking</span>
+			</div>
+			<div class="flex items-center gap-1">
+				<div class="w-3 h-3 bg-green-600 rounded"></div>
+				<span>Active now</span>
 			</div>
 			<div class="flex items-center gap-1">
 				<div class="w-3 h-3 bg-green-100 border-2 border-green-400 rounded"></div>
-				<span>On duty now</span>
-			</div>
-			<div class="flex items-center gap-1">
-				<div class="w-3 h-3 bg-muted/30 border-2 border-muted/50 rounded"></div>
-				<span>No shifts</span>
+				<span>On duty today</span>
 			</div>
 		</div>
 	</Card.Content>
