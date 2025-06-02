@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { canCancelBooking } from '$lib/utils/bookings';
+	import { formatTime, formatDayNight } from '$lib/utils/shiftFormatting';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -58,15 +59,7 @@
 			0
 	);
 
-	// Helper functions with safe null checking
-	function formatTime(timeString: string | undefined): string {
-		if (!timeString) return '--:--';
-		return new Date(timeString).toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
-
+	// Helper functions with local time support (API already returns SAST)
 	function formatDate(timeString: string | undefined): string {
 		if (!timeString) return 'Unknown date';
 		const date = new Date(timeString);
@@ -79,11 +72,8 @@
 		} else if (date.toDateString() === tomorrow.toDateString()) {
 			return 'Tomorrow';
 		} else {
-			return date.toLocaleDateString('en-GB', {
-				weekday: 'short',
-				month: 'short',
-				day: 'numeric'
-			});
+			// Use the day/night logic instead of just the date
+			return formatDayNight(timeString);
 		}
 	}
 

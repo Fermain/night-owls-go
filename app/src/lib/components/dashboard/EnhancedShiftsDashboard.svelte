@@ -15,6 +15,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { ShiftAnalytics } from '$lib/queries/admin/shifts/shiftsAnalyticsQuery';
 	import { formatDistanceToNow } from 'date-fns';
+	import { formatShiftTitle } from '$lib/utils/shiftFormatting';
 
 	let {
 		isLoading,
@@ -72,30 +73,7 @@
 		};
 	});
 
-	// Format shift title using watch tradition
-	function formatShiftTitle(startTime: string, endTime: string): string {
-		const start = new Date(startTime);
-		const end = new Date(endTime);
-
-		const previousDay = new Date(start);
-		previousDay.setDate(previousDay.getDate() - 1);
-
-		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-
-		const startHour = start.getUTCHours();
-		const endHour = end.getUTCHours();
-
-		const formatHour = (hour: number) => (hour === 0 ? 12 : hour > 12 ? hour - 12 : hour);
-		const getAmPm = (hour: number) => (hour < 12 ? 'AM' : 'PM');
-
-		const startHour12 = formatHour(startHour);
-		const endHour12 = formatHour(endHour);
-		const endAmPm = getAmPm(endHour);
-
-		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
-
-		return `${dayName} Night ${timeRange}`;
-	}
+	// Format shift title using watch tradition - using utility function now
 
 	function getUrgencyColor(shift: { start_time: string }): string {
 		const shiftDate = new Date(shift.start_time);

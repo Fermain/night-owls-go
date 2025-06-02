@@ -24,7 +24,6 @@
 	<div class="flex items-center gap-4">
 		<div class="flex items-center gap-2">
 			<FilterIcon class="h-4 w-4" />
-			<Label class="text-sm font-medium">Filters:</Label>
 		</div>
 
 		<div class="flex items-center gap-4">

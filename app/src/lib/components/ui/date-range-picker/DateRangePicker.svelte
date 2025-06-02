@@ -13,6 +13,7 @@
 	import { RangeCalendar } from '$lib/components/ui/range-calendar';
 	import * as Popover from '$lib/components/ui/popover';
 	import { parseYyyyMmDdToCalendarDate, formatCalendarDateToYyyyMmDd } from '$lib/utils/date';
+	import { SAST_TIMEZONE } from '$lib/utils/timezone';
 
 	const {
 		initialStartDate,
@@ -27,7 +28,7 @@
 	}>();
 
 	/* — utilities & state — */
-	const df = new DateFormatter('en-ZA', { dateStyle: 'medium', timeZone: 'UTC' });
+	const df = new DateFormatter('en-ZA', { dateStyle: 'medium', timeZone: SAST_TIMEZONE });
 
 	let currentRange = $state<BitsDateRange | undefined>(undefined);
 	let calendarPlaceholder = $state<DateValue>(today(getLocalTimeZone()));
@@ -62,11 +63,11 @@
 
 	function buttonLabel(): string {
 		if (currentRange?.start && currentRange?.end) {
-			return `${df.format(currentRange.start.toDate('UTC'))} – ${df.format(
-				currentRange.end.toDate('UTC')
+			return `${df.format(currentRange.start.toDate(SAST_TIMEZONE))} – ${df.format(
+				currentRange.end.toDate(SAST_TIMEZONE)
 			)}`;
 		}
-		if (currentRange?.start) return df.format(currentRange.start.toDate('UTC'));
+		if (currentRange?.start) return df.format(currentRange.start.toDate(SAST_TIMEZONE));
 		return placeholderText;
 	}
 </script>

@@ -257,7 +257,14 @@ func (s *AdminDashboardService) calculateQualityMetrics(ctx context.Context, fro
 	}
 
 	noShowRate := float64(noShows) / float64(totalBookings) * 100
-	incompleteRate := float64(incomplete) / float64(totalBookings-noShows) * 100
+
+	// Prevent division by zero for incomplete rate
+	incompleteRate := 0.0
+	checkedInBookings := totalBookings - noShows
+	if checkedInBookings > 0 {
+		incompleteRate = float64(incomplete) / float64(checkedInBookings) * 100
+	}
+
 	reliabilityScore := float64(complete) / float64(totalBookings) * 100
 
 	return &QualityMetrics{

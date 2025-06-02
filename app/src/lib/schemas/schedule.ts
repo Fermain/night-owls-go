@@ -21,7 +21,8 @@ export const scheduleZodSchema = z
 				{ message: 'Invalid CRON expression format' }
 			),
 		start_date: z.date().nullable().optional(),
-		end_date: z.date().nullable().optional()
+		end_date: z.date().nullable().optional(),
+		timezone: z.string().default('Africa/Johannesburg')
 	})
 	.refine(
 		(data) => {

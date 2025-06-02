@@ -12,7 +12,7 @@ import (
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 
-	"github.com/gorhill/cronexpr"
+	"github.com/robfig/cron/v3"
 )
 
 // Service specific errors
@@ -157,50 +157,23 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 			continue
 		}
 
-		cronExpression, err := cronexpr.Parse(schedule.CronExpr)
+		cronOccurrences, err := parseScheduleInTimezone(schedule.CronExpr, loc.String(), iterationStartInLoc, iterationEndInLoc)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to parse cron expression", "schedule_id", schedule.ScheduleID, "cron_expr", schedule.CronExpr, "error", err)
 			continue
 		}
 
-		nextTime := iterationStartInLoc
-		// Check if iterationStartInLoc itself is a valid cron occurrence
-		firstPossibleOccurrence := cronExpression.Next(iterationStartInLoc.Add(-time.Second)) // Check from just before
-
-		if firstPossibleOccurrence.Equal(iterationStartInLoc) { // If it is...
-			if !firstPossibleOccurrence.After(iterationEndInLoc) { // ...and it's within the overall window
-				shiftEndTime := firstPossibleOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
-				potentialSlot := AvailableShiftSlot{
-					ScheduleID:   schedule.ScheduleID,
-					ScheduleName: schedule.Name,
-					StartTime:    firstPossibleOccurrence, // In schedule's loc
-					EndTime:      shiftEndTime,            // In schedule's loc
-					Timezone:     loc.String(),
-					IsBooked:     false,
-				}
-				allPotentialSlots = append(allPotentialSlots, potentialSlot)
-			}
-			nextTime = firstPossibleOccurrence // Start next iteration from this occurrence
-		}
-
-		for {
-			// nextTime is in loc. cronExpression.Next will return time in loc.
-			nextOccurrence := cronExpression.Next(nextTime)
-			if nextOccurrence.IsZero() || nextOccurrence.After(iterationEndInLoc) {
-				break
-			}
-
-			shiftEndTime := nextOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
+		for _, nextTime := range cronOccurrences {
+			shiftEndTime := nextTime.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
 			potentialSlot := AvailableShiftSlot{
 				ScheduleID:   schedule.ScheduleID,
 				ScheduleName: schedule.Name,
-				StartTime:    nextOccurrence, // In schedule's loc
-				EndTime:      shiftEndTime,   // In schedule's loc
+				StartTime:    nextTime, // Already in UTC from parseScheduleInTimezone
+				EndTime:      shiftEndTime,
 				Timezone:     loc.String(),
 				IsBooked:     false,
 			}
 			allPotentialSlots = append(allPotentialSlots, potentialSlot)
-			nextTime = nextOccurrence
 		}
 	}
 
@@ -287,49 +260,23 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			continue
 		}
 
-		cronExpression, err := cronexpr.Parse(schedule.CronExpr)
+		cronOccurrences, err := parseScheduleInTimezone(schedule.CronExpr, loc.String(), iterationStartInLoc, iterationEndInLoc)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to parse cron expression for admin slots", "schedule_id", schedule.ScheduleID, "cron_expr", schedule.CronExpr, "error", err)
 			continue
 		}
 
-		nextTime := iterationStartInLoc
-		// Check if iterationStartInLoc itself is a valid cron occurrence
-		firstPossibleOccurrence := cronExpression.Next(iterationStartInLoc.Add(-time.Second))
-
-		if firstPossibleOccurrence.Equal(iterationStartInLoc) {
-			if !firstPossibleOccurrence.After(iterationEndInLoc) {
-				shiftEndTime := firstPossibleOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
-				slot := AdminAvailableShiftSlot{
-					ScheduleID:   schedule.ScheduleID,
-					ScheduleName: schedule.Name,
-					StartTime:    firstPossibleOccurrence, // In schedule's loc
-					EndTime:      shiftEndTime,            // In schedule's loc
-					Timezone:     loc.String(),
-					IsBooked:     false,
-				}
-				allSlots = append(allSlots, slot)
-			}
-			nextTime = firstPossibleOccurrence
-		}
-
-		for {
-			nextOccurrence := cronExpression.Next(nextTime)
-			if nextOccurrence.IsZero() || nextOccurrence.After(iterationEndInLoc) {
-				break
-			}
-
-			shiftEndTime := nextOccurrence.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
+		for _, nextTime := range cronOccurrences {
+			shiftEndTime := nextTime.Add(time.Duration(schedule.DurationMinutes) * time.Minute)
 			slot := AdminAvailableShiftSlot{
 				ScheduleID:   schedule.ScheduleID,
 				ScheduleName: schedule.Name,
-				StartTime:    nextOccurrence, // In schedule's loc
-				EndTime:      shiftEndTime,   // In schedule's loc
+				StartTime:    nextTime, // Already in UTC from parseScheduleInTimezone
+				EndTime:      shiftEndTime,
 				Timezone:     loc.String(),
 				IsBooked:     false,
 			}
 			allSlots = append(allSlots, slot)
-			nextTime = nextOccurrence
 		}
 	}
 
@@ -452,4 +399,40 @@ func (s *ScheduleService) AdminDeleteSchedule(ctx context.Context, scheduleID in
 // AdminBulkDeleteSchedules deletes multiple schedules by their IDs.
 func (s *ScheduleService) AdminBulkDeleteSchedules(ctx context.Context, scheduleIDs []int64) error {
 	return s.querier.AdminBulkDeleteSchedules(ctx, scheduleIDs)
+}
+
+// parseScheduleInTimezone parses a cron expression in the specified timezone
+// and returns the next occurrence times as UTC timestamps.
+// This follows ChatGPT's recommendation for proper timezone-aware cron parsing.
+func parseScheduleInTimezone(cronExpr string, timezone string, fromTime, toTime time.Time) ([]time.Time, error) {
+	// Load the timezone location
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load timezone %s: %w", timezone, err)
+	}
+
+	// Create a timezone-aware cron parser
+	parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	schedule, err := parser.Parse(cronExpr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse cron expression %s: %w", cronExpr, err)
+	}
+
+	var occurrences []time.Time
+	current := fromTime.In(loc)
+	end := toTime.In(loc)
+
+	// Generate occurrences in the target timezone
+	for len(occurrences) < 1000 { // Prevent infinite loops
+		next := schedule.Next(current)
+		if next.IsZero() || next.After(end) {
+			break
+		}
+		
+		// Convert to UTC for storage/comparison
+		occurrences = append(occurrences, next.UTC())
+		current = next.Add(time.Minute) // Move past this occurrence
+	}
+
+	return occurrences, nil
 }

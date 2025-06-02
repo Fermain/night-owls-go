@@ -8,6 +8,7 @@ import {
 	parseISO,
 	differenceInHours
 } from 'date-fns';
+import { SAST_TIMEZONE, SAST_LOCALE } from './timezone';
 
 /**
  * Get relative time description for a shift using date-fns
@@ -37,19 +38,63 @@ export function getRelativeTime(dateString: string): string {
 }
 
 /**
- * Format shift time range for display using date-fns
+ * Format shift time range for times that are already in SAST (no conversion needed)
+ * Use this when the API already returns SAST times
  */
-export function formatShiftTimeRange(startTime: string, endTime: string): string {
+export function formatShiftTimeRangeLocal(startTime: string, endTime: string): string {
 	try {
-		const start = parseISO(startTime);
-		const end = parseISO(endTime);
+		const start = new Date(startTime);
+		const end = new Date(endTime);
 
-		if (!isValid(start) || !isValid(end)) {
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
 			return 'Invalid Time Range';
 		}
 
-		const startFormatted = format(start, 'HH:mm');
-		const endFormatted = format(end, 'HH:mm');
+		// Use local time formatting without timezone conversion
+		const startFormatted = start.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		const endFormatted = end.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		return `${startFormatted} - ${endFormatted}`;
+	} catch {
+		return 'Invalid Time Range';
+	}
+}
+
+/**
+ * Format shift time range for display in SAST timezone
+ * Use this when API returns UTC times that need conversion
+ */
+export function formatShiftTimeRange(startTime: string, endTime: string): string {
+	try {
+		const start = new Date(startTime);
+		const end = new Date(endTime);
+
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+			return 'Invalid Time Range';
+		}
+
+		const startFormatted = start.toLocaleTimeString(SAST_LOCALE, {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false,
+			timeZone: SAST_TIMEZONE
+		});
+
+		const endFormatted = end.toLocaleTimeString(SAST_LOCALE, {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false,
+			timeZone: SAST_TIMEZONE
+		});
 
 		return `${startFormatted} - ${endFormatted}`;
 	} catch {
@@ -75,17 +120,25 @@ export function getDetailedRelativeTime(dateString: string): string {
 }
 
 /**
- * Format shift date and time for detailed display
+ * Format shift date and time for detailed display in SAST timezone
  */
 export function formatShiftDateTime(dateString: string): string {
 	try {
-		const date = parseISO(dateString);
+		const date = new Date(dateString);
 
-		if (!isValid(date)) {
+		if (isNaN(date.getTime())) {
 			return 'Invalid Date';
 		}
 
-		return format(date, 'EEE, MMM d • HH:mm');
+		return date.toLocaleString(SAST_LOCALE, {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false,
+			timeZone: SAST_TIMEZONE
+		});
 	} catch {
 		return 'Invalid Date';
 	}

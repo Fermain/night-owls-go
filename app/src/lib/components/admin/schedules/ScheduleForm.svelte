@@ -32,13 +32,15 @@
 		cron_expr: string;
 		start_date_str: string | null;
 		end_date_str: string | null;
+		timezone: string;
 	};
 
 	let formData = $state<FormInputValues>({
 		name: '',
 		cron_expr: '',
 		start_date_str: null,
-		end_date_str: null
+		end_date_str: null,
+		timezone: 'Africa/Johannesburg'
 	});
 
 	let zodErrors = $state<Partial<Record<keyof ZodSchemaValues, string>>>({});
@@ -50,11 +52,13 @@
 			formData.cron_expr = schedule.cron_expr;
 			formData.start_date_str = schedule.start_date ?? null;
 			formData.end_date_str = schedule.end_date ?? null;
+			formData.timezone = schedule.timezone || 'Africa/Johannesburg';
 		} else {
 			formData.name = '';
 			formData.cron_expr = '';
 			formData.start_date_str = null;
 			formData.end_date_str = null;
+			formData.timezone = 'Africa/Johannesburg';
 		}
 		zodErrors = {};
 	});
@@ -92,11 +96,12 @@
 	}
 
 	function validateForm(): boolean {
-		const valuesToValidate: Omit<ZodSchemaValues, 'timezone'> = {
+		const valuesToValidate: ZodSchemaValues = {
 			name: formData.name,
 			cron_expr: formData.cron_expr,
 			start_date: parseYyyyMmDdToJsDate(formData.start_date_str),
-			end_date: parseYyyyMmDdToJsDate(formData.end_date_str)
+			end_date: parseYyyyMmDdToJsDate(formData.end_date_str),
+			timezone: formData.timezone
 		};
 		const result = scheduleZodSchema.safeParse(valuesToValidate);
 		if (!result.success) {
@@ -122,7 +127,8 @@
 			name: formData.name,
 			cron_expr: formData.cron_expr,
 			start_date: formData.start_date_str,
-			end_date: formData.end_date_str
+			end_date: formData.end_date_str,
+			timezone: formData.timezone
 		};
 		$saveMutation.mutate({ payload, scheduleId: schedule?.schedule_id });
 	}
@@ -181,6 +187,23 @@
 					<CronView cronExpr={formData.cron_expr} />
 				</div>
 			{/if}
+		</div>
+		<div>
+			<Label for="timezone">Timezone</Label>
+			<select
+				id="timezone"
+				bind:value={formData.timezone}
+				disabled={$saveMutation.isPending}
+				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				<option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
+				<option value="UTC">UTC</option>
+				<option value="Europe/London">Europe/London</option>
+				<option value="America/New_York">America/New_York</option>
+			</select>
+			{#if zodErrors.timezone}<p class="text-sm text-destructive mt-1">
+					{zodErrors.timezone}
+				</p>{/if}
 		</div>
 		<div>
 			<Label for="date_range_picker_trigger_id">Date Range (Optional)</Label>

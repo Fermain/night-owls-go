@@ -1,34 +1,34 @@
 import { formatDistanceToNow } from 'date-fns';
+import { formatShiftTime as formatShiftTimeSAST } from './timezone';
 
 /**
- * Format a time slot from start and end ISO strings
+ * Format time slot range for times that are already in SAST (no conversion needed)
  */
 export function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
-	if (!startTimeIso || !endTimeIso) return 'N/A';
 	try {
-		const startDate = new Date(startTimeIso);
-		const endDate = new Date(endTimeIso);
+		const start = new Date(startTimeIso);
+		const end = new Date(endTimeIso);
 
-		const startFormatted = startDate.toLocaleString('en-ZA', {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short',
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+			return 'Invalid Time Range';
+		}
+
+		// Use local time formatting since API already returns SAST times
+		const startFormatted = start.toLocaleTimeString('en-GB', {
 			hour: '2-digit',
 			minute: '2-digit',
-			hour12: false,
-			timeZone: 'UTC'
+			hour12: false
 		});
 
-		const endFormatted = endDate.toLocaleTimeString('en-ZA', {
+		const endFormatted = end.toLocaleTimeString('en-GB', {
 			hour: '2-digit',
 			minute: '2-digit',
-			hour12: false,
-			timeZone: 'UTC'
+			hour12: false
 		});
 
 		return `${startFormatted} - ${endFormatted}`;
 	} catch {
-		return 'Invalid Date Range';
+		return 'Invalid Time Range';
 	}
 }
 
@@ -45,21 +45,10 @@ export function formatRelativeTime(timeIso: string): string {
 }
 
 /**
- * Format shift time for reports/displays
+ * Format shift time for reports/displays (SAST)
  */
 export function formatShiftTime(dateString: string): string {
-	try {
-		return new Date(dateString).toLocaleString('en-ZA', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			timeZone: 'UTC'
-		});
-	} catch {
-		return 'Invalid Date';
-	}
+	return formatShiftTimeSAST(dateString);
 }
 
 /**
