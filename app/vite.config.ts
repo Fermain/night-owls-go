@@ -112,36 +112,6 @@ export default defineConfig(({ mode }) => {
 							target: 'http://localhost:5888',
 							changeOrigin: true,
 							secure: false
-						},
-						'/shifts': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
-						},
-						'/bookings': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
-						},
-						'/reports': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
-						},
-						'/broadcasts': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
-						},
-						'/push': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
-						},
-						'/schedules': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
 						}
 					}
 		}

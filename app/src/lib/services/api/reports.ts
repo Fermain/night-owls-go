@@ -74,7 +74,7 @@ export class ReportsApiService {
 		message: string;
 		severity: number;
 	}): Promise<ReportResponse> {
-		const response = await authenticatedFetch('/reports/off-shift', {
+		const response = await authenticatedFetch('/api/reports/off-shift', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(payload)

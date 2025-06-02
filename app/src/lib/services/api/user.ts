@@ -59,7 +59,7 @@ export class UserApiService {
 		if (params?.to) searchParams.append('to', params.to);
 		if (params?.limit) searchParams.append('limit', params.limit.toString());
 
-		const url = `/shifts/available${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+		const url = `/api/shifts/available${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 		const response = await fetch(url);
 
 		if (!response.ok) {
@@ -72,7 +72,7 @@ export class UserApiService {
 	 * Create a new booking
 	 */
 	static async createBooking(request: CreateBookingRequest): Promise<UserBooking> {
-		const response = await authenticatedFetch('/bookings', {
+		const response = await authenticatedFetch('/api/bookings', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ export class UserApiService {
 	 * Mark check-in for a booking
 	 */
 	static async markCheckIn(bookingId: number): Promise<UserBooking> {
-		const response = await authenticatedFetch(`/bookings/${bookingId}/checkin`, {
+		const response = await authenticatedFetch(`/api/bookings/${bookingId}/checkin`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -109,7 +109,7 @@ export class UserApiService {
 	 * Cancel a booking
 	 */
 	static async cancelBooking(bookingId: number): Promise<void> {
-		const response = await authenticatedFetch(`/bookings/${bookingId}`, {
+		const response = await authenticatedFetch(`/api/bookings/${bookingId}`, {
 			method: 'DELETE'
 		});
 
@@ -126,7 +126,7 @@ export class UserApiService {
 		bookingId: number,
 		request: CreateReportRequest
 	): Promise<ReportResponse> {
-		const response = await authenticatedFetch(`/bookings/${bookingId}/report`, {
+		const response = await authenticatedFetch(`/api/bookings/${bookingId}/report`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -155,7 +155,7 @@ export class UserApiService {
 	 * Create an off-shift report (not associated with a booking)
 	 */
 	static async createOffShiftReport(request: CreateReportRequest): Promise<ReportResponse> {
-		const response = await authenticatedFetch('/reports/off-shift', {
+		const response = await authenticatedFetch('/api/reports/off-shift', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -174,7 +174,7 @@ export class UserApiService {
 	 * Get current user's bookings
 	 */
 	static async getMyBookings(): Promise<UserBooking[]> {
-		const response = await authenticatedFetch('/bookings/my');
+		const response = await authenticatedFetch('/api/bookings/my');
 
 		if (!response.ok) {
 			throw new Error(`Failed to fetch user bookings: ${response.status}`);

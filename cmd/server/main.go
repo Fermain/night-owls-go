@@ -245,9 +245,9 @@ func main() {
 		slog.Info("Development mode: dev-login endpoint enabled")
 	}
 
-	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
-	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
-	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
+	fuego.GetStd(s, "/api/schedules", scheduleAPIHandler.ListSchedulesHandler)
+	fuego.GetStd(s, "/api/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(s, "/api/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
 
 	// Emergency contacts (public access)
@@ -294,7 +294,7 @@ func main() {
 	})
 
 	// Protected routes (require auth)
-	protected := fuego.Group(s, "")
+	protected := fuego.Group(s, "/api")
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
 	fuego.Post(protected, "/bookings", bookingAPIHandler.CreateBookingFuego)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
@@ -302,7 +302,7 @@ func main() {
 	fuego.Delete(protected, "/bookings/{id}", bookingAPIHandler.CancelBookingFuego)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
-	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+	fuego.GetStd(protected, "/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
 

@@ -334,7 +334,7 @@ export async function setupApiMocks(page: Page) {
 	});
 
 	// Mock shifts endpoints
-	await page.route('**/shifts/available', async (route) => {
+	await page.route('**/api/shifts/available', async (route) => {
 		await route.fulfill({
 			status: 200,
 			contentType: 'application/json',
