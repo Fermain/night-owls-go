@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { canCancelBooking } from '$lib/utils/bookings';
+	import { formatTime as formatTimeSAST, SAST_TIMEZONE, SAST_LOCALE } from '$lib/utils/timezone';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -58,13 +59,10 @@
 			0
 	);
 
-	// Helper functions with safe null checking
+	// Helper functions with SAST timezone support
 	function formatTime(timeString: string | undefined): string {
 		if (!timeString) return '--:--';
-		return new Date(timeString).toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		return formatTimeSAST(timeString);
 	}
 
 	function formatDate(timeString: string | undefined): string {
@@ -79,10 +77,11 @@
 		} else if (date.toDateString() === tomorrow.toDateString()) {
 			return 'Tomorrow';
 		} else {
-			return date.toLocaleDateString('en-GB', {
+			return date.toLocaleDateString(SAST_LOCALE, {
 				weekday: 'short',
 				month: 'short',
-				day: 'numeric'
+				day: 'numeric',
+				timeZone: SAST_TIMEZONE
 			});
 		}
 	}
