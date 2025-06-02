@@ -1,8 +1,8 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { 
-		createQuery, 
+	import {
+		createQuery,
 		createMutation,
 		type CreateQueryResult,
 		type CreateMutationResult
@@ -38,8 +38,15 @@
 	// Query states - will be initialized in onMount with proper types
 	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
 	let userBookingsQuery = $state<CreateQueryResult<UserBooking[], Error> | null>(null);
-	let bookingMutation = $state<CreateMutationResult<UserBooking, Error, CreateBookingRequest, unknown> | null>(null);
-	let cancelBookingMutation = $state<CreateMutationResult<void, Error, number, unknown> | null>(null);
+	let bookingMutation = $state<CreateMutationResult<
+		UserBooking,
+		Error,
+		CreateBookingRequest,
+		unknown
+	> | null>(null);
+	let cancelBookingMutation = $state<CreateMutationResult<void, Error, number, unknown> | null>(
+		null
+	);
 
 	// State to track if component is mounted to prevent Dialog lifecycle errors
 	let mounted = $state(false);
@@ -117,7 +124,8 @@
 		const upcomingBookings = ($userBookingsQuery.data as UserBooking[])
 			.filter((booking: UserBooking) => new Date(booking.shift_start) > now)
 			.sort(
-				(a: UserBooking, b: UserBooking) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
+				(a: UserBooking, b: UserBooking) =>
+					new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
 			);
 
 		if (upcomingBookings.length === 0) return null;
@@ -147,7 +155,8 @@
 		const upcomingBookings = ($userBookingsQuery.data as UserBooking[])
 			.filter((booking: UserBooking) => new Date(booking.shift_start) > now)
 			.sort(
-				(a: UserBooking, b: UserBooking) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
+				(a: UserBooking, b: UserBooking) =>
+					new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
 			);
 
 		// Return all upcoming shifts except the first one (which is the "next shift")
@@ -172,7 +181,9 @@
 		if (nextShift && nextShift.id === shiftId) {
 			shiftDetails = formatShiftTimeFromBooking(nextShift);
 		} else {
-			const additionalShift = additionalShifts.find((shift: UserBooking) => shift.booking_id === shiftId);
+			const additionalShift = additionalShifts.find(
+				(shift: UserBooking) => shift.booking_id === shiftId
+			);
 			if (additionalShift) {
 				shiftDetails = formatShiftTimeCompact(additionalShift);
 			}

@@ -3,9 +3,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
-	import { 
-		createQuery, 
-		createMutation, 
+	import {
+		createQuery,
+		createMutation,
 		useQueryClient,
 		type CreateQueryResult,
 		type CreateMutationResult
@@ -15,8 +15,8 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { 
-		UserApiService, 
+	import {
+		UserApiService,
 		type AvailableShiftSlot,
 		type UserBooking
 	} from '$lib/services/api/user';
@@ -29,9 +29,16 @@
 	// Query states - will be initialized in onMount with proper types
 	let userBookingsQuery = $state<CreateQueryResult<UserBooking[], Error> | null>(null);
 	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
-	let checkInMutation = $state<CreateMutationResult<UserBooking, Error, number, unknown> | null>(null);
+	let checkInMutation = $state<CreateMutationResult<UserBooking, Error, number, unknown> | null>(
+		null
+	);
 	let cancelMutation = $state<CreateMutationResult<void, Error, number, unknown> | null>(null);
-	let bookShiftMutation = $state<CreateMutationResult<UserBooking, Error, { schedule_id: number; start_time: string }, unknown> | null>(null);
+	let bookShiftMutation = $state<CreateMutationResult<
+		UserBooking,
+		Error,
+		{ schedule_id: number; start_time: string },
+		unknown
+	> | null>(null);
 
 	// Initialize queries after component is mounted to avoid lifecycle errors
 	onMount(() => {
