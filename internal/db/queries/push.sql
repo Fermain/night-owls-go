@@ -11,4 +11,7 @@ SET p256dh_key = excluded.p256dh_key,
 DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?;
 
 -- name: GetSubscriptionsByUser :many
-SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE user_id = ?; 
+SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE user_id = ?;
+
+-- name: GetAllSubscriptions :many
+SELECT user_id, endpoint, p256dh_key, auth_key FROM push_subscriptions; 

@@ -3,7 +3,7 @@ import { toast } from 'svelte-sonner';
 import { notificationStore } from './notificationService';
 
 interface VAPIDKeyResponse {
-	vapid_public: string;
+	key: string;
 }
 
 interface PushSubscriptionData {
@@ -70,7 +70,7 @@ class PushNotificationService {
 			}
 
 			const data: VAPIDKeyResponse = await response.json();
-			this.vapidPublicKey = data.vapid_public;
+			this.vapidPublicKey = data.key;
 		} catch (error) {
 			console.error('Failed to fetch VAPID public key:', error);
 			throw error;
