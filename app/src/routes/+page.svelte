@@ -652,7 +652,11 @@
 			{/if}
 
 			<!-- Shift Calendar -->
-			<ShiftCalendar shifts={availableShifts} onShiftSelect={handleBookShift} />
+			<ShiftCalendar
+				shifts={availableShifts}
+				userBookings={($userBookingsQuery?.data as UserBooking[]) ?? []}
+				onShiftSelect={handleBookShift}
+			/>
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->

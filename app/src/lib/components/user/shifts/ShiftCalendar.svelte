@@ -1,13 +1,15 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import type { AvailableShiftSlot } from '$lib/services/api/user';
+	import type { AvailableShiftSlot, UserBooking } from '$lib/services/api/user';
 
 	let {
 		shifts = [],
+		userBookings = [],
 		onShiftSelect
 	}: {
 		shifts: AvailableShiftSlot[];
+		userBookings: UserBooking[];
 		onShiftSelect: (shift: AvailableShiftSlot) => void;
 	} = $props();
 
@@ -17,8 +19,10 @@
 		date: Date;
 		dateString: string;
 		shifts: AvailableShiftSlot[];
+		userShifts: UserBooking[];
 		isToday: boolean;
 		isPast: boolean;
+		isOnDuty: boolean;
 	}
 
 	// Get current date for calendar
@@ -46,10 +50,24 @@
 			const date = new Date(currentYear, currentMonth, day);
 			const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-			// Find shifts for this date
+			// Find available shifts for this date
 			const dayShifts = shifts.filter((shift) => {
 				const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
 				return shiftDate === dateString;
+			});
+
+			// Find user's bookings for this date
+			const dayUserShifts = userBookings.filter((booking) => {
+				const bookingDate = new Date(booking.shift_start).toISOString().split('T')[0];
+				return bookingDate === dateString;
+			});
+
+			// Check if user is currently on duty (active shift)
+			const now = new Date();
+			const isOnDuty = dayUserShifts.some((booking) => {
+				const shiftStart = new Date(booking.shift_start);
+				const shiftEnd = new Date(booking.shift_end);
+				return now >= shiftStart && now <= shiftEnd;
 			});
 
 			days.push({
@@ -57,8 +75,10 @@
 				date,
 				dateString,
 				shifts: dayShifts,
+				userShifts: dayUserShifts,
 				isToday: date.toDateString() === today.toDateString(),
-				isPast: date < today && date.toDateString() !== today.toDateString()
+				isPast: date < today && date.toDateString() !== today.toDateString(),
+				isOnDuty
 			});
 		}
 
@@ -120,27 +140,33 @@
 						<div class="aspect-square"></div>
 					{:else}
 						<button
-							class="aspect-square p-1 rounded-lg text-sm transition-colors relative
+							class="aspect-square p-1 rounded border-2 text-sm transition-colors relative
 								{dayData.shifts.length > 0
-								? 'bg-primary/10 hover:bg-primary/20 text-primary font-medium border-2 border-primary/30'
+								? 'bg-primary/10 hover:bg-primary/20 text-primary font-medium border-primary/30'
 								: dayData.isPast
-									? 'text-muted-foreground bg-muted/30 cursor-not-allowed'
-									: 'hover:bg-muted/50 text-muted-foreground'}
-								{dayData.isToday ? 'ring-2 ring-primary ring-offset-2' : ''}
+									? 'text-muted-foreground bg-muted/30 cursor-not-allowed border-muted/50'
+									: 'hover:bg-muted/50 text-muted-foreground border-muted/30'}
+								{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
+								{dayData.isOnDuty ? 'bg-green-100 border-green-400 text-green-800 font-bold' : ''}
 							"
 							onclick={() => handleDayClick(dayData)}
 							disabled={dayData.shifts.length === 0}
 						>
-							<span class="block">
-								{dayData.day}
-							</span>
-							{#if dayData.shifts.length > 1}
-								<div
-									class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center"
-								>
-									{dayData.shifts.length}
-								</div>
-							{/if}
+							<div class="flex flex-col items-center justify-center h-full">
+								<span class="text-xs leading-none">
+									{dayData.day}
+								</span>
+								{#if dayData.userShifts.length > 0}
+									<span class="text-lg leading-none mt-0.5">🦉</span>
+								{/if}
+								{#if dayData.shifts.length > 1 && dayData.userShifts.length === 0}
+									<div
+										class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center"
+									>
+										{dayData.shifts.length}
+									</div>
+								{/if}
+							</div>
 						</button>
 					{/if}
 				{/each}
@@ -154,14 +180,16 @@
 				<span>Available shifts</span>
 			</div>
 			<div class="flex items-center gap-1">
-				<div class="w-3 h-3 bg-muted/30 rounded"></div>
-				<span>No shifts</span>
+				<span class="text-lg">🦉</span>
+				<span>My shifts</span>
 			</div>
 			<div class="flex items-center gap-1">
-				<div
-					class="w-3 h-3 bg-primary/10 border-2 border-primary/30 rounded ring-2 ring-primary ring-offset-1"
-				></div>
-				<span>Today</span>
+				<div class="w-3 h-3 bg-green-100 border-2 border-green-400 rounded"></div>
+				<span>On duty now</span>
+			</div>
+			<div class="flex items-center gap-1">
+				<div class="w-3 h-3 bg-muted/30 border-2 border-muted/50 rounded"></div>
+				<span>No shifts</span>
 			</div>
 		</div>
 	</Card.Content>

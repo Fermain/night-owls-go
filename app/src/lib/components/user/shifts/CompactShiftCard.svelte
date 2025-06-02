@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { canCancelBooking } from '$lib/utils/bookings';
-	import { formatTime, formatDayNight } from '$lib/utils/shiftFormatting';
+	import { formatTime } from '$lib/utils/shiftFormatting';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -63,18 +63,13 @@
 	function formatDate(timeString: string | undefined): string {
 		if (!timeString) return 'Unknown date';
 		const date = new Date(timeString);
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(today.getDate() + 1);
 
-		if (date.toDateString() === today.toDateString()) {
-			return 'Today';
-		} else if (date.toDateString() === tomorrow.toDateString()) {
-			return 'Tomorrow';
-		} else {
-			// Use the day/night logic instead of just the date
-			return formatDayNight(timeString);
-		}
+		// Always show the literal date in dd/mm/yy format
+		return date.toLocaleDateString('en-GB', {
+			day: '2-digit',
+			month: '2-digit',
+			year: '2-digit'
+		});
 	}
 
 	function getTimeUntil(timeString: string | undefined): string {
