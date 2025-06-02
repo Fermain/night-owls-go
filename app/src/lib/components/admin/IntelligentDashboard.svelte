@@ -21,7 +21,6 @@
 	import {
 		calculateIntelligentInsights,
 		getStatusCounts,
-		hasCriticalIssues,
 		type IntelligentInsights
 	} from '$lib/utils/intelligentDashboard';
 
@@ -90,7 +89,7 @@
 		<div class="space-y-4">
 			<Skeleton class="h-24 w-full rounded-lg" />
 			<div class="grid grid-cols-2 gap-3">
-				{#each Array(4) as _}
+				{#each Array(4) as _, i (i)}
 					<Skeleton class="h-20 rounded-lg" />
 				{/each}
 			</div>
@@ -212,7 +211,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
-					{#each insights.criticalIssues as issue}
+					{#each insights.criticalIssues as issue (issue.type)}
 						<div class="border border-destructive/50 rounded-lg p-3 bg-destructive/5">
 							<div class="flex items-start gap-2">
 								<AlertTriangleIcon class="h-4 w-4 text-destructive mt-0.5" />
@@ -245,7 +244,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
-					{#each insights.pendingGuests.slice(0, 4) as guest}
+					{#each insights.pendingGuests.slice(0, 4) as guest (guest.id)}
 						<div
 							class="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors border border-amber-200 dark:border-amber-800"
 						>
@@ -302,7 +301,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
-					{#each insights.champions as champion}
+					{#each insights.champions as champion (champion.user_id)}
 						<div
 							class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/30 transition-colors border border-green-200 dark:border-green-800"
 						>
@@ -343,7 +342,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
-					{#each insights.freeLoaders as freeLoader}
+					{#each insights.freeLoaders as freeLoader (freeLoader.user_id)}
 						<div
 							class="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors border border-orange-200 dark:border-orange-800"
 						>
@@ -396,7 +395,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
-					{#each insights.topReporters as reporter}
+					{#each insights.topReporters as reporter (reporter.user_id)}
 						<div
 							class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors border border-blue-200 dark:border-blue-800"
 						>
