@@ -27,7 +27,7 @@ INSERT INTO bookings (
     ?,
     ?
 )
-RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at
+RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, checked_in_at, created_at
 `
 
 type CreateBookingParams struct {
@@ -57,8 +57,8 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (B
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.CreatedAt,
 		&i.CheckedInAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -74,7 +74,7 @@ func (q *Queries) DeleteBooking(ctx context.Context, bookingID int64) error {
 }
 
 const getBookingByID = `-- name: GetBookingByID :one
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, checked_in_at, created_at FROM bookings
 WHERE booking_id = ?
 `
 
@@ -89,14 +89,14 @@ func (q *Queries) GetBookingByID(ctx context.Context, bookingID int64) (Booking,
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.CreatedAt,
 		&i.CheckedInAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getBookingByScheduleAndStartTime = `-- name: GetBookingByScheduleAndStartTime :one
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, checked_in_at, created_at FROM bookings
 WHERE schedule_id = ? AND shift_start = ?
 `
 
@@ -116,8 +116,8 @@ func (q *Queries) GetBookingByScheduleAndStartTime(ctx context.Context, arg GetB
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.CreatedAt,
 		&i.CheckedInAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -382,7 +382,7 @@ func (q *Queries) GetMemberContributions(ctx context.Context) ([]GetMemberContri
 }
 
 const listBookingsByUserID = `-- name: ListBookingsByUserID :many
-SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at FROM bookings
+SELECT booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, checked_in_at, created_at FROM bookings
 WHERE user_id = ?
 ORDER BY shift_start DESC
 `
@@ -404,8 +404,8 @@ func (q *Queries) ListBookingsByUserID(ctx context.Context, userID int64) ([]Boo
 			&i.ShiftEnd,
 			&i.BuddyUserID,
 			&i.BuddyName,
-			&i.CreatedAt,
 			&i.CheckedInAt,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -489,7 +489,7 @@ const updateBookingCheckIn = `-- name: UpdateBookingCheckIn :one
 UPDATE bookings
 SET checked_in_at = ?
 WHERE booking_id = ?
-RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, created_at, checked_in_at
+RETURNING booking_id, user_id, schedule_id, shift_start, shift_end, buddy_user_id, buddy_name, checked_in_at, created_at
 `
 
 type UpdateBookingCheckInParams struct {
@@ -508,8 +508,8 @@ func (q *Queries) UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingChe
 		&i.ShiftEnd,
 		&i.BuddyUserID,
 		&i.BuddyName,
-		&i.CreatedAt,
 		&i.CheckedInAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }

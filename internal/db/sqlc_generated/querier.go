@@ -17,6 +17,7 @@ type Querier interface {
 	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
 	ArchiveReport(ctx context.Context, reportID int64) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
+	CountUsers(ctx context.Context) (int64, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)

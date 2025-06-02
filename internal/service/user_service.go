@@ -86,9 +86,13 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			
 			// This is a registration attempt (name provided), create new user
 			s.logger.InfoContext(ctx, "Creating new user during registration", "phone", phone, "name", name.String)
-			// For development, make all new users admin by default
-			// In production, you'd want more sophisticated role assignment logic
-			defaultRole := "admin" // For development - all users are admin
+			
+			// Smart role assignment: First two users get admin, everyone else gets guest
+			defaultRole, err := s.determineRoleForNewUser(ctx)
+			if err != nil {
+				s.logger.ErrorContext(ctx, "Failed to determine role for new user", "phone", phone, "error", err)
+				return ErrInternalServer
+			}
 
 			createUserParams := db.CreateUserParams{
 				Phone: phone,
@@ -213,4 +217,26 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 	s.logger.InfoContext(ctx, "OTP validated and JWT generated", "phone", phone, "user_id", user.UserID)
 	return tokenString, nil
+}
+
+// determineRoleForNewUser determines the role for a new user based on business logic:
+// - First two users get admin role (for initial setup)
+// - Everyone else gets guest role (must be manually promoted to owl by admins)
+func (s *UserService) determineRoleForNewUser(ctx context.Context) (string, error) {
+	// Count existing users to determine if this should be an admin
+	userCount, err := s.querier.CountUsers(ctx)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to count users for role determination", "error", err)
+		return "", err
+	}
+
+	// First two users get admin role for initial system setup
+	if userCount < 2 {
+		s.logger.InfoContext(ctx, "Assigning admin role to initial user", "user_count", userCount)
+		return "admin", nil
+	}
+
+	// Everyone else gets guest role by default
+	s.logger.InfoContext(ctx, "Assigning guest role to new user", "user_count", userCount)
+	return "guest", nil
 }
