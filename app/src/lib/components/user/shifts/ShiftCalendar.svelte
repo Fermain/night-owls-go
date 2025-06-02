@@ -62,7 +62,6 @@
 	const calendarData = $derived.by(() => {
 		const monthGrids: MonthGrid[] = [];
 		let firstMonthName = '';
-		let cumulativeDayCount = 0; // Track total days to maintain tessellation
 
 		for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
 			const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -92,14 +91,13 @@
 				startingDayOfWeek = new Date(year, month, 1).getDay();
 			} else {
 				// Subsequent months start where previous month would have ended
-				startingDayOfWeek = cumulativeDayCount % 7;
+				// Need to account for the fact that each month ends on a different day
+				const prevMonth = new Date(year, month, 0); // Last day of previous month
+				startingDayOfWeek = (prevMonth.getDay() + 1) % 7;
 			}
 
 			// Get days in this month
 			const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-			// Update cumulative count for next month's tessellation
-			cumulativeDayCount += startingDayOfWeek + daysInMonth;
 
 			// Create month grid
 			const monthCells: CalendarCell[] = [];
@@ -253,11 +251,9 @@
 									{:else if cell.type === 'month-title'}
 										<!-- Month name in empty cell -->
 										<div
-											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-center {getMonthBackground(
-												cell.monthOffset || 0
-											)}"
+											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-center"
 										>
-											<span class="text-xs font-bold text-muted-foreground/70 transform -rotate-12">
+											<span class="text-xs font-bold text-muted-foreground">
 												{cell.monthName}
 											</span>
 										</div>
