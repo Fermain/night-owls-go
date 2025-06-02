@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin Dashboard</title>
+	<title>Admin Dashboard - Mount Moreland Night Owls</title>
 </svelte:head>
 
 <SidebarPage title="Upcoming Shifts">
@@ -22,18 +22,16 @@
 		<UpcomingShifts maxItems={8} />
 	{/snippet}
 
-	<div class="space-y-6">
-		<!-- Page Header -->
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-			<p class="text-muted-foreground">
+	<div class="p-6 space-y-6">
+		<!-- Page Header with proper admin styling -->
+		<div class="border-b pb-4">
+			<h1 class="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+			<p class="text-lg text-muted-foreground mt-2">
 				Quick insights and actions for community watch operations
 			</p>
 		</div>
 
-		<!-- Mobile-First Dashboard Content -->
-		<div class="px-2">
-			<MobileAdminDashboard {isLoading} {isError} {error} data={dashboardData} />
-		</div>
+		<!-- Mobile-First Dashboard Content with consistent padding -->
+		<MobileAdminDashboard {isLoading} {isError} {error} data={dashboardData} />
 	</div>
 </SidebarPage>

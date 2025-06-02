@@ -5,7 +5,7 @@
 	import UserIcon from '@lucide/svelte/icons/user';
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import { getRelativeTime, formatShiftTimeRange, getShiftBookingStatus } from '$lib/utils/shifts';
+	import { getRelativeTime, formatShiftTimeRangeLocal, getShiftBookingStatus } from '$lib/utils/shifts';
 
 	let {
 		shift,
@@ -42,7 +42,7 @@
 			</div>
 			<div class="flex items-center gap-1 text-xs text-muted-foreground mt-1">
 				<ClockIcon class="h-3 w-3" />
-				<span>{formatShiftTimeRange(shift.start_time, shift.end_time)}</span>
+				<span>{formatShiftTimeRangeLocal(shift.start_time, shift.end_time)}</span>
 			</div>
 		</div>
 		<Badge variant={shift.is_booked ? 'default' : 'secondary'} class="text-xs">

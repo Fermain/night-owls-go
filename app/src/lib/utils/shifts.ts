@@ -38,7 +38,40 @@ export function getRelativeTime(dateString: string): string {
 }
 
 /**
+ * Format shift time range for times that are already in SAST (no conversion needed)
+ * Use this when the API already returns SAST times
+ */
+export function formatShiftTimeRangeLocal(startTime: string, endTime: string): string {
+	try {
+		const start = new Date(startTime);
+		const end = new Date(endTime);
+
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+			return 'Invalid Time Range';
+		}
+
+		// Use local time formatting without timezone conversion
+		const startFormatted = start.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		const endFormatted = end.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		return `${startFormatted} - ${endFormatted}`;
+	} catch {
+		return 'Invalid Time Range';
+	}
+}
+
+/**
  * Format shift time range for display in SAST timezone
+ * Use this when API returns UTC times that need conversion
  */
 export function formatShiftTimeRange(startTime: string, endTime: string): string {
 	try {

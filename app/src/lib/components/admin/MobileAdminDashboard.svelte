@@ -123,7 +123,7 @@
 	}
 </script>
 
-<div class="space-y-4 p-4">
+<div class="space-y-4">
 	{#if isLoading}
 		<!-- Loading state optimized for mobile -->
 		<div class="space-y-4">

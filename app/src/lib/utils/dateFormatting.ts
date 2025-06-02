@@ -1,14 +1,37 @@
 import { formatDistanceToNow } from 'date-fns';
 import { 
-	formatTimeSlot as formatTimeSlotSAST, 
 	formatShiftTime as formatShiftTimeSAST
 } from './timezone';
 
 /**
- * Format a time slot from start and end ISO strings (SAST)
+ * Format time slot range for times that are already in SAST (no conversion needed)
  */
 export function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
-	return formatTimeSlotSAST(startTimeIso, endTimeIso);
+	try {
+		const start = new Date(startTimeIso);
+		const end = new Date(endTimeIso);
+
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+			return 'Invalid Time Range';
+		}
+
+		// Use local time formatting since API already returns SAST times
+		const startFormatted = start.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		const endFormatted = end.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		return `${startFormatted} - ${endFormatted}`;
+	} catch {
+		return 'Invalid Time Range';
+	}
 }
 
 /**

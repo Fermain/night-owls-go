@@ -1,7 +1,6 @@
 import { parseISO, isValid } from 'date-fns';
 import { 
 	formatDateTime as formatDateTimeSAST, 
-	formatTime as formatTimeSAST,
 	getTimeUntil as getTimeUntilSAST 
 } from './timezone';
 import type { components } from '$lib/types/api';
@@ -35,10 +34,14 @@ export function formatDateTime(dateString: string): string {
 }
 
 /**
- * Format time only for display in SAST
+ * Format a time string from the API (already in SAST) for display
  */
 export function formatTime(timeString: string): string {
-	return formatTimeSAST(timeString);
+	return new Date(timeString).toLocaleTimeString('en-GB', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	});
 }
 
 /**
