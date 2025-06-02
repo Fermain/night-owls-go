@@ -28,7 +28,15 @@
 		isToday: boolean;
 		isPast: boolean;
 		isOnDuty: boolean;
-		monthOffset: number; // Track which month this day belongs to
+		monthOffset: number;
+		isFirstDayOfMonth: boolean;
+	}
+
+	// Type for calendar week
+	interface CalendarWeek {
+		days: (CalendarDay | null)[];
+		hasMonthBoundary: boolean;
+		monthName?: string;
 	}
 
 	// Calculate how many months to show based on selected day range
@@ -43,11 +51,21 @@
 	// Get current date for calendar
 	const today = new Date();
 
-	// Generate one continuous calendar grid
+	// Generate calendar weeks with proper tessellation
 	const calendarData = $derived.by(() => {
 		const allDays: (CalendarDay | null)[] = [];
 		let firstMonthName = '';
 
+		// Start with the first day of the current month to get proper week alignment
+		const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+		const startDayOfWeek = startDate.getDay(); // 0 = Sunday
+
+		// Add empty cells for days before the first month starts
+		for (let i = 0; i < startDayOfWeek; i++) {
+			allDays.push(null);
+		}
+
+		// Add all days from all months
 		for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
 			const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
 			const year = currentMonth.getFullYear();
@@ -61,23 +79,14 @@
 				});
 			}
 
-			// Get first day of month and days in month
-			const firstDayOfMonth = new Date(year, month, 1);
+			// Get days in this month
 			const lastDayOfMonth = new Date(year, month + 1, 0);
 			const daysInMonth = lastDayOfMonth.getDate();
-			const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
-
-			// Add empty cells for days before month starts (only for first month)
-			if (monthOffset === 0) {
-				for (let i = 0; i < startingDayOfWeek; i++) {
-					allDays.push(null);
-				}
-			}
 
 			// Add days of the month
 			for (let day = 1; day <= daysInMonth; day++) {
 				const date = new Date(year, month, day);
-				const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+				const dateString = date.toISOString().split('T')[0];
 
 				// Find available shifts for this date
 				const dayShifts = shifts.filter((shift) => {
@@ -108,12 +117,53 @@
 					isToday: date.toDateString() === today.toDateString(),
 					isPast: date < today && date.toDateString() !== today.toDateString(),
 					isOnDuty,
-					monthOffset
+					monthOffset,
+					isFirstDayOfMonth: day === 1
 				});
 			}
 		}
 
-		return { days: allDays, firstMonthName };
+		// Group days into weeks and identify month boundaries
+		const weeks: CalendarWeek[] = [];
+		for (let i = 0; i < allDays.length; i += 7) {
+			const weekDays = allDays.slice(i, i + 7);
+
+			// Pad the last week if necessary
+			while (weekDays.length < 7) {
+				weekDays.push(null);
+			}
+
+			// Check if this week contains the start of a new month
+			const hasMonthBoundary = weekDays.some(
+				(day) => day?.isFirstDayOfMonth && day.monthOffset > 0
+			);
+			let monthName = '';
+
+			if (hasMonthBoundary) {
+				const firstDayOfNewMonth = weekDays.find(
+					(day) => day?.isFirstDayOfMonth && day.monthOffset > 0
+				);
+				if (firstDayOfNewMonth) {
+					const monthDate = new Date(
+						firstDayOfNewMonth.date.getFullYear(),
+						firstDayOfNewMonth.date.getMonth(),
+						1
+					);
+					monthName = monthDate.toLocaleDateString('en-GB', {
+						month: 'long',
+						year: 'numeric'
+					});
+				}
+			}
+
+			weeks.push({
+				days: weekDays,
+				hasMonthBoundary,
+				monthName
+			});
+		}
+
+		return { weeks, firstMonthName };
 	});
 
 	// Day names
@@ -161,7 +211,7 @@
 			<span class="text-sm text-muted-foreground">- {calendarData.firstMonthName}</span>
 		</div>
 
-		<!-- Single Continuous Calendar Grid -->
+		<!-- Tessellated Calendar Grid with Month Separations -->
 		<div class="px-4 space-y-2">
 			<!-- Day names header -->
 			<div class="grid grid-cols-7 gap-1 text-center">
@@ -172,63 +222,79 @@
 				{/each}
 			</div>
 
-			<!-- Calendar days - single continuous grid -->
-			<div class="grid grid-cols-7 gap-1">
-				{#each calendarData.days as dayData, index (index)}
-					{#if dayData === null}
-						<!-- Empty cell for padding -->
-						<div class="aspect-square"></div>
-					{:else}
-						<div
-							class="aspect-square border-2 rounded relative p-1
-								{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
-								{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-								{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
-								{getMonthBackground(dayData.monthOffset)}
-							"
-						>
-							<!-- Day number - positioned absolutely so it doesn't interfere with content flow -->
+			<!-- Calendar weeks with month boundaries -->
+			{#each calendarData.weeks as week, weekIndex (weekIndex)}
+				{#if week.hasMonthBoundary && weekIndex > 0}
+					<!-- Month separator with title -->
+					<div class="pt-8 pb-2">
+						<div class="text-center">
 							<div
-								class="absolute top-1 left-1 text-xs font-medium leading-none
-								{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
-							"
+								class="text-sm font-medium text-muted-foreground bg-background px-3 py-1 rounded-full border inline-block"
 							>
-								{dayData.day}
-							</div>
-
-							<!-- Shift slots container -->
-							<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
-								{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
-									{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
-									{@const isActive = isShiftActive(shift, dayData.userShifts)}
-
-									<button
-										class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
-											{isBooked
-											? isActive
-												? 'bg-green-600 text-white font-bold'
-												: 'bg-blue-100 text-blue-800 border border-blue-300'
-											: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
-										"
-										onclick={() => !isBooked && onShiftSelect(shift)}
-										disabled={isBooked || dayData.isPast}
-										title={isBooked
-											? 'Already booked'
-											: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
-									>
-										<span class="truncate flex-1 text-left leading-none">
-											{formatTime(shift.start_time)}
-										</span>
-										{#if isBooked}
-											<span class="ml-1 leading-none">🦉</span>
-										{/if}
-									</button>
-								{/each}
+								{week.monthName}
 							</div>
 						</div>
-					{/if}
-				{/each}
-			</div>
+					</div>
+				{/if}
+
+				<!-- Week row -->
+				<div class="grid grid-cols-7 gap-1">
+					{#each week.days as dayData, dayIndex (dayIndex)}
+						{#if dayData === null}
+							<!-- Empty cell for padding -->
+							<div class="aspect-square"></div>
+						{:else}
+							<div
+								class="aspect-square border-2 rounded relative p-1
+									{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
+									{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
+									{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
+									{getMonthBackground(dayData.monthOffset)}
+								"
+							>
+								<!-- Day number -->
+								<div
+									class="absolute top-1 left-1 text-xs font-medium leading-none
+									{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
+								"
+								>
+									{dayData.day}
+								</div>
+
+								<!-- Shift slots container -->
+								<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
+									{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
+										{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
+										{@const isActive = isShiftActive(shift, dayData.userShifts)}
+
+										<button
+											class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
+												{isBooked
+												? isActive
+													? 'bg-green-600 text-white font-bold'
+													: 'bg-blue-100 text-blue-800 border border-blue-300'
+												: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
+											"
+											onclick={() => !isBooked && onShiftSelect(shift)}
+											disabled={isBooked || dayData.isPast}
+											title={isBooked
+												? 'Already booked'
+												: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
+										>
+											<span class="truncate flex-1 text-left leading-none">
+												{formatTime(shift.start_time)}
+											</span>
+											{#if isBooked}
+												<span class="ml-1 leading-none">🦉</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{/each}
 		</div>
 
 		<!-- Legend -->
