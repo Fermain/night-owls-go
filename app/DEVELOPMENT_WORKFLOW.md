@@ -2,26 +2,35 @@
 
 This project uses automated code quality tools and git hooks to maintain consistent code standards.
 
+## Setup Notes
+
+This is a **monorepo** with the frontend app in the `app/` directory. The git repository root is one level up, so Husky hooks are configured with the path `app/.husky` and hooks change directory to `app/` before running commands.
+
 ## Pre-commit Hooks
 
 ### Husky
+
 - **Purpose**: Manages git hooks
-- **Configuration**: `.husky/` directory
+- **Configuration**: `app/.husky/` directory
+- **Git config**: `core.hooksPath = app/.husky`
 - **Installation**: Automatically installed via `pnpm install` (prepare script)
 
 ### Lint-staged
+
 - **Purpose**: Runs linters only on staged files for faster execution
-- **Configuration**: `.lintstagedrc.js`
+- **Configuration**: `app/.lintstagedrc.js`
 - **Runs on**: Pre-commit hook
 
 #### What gets linted:
+
 - **JavaScript/TypeScript/Svelte files**: ESLint + Prettier
 - **JSON/Markdown/YAML files**: Prettier formatting
 - **Svelte files**: Additional svelte-check for type checking
 
 ### Commitlint
+
 - **Purpose**: Enforces conventional commit message format
-- **Configuration**: `commitlint.config.js`
+- **Configuration**: `app/commitlint.config.js`
 - **Runs on**: commit-msg hook
 
 ## Commit Message Format
@@ -37,6 +46,7 @@ Follow [Conventional Commits](https://conventionalcommits.org/) specification:
 ```
 
 ### Allowed Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -50,6 +60,7 @@ Follow [Conventional Commits](https://conventionalcommits.org/) specification:
 - `revert`: Reverting previous commits
 
 ### Examples:
+
 - `feat: add user authentication`
 - `fix: resolve login validation error`
 - `docs: update API documentation`
@@ -80,4 +91,18 @@ pnpm run hooks:uninstall
    - commit-msg hook validates your commit message
 4. **Push** to remote repository
 
-If any hooks fail, fix the issues and commit again. The hooks ensure code quality and consistent commit history. 
+If any hooks fail, fix the issues and commit again. The hooks ensure code quality and consistent commit history.
+
+## Testing the Setup
+
+Valid commit (will succeed):
+
+```bash
+git commit -m "feat: add new feature"
+```
+
+Invalid commit (will be rejected):
+
+```bash
+git commit -m "bad commit message"  # ✖ Will fail validation
+```
