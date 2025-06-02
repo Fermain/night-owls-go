@@ -11,6 +11,9 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import XIcon from '@lucide/svelte/icons/x';
+	import FilterIcon from '@lucide/svelte/icons/filter';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ListChecksIcon from '@lucide/svelte/icons/list-checks';
 	import { userSession } from '$lib/stores/authStore';
 	import {
 		UserApiService,
@@ -22,6 +25,9 @@
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
 	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
 	import CancellationConfirmationDialog from '$lib/components/user/bookings/CancellationConfirmationDialog.svelte';
+	import BulkAssignDialog from '$lib/components/user/bookings/BulkAssignDialog.svelte';
+	import * as Select from '$lib/components/ui/select';
+	import { Label } from '$lib/components/ui/label';
 	import { onMount } from 'svelte';
 
 	// Get current user from auth store
@@ -34,6 +40,22 @@
 	// State for cancellation confirmation dialog
 	let showCancelDialog = $state(false);
 	let shiftToCancel = $state<{ id: number; details: string } | null>(null);
+
+	// State for bulk assign dialog
+	let showBulkAssignDialog = $state(false);
+
+	// Date filter state - simplified to preset periods
+	let selectedDayRange = $state<string>('7'); // Default to 7 days
+	let showDateFilters = $state(false);
+	let shiftLimit = $state(10);
+
+	// Day range options
+	const dayRangeOptions = [
+		{ value: '7', label: 'Next 7 days' },
+		{ value: '14', label: 'Next 14 days' },
+		{ value: '30', label: 'Next 30 days' },
+		{ value: '60', label: 'Next 60 days' }
+	];
 
 	// Query states - will be initialized in onMount with proper types
 	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
@@ -51,15 +73,23 @@
 	// State to track if component is mounted to prevent Dialog lifecycle errors
 	let mounted = $state(false);
 
+	// Helper function to get date range for shifts
+	function getShiftDateRange() {
+		const days = parseInt(selectedDayRange);
+		const from = new Date().toISOString();
+		const to = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+		return { from, to };
+	}
+
 	// Initialize queries after component is mounted to avoid lifecycle errors
 	onMount(() => {
-		// Query for available shifts (next 7 days)
+		// Query for available shifts with dynamic date range
 		availableShiftsQuery = createQuery({
-			queryKey: ['available-shifts'],
+			queryKey: ['available-shifts', selectedDayRange, shiftLimit],
 			queryFn: () => {
-				const from = new Date().toISOString();
-				const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-				return UserApiService.getAvailableShifts({ from, to, limit: 10 });
+				const { from, to } = getShiftDateRange();
+				return UserApiService.getAvailableShifts({ from, to, limit: shiftLimit });
 			}
 		});
 
@@ -114,7 +144,38 @@
 
 	// Derived data - with null checks since queries are initialized in onMount
 	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
-	const unfillableShifts = $derived(availableShifts.slice(0, 5)); // Show first 5
+
+	// Calculate how many shifts to display based on shiftLimit, but always show at least 5
+	const displayLimit = $derived(Math.max(5, Math.min(shiftLimit, availableShifts.length)));
+	const displayedShifts = $derived(availableShifts.slice(0, displayLimit));
+
+	// Date filter handlers
+	function handleDayRangeChange(value: string) {
+		selectedDayRange = value;
+		// Reset shift limit when changing date range to avoid confusion
+		shiftLimit = 10;
+		// Query will automatically refetch due to reactive dependencies
+	}
+
+	function handleShowMoreShifts() {
+		shiftLimit = shiftLimit + 10; // Increase limit by 10
+	}
+
+	function handleResetFilters() {
+		selectedDayRange = '7';
+		shiftLimit = 10;
+		showDateFilters = false;
+	}
+
+	// Bulk assign handlers
+	function handleBulkAssignSuccess() {
+		$availableShiftsQuery?.refetch();
+		$userBookingsQuery?.refetch();
+	}
+
+	function handleBulkAssignCancel() {
+		// No specific action needed
+	}
 
 	// Find next shift from user bookings
 	const nextShift = $derived.by(() => {
@@ -282,6 +343,25 @@
 
 		return `${dateLabel} • ${timeRange}`;
 	}
+
+	// Check if any filters are active
+	const hasActiveFilters = $derived.by(() => {
+		return selectedDayRange !== '7' || shiftLimit > 10;
+	});
+
+	// Get current day range label for display
+	const currentDayRangeLabel = $derived.by(() => {
+		return dayRangeOptions.find((opt) => opt.value === selectedDayRange)?.label || 'Next 7 days';
+	});
+
+	// Check if we're loading more shifts (when shiftLimit increases)
+	const isLoadingMore = $derived($availableShiftsQuery?.isFetching && displayedShifts.length > 0);
+
+	// Check if there are more shifts to load
+	const hasMoreShifts = $derived(
+		availableShifts.length > displayedShifts.length ||
+			($availableShiftsQuery?.data?.length === shiftLimit && shiftLimit < 100)
+	); // Assume more might be available if we hit the limit
 </script>
 
 <svelte:head>
@@ -346,7 +426,7 @@
 				</div>
 			{/if}
 
-			<!-- Available Shifts -->
+			<!-- Available Shifts with Filters -->
 			{#if !availableShiftsQuery}
 				<!-- Loading state while queries are being initialized -->
 				<Card.Root>
@@ -374,36 +454,188 @@
 						<p class="text-xs text-muted-foreground">{$availableShiftsQuery?.error?.message}</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if unfillableShifts.length > 0}
-				<Card.Root>
-					<Card.Header class="pb-3">
-						<div class="flex items-center justify-between">
-							<Card.Title class="text-base">Available shifts</Card.Title>
-							{#if availableShifts.length > 5}
-								<span class="text-sm text-muted-foreground">
-									Showing 5 of {availableShifts.length}
-								</span>
-							{/if}
-						</div>
-					</Card.Header>
-					<Card.Content class="pt-0">
-						{#each unfillableShifts as shift (`${shift.schedule_id}-${shift.start_time}`)}
-							<CompactShiftCard
-								{shift}
-								type="available"
-								onBook={handleBookShift}
-								isLoading={$bookingMutation?.isPending ?? false}
-							/>
-						{/each}
-					</Card.Content>
-				</Card.Root>
 			{:else}
 				<Card.Root>
-					<Card.Content class="text-center py-8">
-						<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-						<h3 class="text-sm font-medium mb-1">No shifts available</h3>
-						<p class="text-xs text-muted-foreground">Check back later for new opportunities</p>
-					</Card.Content>
+					<Card.Header class="pb-3">
+						<div class="space-y-3">
+							<!-- Header with filter toggle and bulk assign -->
+							<div class="flex items-center justify-between">
+								<Card.Title class="text-base">Available shifts</Card.Title>
+								<div class="flex items-center gap-2">
+									{#if availableShifts.length > 1}
+										<Button
+											variant="outline"
+											size="sm"
+											onclick={() => (showBulkAssignDialog = true)}
+											class="h-8"
+											disabled={$availableShiftsQuery?.isFetching}
+										>
+											<ListChecksIcon class="h-3 w-3 mr-2" />
+											Bulk Assign ({availableShifts.length})
+										</Button>
+									{/if}
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => (showDateFilters = !showDateFilters)}
+										class="h-8"
+									>
+										<FilterIcon class="h-3 w-3 mr-2" />
+										{showDateFilters ? 'Hide' : 'Filter'}
+										<ChevronDownIcon
+											class="h-3 w-3 ml-1 transition-transform {showDateFilters
+												? 'rotate-180'
+												: ''}"
+										/>
+									</Button>
+								</div>
+							</div>
+
+							<!-- Date filter controls -->
+							{#if showDateFilters}
+								<div class="space-y-3 p-3 bg-muted/30 rounded-lg border">
+									<div class="space-y-2">
+										<div class="flex items-center gap-2">
+											<Label class="text-sm font-medium">Time Period</Label>
+											{#if $availableShiftsQuery?.isFetching}
+												<div
+													class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"
+												></div>
+											{/if}
+										</div>
+										<Select.Root
+											type="single"
+											value={selectedDayRange}
+											onValueChange={handleDayRangeChange}
+										>
+											<Select.Trigger class="w-full" disabled={$availableShiftsQuery?.isFetching}>
+												{currentDayRangeLabel}
+											</Select.Trigger>
+											<Select.Content>
+												{#each dayRangeOptions as option (option.value)}
+													<Select.Item value={option.value} label={option.label}
+														>{option.label}</Select.Item
+													>
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</div>
+
+									{#if hasActiveFilters}
+										<div class="flex items-center justify-between">
+											<span class="text-xs text-muted-foreground">
+												Showing shifts for {currentDayRangeLabel.toLowerCase()}
+											</span>
+											<Button
+												variant="ghost"
+												size="sm"
+												onclick={handleResetFilters}
+												class="h-6 px-2 text-xs"
+											>
+												Reset
+											</Button>
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- Results summary -->
+							<div class="flex items-center justify-between text-sm text-muted-foreground">
+								<span>
+									{#if $availableShiftsQuery?.isFetching}
+										Loading shifts...
+									{:else if availableShifts.length === 0}
+										No shifts found
+									{:else if displayedShifts.length < availableShifts.length}
+										Showing {displayedShifts.length} of {availableShifts.length} shifts
+									{:else}
+										{availableShifts.length} shift{availableShifts.length === 1 ? '' : 's'} available
+									{/if}
+								</span>
+								{#if hasMoreShifts && !$availableShiftsQuery?.isFetching}
+									<Button
+										variant="ghost"
+										size="sm"
+										onclick={handleShowMoreShifts}
+										class="h-6 px-2 text-xs"
+									>
+										Show more
+									</Button>
+								{/if}
+							</div>
+						</div>
+					</Card.Header>
+
+					{#if displayedShifts.length > 0}
+						<Card.Content class="pt-0">
+							{#each displayedShifts as shift (`${shift.schedule_id}-${shift.start_time}`)}
+								<CompactShiftCard
+									{shift}
+									type="available"
+									onBook={handleBookShift}
+									isLoading={$bookingMutation?.isPending ?? false}
+								/>
+							{/each}
+
+							<!-- Show more section with loading states -->
+							{#if hasMoreShifts}
+								<div class="mt-4 text-center">
+									{#if isLoadingMore}
+										<!-- Loading more shifts -->
+										<div class="flex items-center justify-center gap-2 py-3">
+											<div
+												class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"
+											></div>
+											<span class="text-sm text-muted-foreground">Loading more shifts...</span>
+										</div>
+									{:else}
+										<!-- Load more button -->
+										<Button
+											variant="outline"
+											onclick={handleShowMoreShifts}
+											disabled={$availableShiftsQuery?.isFetching}
+										>
+											{#if availableShifts.length > displayedShifts.length}
+												Show {Math.min(10, availableShifts.length - displayedShifts.length)} more shifts
+											{:else}
+												Load more shifts
+											{/if}
+										</Button>
+									{/if}
+								</div>
+							{/if}
+						</Card.Content>
+					{:else if $availableShiftsQuery?.isFetching}
+						<!-- Loading state when fetching new date range -->
+						<Card.Content class="pt-0">
+							<div class="text-center py-8">
+								<div
+									class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
+								></div>
+								<p class="text-sm text-muted-foreground">
+									Loading shifts for {currentDayRangeLabel.toLowerCase()}...
+								</p>
+							</div>
+						</Card.Content>
+					{:else}
+						<!-- No shifts available -->
+						<Card.Content class="pt-0">
+							<div class="text-center py-8">
+								<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+								<h3 class="text-sm font-medium mb-1">No shifts available</h3>
+								<p class="text-xs text-muted-foreground">
+									{hasActiveFilters
+										? 'Try adjusting your time period or clearing filters'
+										: 'Check back later for new opportunities'}
+								</p>
+								{#if hasActiveFilters}
+									<Button variant="outline" size="sm" onclick={handleResetFilters} class="mt-2">
+										Clear filters
+									</Button>
+								{/if}
+							</div>
+						</Card.Content>
+					{/if}
 				</Card.Root>
 			{/if}
 		</div>
@@ -464,5 +696,13 @@
 		isLoading={$cancelBookingMutation?.isPending}
 		onConfirm={handleCancellationConfirm}
 		onCancel={handleCancellationCancel}
+	/>
+
+	<!-- Bulk Assign Dialog -->
+	<BulkAssignDialog
+		bind:open={showBulkAssignDialog}
+		shifts={availableShifts}
+		onSuccess={handleBulkAssignSuccess}
+		onCancel={handleBulkAssignCancel}
 	/>
 {/if}

@@ -191,9 +191,9 @@
 	<ReportDetail reportId={currentSelectedReportId} />
 {:else}
 	<!-- Show reports list view -->
-	<div class="p-6">
-		<div class="max-w-7xl mx-auto">
-			<div class="mb-6">
+	<div class="p-3 sm:p-4 lg:p-6">
+		<div class="max-w-full lg:max-w-7xl mx-auto">
+			<div class="mb-4 sm:mb-6">
 				<AdminPageHeader
 					icon={FileTextIcon}
 					heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
@@ -201,13 +201,14 @@
 						? 'View and manage archived incident reports'
 						: 'Monitor and analyze incident reports submitted by volunteers during shifts'}
 				/>
-				<div class="flex items-center justify-between">
-					<div class="flex gap-2">
-						<div class="flex border rounded-lg p-1">
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+					<div class="flex flex-col sm:flex-row gap-2">
+						<div class="flex border rounded-lg p-1 w-full sm:w-auto">
 							<Button
 								variant={!showArchived ? 'default' : 'ghost'}
 								size="sm"
 								onclick={() => (showArchived = false)}
+								class="flex-1 sm:flex-none"
 							>
 								<FileTextIcon class="h-4 w-4 mr-2" />
 								Active
@@ -216,17 +217,19 @@
 								variant={showArchived ? 'default' : 'ghost'}
 								size="sm"
 								onclick={() => (showArchived = true)}
+								class="flex-1 sm:flex-none"
 							>
 								<ArchiveIcon class="h-4 w-4 mr-2" />
 								Archived
 							</Button>
 						</div>
 						{#if !showArchived}
-							<div class="flex border rounded-lg p-1">
+							<div class="flex border rounded-lg p-1 w-full sm:w-auto">
 								<Button
 									variant={viewMode === 'list' ? 'default' : 'ghost'}
 									size="sm"
 									onclick={() => (viewMode = 'list')}
+									class="flex-1 sm:flex-none"
 								>
 									<FileTextIcon class="h-4 w-4 mr-2" />
 									List
@@ -235,6 +238,7 @@
 									variant={viewMode === 'map' ? 'default' : 'ghost'}
 									size="sm"
 									onclick={() => (viewMode = 'map')}
+									class="flex-1 sm:flex-none"
 								>
 									<MapPinIcon class="h-4 w-4 mr-2" />
 									Map
@@ -246,7 +250,7 @@
 			</div>
 
 			<!-- Compact Filters -->
-			<div class="mb-6">
+			<div class="mb-4 sm:mb-6">
 				<ReportsFilters
 					bind:searchQuery
 					bind:severityFilter
@@ -260,16 +264,16 @@
 
 			<!-- Reports Content -->
 			{#if viewMode === 'map'}
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<Card.Header class="px-0 pt-0">
-						<Card.Title class="flex items-center gap-2">
+						<Card.Title class="flex items-center gap-2 text-lg sm:text-xl">
 							<MapPinIcon class="h-5 w-5" />
 							Reports Map Overview
 						</Card.Title>
 						<Card.Description>Click on markers to view report details</Card.Description>
 					</Card.Header>
 					<Card.Content class="px-0 pb-0">
-						<div class="h-96">
+						<div class="h-64 sm:h-80 lg:h-96">
 							<ReportsMapOverview
 								reports={$reportsQuery.data ?? []}
 								className="h-full"
@@ -280,10 +284,10 @@
 				</Card.Root>
 			{:else}
 				<!-- Reports List -->
-				<div class="space-y-4">
+				<div class="space-y-3 sm:space-y-4">
 					{#if $reportsQuery.isLoading}
 						{#each Array(3) as _, i (i)}
-							<Card.Root class="p-6">
+							<Card.Root class="p-3 sm:p-4 lg:p-6">
 								<div class="space-y-3">
 									<div class="flex items-center justify-between">
 										<Skeleton class="h-6 w-32" />
@@ -291,16 +295,16 @@
 									</div>
 									<Skeleton class="h-4 w-full" />
 									<Skeleton class="h-4 w-3/4" />
-									<div class="flex gap-4">
-										<Skeleton class="h-4 w-24" />
-										<Skeleton class="h-4 w-24" />
-										<Skeleton class="h-4 w-24" />
+									<div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
+										<Skeleton class="h-4 w-full sm:w-24" />
+										<Skeleton class="h-4 w-full sm:w-24" />
+										<Skeleton class="h-4 w-full sm:w-24" />
 									</div>
 								</div>
 							</Card.Root>
 						{/each}
 					{:else if $reportsQuery.isError}
-						<Card.Root class="p-8">
+						<Card.Root class="p-4 sm:p-6 lg:p-8">
 							<div class="text-center">
 								<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 								<h3 class="text-lg font-semibold mb-2">Error Loading Reports</h3>
@@ -310,7 +314,7 @@
 							</div>
 						</Card.Root>
 					{:else if ($reportsQuery.data?.length ?? 0) === 0}
-						<Card.Root class="p-8">
+						<Card.Root class="p-4 sm:p-6 lg:p-8">
 							<div class="text-center">
 								<FileTextIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 								<h3 class="text-lg font-semibold mb-2">
@@ -326,21 +330,25 @@
 					{:else}
 						{#each $reportsQuery.data ?? [] as report (report.report_id)}
 							<Card.Root
-								class="p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+								class="p-3 sm:p-4 lg:p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
 								onclick={() => viewReportDetail(report.report_id)}
 							>
-								<div class="space-y-4">
+								<div class="space-y-3 sm:space-y-4">
 									<!-- Header -->
-									<div class="flex items-start justify-between">
+									<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
 										{#snippet reportHeader()}
 											{@const SeverityIcon = getSeverityIcon(report.severity)}
 											<div class="flex items-center gap-3">
-												<div class="p-2 rounded-lg {getSeverityColor(report.severity)}">
-													<SeverityIcon class="h-5 w-5" />
+												<div
+													class="p-2 rounded-lg {getSeverityColor(report.severity)} flex-shrink-0"
+												>
+													<SeverityIcon class="h-4 w-4 sm:h-5 sm:w-5" />
 												</div>
-												<div>
-													<h3 class="font-semibold text-lg">Report #{report.report_id}</h3>
-													<p class="text-sm text-muted-foreground">
+												<div class="min-w-0 flex-1">
+													<h3 class="font-semibold text-base sm:text-lg truncate">
+														Report #{report.report_id}
+													</h3>
+													<p class="text-xs sm:text-sm text-muted-foreground">
 														{formatFullDateTime(report.created_at)}
 													</p>
 												</div>
@@ -348,11 +356,11 @@
 										{/snippet}
 										{@render reportHeader()}
 
-										<div class="flex items-center gap-2">
-											<Badge class="{getSeverityColor(report.severity)} border">
+										<div class="flex items-center gap-2 flex-shrink-0">
+											<Badge class="{getSeverityColor(report.severity)} border text-xs sm:text-sm">
 												{getSeverityLabel(report.severity)}
 											</Badge>
-											<Button variant="ghost" size="sm" class="h-8 w-8 p-0">
+											<Button variant="ghost" size="sm" class="h-8 w-8 p-0 hidden sm:flex">
 												<EyeIcon class="h-4 w-4" />
 											</Button>
 										</div>
@@ -360,7 +368,7 @@
 
 									<!-- Message -->
 									<div
-										class="bg-muted/30 rounded-lg p-4 border-l-4 {report.severity === 2
+										class="bg-muted/30 rounded-lg p-3 sm:p-4 border-l-4 {report.severity === 2
 											? 'border-l-red-500'
 											: report.severity === 1
 												? 'border-l-orange-500'
@@ -369,35 +377,39 @@
 										<p class="text-sm leading-relaxed">{report.message}</p>
 									</div>
 
-									<!-- Enhanced Details -->
-									<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+									<!-- Enhanced Details - Mobile-first grid -->
+									<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
 										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-											<UserIcon class="h-4 w-4 text-muted-foreground" />
-											<div>
-												<p class="font-medium">{report.user_name}</p>
-												<p class="text-xs text-muted-foreground">{report.user_phone}</p>
+											<UserIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
+											<div class="min-w-0 flex-1">
+												<p class="font-medium truncate">{report.user_name}</p>
+												<p class="text-xs text-muted-foreground truncate">{report.user_phone}</p>
 											</div>
 										</div>
 
 										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-											<CalendarIcon class="h-4 w-4 text-muted-foreground" />
-											<div>
-												<p class="font-medium">{report.schedule_name}</p>
+											<CalendarIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
+											<div class="min-w-0 flex-1">
+												<p class="font-medium truncate">{report.schedule_name}</p>
 												<p class="text-xs text-muted-foreground">Schedule</p>
 											</div>
 										</div>
 
-										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
-											<ClockIcon class="h-4 w-4 text-muted-foreground" />
-											<div>
-												<p class="font-medium">{formatShiftTime(report.shift_start)}</p>
+										<div
+											class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg sm:col-span-2 lg:col-span-1"
+										>
+											<ClockIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
+											<div class="min-w-0 flex-1">
+												<p class="font-medium truncate">{formatShiftTime(report.shift_start)}</p>
 												<p class="text-xs text-muted-foreground">Shift Time</p>
 											</div>
 										</div>
 									</div>
 
 									<!-- Quick Actions -->
-									<div class="flex items-center justify-between pt-2 border-t">
+									<div
+										class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t"
+									>
 										<div class="flex items-center gap-2 text-xs text-muted-foreground">
 											<span>Reported {formatRelativeTime(report.created_at)}</span>
 										</div>
@@ -409,6 +421,7 @@
 													e.stopPropagation();
 													viewReportDetail(report.report_id);
 												}}
+												class="w-full sm:w-auto"
 											>
 												<EyeIcon class="h-4 w-4 mr-2" />
 												View Details
