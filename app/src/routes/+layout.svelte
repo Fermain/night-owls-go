@@ -14,7 +14,7 @@
 
 	let { children } = $props();
 
-	// Create QueryClient 
+	// Create QueryClient
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
@@ -47,7 +47,7 @@
 		// Subscribe to user session changes
 		const userSessionUnsubscribe = userSession.subscribe((session) => {
 			currentUserSession = session;
-			
+
 			// Only fetch notifications if user is authenticated
 			if (session.isAuthenticated) {
 				notificationStore.fetchNotifications();

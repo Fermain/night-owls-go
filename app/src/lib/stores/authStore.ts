@@ -1,4 +1,4 @@
-import { persisted } from '$lib/utils/persisted';
+import { persisted } from 'svelte-persisted-store';
 import type { UserSessionData } from '../types'; // Updated import path
 
 // Define the shape of our user session data

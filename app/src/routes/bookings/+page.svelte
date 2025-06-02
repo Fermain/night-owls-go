@@ -3,25 +3,35 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
-	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { 
+		createQuery, 
+		createMutation, 
+		useQueryClient,
+		type CreateQueryResult,
+		type CreateMutationResult
+	} from '@tanstack/svelte-query';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { UserApiService } from '$lib/services/api/user';
+	import { 
+		UserApiService, 
+		type AvailableShiftSlot,
+		type UserBooking
+	} from '$lib/services/api/user';
 	import { userSession } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 
 	const queryClient = useQueryClient();
 
-	// Query states - will be initialized in onMount
-	let userBookingsQuery = $state<any>(null);
-	let availableShiftsQuery = $state<any>(null);
-	let checkInMutation = $state<any>(null);
-	let cancelMutation = $state<any>(null);
-	let bookShiftMutation = $state<any>(null);
+	// Query states - will be initialized in onMount with proper types
+	let userBookingsQuery = $state<CreateQueryResult<UserBooking[], Error> | null>(null);
+	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
+	let checkInMutation = $state<CreateMutationResult<UserBooking, Error, number, unknown> | null>(null);
+	let cancelMutation = $state<CreateMutationResult<void, Error, number, unknown> | null>(null);
+	let bookShiftMutation = $state<CreateMutationResult<UserBooking, Error, { schedule_id: number; start_time: string }, unknown> | null>(null);
 
 	// Initialize queries after component is mounted to avoid lifecycle errors
 	onMount(() => {
@@ -53,7 +63,7 @@
 				queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
 				toast.success('Checked in successfully!');
 			},
-			onError: (error: any) => {
+			onError: (error: Error) => {
 				toast.error(`Failed to check in: ${error.message}`);
 			}
 		});
@@ -66,7 +76,7 @@
 				queryClient.invalidateQueries({ queryKey: ['available-shifts'] });
 				toast.success('Commitment cancelled successfully!');
 			},
-			onError: (error: any) => {
+			onError: (error: Error) => {
 				toast.error(`Failed to cancel commitment: ${error.message}`);
 			}
 		});
@@ -80,18 +90,18 @@
 				queryClient.invalidateQueries({ queryKey: ['available-shifts'] });
 				toast.success('Shift committed successfully!');
 			},
-			onError: (error: any) => {
+			onError: (error: Error) => {
 				toast.error(`Failed to commit to shift: ${error.message}`);
 			}
 		});
 	});
 
-	const bookings = $derived(userBookingsQuery?.data ?? []);
-	const availableShifts = $derived(availableShiftsQuery?.data ?? []);
-	const isLoadingBookings = $derived(userBookingsQuery?.isLoading ?? false);
-	const isLoadingShifts = $derived(availableShiftsQuery?.isLoading ?? false);
-	const bookingsError = $derived(userBookingsQuery?.error);
-	const shiftsError = $derived(availableShiftsQuery?.error);
+	const bookings = $derived(($userBookingsQuery?.data as UserBooking[]) ?? []);
+	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
+	const isLoadingBookings = $derived($userBookingsQuery?.isLoading ?? false);
+	const isLoadingShifts = $derived($availableShiftsQuery?.isLoading ?? false);
+	const bookingsError = $derived($userBookingsQuery?.error);
+	const shiftsError = $derived($availableShiftsQuery?.error);
 
 	function formatDateTime(dateString: string) {
 		return new Date(dateString).toLocaleString('en-US', {
@@ -124,17 +134,17 @@
 	}
 
 	function handleCheckIn(bookingId: number) {
-		checkInMutation?.mutate(bookingId);
+		$checkInMutation?.mutate(bookingId);
 	}
 
 	function handleCancelCommitment(bookingId: number) {
 		if (confirm('Are you sure you want to cancel this commitment? This action cannot be undone.')) {
-			cancelMutation?.mutate(bookingId);
+			$cancelMutation?.mutate(bookingId);
 		}
 	}
 
 	function handleBookShift(shift: { schedule_id: number; start_time: string }) {
-		bookShiftMutation?.mutate({
+		$bookShiftMutation?.mutate({
 			schedule_id: shift.schedule_id,
 			start_time: shift.start_time
 		});
@@ -272,7 +282,7 @@
 											<Button
 												size="sm"
 												variant="outline"
-												disabled={checkInMutation?.isPending ?? false}
+												disabled={$checkInMutation?.isPending ?? false}
 												onclick={() => handleCheckIn(booking.booking_id)}
 											>
 												<CheckCircleIcon class="h-4 w-4 mr-1" />
@@ -288,7 +298,7 @@
 											<Button
 												size="sm"
 												variant="outline"
-												disabled={checkInMutation?.isPending ?? false}
+												disabled={$checkInMutation?.isPending ?? false}
 												onclick={() => handleCheckIn(booking.booking_id)}
 											>
 												<CheckCircleIcon class="h-4 w-4 mr-1" />
@@ -312,7 +322,7 @@
 												<Button
 													size="sm"
 													variant="outline"
-													disabled={cancelMutation?.isPending ?? false}
+													disabled={$cancelMutation?.isPending ?? false}
 													onclick={() => handleCancelCommitment(booking.booking_id)}
 												>
 													<XCircleIcon class="h-4 w-4 mr-1" />
@@ -336,7 +346,7 @@
 			<div class="flex items-center justify-between">
 				<h2 class="text-xl font-semibold">Available Shifts</h2>
 				<Badge variant="outline"
-					>{availableShifts.filter((s: any) => !s.is_booked).length} available</Badge
+					>{availableShifts.filter((s: AvailableShiftSlot) => !s.is_booked).length} available</Badge
 				>
 			</div>
 
@@ -377,7 +387,7 @@
 						</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if availableShifts.filter((s: any) => !s.is_booked).length === 0}
+			{:else if availableShifts.filter((s: AvailableShiftSlot) => !s.is_booked).length === 0}
 				<Card.Root>
 					<Card.Content class="pt-6 text-center space-y-4">
 						<CalendarIcon class="h-12 w-12 mx-auto text-muted-foreground" />
@@ -391,7 +401,7 @@
 				</Card.Root>
 			{:else}
 				<div class="space-y-4">
-					{#each availableShifts.filter((s: any) => !s.is_booked) as shift (shift.schedule_id + shift.start_time)}
+					{#each availableShifts.filter((s: AvailableShiftSlot) => !s.is_booked) as shift (shift.schedule_id + shift.start_time)}
 						<Card.Root>
 							<Card.Header>
 								<div class="flex items-center justify-between">
@@ -420,7 +430,7 @@
 									<p class="text-sm text-muted-foreground">Commit to this shift</p>
 									<Button
 										size="sm"
-										disabled={bookShiftMutation?.isPending ?? false}
+										disabled={$bookShiftMutation?.isPending ?? false}
 										onclick={() => handleBookShift(shift)}
 									>
 										<PlusIcon class="h-4 w-4 mr-1" />

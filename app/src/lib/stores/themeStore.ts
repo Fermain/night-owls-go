@@ -1,6 +1,6 @@
 import { derived, type Readable } from 'svelte/store';
 import { browser } from '$app/environment';
-import { persisted } from '$lib/utils/persisted';
+import { persisted } from 'svelte-persisted-store';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 

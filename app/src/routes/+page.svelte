@@ -1,7 +1,12 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import { 
+		createQuery, 
+		createMutation,
+		type CreateQueryResult,
+		type CreateMutationResult
+	} from '@tanstack/svelte-query';
 	import { canCancelBooking } from '$lib/utils/bookings';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
@@ -10,7 +15,8 @@
 	import {
 		UserApiService,
 		type AvailableShiftSlot,
-		type CreateBookingRequest
+		type CreateBookingRequest,
+		type UserBooking
 	} from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
@@ -29,11 +35,11 @@
 	let showCancelDialog = $state(false);
 	let shiftToCancel = $state<{ id: number; details: string } | null>(null);
 
-	// Query states - will be initialized in onMount
-	let availableShiftsQuery = $state<any>(null);
-	let userBookingsQuery = $state<any>(null);
-	let bookingMutation = $state<any>(null);
-	let cancelBookingMutation = $state<any>(null);
+	// Query states - will be initialized in onMount with proper types
+	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
+	let userBookingsQuery = $state<CreateQueryResult<UserBooking[], Error> | null>(null);
+	let bookingMutation = $state<CreateMutationResult<UserBooking, Error, CreateBookingRequest, unknown> | null>(null);
+	let cancelBookingMutation = $state<CreateMutationResult<void, Error, number, unknown> | null>(null);
 
 	// State to track if component is mounted to prevent Dialog lifecycle errors
 	let mounted = $state(false);
@@ -68,12 +74,12 @@
 			mutationFn: (request: CreateBookingRequest) => UserApiService.createBooking(request),
 			onSuccess: () => {
 				toast.success('Shift committed successfully!');
-				availableShiftsQuery?.refetch();
-				userBookingsQuery?.refetch();
+				$availableShiftsQuery?.refetch();
+				$userBookingsQuery?.refetch();
 				showBookingDialog = false;
 				selectedShift = null;
 			},
-			onError: (error: any) => {
+			onError: (error: Error) => {
 				toast.error(`Failed to commit to shift: ${error.message}`);
 			}
 		});
@@ -83,12 +89,12 @@
 			mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
 			onSuccess: () => {
 				toast.success('Shift cancelled successfully!');
-				userBookingsQuery?.refetch();
-				availableShiftsQuery?.refetch();
+				$userBookingsQuery?.refetch();
+				$availableShiftsQuery?.refetch();
 				showCancelDialog = false;
 				shiftToCancel = null;
 			},
-			onError: (error: any) => {
+			onError: (error: Error) => {
 				toast.error(`Failed to cancel shift: ${error.message}`);
 				showCancelDialog = false;
 				shiftToCancel = null;
@@ -100,17 +106,19 @@
 	});
 
 	// Derived data - with null checks since queries are initialized in onMount
-	const availableShifts = $derived(availableShiftsQuery?.data ?? []);
+	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
 	const unfillableShifts = $derived(availableShifts.slice(0, 5)); // Show first 5
 
 	// Find next shift from user bookings
 	const nextShift = $derived.by(() => {
-		if (!userBookingsQuery?.data) return null;
+		if (!$userBookingsQuery?.data) return null;
 
 		const now = new Date();
-		const upcomingBookings = userBookingsQuery.data
-			.filter((booking: any) => new Date(booking.shift_start) > now)
-			.sort((a: any, b: any) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		const upcomingBookings = ($userBookingsQuery.data as UserBooking[])
+			.filter((booking: UserBooking) => new Date(booking.shift_start) > now)
+			.sort(
+				(a: UserBooking, b: UserBooking) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
+			);
 
 		if (upcomingBookings.length === 0) return null;
 
@@ -133,12 +141,14 @@
 
 	// Find additional upcoming shifts (after the next one)
 	const additionalShifts = $derived.by(() => {
-		if (!userBookingsQuery?.data) return [];
+		if (!$userBookingsQuery?.data) return [];
 
 		const now = new Date();
-		const upcomingBookings = userBookingsQuery.data
-			.filter((booking: any) => new Date(booking.shift_start) > now)
-			.sort((a: any, b: any) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime());
+		const upcomingBookings = ($userBookingsQuery.data as UserBooking[])
+			.filter((booking: UserBooking) => new Date(booking.shift_start) > now)
+			.sort(
+				(a: UserBooking, b: UserBooking) => new Date(a.shift_start).getTime() - new Date(b.shift_start).getTime()
+			);
 
 		// Return all upcoming shifts except the first one (which is the "next shift")
 		return upcomingBookings.slice(1).slice(0, 3); // Show up to 3 additional shifts
@@ -162,7 +172,7 @@
 		if (nextShift && nextShift.id === shiftId) {
 			shiftDetails = formatShiftTimeFromBooking(nextShift);
 		} else {
-			const additionalShift = additionalShifts.find((shift: any) => shift.booking_id === shiftId);
+			const additionalShift = additionalShifts.find((shift: UserBooking) => shift.booking_id === shiftId);
 			if (additionalShift) {
 				shiftDetails = formatShiftTimeCompact(additionalShift);
 			}
@@ -178,7 +188,7 @@
 	}
 
 	function handleBookingConfirm(request: CreateBookingRequest) {
-		bookingMutation?.mutate(request);
+		$bookingMutation?.mutate(request);
 	}
 
 	function handleBookingCancel() {
@@ -188,7 +198,7 @@
 
 	function handleCancellationConfirm() {
 		if (shiftToCancel) {
-			cancelBookingMutation?.mutate(shiftToCancel.id);
+			$cancelBookingMutation?.mutate(shiftToCancel.id);
 		}
 	}
 
@@ -279,7 +289,7 @@
 					onCheckIn={handleCheckIn}
 					onCheckOut={handleCheckOut}
 					onCancel={handleCancelShift}
-					isLoading={$cancelBookingMutation.isPending}
+					isLoading={$cancelBookingMutation?.isPending}
 				/>
 			{:else}
 				<Card.Root>
@@ -314,7 +324,7 @@
 									variant="outline"
 									size="sm"
 									class="ml-3 text-muted-foreground hover:text-destructive hover:border-destructive"
-									disabled={$cancelBookingMutation.isPending}
+									disabled={$cancelBookingMutation?.isPending}
 								>
 									<XIcon class="h-3 w-3 mr-1" />
 									Cancel
@@ -336,7 +346,7 @@
 						<p class="text-sm text-muted-foreground">Initializing...</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if availableShiftsQuery.isLoading}
+			{:else if $availableShiftsQuery?.isLoading}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
 						<div
@@ -345,12 +355,12 @@
 						<p class="text-sm text-muted-foreground">Loading available shifts...</p>
 					</Card.Content>
 				</Card.Root>
-			{:else if availableShiftsQuery.isError}
+			{:else if $availableShiftsQuery?.isError}
 				<Card.Root>
 					<Card.Content class="text-center py-8">
 						<AlertTriangleIcon class="h-8 w-8 mx-auto mb-2 text-destructive" />
 						<h3 class="text-sm font-medium mb-1">Error loading shifts</h3>
-						<p class="text-xs text-muted-foreground">{availableShiftsQuery.error?.message}</p>
+						<p class="text-xs text-muted-foreground">{$availableShiftsQuery?.error?.message}</p>
 					</Card.Content>
 				</Card.Root>
 			{:else if unfillableShifts.length > 0}
@@ -371,7 +381,7 @@
 								{shift}
 								type="available"
 								onBook={handleBookShift}
-								isLoading={bookingMutation?.isPending ?? false}
+								isLoading={$bookingMutation?.isPending ?? false}
 							/>
 						{/each}
 					</Card.Content>
@@ -431,7 +441,7 @@
 	<BookingConfirmationDialog
 		bind:open={showBookingDialog}
 		bind:shift={selectedShift}
-		isLoading={bookingMutation?.isPending ?? false}
+		isLoading={$bookingMutation?.isPending ?? false}
 		onConfirm={handleBookingConfirm}
 		onCancel={handleBookingCancel}
 	/>
@@ -440,7 +450,7 @@
 	<CancellationConfirmationDialog
 		bind:open={showCancelDialog}
 		shiftDetails={shiftToCancel?.details || ''}
-		isLoading={cancelBookingMutation?.isPending ?? false}
+		isLoading={$cancelBookingMutation?.isPending}
 		onConfirm={handleCancellationConfirm}
 		onCancel={handleCancellationCancel}
 	/>

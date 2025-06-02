@@ -1,4 +1,4 @@
-import { persisted } from '$lib/utils/persisted';
+import { persisted } from 'svelte-persisted-store';
 
 export interface FormData {
 	lastPhoneNumber: string | null;
