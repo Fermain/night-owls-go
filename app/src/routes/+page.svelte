@@ -26,6 +26,7 @@
 	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
 	import CancellationConfirmationDialog from '$lib/components/user/bookings/CancellationConfirmationDialog.svelte';
 	import BulkAssignDialog from '$lib/components/user/bookings/BulkAssignDialog.svelte';
+	import ShiftCalendar from '$lib/components/user/shifts/ShiftCalendar.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
 	import { onMount } from 'svelte';
@@ -459,19 +460,20 @@
 					<Card.Header class="pb-3">
 						<div class="space-y-3">
 							<!-- Header with filter toggle and bulk assign -->
-							<div class="flex items-center justify-between">
+							<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								<Card.Title class="text-base">Available shifts</Card.Title>
-								<div class="flex items-center gap-2">
+								<div class="flex items-center gap-2 flex-wrap">
 									{#if availableShifts.length > 1}
 										<Button
 											variant="outline"
 											size="sm"
 											onclick={() => (showBulkAssignDialog = true)}
-											class="h-8"
+											class="h-8 text-xs sm:text-sm"
 											disabled={$availableShiftsQuery?.isFetching}
 										>
-											<ListChecksIcon class="h-3 w-3 mr-2" />
-											Bulk Assign ({availableShifts.length})
+											<ListChecksIcon class="h-3 w-3 mr-1 sm:mr-2" />
+											<span class="hidden sm:inline">Bulk Assign ({availableShifts.length})</span>
+											<span class="sm:hidden">Bulk ({availableShifts.length})</span>
 										</Button>
 									{/if}
 									<Button
@@ -480,7 +482,7 @@
 										onclick={() => (showDateFilters = !showDateFilters)}
 										class="h-8"
 									>
-										<FilterIcon class="h-3 w-3 mr-2" />
+										<FilterIcon class="h-3 w-3 mr-1 sm:mr-2" />
 										{showDateFilters ? 'Hide' : 'Filter'}
 										<ChevronDownIcon
 											class="h-3 w-3 ml-1 transition-transform {showDateFilters
@@ -522,15 +524,15 @@
 									</div>
 
 									{#if hasActiveFilters}
-										<div class="flex items-center justify-between">
-											<span class="text-xs text-muted-foreground">
+										<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+											<span class="text-xs text-muted-foreground min-w-0 truncate">
 												Showing shifts for {currentDayRangeLabel.toLowerCase()}
 											</span>
 											<Button
 												variant="ghost"
 												size="sm"
 												onclick={handleResetFilters}
-												class="h-6 px-2 text-xs"
+												class="h-6 px-2 text-xs whitespace-nowrap self-start sm:self-auto"
 											>
 												Reset
 											</Button>
@@ -540,8 +542,10 @@
 							{/if}
 
 							<!-- Results summary -->
-							<div class="flex items-center justify-between text-sm text-muted-foreground">
-								<span>
+							<div
+								class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground"
+							>
+								<span class="min-w-0 truncate">
 									{#if $availableShiftsQuery?.isFetching}
 										Loading shifts...
 									{:else if availableShifts.length === 0}
@@ -557,7 +561,7 @@
 										variant="ghost"
 										size="sm"
 										onclick={handleShowMoreShifts}
-										class="h-6 px-2 text-xs"
+										class="h-6 px-2 text-xs whitespace-nowrap"
 									>
 										Show more
 									</Button>
@@ -594,11 +598,19 @@
 											variant="outline"
 											onclick={handleShowMoreShifts}
 											disabled={$availableShiftsQuery?.isFetching}
+											class="text-sm"
 										>
 											{#if availableShifts.length > displayedShifts.length}
-												Show {Math.min(10, availableShifts.length - displayedShifts.length)} more shifts
+												<span class="hidden sm:inline"
+													>Show {Math.min(10, availableShifts.length - displayedShifts.length)} more
+													shifts</span
+												>
+												<span class="sm:hidden"
+													>Show {Math.min(10, availableShifts.length - displayedShifts.length)} more</span
+												>
 											{:else}
-												Load more shifts
+												<span class="hidden sm:inline">Load more shifts</span>
+												<span class="sm:hidden">Load more</span>
 											{/if}
 										</Button>
 									{/if}
@@ -638,38 +650,51 @@
 					{/if}
 				</Card.Root>
 			{/if}
+
+			<!-- Shift Calendar -->
+			<ShiftCalendar shifts={availableShifts} onShiftSelect={handleBookShift} />
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->
 		<div class="flex flex-col">
 			<!-- Hero Section -->
 			<main class="flex-1 flex items-center justify-center px-4 py-16">
-				<div class="text-center max-w-4xl">
+				<div class="text-center max-w-2xl lg:max-w-4xl">
 					<div class="mb-8">
-						<div class="bg-primary/10 p-6 rounded-2xl w-fit mx-auto mb-8">
-							<div class="h-40 w-40 flex items-center justify-center">
+						<div class="bg-primary/10 p-4 sm:p-6 rounded-2xl w-fit mx-auto mb-6 sm:mb-8">
+							<div class="h-32 w-32 sm:h-40 sm:w-40 flex items-center justify-center">
 								<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 							</div>
 						</div>
 					</div>
 
-					<h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-4">
+					<h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4">
 						Mount Moreland Night Owls
 					</h1>
 
-					<h2 class="text-3xl md:text-4xl font-semibold text-primary mb-6">
+					<h2 class="text-2xl sm:text-3xl md:text-4xl font-semibold text-primary mb-6">
 						Digital Control Centre
 					</h2>
 
 					<p
-						class="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto"
+						class="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-8 sm:mb-12 leading-relaxed max-w-2xl lg:max-w-3xl mx-auto px-2"
 					>
 						View and book shifts, send emergency alerts and help keep our community secure
 					</p>
 
-					<div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-						<Button size="lg" href="/register" class="text-lg px-8 py-6">Become an Owl</Button>
-						<Button variant="outline" size="lg" href="/login" class="text-lg px-8 py-6">
+					<div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
+						<Button
+							size="lg"
+							href="/register"
+							class="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
+							>Become an Owl</Button
+						>
+						<Button
+							variant="outline"
+							size="lg"
+							href="/login"
+							class="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
+						>
 							Sign in
 						</Button>
 					</div>
