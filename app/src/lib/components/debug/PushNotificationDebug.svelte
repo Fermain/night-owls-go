@@ -29,7 +29,9 @@
 	async function checkStatus() {
 		try {
 			status = await pushNotificationService.getStatus();
-			addDebugInfo(`Status check - Supported: ${status.supported}, Permission: ${status.permission}, Subscribed: ${status.subscribed}`);
+			addDebugInfo(
+				`Status check - Supported: ${status.supported}, Permission: ${status.permission}, Subscribed: ${status.subscribed}`
+			);
 		} catch (error) {
 			addDebugInfo(`Status check error: ${error}`);
 		}
@@ -59,7 +61,9 @@
 			const response = await fetch('/push/vapid-public');
 			if (response.ok) {
 				const data = await response.json();
-				addDebugInfo(`VAPID endpoint: SUCCESS - Key length: ${data.vapid_public?.length || 'undefined'}`);
+				addDebugInfo(
+					`VAPID endpoint: SUCCESS - Key length: ${data.vapid_public?.length || 'undefined'}`
+				);
 			} else {
 				addDebugInfo(`VAPID endpoint: FAILED - ${response.status} ${response.statusText}`);
 			}
@@ -134,14 +138,10 @@
 			<Button size="sm" onclick={checkStatus}>Refresh Status</Button>
 			<Button size="sm" onclick={testVAPIDEndpoint}>Test VAPID Endpoint</Button>
 			{#if status.permission !== 'granted' || !status.subscribed}
-				<Button size="sm" onclick={requestPermission} variant="default">
-					Subscribe to Push
-				</Button>
+				<Button size="sm" onclick={requestPermission} variant="default">Subscribe to Push</Button>
 			{/if}
 			{#if status.subscribed}
-				<Button size="sm" onclick={testNotification} variant="secondary">
-					Test Notification
-				</Button>
+				<Button size="sm" onclick={testNotification} variant="secondary">Test Notification</Button>
 			{/if}
 		</div>
 
@@ -174,4 +174,4 @@
 			</ol>
 		</div>
 	</Card.Content>
-</Card.Root> 
+</Card.Root>

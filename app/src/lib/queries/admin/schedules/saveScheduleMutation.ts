@@ -10,6 +10,7 @@ interface SchedulePayload {
 	cron_expr: string;
 	start_date: string | null;
 	end_date: string | null;
+	timezone?: string;
 }
 
 interface ScheduleResponse {

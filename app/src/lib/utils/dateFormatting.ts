@@ -1,7 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { 
-	formatShiftTime as formatShiftTimeSAST
-} from './timezone';
+import { formatShiftTime as formatShiftTimeSAST } from './timezone';
 
 /**
  * Format time slot range for times that are already in SAST (no conversion needed)

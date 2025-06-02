@@ -172,9 +172,9 @@ export function convertUTCToSAST(utcDateString: string): string {
 		if (isNaN(utcDate.getTime())) return 'Invalid Date';
 
 		// Add 2 hours for SAST offset
-		const sastDate = new Date(utcDate.getTime() + (2 * 60 * 60 * 1000));
+		const sastDate = new Date(utcDate.getTime() + 2 * 60 * 60 * 1000);
 		return sastDate.toISOString();
 	} catch {
 		return 'Invalid Date';
 	}
-} 
+}

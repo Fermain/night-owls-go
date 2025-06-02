@@ -22,34 +22,7 @@
 	import { formatDistanceToNow, format } from 'date-fns';
 	import type { UserData } from '$lib/schemas/user';
 	import type { AdminShiftSlot } from '$lib/types';
-
-	// Format shift title using watch tradition (previous day + "Night" + time)
-	function formatShiftTitle(startTime: string, endTime: string): string {
-		const start = new Date(startTime);
-		const end = new Date(endTime);
-
-		// Get the previous day for the "Night" reference
-		const previousDay = new Date(start);
-		previousDay.setDate(previousDay.getDate() - 1);
-
-		const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-
-		// Format time as condensed AM/PM (e.g., "1-3AM")
-		const startHour = start.getUTCHours();
-		const endHour = end.getUTCHours();
-
-		// Convert to 12-hour format
-		const formatHour = (hour: number) => (hour === 0 ? 12 : hour > 12 ? hour - 12 : hour);
-		const getAmPm = (hour: number) => (hour < 12 ? 'AM' : 'PM');
-
-		const startHour12 = formatHour(startHour);
-		const endHour12 = formatHour(endHour);
-		const endAmPm = getAmPm(endHour);
-
-		const timeRange = `${startHour12}-${endHour12}${endAmPm}`;
-
-		return `${dayName} Night ${timeRange}`;
-	}
+	import { formatShiftTitle, formatTimeSlot } from '$lib/utils/shiftFormatting';
 
 	const queryClient = useQueryClient();
 
@@ -352,12 +325,6 @@
 				shiftTimeSlot === selectedPattern!.timeSlot
 			);
 		}).length;
-	}
-
-	function formatTimeSlot(startTime: string, endTime: string): string {
-		const start = new Date(startTime);
-		const end = new Date(endTime);
-		return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
 	}
 
 	// Reactive effect to re-select pattern matches when data changes

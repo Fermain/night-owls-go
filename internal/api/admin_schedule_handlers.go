@@ -99,9 +99,13 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		}
 		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
+	
+	// Set timezone - default to Africa/Johannesburg if not provided
+	timezone := "Africa/Johannesburg"
 	if req.Timezone != nil && *req.Timezone != "" {
-		params.Timezone = sql.NullString{String: *req.Timezone, Valid: true} // Assign to sql.NullString
+		timezone = *req.Timezone
 	}
+	params.Timezone = sql.NullString{String: timezone, Valid: true}
 
 	schedule, err := h.scheduleService.AdminCreateSchedule(r.Context(), params)
 	if err != nil {
@@ -253,9 +257,13 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		}
 		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
+	
+	// Set timezone - default to Africa/Johannesburg if not provided
+	timezone := "Africa/Johannesburg"
 	if req.Timezone != nil && *req.Timezone != "" {
-		params.Timezone = sql.NullString{String: *req.Timezone, Valid: true} // Assign to sql.NullString
+		timezone = *req.Timezone
 	}
+	params.Timezone = sql.NullString{String: timezone, Valid: true}
 
 	schedule, err := h.scheduleService.AdminUpdateSchedule(r.Context(), params)
 	if err != nil {
