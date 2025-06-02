@@ -14,16 +14,8 @@
 		onclick?: (e: MouseEvent) => void;
 	} = $props();
 
-	// Safe sidebar context access - returns null if not in sidebar context
-	function getSafeSidebarContext() {
-		try {
-			return useSidebar();
-		} catch {
-			return null;
-		}
-	}
-
-	const sidebar = getSafeSidebarContext();
+	// Call useSidebar directly during component initialization
+	const sidebar = useSidebar();
 </script>
 
 <Button

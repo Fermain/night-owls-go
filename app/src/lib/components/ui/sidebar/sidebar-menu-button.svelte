@@ -53,6 +53,7 @@
 		child?: Snippet<[{ props: Record<string, unknown> }]>;
 	} = $props();
 
+	// Call useSidebar directly during component initialization
 	const sidebar = useSidebar();
 
 	const buttonProps = $derived({

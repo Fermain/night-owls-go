@@ -4,7 +4,6 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
@@ -12,6 +11,7 @@
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
+	import { onMount } from 'svelte';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
@@ -24,6 +24,14 @@
 	let emergencyDialogOpen = $state(false);
 	let reportDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
+
+	// State to track if component is mounted to prevent Dialog lifecycle errors
+	let mounted = $state(false);
+
+	// Mount handler to prevent Dialog lifecycle errors
+	onMount(() => {
+		mounted = true;
+	});
 
 	// Determine if we're in admin area (defensive check for SSR/hydration)
 	const isAdminRoute = $derived(page?.url?.pathname?.startsWith('/admin') ?? false);
@@ -96,12 +104,6 @@
 			<img src="/logo.png" alt="Mount Moreland Night Owls" class="object-contain" />
 		</div>
 	</a>
-
-	<!-- Sidebar trigger for admin routes (only if sidebar is available) -->
-	{#if isAdminRoute}
-		<Sidebar.Trigger class="-ml-1" />
-		<Separator orientation="vertical" class="mr-2 h-4" />
-	{/if}
 
 	<!-- Right side: User actions -->
 	<div class="flex flex-1 items-center justify-end space-x-2">
@@ -232,10 +234,12 @@
 </header>
 
 <!-- Emergency Contacts Dialog -->
-<EmergencyContactsDialog bind:open={emergencyDialogOpen} />
+{#if mounted}
+	<EmergencyContactsDialog bind:open={emergencyDialogOpen} />
 
-<!-- Report Dialog -->
-<ReportDialog bind:open={reportDialogOpen} />
+	<!-- Report Dialog -->
+	<ReportDialog bind:open={reportDialogOpen} />
 
-<!-- Settings Dialog -->
-<UserSettingsDialog bind:open={settingsDialogOpen} />
+	<!-- Settings Dialog -->
+	<UserSettingsDialog bind:open={settingsDialogOpen} />
+{/if}
