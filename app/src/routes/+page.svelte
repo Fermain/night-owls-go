@@ -655,6 +655,7 @@
 			<ShiftCalendar
 				shifts={availableShifts}
 				userBookings={($userBookingsQuery?.data as UserBooking[]) ?? []}
+				{selectedDayRange}
 				onShiftSelect={handleBookShift}
 			/>
 		</div>
