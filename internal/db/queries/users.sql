@@ -18,6 +18,9 @@ WHERE phone = ?;
 SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?;
 
+-- name: CountUsers :one
+SELECT COUNT(*) FROM users;
+
 -- name: ListUsers :many
 SELECT user_id, phone, name, created_at, role FROM users
 WHERE (sqlc.narg('search_term') IS NULL OR name LIKE sqlc.narg('search_term') OR phone LIKE sqlc.narg('search_term'))
