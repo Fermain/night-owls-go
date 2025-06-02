@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
-	import { QueryClient, setQueryClientContext } from '@tanstack/svelte-query';
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { actualTheme, themeActions } from '$lib/stores/themeStore';
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
@@ -15,7 +15,7 @@
 	let { children } = $props();
 
 	// Create QueryClient
-	const queryClient = new QueryClient({
+	let queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
 				staleTime: 5 * 60 * 1000, // 5 minutes
@@ -38,9 +38,6 @@
 
 	// Initialize everything after component is mounted to avoid ALL lifecycle errors
 	onMount(() => {
-		// Set the query client context AFTER component is mounted
-		setQueryClientContext(queryClient);
-
 		// Initialize notification service
 		notificationStore.init();
 
@@ -89,23 +86,25 @@
 	});
 </script>
 
-<div class="min-h-screen bg-background text-foreground">
-	{#if isAdminRoute}
-		<!-- Admin layout with existing sidebar system -->
-		{@render children()}
-	{:else}
-		<!-- Public layout with header + mobile nav -->
-		<div class="flex flex-col min-h-screen">
-			<UnifiedHeader />
-			<!-- Main content area that fills remaining height -->
-			<main class="flex-1 overflow-auto flex">
-				{@render children()}
-			</main>
-		</div>
-		<MobileNav />
-		<!-- Offline status indicator for public pages -->
-		<OfflineIndicator />
-	{/if}
-</div>
+<QueryClientProvider client={queryClient}>
+	<div class="min-h-screen bg-background text-foreground">
+		{#if isAdminRoute}
+			<!-- Admin layout with existing sidebar system -->
+			{@render children()}
+		{:else}
+			<!-- Public layout with header + mobile nav -->
+			<div class="flex flex-col min-h-screen">
+				<UnifiedHeader />
+				<!-- Main content area that fills remaining height -->
+				<main class="flex-1 overflow-auto flex">
+					{@render children()}
+				</main>
+			</div>
+			<MobileNav />
+			<!-- Offline status indicator for public pages -->
+			<OfflineIndicator />
+		{/if}
+	</div>
 
-<Toaster position="top-center" />
+	<Toaster position="top-center" />
+</QueryClientProvider>
