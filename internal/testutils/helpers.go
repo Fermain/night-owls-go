@@ -33,4 +33,4 @@ func NewCreateUserParams(phone, name, role string) db.CreateUserParams {
 		Name:  NewNullString(name),
 		Role:  NewNullString(role),
 	}
-} 
+}

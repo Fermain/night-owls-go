@@ -53,4 +53,4 @@ func (c *Client) Check(ctx context.Context, phoneE164, code string) (bool, error
 
 	// Status can be "pending", "approved", or "cancelled/expired"
 	return resp.Status != nil && *resp.Status == "approved", nil
-} 
+}

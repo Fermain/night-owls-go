@@ -99,7 +99,7 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		}
 		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
-	
+
 	// Set timezone - default to Africa/Johannesburg if not provided
 	timezone := "Africa/Johannesburg"
 	if req.Timezone != nil && *req.Timezone != "" {
@@ -257,7 +257,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		}
 		params.EndDate = sql.NullTime{Time: parsedDate, Valid: true} // Assign to sql.NullTime
 	}
-	
+
 	// Set timezone - default to Africa/Johannesburg if not provided
 	timezone := "Africa/Johannesburg"
 	if req.Timezone != nil && *req.Timezone != "" {

@@ -65,8 +65,8 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 	// Active Jan 1, 2025 - Dec 31, 2025.
 	// Target shift: Monday, Jan 6, 2025, at 18:00 local time (16:00 UTC)
 	// The seeded schedule uses Africa/Johannesburg timezone (UTC+2)
-	targetScheduleID := int64(1)                // Assuming Daily Evening Patrol is ID 1 from seed
-	
+	targetScheduleID := int64(1) // Assuming Daily Evening Patrol is ID 1 from seed
+
 	// Calculate a valid start time for the daily schedule (18:00 local = 16:00 UTC)
 	jan6Evening := time.Date(2025, 1, 6, 16, 0, 0, 0, time.UTC)
 

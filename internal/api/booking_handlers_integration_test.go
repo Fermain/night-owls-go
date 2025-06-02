@@ -93,11 +93,11 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	// --- Test POST /bookings (Create Booking) ---
 	// Updated to use ScheduleID and StartTime (reverted from ShiftID)
 	buddyName := "Test Buddy"
-	
+
 	// Calculate a valid start time for the daily schedule (18:00 local = 16:00 UTC)
 	// The seeded schedule uses Africa/Johannesburg timezone (UTC+2)
 	jan6Evening := time.Date(2025, 1, 6, 16, 0, 0, 0, time.UTC)
-	
+
 	createBookingReq := api.CreateBookingRequest{
 		ScheduleID: dailySchedule.ScheduleID,
 		StartTime:  jan6Evening,
