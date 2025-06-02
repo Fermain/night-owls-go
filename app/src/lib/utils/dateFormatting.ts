@@ -1,35 +1,14 @@
 import { formatDistanceToNow } from 'date-fns';
+import { 
+	formatTimeSlot as formatTimeSlotSAST, 
+	formatShiftTime as formatShiftTimeSAST
+} from './timezone';
 
 /**
- * Format a time slot from start and end ISO strings
+ * Format a time slot from start and end ISO strings (SAST)
  */
 export function formatTimeSlot(startTimeIso: string, endTimeIso: string): string {
-	if (!startTimeIso || !endTimeIso) return 'N/A';
-	try {
-		const startDate = new Date(startTimeIso);
-		const endDate = new Date(endTimeIso);
-
-		const startFormatted = startDate.toLocaleString('en-ZA', {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short',
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false,
-			timeZone: 'UTC'
-		});
-
-		const endFormatted = endDate.toLocaleTimeString('en-ZA', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false,
-			timeZone: 'UTC'
-		});
-
-		return `${startFormatted} - ${endFormatted}`;
-	} catch {
-		return 'Invalid Date Range';
-	}
+	return formatTimeSlotSAST(startTimeIso, endTimeIso);
 }
 
 /**
@@ -45,21 +24,10 @@ export function formatRelativeTime(timeIso: string): string {
 }
 
 /**
- * Format shift time for reports/displays
+ * Format shift time for reports/displays (SAST)
  */
 export function formatShiftTime(dateString: string): string {
-	try {
-		return new Date(dateString).toLocaleString('en-ZA', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			timeZone: 'UTC'
-		});
-	} catch {
-		return 'Invalid Date';
-	}
+	return formatShiftTimeSAST(dateString);
 }
 
 /**

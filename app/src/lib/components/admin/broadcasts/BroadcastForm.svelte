@@ -16,7 +16,7 @@
 	// Form state
 	let message = $state('');
 	let selectedAudience = $state<string>('all');
-	let enablePushNotifications = $state(false);
+	let enablePushNotifications = $state(true);
 	let isScheduled = $state(false);
 	let scheduledDateTime = $state('');
 
@@ -64,7 +64,7 @@
 			// Reset form
 			message = '';
 			selectedAudience = 'all';
-			enablePushNotifications = false;
+			enablePushNotifications = true;
 			isScheduled = false;
 			scheduledDateTime = '';
 			// Invalidate broadcasts list to refresh sidebar
@@ -141,7 +141,7 @@
 		<!-- Push Notifications -->
 		<div class="flex items-center space-x-2">
 			<Switch id="push" bind:checked={enablePushNotifications} />
-			<Label for="push" class="text-sm cursor-pointer">Enable push notifications (SMS)</Label>
+			<Label for="push" class="text-sm cursor-pointer">Send push notifications to mobile devices</Label>
 		</div>
 
 		<!-- Scheduling -->

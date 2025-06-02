@@ -1,4 +1,9 @@
 import { parseISO, isValid } from 'date-fns';
+import { 
+	formatDateTime as formatDateTimeSAST, 
+	formatTime as formatTimeSAST,
+	getTimeUntil as getTimeUntilSAST 
+} from './timezone';
 import type { components } from '$lib/types/api';
 
 /**
@@ -23,64 +28,24 @@ export const BOOKING_STATUS = {
 export type BookingStatus = (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
 
 /**
- * Format date and time for display
+ * Format date and time for display in SAST
  */
 export function formatDateTime(dateString: string): string {
-	try {
-		const date = parseISO(dateString);
-		if (!isValid(date)) return 'Invalid Date';
-
-		return date.toLocaleString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	} catch {
-		return 'Invalid Date';
-	}
+	return formatDateTimeSAST(dateString);
 }
 
 /**
- * Format time only for display
+ * Format time only for display in SAST
  */
 export function formatTime(timeString: string): string {
-	try {
-		const date = parseISO(timeString);
-		if (!isValid(date)) return 'Invalid Time';
-
-		return date.toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	} catch {
-		return 'Invalid Time';
-	}
+	return formatTimeSAST(timeString);
 }
 
 /**
- * Get time until a specific date/time
+ * Get time until a specific date/time (considering SAST)
  */
 export function getTimeUntil(timeString: string): string {
-	try {
-		const date = parseISO(timeString);
-		if (!isValid(date)) return 'Invalid Date';
-
-		const now = new Date();
-		const diffMs = date.getTime() - now.getTime();
-
-		if (diffMs < 0) return 'Started';
-
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
-		return `${diffMins}m`;
-	} catch {
-		return 'Invalid Date';
-	}
+	return getTimeUntilSAST(timeString);
 }
 
 /**
