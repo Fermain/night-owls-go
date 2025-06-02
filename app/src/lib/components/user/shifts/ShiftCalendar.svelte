@@ -28,6 +28,7 @@
 		isToday: boolean;
 		isPast: boolean;
 		isOnDuty: boolean;
+		monthOffset: number; // Track which month this day belongs to
 	}
 
 	// Calculate how many months to show based on selected day range
@@ -42,14 +43,23 @@
 	// Get current date for calendar
 	const today = new Date();
 
-	// Generate calendar data for multiple months
-	const calendarMonths = $derived.by(() => {
-		const months = [];
+	// Generate one continuous calendar grid
+	const calendarData = $derived.by(() => {
+		const allDays: (CalendarDay | null)[] = [];
+		let firstMonthName = '';
 
 		for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
 			const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
 			const year = currentMonth.getFullYear();
 			const month = currentMonth.getMonth();
+
+			// Store first month name for title
+			if (monthOffset === 0) {
+				firstMonthName = currentMonth.toLocaleDateString('en-GB', {
+					month: 'long',
+					year: monthsToShow > 1 ? 'numeric' : undefined
+				});
+			}
 
 			// Get first day of month and days in month
 			const firstDayOfMonth = new Date(year, month, 1);
@@ -57,11 +67,11 @@
 			const daysInMonth = lastDayOfMonth.getDate();
 			const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
 
-			const days: (CalendarDay | null)[] = [];
-
-			// Add empty cells for days before month starts
-			for (let i = 0; i < startingDayOfWeek; i++) {
-				days.push(null);
+			// Add empty cells for days before month starts (only for first month)
+			if (monthOffset === 0) {
+				for (let i = 0; i < startingDayOfWeek; i++) {
+					allDays.push(null);
+				}
 			}
 
 			// Add days of the month
@@ -89,7 +99,7 @@
 					return now >= shiftStart && now <= shiftEnd;
 				});
 
-				days.push({
+				allDays.push({
 					day,
 					date,
 					dateString,
@@ -97,22 +107,13 @@
 					userShifts: dayUserShifts,
 					isToday: date.toDateString() === today.toDateString(),
 					isPast: date < today && date.toDateString() !== today.toDateString(),
-					isOnDuty
+					isOnDuty,
+					monthOffset
 				});
 			}
-
-			months.push({
-				year,
-				month,
-				monthName: currentMonth.toLocaleDateString('en-GB', {
-					month: 'long',
-					year: monthsToShow > 1 ? 'numeric' : undefined
-				}),
-				days
-			});
 		}
 
-		return months;
+		return { days: allDays, firstMonthName };
 	});
 
 	// Day names
@@ -141,6 +142,13 @@
 			);
 		});
 	}
+
+	// Get background class for month distinction
+	function getMonthBackground(monthOffset: number): string {
+		if (monthOffset === 0) return ''; // Current month - no background
+		if (monthOffset === 1) return 'bg-muted/20'; // Next month - subtle background
+		return 'bg-muted/40'; // Third month - slightly more background
+	}
 </script>
 
 <!-- Only render if there are shifts -->
@@ -150,91 +158,77 @@
 		<div class="flex items-center gap-2 px-4">
 			<CalendarIcon class="h-4 w-4" />
 			<h3 class="text-base font-semibold">Shift Calendar</h3>
+			<span class="text-sm text-muted-foreground">- {calendarData.firstMonthName}</span>
 		</div>
 
-		<!-- Calendar Grid(s) -->
-		<div class="px-4 space-y-6">
-			{#each calendarMonths as monthData, monthIndex (monthData.month)}
-				<div class="space-y-2">
-					<!-- Month header -->
-					<h4 class="text-sm font-medium text-muted-foreground">
-						{monthData.monthName}
-					</h4>
+		<!-- Single Continuous Calendar Grid -->
+		<div class="px-4 space-y-2">
+			<!-- Day names header -->
+			<div class="grid grid-cols-7 gap-1 text-center">
+				{#each dayNames as dayName, index (index)}
+					<div class="text-xs font-medium text-muted-foreground p-2">
+						{dayName}
+					</div>
+				{/each}
+			</div>
 
-					<!-- Day names header -->
-					<div class="grid grid-cols-7 gap-1 text-center">
-						{#each dayNames as dayName, index (index)}
-							<div class="text-xs font-medium text-muted-foreground p-2">
-								{dayName}
+			<!-- Calendar days - single continuous grid -->
+			<div class="grid grid-cols-7 gap-1">
+				{#each calendarData.days as dayData, index (index)}
+					{#if dayData === null}
+						<!-- Empty cell for padding -->
+						<div class="aspect-square"></div>
+					{:else}
+						<div
+							class="aspect-square border-2 rounded relative p-1
+								{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
+								{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
+								{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
+								{getMonthBackground(dayData.monthOffset)}
+							"
+						>
+							<!-- Day number - positioned absolutely so it doesn't interfere with content flow -->
+							<div
+								class="absolute top-1 left-1 text-xs font-medium leading-none
+								{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
+							"
+							>
+								{dayData.day}
 							</div>
-						{/each}
-					</div>
 
-					<!-- Calendar days -->
-					<div class="grid grid-cols-7 gap-1">
-						{#each monthData.days as dayData, index (index)}
-							{#if dayData === null}
-								<!-- Empty cell for padding -->
-								<div class="aspect-square"></div>
-							{:else}
-								<div
-									class="aspect-square border-2 rounded relative p-1
-										{dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
-										{dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-										{dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
-									"
-								>
-									<!-- Day number - positioned absolutely so it doesn't interfere with content flow -->
-									<div
-										class="absolute top-1 left-1 text-xs font-medium leading-none
-										{dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
-									"
+							<!-- Shift slots container -->
+							<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
+								{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
+									{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
+									{@const isActive = isShiftActive(shift, dayData.userShifts)}
+
+									<button
+										class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
+											{isBooked
+											? isActive
+												? 'bg-green-600 text-white font-bold'
+												: 'bg-blue-100 text-blue-800 border border-blue-300'
+											: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
+										"
+										onclick={() => !isBooked && onShiftSelect(shift)}
+										disabled={isBooked || dayData.isPast}
+										title={isBooked
+											? 'Already booked'
+											: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
 									>
-										{dayData.day}
-									</div>
-
-									<!-- Shift slots container -->
-									<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
-										{#each dayData.shifts as shift, shiftIndex (shift.start_time)}
-											{@const isBooked = isUserBookedForShift(shift, dayData.userShifts)}
-											{@const isActive = isShiftActive(shift, dayData.userShifts)}
-
-											<button
-												class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
-													{isBooked
-													? isActive
-														? 'bg-green-600 text-white font-bold'
-														: 'bg-blue-100 text-blue-800 border border-blue-300'
-													: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
-												"
-												onclick={() => !isBooked && onShiftSelect(shift)}
-												disabled={isBooked || dayData.isPast}
-												title={isBooked
-													? 'Already booked'
-													: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
-											>
-												<span class="truncate flex-1 text-left leading-none">
-													{formatTime(shift.start_time)}
-												</span>
-												{#if isBooked}
-													<span class="ml-1 leading-none">🦉</span>
-												{/if}
-											</button>
-										{/each}
-
-										<!-- Show message if no shifts available -->
-										{#if dayData.shifts.length === 0 && !dayData.isPast}
-											<div class="text-xs text-muted-foreground text-center mt-2 leading-tight">
-												No shifts
-											</div>
+										<span class="truncate flex-1 text-left leading-none">
+											{formatTime(shift.start_time)}
+										</span>
+										{#if isBooked}
+											<span class="ml-1 leading-none">🦉</span>
 										{/if}
-									</div>
-								</div>
-							{/if}
-						{/each}
-					</div>
-				</div>
-			{/each}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{/each}
+			</div>
 		</div>
 
 		<!-- Legend -->
@@ -252,6 +246,12 @@
 					<div class="w-3 h-3 bg-green-600 rounded"></div>
 					<span>Active now</span>
 				</div>
+				{#if monthsToShow > 1}
+					<div class="flex items-center gap-1">
+						<div class="w-3 h-3 bg-muted/20 border border-muted/30 rounded"></div>
+						<span>Next month</span>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
