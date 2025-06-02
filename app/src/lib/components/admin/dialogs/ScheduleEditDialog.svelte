@@ -147,7 +147,7 @@
 											</Badge>
 										</div>
 									</div>
-									<div class="flex items-center gap-2">
+									<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 										<Button
 											variant="ghost"
 											size="sm"
@@ -156,8 +156,8 @@
 												? 'bg-primary text-primary-foreground'
 												: ''}
 										>
-											<EditIcon class="h-4 w-4" />
-											{currentSchedule?.schedule_id === schedule.schedule_id ? 'Editing' : 'Edit'}
+											<EditIcon class="h-4 w-4 sm:mr-2" />
+											<span class="hidden sm:inline">Edit</span>
 										</Button>
 										<Button
 											variant="ghost"
@@ -165,7 +165,8 @@
 											onclick={() => handleDeleteSchedule(schedule)}
 											class="text-destructive hover:text-destructive hover:bg-destructive/10"
 										>
-											<TrashIcon class="h-4 w-4" />
+											<TrashIcon class="h-4 w-4 sm:mr-2" />
+											<span class="hidden sm:inline">Delete</span>
 										</Button>
 									</div>
 								</div>

@@ -22,6 +22,7 @@
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import { formatShiftTitle } from '$lib/utils/shiftFormatting';
 
 	interface Props {
 		selectedShift: AdminShiftSlot;
@@ -202,28 +203,7 @@
 		assignmentError = null;
 	}
 
-	// Generate proper shift title following "XYZ Night 0-2AM" convention
-	function getShiftTitle(startTimeIso: string, endTimeIso: string): string {
-		try {
-			const startDate = new Date(startTimeIso);
-			const endDate = new Date(endTimeIso);
-
-			// Get the previous day name for the shift title
-			const previousDay = new Date(startDate);
-			previousDay.setDate(previousDay.getDate() - 1);
-			const dayName = previousDay.toLocaleDateString('en-US', { weekday: 'long' });
-
-			// Format time range using UTC hours
-			const startHour = startDate.getUTCHours();
-			const endHour = endDate.getUTCHours();
-			const timeRange = `${startHour}-${endHour}AM`;
-
-			return `${dayName} Night ${timeRange}`;
-		} catch (_e) {
-			console.error('Error parsing shift time:', _e);
-			return 'Invalid time';
-		}
-	}
+	// Generate proper shift title following "XYZ Night 0-2AM" convention - using utility function now
 
 	// Check if shift is assigned
 	const isAssigned = $derived(selectedShift.is_booked);
@@ -236,7 +216,7 @@
 			<div class="flex items-center justify-between">
 				<AdminPageHeader
 					icon={ClockIcon}
-					heading={getShiftTitle(selectedShift.start_time, selectedShift.end_time)}
+					heading={formatShiftTitle(selectedShift.start_time, selectedShift.end_time)}
 					subheading="Manage shift assignment and team details"
 				/>
 			</div>

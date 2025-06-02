@@ -4,6 +4,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+	import { SidebarTrigger } from '$lib/components/ui/sidebar';
 	import NotificationDropdown from '$lib/components/ui/notifications/NotificationDropdown.svelte';
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
@@ -98,6 +99,13 @@
 </script>
 
 <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+	<!-- Mobile Sidebar Trigger (shows on mobile when in admin routes) -->
+	{#if isAdminRoute}
+		<div class="md:hidden">
+			<SidebarTrigger />
+		</div>
+	{/if}
+
 	<!-- Logo and Title -->
 	<a href="/" class="flex items-center space-x-2">
 		<div class="h-8 w-8 p-1 flex items-center justify-center">

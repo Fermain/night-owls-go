@@ -32,6 +32,7 @@ export class SchedulesApiService {
 		cron_expr: string;
 		start_date: string | null;
 		end_date: string | null;
+		timezone?: string;
 	}): Promise<{ message: string; schedule_id?: number }> {
 		const response = await authenticatedFetch('/api/admin/schedules', {
 			method: 'POST',
@@ -57,6 +58,7 @@ export class SchedulesApiService {
 			cron_expr: string;
 			start_date: string | null;
 			end_date: string | null;
+			timezone?: string;
 		}
 	): Promise<{ message: string; schedule_id?: number }> {
 		const response = await authenticatedFetch(`/api/admin/schedules/${scheduleId}`, {

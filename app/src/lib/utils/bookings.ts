@@ -1,8 +1,5 @@
 import { parseISO, isValid } from 'date-fns';
-import { 
-	formatDateTime as formatDateTimeSAST, 
-	getTimeUntil as getTimeUntilSAST 
-} from './timezone';
+import { formatDateTime as formatDateTimeSAST, getTimeUntil as getTimeUntilSAST } from './timezone';
 import type { components } from '$lib/types/api';
 
 /**

@@ -5,7 +5,12 @@
 	import UserIcon from '@lucide/svelte/icons/user';
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import { getRelativeTime, formatShiftTimeRangeLocal, getShiftBookingStatus } from '$lib/utils/shifts';
+	import {
+		getRelativeTime,
+		formatShiftTimeRangeLocal,
+		getShiftBookingStatus
+	} from '$lib/utils/shifts';
+	import { formatDayNight } from '$lib/utils/shiftFormatting';
 
 	let {
 		shift,
@@ -31,11 +36,11 @@
 	tabindex="0"
 	aria-label={`View details for ${shift.schedule_name} shift on ${getRelativeTime(shift.start_time)}`}
 >
-	<!-- Schedule name and time -->
+	<!-- Day/night name and time -->
 	<div class="flex items-start justify-between gap-2 mb-2">
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center gap-2">
-				<h4 class="font-medium text-sm truncate">{shift.schedule_name}</h4>
+				<h4 class="font-medium text-sm truncate">{formatDayNight(shift.start_time)}</h4>
 				<ExternalLinkIcon
 					class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
 				/>

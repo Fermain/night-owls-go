@@ -18,4 +18,4 @@
 
 		<PushNotificationDebug />
 	</div>
-</SidebarPage> 
+</SidebarPage>

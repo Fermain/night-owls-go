@@ -3,6 +3,7 @@
 	import { formatDistanceToNow } from 'date-fns';
 	import type { AdminShiftSlot } from '$lib/types';
 	import { format } from 'date-fns';
+	import { formatShiftTitleCondensed } from '$lib/utils/shiftFormatting';
 
 	let {
 		shift,
@@ -18,33 +19,6 @@
 		const date = new Date(shift.start_time);
 		return format(date, 'HH:mm');
 	});
-
-	function formatShiftTitleCondensed(startTimeIso: string, endTimeIso: string): string {
-		if (!startTimeIso || !endTimeIso) return 'N/A';
-		try {
-			const startDate = new Date(startTimeIso);
-			const endDate = new Date(endTimeIso);
-			const startDay = startDate.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-
-			const formatHourWithAmPm = (date: Date) => {
-				let h = date.getHours();
-				const m = date.getMinutes();
-				const _ampm = h >= 12 ? 'PM' : 'AM';
-				h = h % 12;
-				h = h ? h : 12;
-				return h + (m === 0 ? '' : `:${m.toString().padStart(2, '0')}`);
-			};
-
-			const startHourStr = formatHourWithAmPm(startDate);
-			const endHourStr = formatHourWithAmPm(endDate);
-			const endAmPm = endDate.getHours() >= 12 ? 'PM' : 'AM';
-
-			return `${startDay} ${startHourStr}-${endHourStr}${endAmPm}`;
-		} catch (e) {
-			console.error('Error formatting shift title condensed:', e);
-			return 'Invalid Time';
-		}
-	}
 </script>
 
 <Sidebar.MenuItem>

@@ -109,39 +109,39 @@ export default defineConfig(({ mode }) => {
 				? undefined
 				: {
 						'/api': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/shifts': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/bookings': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/reports': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/broadcasts': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/push': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						},
 						'/schedules': {
-							target: 'https://mm.nightowls.app',
+							target: 'http://localhost:5888',
 							changeOrigin: true,
-							secure: true
+							secure: false
 						}
 					}
 		}
