@@ -166,7 +166,9 @@
 		<!-- Header -->
 		<header class="text-center mb-8 lg:mb-12">
 			<div class="flex items-center justify-center mb-4 lg:mb-6">
-				<div class="h-12 w-12 lg:h-16 lg:w-16 bg-primary rounded-xl flex items-center justify-center mr-3">
+				<div
+					class="h-12 w-12 lg:h-16 lg:w-16 bg-primary rounded-xl flex items-center justify-center mr-3"
+				>
 					<img src="/logo.png" alt="Night Owls" class="h-8 w-8 lg:h-12 lg:w-12" />
 				</div>
 				<h1 class="text-2xl lg:text-4xl xl:text-5xl font-bold">Welcome to Night Owls</h1>
@@ -179,7 +181,9 @@
 
 		<!-- Progress indicator -->
 		<div class="max-w-2xl mx-auto mb-8 lg:mb-12 w-full">
-			<div class="flex items-center justify-between text-sm lg:text-base text-muted-foreground mb-3">
+			<div
+				class="flex items-center justify-between text-sm lg:text-base text-muted-foreground mb-3"
+			>
 				<span>Step {currentStep} of {totalSteps}</span>
 				<span>{progress}% complete</span>
 			</div>
@@ -298,9 +302,7 @@
 								<SkipForwardIcon class="h-4 w-4 mr-2" />
 								Skip for now
 							</Button>
-							<Button onclick={nextStep} size="lg" class="px-8">
-								Continue
-							</Button>
+							<Button onclick={nextStep} size="lg" class="px-8">Continue</Button>
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -332,8 +334,10 @@
 									<DownloadIcon class="h-16 w-16 lg:h-20 lg:w-20 text-primary mx-auto" />
 								</div>
 								<h3 class="text-2xl lg:text-3xl font-semibold mb-4">Install Night Owls App</h3>
-								<p class="text-base lg:text-lg text-muted-foreground mb-8">Installing the app gives you:</p>
-								
+								<p class="text-base lg:text-lg text-muted-foreground mb-8">
+									Installing the app gives you:
+								</p>
+
 								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
 									<div class="flex items-center gap-3 text-left p-4 rounded-lg bg-muted/30">
 										<CheckCircleIcon class="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -352,8 +356,13 @@
 										<span class="text-sm lg:text-base">Push notifications</span>
 									</div>
 								</div>
-								
-								<Button onclick={handlePWAInstall} disabled={isLoading} size="lg" class="px-8 py-3 text-lg">
+
+								<Button
+									onclick={handlePWAInstall}
+									disabled={isLoading}
+									size="lg"
+									class="px-8 py-3 text-lg"
+								>
 									<DownloadIcon class="h-5 w-5 mr-2" />
 									Install App
 								</Button>
@@ -361,7 +370,9 @@
 								<div class="p-4 bg-muted/20 rounded-2xl w-fit mx-auto mb-6">
 									<SmartphoneIcon class="h-16 w-16 lg:h-20 lg:w-20 text-muted-foreground mx-auto" />
 								</div>
-								<h3 class="text-2xl lg:text-3xl font-semibold mb-4">App Installation Not Available</h3>
+								<h3 class="text-2xl lg:text-3xl font-semibold mb-4">
+									App Installation Not Available
+								</h3>
 								<p class="text-base lg:text-lg text-muted-foreground max-w-lg mx-auto">
 									Your browser doesn't support app installation, but you can still use Night Owls
 									normally through your browser.
@@ -375,9 +386,7 @@
 								<SkipForwardIcon class="h-4 w-4 mr-2" />
 								Skip for now
 							</Button>
-							<Button onclick={nextStep} size="lg" class="px-8">
-								Complete Setup
-							</Button>
+							<Button onclick={nextStep} size="lg" class="px-8">Complete Setup</Button>
 						</div>
 					</Card.Content>
 				</Card.Root>

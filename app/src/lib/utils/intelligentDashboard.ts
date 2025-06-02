@@ -46,46 +46,46 @@ export function calculateIntelligentInsights(
 	usersData: UserData[]
 ): IntelligentInsights {
 	const { member_contributions: contributions, quality_metrics, metrics } = dashboardData;
-	
+
 	// 1. Guest Approval Queue
 	const pendingGuests = usersData.filter((u: UserData) => u.role === 'guest');
-	
+
 	// 2. Free Loaders (book but don't show up)
 	const freeLoaders: FreeLoader[] = contributions
-		.filter(c => c.shifts_booked > 0 && c.attendance_rate < 60)
+		.filter((c) => c.shifts_booked > 0 && c.attendance_rate < 60)
 		.slice(0, 3)
-		.map(c => ({
+		.map((c) => ({
 			user_id: c.user_id,
 			name: c.name,
 			shifts_booked: c.shifts_booked,
 			attendance_rate: c.attendance_rate
 		}));
-	
+
 	// 3. Champions (reliable and active)
 	const champions: Champion[] = contributions
-		.filter(c => c.shifts_booked >= 2 && c.attendance_rate >= 90 && c.completion_rate >= 80)
+		.filter((c) => c.shifts_booked >= 2 && c.attendance_rate >= 90 && c.completion_rate >= 80)
 		.slice(0, 3)
-		.map(c => ({
+		.map((c) => ({
 			user_id: c.user_id,
 			name: c.name,
 			shifts_booked: c.shifts_booked,
 			attendance_rate: c.attendance_rate,
 			completion_rate: c.completion_rate
 		}));
-	
+
 	// 4. Top Reporters
 	const topReporters: TopReporter[] = contributions
-		.filter(c => c.shifts_completed >= 3)
+		.filter((c) => c.shifts_completed >= 3)
 		.slice(0, 3)
-		.map(c => ({
+		.map((c) => ({
 			user_id: c.user_id,
 			name: c.name,
 			shifts_completed: c.shifts_completed
 		}));
-	
+
 	// 5. Critical Issues
 	const criticalIssues: CriticalIssue[] = [];
-	
+
 	if (metrics.next_week_unfilled > 5) {
 		criticalIssues.push({
 			type: 'unfilled_shifts',
@@ -94,7 +94,7 @@ export function calculateIntelligentInsights(
 			action: 'Schedule more volunteers'
 		});
 	}
-	
+
 	if (quality_metrics.no_show_rate > 25) {
 		criticalIssues.push({
 			type: 'high_no_show',
@@ -103,7 +103,7 @@ export function calculateIntelligentInsights(
 			action: 'Contact unreliable volunteers'
 		});
 	}
-	
+
 	if (pendingGuests.length > 10) {
 		criticalIssues.push({
 			type: 'guest_backlog',
@@ -139,21 +139,21 @@ export function getStatusCounts(insights: IntelligentInsights) {
  * Determine if there are critical issues requiring immediate attention
  */
 export function hasCriticalIssues(insights: IntelligentInsights): boolean {
-	return insights.criticalIssues.some(issue => issue.severity === 'high');
+	return insights.criticalIssues.some((issue) => issue.severity === 'high');
 }
 
 /**
  * Get the most urgent issue for display
  */
 export function getMostUrgentIssue(insights: IntelligentInsights): CriticalIssue | null {
-	const highPriority = insights.criticalIssues.filter(issue => issue.severity === 'high');
+	const highPriority = insights.criticalIssues.filter((issue) => issue.severity === 'high');
 	if (highPriority.length > 0) return highPriority[0];
-	
-	const mediumPriority = insights.criticalIssues.filter(issue => issue.severity === 'medium');
+
+	const mediumPriority = insights.criticalIssues.filter((issue) => issue.severity === 'medium');
 	if (mediumPriority.length > 0) return mediumPriority[0];
-	
-	const lowPriority = insights.criticalIssues.filter(issue => issue.severity === 'low');
+
+	const lowPriority = insights.criticalIssues.filter((issue) => issue.severity === 'low');
 	if (lowPriority.length > 0) return lowPriority[0];
-	
+
 	return null;
-} 
+}

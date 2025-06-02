@@ -40,7 +40,7 @@
 	];
 
 	const getRoleDisplayName = (role: string) => {
-		const option = roleOptions.find(opt => opt.value === role);
+		const option = roleOptions.find((opt) => opt.value === role);
 		return option ? option.label : role;
 	};
 </script>

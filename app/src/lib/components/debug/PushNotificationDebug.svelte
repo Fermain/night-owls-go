@@ -61,9 +61,7 @@
 			const response = await fetch('/api/push/vapid-public');
 			if (response.ok) {
 				const data = await response.json();
-				addDebugInfo(
-					`VAPID endpoint: SUCCESS - Key length: ${data.key?.length || 'undefined'}`
-				);
+				addDebugInfo(`VAPID endpoint: SUCCESS - Key length: ${data.key?.length || 'undefined'}`);
 			} else {
 				addDebugInfo(`VAPID endpoint: FAILED - ${response.status} ${response.statusText}`);
 			}
