@@ -103,12 +103,14 @@
 			const monthCells: CalendarCell[] = [];
 
 			// Add empty cells for days before month starts
+			const monthNameChars =
+				monthOffset > 0 && startingDayOfWeek > 0 ? shortMonthName.split('') : [];
 			for (let i = 0; i < startingDayOfWeek; i++) {
-				if (monthOffset > 0 && i === Math.floor(startingDayOfWeek / 2)) {
-					// Use middle empty cell for month name (only for non-first months)
+				if (monthOffset > 0 && startingDayOfWeek > 0 && i < monthNameChars.length) {
+					// Distribute month name characters across available empty cells
 					monthCells.push({
 						type: 'month-title',
-						monthName: shortMonthName,
+						monthName: monthNameChars[i],
 						monthOffset
 					});
 				} else {
@@ -249,11 +251,11 @@
 										<!-- Empty cell for padding -->
 										<div class="aspect-square"></div>
 									{:else if cell.type === 'month-title'}
-										<!-- Month name in empty cell -->
+										<!-- Month name character in empty cell -->
 										<div
 											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-center"
 										>
-											<span class="text-xs font-bold text-muted-foreground">
+											<span class="text-sm font-bold text-muted-foreground">
 												{cell.monthName}
 											</span>
 										</div>
