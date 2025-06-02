@@ -128,10 +128,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Load PWA / WebPush specific environment variables
-	if vapidPublic := os.Getenv("VAPID_PUBLIC"); vapidPublic != "" {
+	if vapidPublic := os.Getenv("VAPID_PUBLIC_KEY"); vapidPublic != "" {
 		cfg.VAPIDPublic = vapidPublic
 	}
-	if vapidPrivate := os.Getenv("VAPID_PRIVATE"); vapidPrivate != "" {
+	if vapidPrivate := os.Getenv("VAPID_PRIVATE_KEY"); vapidPrivate != "" {
 		cfg.VAPIDPrivate = vapidPrivate
 	}
 	if vapidSubject := os.Getenv("VAPID_SUBJECT"); vapidSubject != "" {

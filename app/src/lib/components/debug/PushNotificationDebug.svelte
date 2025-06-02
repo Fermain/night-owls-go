@@ -62,7 +62,7 @@
 			if (response.ok) {
 				const data = await response.json();
 				addDebugInfo(
-					`VAPID endpoint: SUCCESS - Key length: ${data.vapid_public?.length || 'undefined'}`
+					`VAPID endpoint: SUCCESS - Key length: ${data.key?.length || 'undefined'}`
 				);
 			} else {
 				addDebugInfo(`VAPID endpoint: FAILED - ${response.status} ${response.statusText}`);

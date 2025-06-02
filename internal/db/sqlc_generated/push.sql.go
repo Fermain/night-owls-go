@@ -24,6 +24,45 @@ func (q *Queries) DeleteSubscription(ctx context.Context, arg DeleteSubscription
 	return err
 }
 
+const getAllSubscriptions = `-- name: GetAllSubscriptions :many
+SELECT user_id, endpoint, p256dh_key, auth_key FROM push_subscriptions
+`
+
+type GetAllSubscriptionsRow struct {
+	UserID    int64  `json:"user_id"`
+	Endpoint  string `json:"endpoint"`
+	P256dhKey string `json:"p256dh_key"`
+	AuthKey   string `json:"auth_key"`
+}
+
+func (q *Queries) GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllSubscriptions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAllSubscriptionsRow{}
+	for rows.Next() {
+		var i GetAllSubscriptionsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Endpoint,
+			&i.P256dhKey,
+			&i.AuthKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSubscriptionsByUser = `-- name: GetSubscriptionsByUser :many
 SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE user_id = ?
 `

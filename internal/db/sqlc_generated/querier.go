@@ -31,6 +31,7 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
+	GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error)
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
 	// Admin Dashboard Metrics Queries
