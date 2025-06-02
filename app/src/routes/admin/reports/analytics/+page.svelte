@@ -195,8 +195,8 @@
 	<title>Reports Analytics - Admin</title>
 </svelte:head>
 
-<div class="p-6">
-	<div class="max-w-7xl mx-auto">
+<div class="p-3 sm:p-4 lg:p-6">
+	<div class="max-w-full lg:max-w-7xl mx-auto">
 		<AdminPageHeader
 			icon={BarChartIcon}
 			heading="Reports Analytics"
@@ -204,12 +204,12 @@
 		/>
 
 		<!-- Filters -->
-		<Card.Root class="p-6 mb-6">
-			<div class="flex gap-4 items-end">
-				<div class="space-y-2">
+		<Card.Root class="p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+			<div class="flex flex-col sm:flex-row gap-4 sm:items-end">
+				<div class="space-y-2 flex-1 sm:flex-none">
 					<Label>Time Period</Label>
 					<Select.Root type="single" bind:value={timeframe}>
-						<Select.Trigger class="w-40">
+						<Select.Trigger class="w-full sm:w-40">
 							{timeframeOptions.find((opt) => opt.value === timeframe)?.label ?? 'Select period'}
 						</Select.Trigger>
 						<Select.Content>
@@ -221,7 +221,7 @@
 				</div>
 
 				{#if timeframe === 'custom'}
-					<div class="space-y-2">
+					<div class="space-y-2 flex-1 sm:flex-none">
 						<Label>Date Range</Label>
 						<DateRangePicker
 							initialStartDate={dateRangeStart}
@@ -235,9 +235,11 @@
 		</Card.Root>
 
 		{#if $reportsQuery.isLoading}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+			<div
+				class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6"
+			>
 				{#each Array(4) as _, i (i)}
-					<Card.Root class="p-6">
+					<Card.Root class="p-3 sm:p-4 lg:p-6">
 						<Skeleton class="h-6 w-24 mb-2" />
 						<Skeleton class="h-8 w-16 mb-1" />
 						<Skeleton class="h-4 w-20" />
@@ -246,77 +248,81 @@
 			</div>
 		{:else if $reportsQuery.data}
 			<!-- Key Metrics -->
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-				<Card.Root class="p-6">
+			<div
+				class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6"
+			>
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<div class="flex items-center justify-between">
-						<div>
+						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium text-muted-foreground">Total Reports</p>
-							<p class="text-3xl font-bold">{analytics.total}</p>
+							<p class="text-2xl sm:text-3xl font-bold">{analytics.total}</p>
 							{#if analytics.totalTrend !== undefined}
 								{@const TrendIcon = getTrendIcon(analytics.totalTrend)}
 								<div class="flex items-center gap-1 mt-1">
-									<TrendIcon class="h-4 w-4 {getTrendColor(analytics.totalTrend)}" />
-									<span class="text-sm {getTrendColor(analytics.totalTrend)}">
+									<TrendIcon class="h-4 w-4 {getTrendColor(analytics.totalTrend)} flex-shrink-0" />
+									<span class="text-xs sm:text-sm {getTrendColor(analytics.totalTrend)} truncate">
 										{formatTrend(analytics.totalTrend)} vs previous period
 									</span>
 								</div>
 							{/if}
 						</div>
-						<BarChartIcon class="h-8 w-8 text-muted-foreground" />
+						<BarChartIcon class="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground flex-shrink-0" />
 					</div>
 				</Card.Root>
 
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<div class="flex items-center justify-between">
-						<div>
+						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium text-muted-foreground">Critical Reports</p>
-							<p class="text-3xl font-bold text-red-600">{analytics.critical}</p>
-							<p class="text-sm text-muted-foreground mt-1">
+							<p class="text-2xl sm:text-3xl font-bold text-red-600">{analytics.critical}</p>
+							<p class="text-xs sm:text-sm text-muted-foreground mt-1">
 								{analytics.total > 0
 									? Math.round((analytics.critical / analytics.total) * 100)
 									: 0}% of total
 							</p>
 						</div>
-						<ShieldAlertIcon class="h-8 w-8 text-red-600" />
+						<ShieldAlertIcon class="h-6 w-6 sm:h-8 sm:w-8 text-red-600 flex-shrink-0" />
 					</div>
 				</Card.Root>
 
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<div class="flex items-center justify-between">
-						<div>
+						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium text-muted-foreground">Warning Reports</p>
-							<p class="text-3xl font-bold text-orange-600">{analytics.warning}</p>
-							<p class="text-sm text-muted-foreground mt-1">
+							<p class="text-2xl sm:text-3xl font-bold text-orange-600">{analytics.warning}</p>
+							<p class="text-xs sm:text-sm text-muted-foreground mt-1">
 								{analytics.total > 0 ? Math.round((analytics.warning / analytics.total) * 100) : 0}%
 								of total
 							</p>
 						</div>
-						<AlertTriangleIcon class="h-8 w-8 text-orange-600" />
+						<AlertTriangleIcon class="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 flex-shrink-0" />
 					</div>
 				</Card.Root>
 
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<div class="flex items-center justify-between">
-						<div>
+						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium text-muted-foreground">Peak Hour</p>
-							<p class="text-3xl font-bold">{analytics.peakHour.toString().padStart(2, '0')}:00</p>
-							<p class="text-sm text-muted-foreground mt-1">
+							<p class="text-2xl sm:text-3xl font-bold">
+								{analytics.peakHour.toString().padStart(2, '0')}:00
+							</p>
+							<p class="text-xs sm:text-sm text-muted-foreground mt-1">
 								{analytics.hourCounts[analytics.peakHour]} reports
 							</p>
 						</div>
-						<ClockIcon class="h-8 w-8 text-muted-foreground" />
+						<ClockIcon class="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground flex-shrink-0" />
 					</div>
 				</Card.Root>
 			</div>
 
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
 				<!-- Severity Distribution -->
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<Card.Header class="px-0 pt-0">
-						<Card.Title>Severity Distribution</Card.Title>
+						<Card.Title class="text-lg sm:text-xl">Severity Distribution</Card.Title>
 					</Card.Header>
 					<Card.Content class="px-0 pb-0">
-						<div class="space-y-4">
+						<div class="space-y-3 sm:space-y-4">
 							{#each analytics.severityDistribution as item (item.severity)}
 								<div class="space-y-2">
 									<div class="flex items-center justify-between">
@@ -338,22 +344,22 @@
 				</Card.Root>
 
 				<!-- Daily Trend -->
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<Card.Header class="px-0 pt-0">
-						<Card.Title>Daily Trend</Card.Title>
+						<Card.Title class="text-lg sm:text-xl">Daily Trend</Card.Title>
 					</Card.Header>
 					<Card.Content class="px-0 pb-0">
 						<div class="space-y-2">
 							{#each analytics.dailyBreakdown.slice(-7) as day (day.date)}
-								<div class="flex items-center justify-between">
-									<span class="text-sm">
+								<div class="flex items-center justify-between gap-2">
+									<span class="text-xs sm:text-sm flex-shrink-0 min-w-0">
 										{new Date(day.date).toLocaleDateString('en-US', {
 											weekday: 'short',
 											month: 'short',
 											day: 'numeric'
 										})}
 									</span>
-									<div class="flex items-center gap-2">
+									<div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-end">
 										{#if day.critical > 0}
 											<Badge variant="destructive" class="text-xs">{day.critical}</Badge>
 										{/if}
@@ -363,7 +369,9 @@
 										{#if day.info > 0}
 											<Badge variant="secondary" class="text-xs">{day.info}</Badge>
 										{/if}
-										<span class="text-sm font-medium w-8 text-right">{day.total}</span>
+										<span class="text-sm font-medium w-6 sm:w-8 text-right flex-shrink-0"
+											>{day.total}</span
+										>
 									</div>
 								</div>
 							{/each}
@@ -372,11 +380,11 @@
 				</Card.Root>
 			</div>
 
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
 				<!-- Top Reporters -->
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<Card.Header class="px-0 pt-0">
-						<Card.Title class="flex items-center gap-2">
+						<Card.Title class="flex items-center gap-2 text-lg sm:text-xl">
 							<UserIcon class="h-5 w-5" />
 							Top Reporters
 						</Card.Title>
@@ -385,16 +393,18 @@
 						{#if analytics.topReporters.length > 0}
 							<div class="space-y-3">
 								{#each analytics.topReporters as reporter, index (reporter.name)}
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-3">
+									<div class="flex items-center justify-between gap-3">
+										<div class="flex items-center gap-3 min-w-0 flex-1">
 											<div
-												class="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium"
+												class="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium flex-shrink-0"
 											>
 												{index + 1}
 											</div>
-											<span class="font-medium">{reporter.name}</span>
+											<span class="font-medium truncate">{reporter.name}</span>
 										</div>
-										<Badge variant="secondary">{reporter.count} reports</Badge>
+										<Badge variant="secondary" class="text-xs flex-shrink-0"
+											>{reporter.count} reports</Badge
+										>
 									</div>
 								{/each}
 							</div>
@@ -405,9 +415,9 @@
 				</Card.Root>
 
 				<!-- Schedule Breakdown -->
-				<Card.Root class="p-6">
+				<Card.Root class="p-3 sm:p-4 lg:p-6">
 					<Card.Header class="px-0 pt-0">
-						<Card.Title class="flex items-center gap-2">
+						<Card.Title class="flex items-center gap-2 text-lg sm:text-xl">
 							<CalendarIcon class="h-5 w-5" />
 							Reports by Schedule
 						</Card.Title>
@@ -417,9 +427,11 @@
 							<div class="space-y-3">
 								{#each analytics.scheduleBreakdown as schedule (schedule.name)}
 									<div class="space-y-2">
-										<div class="flex items-center justify-between">
-											<span class="font-medium">{schedule.name}</span>
-											<span class="text-sm text-muted-foreground">{schedule.count}</span>
+										<div class="flex items-center justify-between gap-3">
+											<span class="font-medium truncate min-w-0 flex-1">{schedule.name}</span>
+											<span class="text-sm text-muted-foreground flex-shrink-0"
+												>{schedule.count}</span
+											>
 										</div>
 										<div class="w-full bg-muted rounded-full h-2">
 											<div

@@ -7,6 +7,7 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import LoaderIcon from '@lucide/svelte/icons/loader-2';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import MapIcon from '@lucide/svelte/icons/map';
 
 	interface GeolocationData {
 		latitude: number;
@@ -20,9 +21,16 @@
 		onError?: (error: string) => void;
 		autoCapture?: boolean;
 		className?: string;
+		showMapPreview?: boolean;
 	}
 
-	let { onLocationCaptured, onError, autoCapture = false, className = '' }: Props = $props();
+	let {
+		onLocationCaptured,
+		onError,
+		autoCapture = false,
+		className = '',
+		showMapPreview = true
+	}: Props = $props();
 
 	// State
 	let permissionStatus = $state<'granted' | 'denied' | 'prompt' | 'checking' | 'unsupported'>(
@@ -31,6 +39,7 @@
 	let isCapturing = $state(false);
 	let capturedLocation = $state<GeolocationData | null>(null);
 	let error = $state<string | null>(null);
+	let showMapExpanded = $state(false);
 
 	// Check permissions on mount
 	onMount(async () => {
@@ -140,6 +149,17 @@
 	function formatAccuracy(accuracy: number): string {
 		return accuracy < 1000 ? `±${Math.round(accuracy)}m` : `±${(accuracy / 1000).toFixed(1)}km`;
 	}
+
+	function formatCoordinates(lat: number, lng: number): string {
+		return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+	}
+
+	function openExternalMap() {
+		if (capturedLocation) {
+			const mapUrl = `https://www.openstreetmap.org/?mlat=${capturedLocation.latitude}&mlon=${capturedLocation.longitude}&zoom=18`;
+			window.open(mapUrl, '_blank');
+		}
+	}
 </script>
 
 <div class="space-y-3 {className}">
@@ -162,28 +182,92 @@
 			<span>Getting location...</span>
 		</div>
 	{:else if capturedLocation}
-		<!-- Location captured successfully -->
-		<div
-			class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
-		>
-			<div class="flex items-center gap-2">
-				<CheckCircleIcon class="h-4 w-4 text-green-600" />
-				<div>
-					<p class="text-sm font-medium text-green-900">Location captured</p>
-					<p class="text-xs text-green-700">
-						{formatAccuracy(capturedLocation.accuracy)} accuracy
-					</p>
+		<!-- Location captured successfully with map preview -->
+		<div class="space-y-3">
+			<div
+				class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+			>
+				<div class="flex items-center gap-2">
+					<CheckCircleIcon class="h-4 w-4 text-green-600" />
+					<div>
+						<p class="text-sm font-medium text-green-900">Location captured</p>
+						<p class="text-xs text-green-700">
+							{formatAccuracy(capturedLocation.accuracy)} accuracy
+						</p>
+					</div>
+				</div>
+				<div class="flex items-center gap-1">
+					{#if showMapPreview}
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => (showMapExpanded = !showMapExpanded)}
+							class="text-green-600 hover:text-green-700 h-8 w-8 p-0"
+							title={showMapExpanded ? 'Hide map' : 'Show map preview'}
+						>
+							<MapIcon class="h-3 w-3" />
+						</Button>
+					{/if}
+					<Button
+						variant="ghost"
+						size="sm"
+						onclick={captureLocation}
+						disabled={isCapturing}
+						class="text-green-600 hover:text-green-700 h-8 w-8 p-0"
+						title="Refresh location"
+					>
+						<RefreshCwIcon class="h-3 w-3" />
+					</Button>
 				</div>
 			</div>
-			<Button
-				variant="ghost"
-				size="sm"
-				onclick={captureLocation}
-				disabled={isCapturing}
-				class="text-green-600 hover:text-green-700 h-8 w-8 p-0"
-			>
-				<RefreshCwIcon class="h-3 w-3" />
-			</Button>
+
+			{#if showMapPreview && showMapExpanded}
+				<!-- Map preview section -->
+				<div class="border rounded-lg bg-background overflow-hidden">
+					<div class="p-3 border-b bg-muted/30">
+						<div class="flex items-center justify-between">
+							<h4 class="text-sm font-medium flex items-center gap-2">
+								<MapPinIcon class="h-4 w-4" />
+								Location Preview
+							</h4>
+							<Button variant="ghost" size="sm" onclick={openExternalMap} class="h-6 px-2 text-xs">
+								Open in Map
+							</Button>
+						</div>
+						<p class="text-xs text-muted-foreground mt-1">
+							{formatCoordinates(capturedLocation.latitude, capturedLocation.longitude)}
+						</p>
+					</div>
+
+					<!-- Simple map placeholder with OpenStreetMap iframe -->
+					<div class="h-32 bg-muted/20 relative">
+						<iframe
+							src="https://www.openstreetmap.org/export/embed.html?bbox={capturedLocation.longitude -
+								0.002},{capturedLocation.latitude - 0.002},{capturedLocation.longitude +
+								0.002},{capturedLocation.latitude +
+								0.002}&layer=mapnik&marker={capturedLocation.latitude},{capturedLocation.longitude}"
+							class="w-full h-full border-0"
+							title="Location preview"
+							loading="lazy"
+						></iframe>
+						<div
+							class="absolute inset-0 bg-transparent"
+							onclick={openExternalMap}
+							role="button"
+							tabindex="0"
+							onkeydown={(e) => e.key === 'Enter' && openExternalMap()}
+						>
+							<span class="sr-only">Open map in new tab</span>
+						</div>
+					</div>
+
+					<div class="p-2 bg-muted/10 text-center">
+						<button onclick={openExternalMap} class="text-xs text-primary hover:underline">
+							Click to view in full map
+						</button>
+					</div>
+				</div>
+			{/if}
 		</div>
 	{:else if error}
 		<!-- Error with retry option -->

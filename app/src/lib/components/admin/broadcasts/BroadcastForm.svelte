@@ -98,8 +98,8 @@
 </script>
 
 <!-- Send Broadcast Form -->
-<Card.Root class="p-6">
-	<Card.Content class="space-y-6">
+<Card.Root>
+	<Card.Content class="space-y-4">
 		<!-- Message -->
 		<div class="space-y-2">
 			<Label for="message">Message</Label>
