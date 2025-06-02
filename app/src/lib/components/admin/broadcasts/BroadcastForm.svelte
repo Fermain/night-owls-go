@@ -141,9 +141,7 @@
 		<!-- Push Notifications -->
 		<div class="flex items-center space-x-2">
 			<Switch id="push" bind:checked={enablePushNotifications} />
-			<Label for="push" class="text-sm cursor-pointer"
-				>Send push notifications to mobile devices</Label
-			>
+			<Label for="push" class="text-sm cursor-pointer">Send push notifications to mobile devices</Label>
 		</div>
 
 		<!-- Scheduling -->

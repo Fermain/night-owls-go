@@ -91,7 +91,7 @@ func main() {
 	slog.Info("Configuration loaded successfully")
 	slog.Info("Development mode status", "dev_mode", cfg.DevMode)
 
-	dbConn, err := sql.Open("sqlite3", cfg.DatabasePath)
+	dbConn, err := sql.Open("sqlite3", cfg.DatabasePath+"?_foreign_keys=on")
 	if err != nil {
 		slog.Error("Failed to open database connection", "path", cfg.DatabasePath, "error", err)
 		os.Exit(1)

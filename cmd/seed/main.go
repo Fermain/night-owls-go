@@ -119,7 +119,7 @@ func main() {
 	}
 
 	// Open database connection
-	dbConn, err := sql.Open("sqlite3", databasePath)
+	dbConn, err := sql.Open("sqlite3", databasePath+"?_foreign_keys=on")
 	if err != nil {
 		logger.Error("Failed to open database", "path", databasePath, "error", err)
 		os.Exit(1)
