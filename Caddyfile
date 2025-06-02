@@ -16,12 +16,26 @@ mm.nightowls.app {
         reverse_proxy night-owls:5888
     }
     
-    # Proxy only writes to the old endpoints - GET requests go to SPA
-    @legacy_api {
-        method POST PUT PATCH DELETE
-        path /schedules* /shifts* /bookings* /reports* /push*
+    # Route ALL HTTP methods for backend API endpoints to the Go backend
+    handle /schedules* {
+        reverse_proxy night-owls:5888
     }
-    reverse_proxy @legacy_api night-owls:5888
+    
+    handle /shifts* {
+        reverse_proxy night-owls:5888
+    }
+    
+    handle /bookings* {
+        reverse_proxy night-owls:5888
+    }
+    
+    handle /reports* {
+        reverse_proxy night-owls:5888
+    }
+    
+    handle /push* {
+        reverse_proxy night-owls:5888
+    }
 
     # Handle static files and SPA fallback
     handle {
