@@ -38,7 +38,7 @@ type UserService struct {
 // NewUserService creates a new UserService.
 func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Config, logger *slog.Logger) *UserService {
 	var twilioOTP *otp.Client
-	
+
 	// Initialize Twilio OTP client if credentials are provided
 	if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" && cfg.TwilioVerifySID != "" {
 		twilioOTP = otp.New(cfg.TwilioAccountSID, cfg.TwilioAuthToken, cfg.TwilioVerifySID)
@@ -71,22 +71,22 @@ func (s *UserService) SetJWTGenerator(generator JWTGenerator) {
 func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, name sql.NullString) error {
 	// Debug logging to understand the name parameter
 	s.logger.InfoContext(ctx, "RegisterOrLoginUser called", "phone", phone, "name_valid", name.Valid, "name_string", name.String)
-	
+
 	user, err := s.querier.GetUserByPhone(ctx, phone)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// User does not exist
 			s.logger.InfoContext(ctx, "User does not exist", "phone", phone, "name_valid", name.Valid, "name_string", name.String)
-			
+
 			if !name.Valid || name.String == "" {
 				// This is a login attempt (no name provided) but user doesn't exist
 				s.logger.WarnContext(ctx, "Login attempt for non-existent user", "phone", phone)
 				return errors.New("user not found - please register first")
 			}
-			
+
 			// This is a registration attempt (name provided), create new user
 			s.logger.InfoContext(ctx, "Creating new user during registration", "phone", phone, "name", name.String)
-			
+
 			// Smart role assignment: First two users get admin, everyone else gets guest
 			defaultRole, err := s.determineRoleForNewUser(ctx)
 			if err != nil {
@@ -128,7 +128,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			return fmt.Errorf("failed to send SMS: %w", err)
 		}
 		s.logger.InfoContext(ctx, "Twilio OTP sent successfully", "phone", phone)
-		
+
 		// For Twilio, we don't store OTP locally or use outbox since Twilio manages it
 		return nil
 	} else {
@@ -163,7 +163,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 // VerifyOTP validates the OTP for a given phone number and if valid, generates a JWT.
 func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string) (string, error) {
 	var otpValid bool
-	
+
 	// Verify OTP - use Twilio if configured, otherwise use local store
 	if s.twilioOTP != nil {
 		// Use Twilio Verify to check the OTP
@@ -187,7 +187,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 			s.logger.WarnContext(ctx, "Mock OTP validation failed", "phone", phone)
 		}
 	}
-	
+
 	if !otpValid {
 		return "", ErrOTPValidationFailed
 	}

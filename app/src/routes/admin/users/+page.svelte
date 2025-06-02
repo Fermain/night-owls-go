@@ -1,38 +1,39 @@
 <script lang="ts">
 	import UserForm from '$lib/components/admin/users/UserForm.svelte';
-	import UsersDashboard from '$lib/components/admin/users/UsersDashboard.svelte';
+	import IntelligentDashboard from '$lib/components/admin/IntelligentDashboard.svelte';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
-	import { createUsersQuery } from '$lib/queries/admin/users/usersQuery';
-	import { createDashboardShiftsQuery } from '$lib/queries/admin/shifts/dashboardShiftsQuery';
 	import type { UserData } from '$lib/schemas/user';
+	import UsersIcon from '@lucide/svelte/icons/users';
 
 	// currentUserForForm is derived from the store, which is synced with URL by the layout
 	let currentUserForForm = $state<UserData | undefined>(undefined);
 	selectedUserForForm.subscribe((value) => {
 		currentUserForForm = value;
 	});
-
-	// Create queries for dashboard
-	const usersQuery = $derived(createUsersQuery());
-	const shiftsQuery = $derived(createDashboardShiftsQuery());
-
-	// Combined loading and error states
-	const isLoading = $derived($usersQuery.isLoading || $shiftsQuery.isLoading);
-	const isError = $derived($usersQuery.isError || $shiftsQuery.isError);
-	const error = $derived($usersQuery.error || $shiftsQuery.error || undefined);
 </script>
+
+<svelte:head>
+	<title>User Management - Mount Moreland Night Owls</title>
+</svelte:head>
 
 {#if currentUserForForm}
 	{#key currentUserForForm.id}
 		<UserForm user={currentUserForForm} />
 	{/key}
 {:else}
-	<!-- Users Dashboard with Shift Data -->
-	<UsersDashboard
-		{isLoading}
-		{isError}
-		{error}
-		users={$usersQuery.data}
-		shifts={$shiftsQuery.data}
-	/>
+	<div class="p-4 md:p-6 space-y-6">
+		<!-- Page Header -->
+		<div class="border-b pb-4">
+			<div class="flex items-center gap-3 mb-2">
+				<UsersIcon class="h-8 w-8 text-primary" />
+				<h1 class="text-2xl md:text-3xl font-bold tracking-tight">User Intelligence Center</h1>
+			</div>
+			<p class="text-base md:text-lg text-muted-foreground">
+				Smart insights and quick actions for managing Night Owls community members
+			</p>
+		</div>
+
+		<!-- Intelligent Dashboard for Users -->
+		<IntelligentDashboard />
+	</div>
 {/if}

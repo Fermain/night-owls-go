@@ -174,4 +174,4 @@ func seedRecentCriticalReports(querier db.Querier) error {
 
 	log.Printf("Successfully created %d critical reports", reportsCreated)
 	return nil
-} 
+}

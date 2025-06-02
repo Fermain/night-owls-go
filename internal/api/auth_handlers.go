@@ -126,7 +126,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName)
 	if err != nil {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
-		
+
 		// Check for specific user not found error
 		if err.Error() == "user not found - please register first" {
 			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())

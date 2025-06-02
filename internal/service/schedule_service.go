@@ -428,7 +428,7 @@ func parseScheduleInTimezone(cronExpr string, timezone string, fromTime, toTime 
 		if next.IsZero() || next.After(end) {
 			break
 		}
-		
+
 		// Convert to UTC for storage/comparison
 		occurrences = append(occurrences, next.UTC())
 		current = next.Add(time.Minute) // Move past this occurrence

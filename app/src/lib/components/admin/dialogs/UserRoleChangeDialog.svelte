@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import type { CreateMutationResult } from '@tanstack/svelte-query';
+	import type { UserRole } from '$lib/types';
 
 	interface User {
 		id: number;
@@ -26,16 +27,22 @@
 		userName?: string;
 		currentRole?: string;
 		newRole?: string;
-		onConfirm?: (role: 'admin' | 'owl' | 'guest') => void;
+		onConfirm?: (role: UserRole) => void;
 		isLoading?: boolean;
 		_user?: User | null;
 		_mutation?: CreateMutationResult<unknown, Error, unknown, unknown> | null;
 	} = $props();
 
 	const roleOptions = [
-		{ value: 'user', label: 'User' },
+		{ value: 'guest', label: 'Guest' },
+		{ value: 'owl', label: 'Owl' },
 		{ value: 'admin', label: 'Admin' }
 	];
+
+	const getRoleDisplayName = (role: string) => {
+		const option = roleOptions.find((opt) => opt.value === role);
+		return option ? option.label : role;
+	};
 </script>
 
 <AlertDialog.Root bind:open>
@@ -46,7 +53,7 @@
 				Change User Role
 			</AlertDialog.Title>
 			<AlertDialog.Description>
-				Change the role for {userName} from {currentRole} to a new role.
+				Change the role for {userName} from {getRoleDisplayName(currentRole)} to a new role.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<div class="py-4">
@@ -69,7 +76,7 @@
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={isLoading}>Cancel</AlertDialog.Cancel>
 			<AlertDialog.Action
-				onclick={() => onConfirm(newRole as 'admin' | 'owl' | 'guest')}
+				onclick={() => onConfirm(newRole as UserRole)}
 				disabled={isLoading || !newRole || newRole === currentRole}
 			>
 				{#if isLoading}

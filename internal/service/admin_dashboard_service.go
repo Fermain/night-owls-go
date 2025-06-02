@@ -181,7 +181,7 @@ func (s *AdminDashboardService) calculateDashboardMetrics(ctx context.Context, f
 		CheckedInShifts:   checkedInShifts,
 		CompletedShifts:   completedShifts,
 		FillRate:          fillRate,
-		CheckInRate:       float64(bookingMetrics.CheckInRate),
+		CheckInRate:       toFloat64(bookingMetrics.CheckInRate),
 		CompletionRate:    toFloat64(bookingMetrics.CompletionRate),
 		NextWeekUnfilled:  nextWeekUnfilled,
 		ThisWeekendStatus: weekendStatus,

@@ -264,7 +264,7 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 	}
 
 	h.logger.InfoContext(c.Context(), "Check-in recorded successfully", "booking_id", bookingID, "user_id", userID)
-	
+
 	return SuccessResponse{Message: "Check-in recorded successfully"}, nil
 }
 
@@ -328,10 +328,10 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	}
 
 	h.logger.InfoContext(c.Context(), "Booking cancelled successfully", "booking_id", bookingID, "user_id", userID)
-	
+
 	// Set the success status code
 	c.SetStatus(http.StatusNoContent)
-	
+
 	return SuccessResponse{Message: "Booking cancelled successfully"}, nil
 }
 
