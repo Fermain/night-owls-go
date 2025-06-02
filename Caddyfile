@@ -15,13 +15,6 @@ mm.nightowls.app {
     handle /swagger/* {
         reverse_proxy night-owls:5888
     }
-    
-    # Proxy only writes to the old endpoints - GET requests go to SPA
-    @legacy_api {
-        method POST PUT PATCH DELETE
-        path /schedules* /shifts* /bookings* /reports* /push*
-    }
-    reverse_proxy @legacy_api night-owls:5888
 
     # Handle static files and SPA fallback
     handle {

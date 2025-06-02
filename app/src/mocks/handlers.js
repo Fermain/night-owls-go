@@ -116,7 +116,7 @@ export const handlers = [
 	}),
 
 	// Shifts endpoints
-	http.get('/shifts/available', () => {
+	http.get('/api/shifts/available', () => {
 		// Return data in the format expected by AvailableShiftSlot interface
 		const availableShifts = [
 			{
@@ -147,7 +147,7 @@ export const handlers = [
 		return HttpResponse.json(availableShifts);
 	}),
 
-	http.post('/bookings', async ({ request }) => {
+	http.post('/api/bookings', async ({ request }) => {
 		const body = await request.json();
 
 		const booking = {

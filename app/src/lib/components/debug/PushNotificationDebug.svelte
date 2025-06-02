@@ -58,7 +58,7 @@
 
 	async function testVAPIDEndpoint() {
 		try {
-			const response = await fetch('/push/vapid-public');
+			const response = await fetch('/api/push/vapid-public');
 			if (response.ok) {
 				const data = await response.json();
 				addDebugInfo(

@@ -68,6 +68,9 @@ func (scl *slogCronLogger) Printf(format string, args ...interface{}) {
 func main() {
 	startTime := time.Now() // Track server start time for health check uptime
 
+	// API route constants
+	const apiPrefix = "/api"
+
 	// Force timezone to UTC
 	if err := os.Setenv("TZ", "UTC"); err != nil {
 		log.Printf("Warning: Failed to set timezone to UTC: %v", err)
@@ -235,24 +238,25 @@ func main() {
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
 
-	// Public routes
-	fuego.PostStd(s, "/api/auth/register", authAPIHandler.RegisterHandler)
-	fuego.PostStd(s, "/api/auth/verify", authAPIHandler.VerifyHandler)
+	// Public API routes
+	publicAPI := fuego.Group(s, apiPrefix)
+	fuego.PostStd(publicAPI, "/auth/register", authAPIHandler.RegisterHandler)
+	fuego.PostStd(publicAPI, "/auth/verify", authAPIHandler.VerifyHandler)
 
 	// Development-only auth endpoints
 	if cfg.DevMode {
-		fuego.PostStd(s, "/api/auth/dev-login", authAPIHandler.DevLoginHandler)
+		fuego.PostStd(publicAPI, "/auth/dev-login", authAPIHandler.DevLoginHandler)
 		slog.Info("Development mode: dev-login endpoint enabled")
 	}
 
-	fuego.GetStd(s, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
-	fuego.GetStd(s, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
-	fuego.GetStd(s, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
-	fuego.PostStd(s, "/api/ping", api.PingHandler(logger))
+	fuego.GetStd(publicAPI, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
+	fuego.GetStd(publicAPI, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(publicAPI, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
+	fuego.PostStd(publicAPI, "/ping", api.PingHandler(logger))
 
 	// Emergency contacts (public access)
-	fuego.GetStd(s, "/api/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
-	fuego.GetStd(s, "/api/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
+	fuego.GetStd(publicAPI, "/emergency-contacts", emergencyContactAPIHandler.GetEmergencyContactsHandler)
+	fuego.GetStd(publicAPI, "/emergency-contacts/default", emergencyContactAPIHandler.GetDefaultEmergencyContactHandler)
 
 	// Health check endpoints for monitoring
 	fuego.GetStd(s, "/health", func(w http.ResponseWriter, r *http.Request) {
@@ -283,7 +287,7 @@ func main() {
 	})
 
 	// API health check endpoint
-	fuego.GetStd(s, "/api/health", func(w http.ResponseWriter, r *http.Request) {
+	fuego.GetStd(publicAPI, "/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(map[string]string{
 			"status":  "ok",
@@ -294,7 +298,7 @@ func main() {
 	})
 
 	// Protected routes (require auth)
-	protected := fuego.Group(s, "")
+	protected := fuego.Group(s, apiPrefix)
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
 	fuego.Post(protected, "/bookings", bookingAPIHandler.CreateBookingFuego)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
@@ -302,12 +306,12 @@ func main() {
 	fuego.Delete(protected, "/bookings/{id}", bookingAPIHandler.CancelBookingFuego)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
-	fuego.GetStd(protected, "/api/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
+	fuego.GetStd(protected, "/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
 
 	// Admin routes
-	admin := fuego.Group(s, "/api/admin")
+	admin := fuego.Group(s, apiPrefix+"/admin")
 	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
 	fuego.Use(admin, api.AdminMiddleware(logger))
 

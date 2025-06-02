@@ -64,7 +64,7 @@ class PushNotificationService {
 	 */
 	private async fetchVAPIDPublicKey(): Promise<void> {
 		try {
-			const response = await fetch('/push/vapid-public');
+			const response = await fetch('/api/push/vapid-public');
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
@@ -188,7 +188,7 @@ class PushNotificationService {
 			platform: navigator.platform || 'unknown'
 		};
 
-		const response = await authenticatedFetch('/push/subscribe', {
+		const response = await authenticatedFetch('/api/push/subscribe', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -210,7 +210,7 @@ class PushNotificationService {
 		}
 
 		const encodedEndpoint = encodeURIComponent(this.subscription.endpoint);
-		const response = await authenticatedFetch(`/push/subscribe/${encodedEndpoint}`, {
+		const response = await authenticatedFetch(`/api/push/subscribe/${encodedEndpoint}`, {
 			method: 'DELETE'
 		});
 

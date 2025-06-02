@@ -40,7 +40,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 		console.log('✅ Verification successful, received JWT token');
 
 		// Step 3: Test protected endpoint with token
-		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my', {
+		const protectedResponse = await page.request.get('http://localhost:5888/api/bookings/my', {
 			headers: {
 				Authorization: `Bearer ${verifyData.token}`
 			}
@@ -77,7 +77,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 	});
 
 	test('should reject requests without authorization header', async ({ page }) => {
-		const protectedResponse = await page.request.get('http://localhost:5888/bookings/my');
+		const protectedResponse = await page.request.get('http://localhost:5888/api/bookings/my');
 		expect(protectedResponse.status()).toBe(401);
 		console.log('✅ Protected endpoint correctly rejects requests without auth');
 	});
@@ -109,7 +109,7 @@ test.describe('🔌 Real API Integration Tests', () => {
 	});
 
 	test('should test available shifts endpoint', async ({ page }) => {
-		const shiftsResponse = await page.request.get('http://localhost:5888/shifts/available');
+		const shiftsResponse = await page.request.get('http://localhost:5888/api/shifts/available');
 
 		expect(shiftsResponse.status()).toBe(200);
 		const shiftsData = await shiftsResponse.json();
