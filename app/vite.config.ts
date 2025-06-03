@@ -16,12 +16,13 @@ export default defineConfig(({ mode: _mode }) => {
 				scope: '/',
 				base: '/',
 				selfDestroying: process.env.NODE_ENV === 'development',
-				strategies: 'injectManifest',
+				strategies: 'generateSW',
 				filename: 'sw.js',
-				injectManifest: {
-					swSrc: './static/sw.js',
-					swDest: './build/sw.js',
-					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
+				workbox: {
+					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
+					cleanupOutdatedCaches: true,
+					clientsClaim: true,
+					skipWaiting: true
 				},
 				manifest: {
 					name: 'Mount Moreland Night Owls',
