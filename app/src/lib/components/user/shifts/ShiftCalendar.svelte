@@ -24,6 +24,13 @@
 	// Show calendar if there are shifts OR user bookings
 	const shouldShowCalendar = $derived(shifts.length > 0 || userBookings.length > 0);
 
+	// Debug logging
+	$effect(() => {
+		console.log('ShiftCalendar - userBookings:', userBookings);
+		console.log('ShiftCalendar - shifts:', shifts);
+		console.log('ShiftCalendar - selectedDayRange:', selectedDayRange);
+	});
+
 	// Calculate how many months to show based on selected day range
 	const monthsToShow = $derived.by(() => {
 		const days = parseInt(selectedDayRange);
@@ -33,6 +40,14 @@
 		return 3; // Max 3 months
 	});
 
+	// Calculate the date range we should show based on selectedDayRange
+	const dateRange = $derived.by(() => {
+		const days = parseInt(selectedDayRange);
+		const startDate = new Date();
+		const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+		return { startDate, endDate };
+	});
+
 	// Get current date for calendar
 	const today = new Date();
 
@@ -40,6 +55,7 @@
 	const calendarData = $derived.by(() => {
 		const monthGrids: MonthGrid[] = [];
 		let firstMonthName = '';
+		const { startDate, endDate } = dateRange;
 
 		for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
 			const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -94,65 +110,71 @@
 				}
 			}
 
-			// Add days of the month
+			// Add days of the month - but only include days within our selected date range
 			for (let day = 1; day <= daysInMonth; day++) {
 				const date = new Date(year, month, day);
 				const dateString = date.toISOString().split('T')[0];
 
-				// Find available shifts for this date
-				const dayShifts = shifts.filter((shift) => {
-					const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
-					return shiftDate === dateString;
-				});
+				// Only include days within our selected date range
+				if (date >= startDate && date <= endDate) {
+					// Find available shifts for this date
+					const dayShifts = shifts.filter((shift) => {
+						const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
+						return shiftDate === dateString;
+					});
 
-				// Find user's bookings for this date
-				const dayUserShifts = userBookings.filter((booking) => {
-					const bookingDate = new Date(booking.shift_start).toISOString().split('T')[0];
-					return bookingDate === dateString;
-				});
+					// Find user's bookings for this date
+					const dayUserShifts = userBookings.filter((booking) => {
+						const bookingDate = new Date(booking.shift_start).toISOString().split('T')[0];
+						return bookingDate === dateString;
+					});
 
-				// Check if user is currently on duty (active shift)
-				const now = new Date();
-				const isOnDuty = dayUserShifts.some((booking) => {
-					const shiftStart = new Date(booking.shift_start);
-					const shiftEnd = new Date(booking.shift_end);
-					return now >= shiftStart && now <= shiftEnd;
-				});
+					// Check if user is currently on duty (active shift)
+					const now = new Date();
+					const isOnDuty = dayUserShifts.some((booking) => {
+						const shiftStart = new Date(booking.shift_start);
+						const shiftEnd = new Date(booking.shift_end);
+						return now >= shiftStart && now <= shiftEnd;
+					});
 
-				const dayData: CalendarDay = {
-					day,
-					date,
-					dateString,
-					shifts: dayShifts,
-					userShifts: dayUserShifts,
-					isToday: date.toDateString() === today.toDateString(),
-					isPast: date < today && date.toDateString() !== today.toDateString(),
-					isOnDuty,
-					monthOffset
-				};
+					const dayData: CalendarDay = {
+						day,
+						date,
+						dateString,
+						shifts: dayShifts,
+						userShifts: dayUserShifts,
+						isToday: date.toDateString() === today.toDateString(),
+						isPast: date < today && date.toDateString() !== today.toDateString(),
+						isOnDuty,
+						monthOffset
+					};
 
-				monthCells.push({
-					type: 'day',
-					dayData
-				});
-			}
-
-			// Group cells into weeks
-			const weeks: CalendarCell[][] = [];
-			for (let i = 0; i < monthCells.length; i += 7) {
-				const week = monthCells.slice(i, i + 7);
-				// Pad the last week if necessary
-				while (week.length < 7) {
-					week.push({ type: 'empty' });
+					monthCells.push({
+						type: 'day',
+						dayData
+					});
 				}
-				weeks.push(week);
 			}
 
-			monthGrids.push({
-				monthName,
-				monthOffset,
-				weeks
-			});
+			// Group cells into weeks - only if we have any day cells for this month
+			const dayCount = monthCells.filter((cell) => cell.type === 'day').length;
+			if (dayCount > 0) {
+				const weeks: CalendarCell[][] = [];
+				for (let i = 0; i < monthCells.length; i += 7) {
+					const week = monthCells.slice(i, i + 7);
+					// Pad the last week if necessary
+					while (week.length < 7) {
+						week.push({ type: 'empty' });
+					}
+					weeks.push(week);
+				}
+
+				monthGrids.push({
+					monthName,
+					monthOffset,
+					weeks
+				});
+			}
 		}
 
 		return { monthGrids, firstMonthName };

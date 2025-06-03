@@ -28,6 +28,17 @@
 		if (monthOffset === 1) return 'bg-muted/20'; // Next month - subtle background
 		return 'bg-muted/40'; // Third month - slightly more background
 	}
+
+	// Debug logging for this day's data
+	$effect(() => {
+		if (shifts.length > 0 || userShifts.length > 0) {
+			console.log(`CalendarDayCell - Day ${day}:`, {
+				shifts: shifts.length,
+				userShifts: userShifts.length,
+				userShiftsDetails: userShifts
+			});
+		}
+	});
 </script>
 
 <div
