@@ -117,6 +117,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize audit service for security logging
+	auditService := service.NewAuditService(querier, logger)
+
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
@@ -206,6 +209,7 @@ func main() {
 	)
 
 	// Global middlewares
+	fuego.Use(s, api.AuditContextMiddleware) // Add audit context middleware first
 	fuego.Use(s, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -222,12 +226,12 @@ func main() {
 	})
 
 	// Initialize handlers
-	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, logger)
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
-	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
+	adminUserAPIHandler := api.NewAdminUserHandler(querier, auditService, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)

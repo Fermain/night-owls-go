@@ -21,20 +21,22 @@ var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
-	userService *service.UserService
-	logger      *slog.Logger
-	config      *config.Config
-	querier     db.Querier
+	userService  *service.UserService
+	auditService *service.AuditService
+	logger       *slog.Logger
+	config       *config.Config
+	querier      db.Querier
 }
 
 // NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(userService *service.UserService, logger *slog.Logger, cfg *config.Config, querier db.Querier) *AuthHandler {
+func NewAuthHandler(userService *service.UserService, auditService *service.AuditService, logger *slog.Logger, cfg *config.Config, querier db.Querier) *AuthHandler {
 	logger.Info("AuthHandler created with config", "dev_mode", cfg.DevMode, "server_port", cfg.ServerPort)
 	return &AuthHandler{
-		userService: userService,
-		logger:      logger.With("handler", "AuthHandler"),
-		config:      cfg,
-		querier:     querier,
+		userService:  userService,
+		auditService: auditService,
+		logger:       logger.With("handler", "AuthHandler"),
+		config:       cfg,
+		querier:      querier,
 	}
 }
 
@@ -220,6 +222,24 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user details for audit logging
+	user, err := h.querier.GetUserByPhone(r.Context(), phoneE164)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to get user for audit logging", "error", err, "phone", phoneE164)
+		// Continue without audit logging rather than failing the login
+	} else {
+		// Log successful login event
+		userName := ""
+		if user.Name.Valid {
+			userName = user.Name.String
+		}
+		
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+		if err := h.auditService.LogUserLogin(r.Context(), user.UserID, userName, user.Phone, ipAddress, userAgent); err != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to log user login audit event", "error", err, "user_id", user.UserID)
+		}
+	}
+
 	RespondWithJSON(w, http.StatusOK, VerifyResponse{Token: token}, h.logger)
 }
 
@@ -321,6 +341,12 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to generate token", h.logger, "error", err.Error())
 		return
+	}
+
+	// Log successful dev login event
+	ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+	if err := h.auditService.LogUserLogin(r.Context(), user.UserID, userName, user.Phone, ipAddress, userAgent); err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to log dev login audit event", "error", err, "user_id", user.UserID)
 	}
 
 	response := DevLoginResponse{

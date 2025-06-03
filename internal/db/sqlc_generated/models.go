@@ -9,6 +9,20 @@ import (
 	"time"
 )
 
+type AuditEvent struct {
+	EventID      int64          `json:"event_id"`
+	EventType    string         `json:"event_type"`
+	ActorUserID  sql.NullInt64  `json:"actor_user_id"`
+	TargetUserID sql.NullInt64  `json:"target_user_id"`
+	EntityType   string         `json:"entity_type"`
+	EntityID     sql.NullInt64  `json:"entity_id"`
+	Action       string         `json:"action"`
+	Details      sql.NullString `json:"details"`
+	IpAddress    sql.NullString `json:"ip_address"`
+	UserAgent    sql.NullString `json:"user_agent"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+}
+
 type Booking struct {
 	BookingID   int64          `json:"booking_id"`
 	UserID      int64          `json:"user_id"`

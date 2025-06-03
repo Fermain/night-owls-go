@@ -11,6 +11,7 @@ import (
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
+	"night-owls-go/internal/service"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -39,15 +40,17 @@ type UserAPIResponse struct {
 
 // AdminUserHandler handles admin-specific user API requests.
 type AdminUserHandler struct {
-	db     db.Querier
-	logger *slog.Logger
+	db           db.Querier
+	auditService *service.AuditService
+	logger       *slog.Logger
 }
 
 // NewAdminUserHandler creates a new AdminUserHandler.
-func NewAdminUserHandler(db db.Querier, logger *slog.Logger) *AdminUserHandler {
+func NewAdminUserHandler(db db.Querier, auditService *service.AuditService, logger *slog.Logger) *AdminUserHandler {
 	return &AdminUserHandler{
-		db:     db,
-		logger: logger.With("handler", "AdminUserHandler"),
+		db:           db,
+		auditService: auditService,
+		logger:       logger.With("handler", "AdminUserHandler"),
 	}
 }
 
@@ -219,6 +222,32 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Log audit event for user creation
+	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+		targetUserName := ""
+		if dbUser.Name.Valid {
+			targetUserName = dbUser.Name.String
+		}
+		targetRole := dbUser.Role
+		if targetRole == "" {
+			targetRole = "guest" // Default role
+		}
+		
+		if err := h.auditService.LogUserCreated(
+			r.Context(),
+			actorUserID,
+			dbUser.UserID,
+			targetUserName,
+			dbUser.Phone,
+			targetRole,
+			ipAddress,
+			userAgent,
+		); err != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to log user creation audit event", "error", err, "target_user_id", dbUser.UserID)
+		}
+	}
+
 	var namePtr *string
 	if dbUser.Name.Valid {
 		namePtr = &dbUser.Name.String
@@ -299,7 +328,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Check if user exists
-	_, err = h.db.GetUserByID(r.Context(), id)
+	originalUser, err := h.db.GetUserByID(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			RespondWithError(w, http.StatusNotFound, "User not found", h.logger)
@@ -354,6 +383,78 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 		h.logger.ErrorContext(r.Context(), "Failed to update user in database", "user_id", id, "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to update user", h.logger)
 		return
+	}
+
+	// Log audit events for user update
+	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+		
+		// Track what changed
+		changes := make(map[string]interface{})
+		
+		// Check phone change
+		if originalUser.Phone != updatedDbUser.Phone {
+			changes["phone"] = map[string]interface{}{
+				"old": originalUser.Phone,
+				"new": updatedDbUser.Phone,
+			}
+		}
+		
+		// Check name change
+		originalName := ""
+		if originalUser.Name.Valid {
+			originalName = originalUser.Name.String
+		}
+		updatedName := ""
+		if updatedDbUser.Name.Valid {
+			updatedName = updatedDbUser.Name.String
+		}
+		if originalName != updatedName {
+			changes["name"] = map[string]interface{}{
+				"old": originalName,
+				"new": updatedName,
+			}
+		}
+		
+		// Check role change
+		oldRole := originalUser.Role
+		newRole := updatedDbUser.Role
+		roleChanged := oldRole != newRole
+		if roleChanged {
+			changes["role"] = map[string]interface{}{
+				"old": oldRole,
+				"new": newRole,
+			}
+		}
+		
+		// Log general user update event if anything changed
+		if len(changes) > 0 {
+			if err := h.auditService.LogUserUpdated(
+				r.Context(),
+				actorUserID,
+				updatedDbUser.UserID,
+				changes,
+				ipAddress,
+				userAgent,
+			); err != nil {
+				h.logger.ErrorContext(r.Context(), "Failed to log user update audit event", "error", err, "target_user_id", updatedDbUser.UserID)
+			}
+		}
+		
+		// Log specific role change event if role changed
+		if roleChanged {
+			if err := h.auditService.LogUserRoleChanged(
+				r.Context(),
+				actorUserID,
+				updatedDbUser.UserID,
+				oldRole,
+				newRole,
+				ipAddress,
+				userAgent,
+			); err != nil {
+				h.logger.ErrorContext(r.Context(), "Failed to log role change audit event", "error", err, "target_user_id", updatedDbUser.UserID)
+			}
+		}
 	}
 
 	var updatedNamePtr *string
@@ -411,7 +512,7 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 	// Optional: Check if user exists before attempting delete, to return 404 if not found.
 	// However, DELETE is often idempotent, so an error from db.DeleteUser if not found might be okay too.
 	// For a better UX, checking first is good.
-	_, err = h.db.GetUserByID(r.Context(), id)
+	userToDelete, err := h.db.GetUserByID(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			RespondWithError(w, http.StatusNotFound, "User not found", h.logger)
@@ -427,6 +528,27 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 		h.logger.ErrorContext(r.Context(), "Failed to delete user", "user_id", id, "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete user", h.logger)
 		return
+	}
+
+	// Log audit event for user deletion
+	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+		targetUserName := ""
+		if userToDelete.Name.Valid {
+			targetUserName = userToDelete.Name.String
+		}
+		
+		if err := h.auditService.LogUserDeleted(
+			r.Context(),
+			actorUserID,
+			userToDelete.UserID,
+			targetUserName,
+			userToDelete.Phone,
+			ipAddress,
+			userAgent,
+		); err != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to log user deletion audit event", "error", err, "target_user_id", userToDelete.UserID)
+		}
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"}, h.logger)
@@ -470,6 +592,22 @@ func (h *AdminUserHandler) AdminBulkDeleteUsers(w http.ResponseWriter, r *http.R
 		h.logger.ErrorContext(r.Context(), "Error bulk deleting users", "error", err, "user_ids", req.UserIDs)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete users", h.logger)
 		return
+	}
+
+	// Log audit event for bulk user deletion
+	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+		
+		if err := h.auditService.LogUserBulkDeleted(
+			r.Context(),
+			actorUserID,
+			req.UserIDs,
+			len(req.UserIDs),
+			ipAddress,
+			userAgent,
+		); err != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to log bulk deletion audit event", "error", err, "deleted_count", len(req.UserIDs))
+		}
 	}
 
 	h.logger.InfoContext(r.Context(), "Successfully bulk deleted users", "count", len(req.UserIDs), "user_ids", req.UserIDs)
