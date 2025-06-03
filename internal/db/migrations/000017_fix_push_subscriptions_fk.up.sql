@@ -6,6 +6,9 @@
 -- 
 -- SQLite doesn't support ALTER TABLE for FK constraints, so we use the temp table approach
 
+-- Begin transaction to ensure atomicity and safe rollback on failure
+BEGIN TRANSACTION;
+
 -- Disable foreign key checks temporarily for the migration
 PRAGMA foreign_keys = OFF;
 
@@ -15,7 +18,7 @@ CREATE TABLE push_subscriptions_temp AS SELECT * FROM push_subscriptions;
 -- Drop the existing table with incorrect foreign key
 DROP TABLE push_subscriptions;
 
--- Recreate the table with correct foreign key constraint and performance index
+-- Recreate the table with correct foreign key constraint
 CREATE TABLE push_subscriptions (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id     INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -27,16 +30,19 @@ CREATE TABLE push_subscriptions (
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add index on user_id for improved query performance
-CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
-
--- Restore data from backup (if any existed)
+-- Restore data from backup (if any existed) - do this before index creation for better performance
 INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh_key, auth_key, user_agent, platform, created_at)
 SELECT id, user_id, endpoint, p256dh_key, auth_key, user_agent, platform, created_at 
 FROM push_subscriptions_temp;
+
+-- Add index on user_id for improved query performance (after data insertion to avoid index overhead during bulk restore)
+CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 
 -- Clean up temporary table
 DROP TABLE push_subscriptions_temp;
 
 -- Re-enable foreign key checks
-PRAGMA foreign_keys = ON; 
+PRAGMA foreign_keys = ON;
+
+-- Commit the transaction
+COMMIT; 
