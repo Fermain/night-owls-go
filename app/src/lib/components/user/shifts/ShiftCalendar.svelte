@@ -191,6 +191,6 @@
 		</div>
 
 		<!-- Legend -->
-		<CalendarLegend {monthsToShow} />
+		<CalendarLegend />
 	</div>
 {/if}
