@@ -4,7 +4,7 @@
 trap 'echo "Stopping servers..."; kill $(jobs -p) 2>/dev/null; exit' SIGINT SIGTERM
 
 echo "Starting Go backend server on http://localhost:5888 ..."
-go run ./cmd/server/main.go &
+SERVER_PORT=5888 DATABASE_PATH=./community_watch.db DEV_MODE=true JWT_SECRET=dev-jwt-secret go run ./cmd/server/main.go &
 GO_PID=$!
 # echo "Go backend server PID: $GO_PID" # Optional: for debugging
 
