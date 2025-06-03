@@ -12,6 +12,7 @@ import (
 
 const createBroadcast = `-- name: CreateBroadcast :one
 INSERT INTO broadcasts (
+    title,
     message,
     audience,
     sender_user_id,
@@ -24,12 +25,14 @@ INSERT INTO broadcasts (
     ?,
     ?,
     ?,
+    ?,
     ?
 )
-RETURNING broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at
+RETURNING broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title
 `
 
 type CreateBroadcastParams struct {
+	Title          string        `json:"title"`
 	Message        string        `json:"message"`
 	Audience       string        `json:"audience"`
 	SenderUserID   int64         `json:"sender_user_id"`
@@ -40,6 +43,7 @@ type CreateBroadcastParams struct {
 
 func (q *Queries) CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error) {
 	row := q.db.QueryRowContext(ctx, createBroadcast,
+		arg.Title,
 		arg.Message,
 		arg.Audience,
 		arg.SenderUserID,
@@ -61,12 +65,13 @@ func (q *Queries) CreateBroadcast(ctx context.Context, arg CreateBroadcastParams
 		&i.SentCount,
 		&i.FailedCount,
 		&i.CreatedAt,
+		&i.Title,
 	)
 	return i, err
 }
 
 const getBroadcastByID = `-- name: GetBroadcastByID :one
-SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at FROM broadcasts
+SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title FROM broadcasts
 WHERE broadcast_id = ?
 `
 
@@ -86,12 +91,13 @@ func (q *Queries) GetBroadcastByID(ctx context.Context, broadcastID int64) (Broa
 		&i.SentCount,
 		&i.FailedCount,
 		&i.CreatedAt,
+		&i.Title,
 	)
 	return i, err
 }
 
 const listBroadcasts = `-- name: ListBroadcasts :many
-SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at FROM broadcasts
+SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title FROM broadcasts
 ORDER BY created_at DESC
 `
 
@@ -117,6 +123,7 @@ func (q *Queries) ListBroadcasts(ctx context.Context) ([]Broadcast, error) {
 			&i.SentCount,
 			&i.FailedCount,
 			&i.CreatedAt,
+			&i.Title,
 		); err != nil {
 			return nil, err
 		}
@@ -134,6 +141,7 @@ func (q *Queries) ListBroadcasts(ctx context.Context) ([]Broadcast, error) {
 const listBroadcastsWithSender = `-- name: ListBroadcastsWithSender :many
 SELECT 
     b.broadcast_id,
+    b.title,
     b.message,
     b.audience,
     b.sender_user_id,
@@ -153,6 +161,7 @@ ORDER BY b.created_at DESC
 
 type ListBroadcastsWithSenderRow struct {
 	BroadcastID    int64         `json:"broadcast_id"`
+	Title          string        `json:"title"`
 	Message        string        `json:"message"`
 	Audience       string        `json:"audience"`
 	SenderUserID   int64         `json:"sender_user_id"`
@@ -178,6 +187,7 @@ func (q *Queries) ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcast
 		var i ListBroadcastsWithSenderRow
 		if err := rows.Scan(
 			&i.BroadcastID,
+			&i.Title,
 			&i.Message,
 			&i.Audience,
 			&i.SenderUserID,
@@ -205,7 +215,7 @@ func (q *Queries) ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcast
 }
 
 const listPendingBroadcasts = `-- name: ListPendingBroadcasts :many
-SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at FROM broadcasts
+SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title FROM broadcasts
 WHERE status = 'pending'
 AND (scheduled_at IS NULL OR scheduled_at <= datetime('now'))
 ORDER BY created_at ASC
@@ -233,6 +243,7 @@ func (q *Queries) ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error
 			&i.SentCount,
 			&i.FailedCount,
 			&i.CreatedAt,
+			&i.Title,
 		); err != nil {
 			return nil, err
 		}
@@ -256,7 +267,7 @@ SET
     failed_count = ?
 WHERE
     broadcast_id = ?
-RETURNING broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at
+RETURNING broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title
 `
 
 type UpdateBroadcastStatusParams struct {
@@ -289,6 +300,7 @@ func (q *Queries) UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcast
 		&i.SentCount,
 		&i.FailedCount,
 		&i.CreatedAt,
+		&i.Title,
 	)
 	return i, err
 }

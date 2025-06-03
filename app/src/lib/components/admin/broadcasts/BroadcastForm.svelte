@@ -14,6 +14,7 @@
 	import { AUDIENCE_OPTIONS } from '$lib/utils/broadcasts';
 
 	// Form state
+	let title = $state('');
 	let message = $state('');
 	let selectedAudience = $state<string>('all');
 	let enablePushNotifications = $state(true);
@@ -62,6 +63,7 @@
 		onSuccess: (result) => {
 			toast.success(`Broadcast sent successfully to ${result.recipient_count} users!`);
 			// Reset form
+			title = '';
 			message = '';
 			selectedAudience = 'all';
 			enablePushNotifications = true;
@@ -76,6 +78,11 @@
 	});
 
 	function handleSendBroadcast() {
+		if (!title.trim()) {
+			toast.error('Please enter a title');
+			return;
+		}
+
 		if (!message.trim()) {
 			toast.error('Please enter a message');
 			return;
@@ -87,6 +94,7 @@
 		}
 
 		const data: CreateBroadcastData = {
+			title: title.trim(),
 			message: message.trim(),
 			audience: selectedAudience as 'all' | 'admins' | 'owls' | 'active',
 			push_enabled: enablePushNotifications,
@@ -100,6 +108,21 @@
 <!-- Send Broadcast Form -->
 <Card.Root>
 	<Card.Content class="space-y-4">
+		<!-- Title -->
+		<div class="space-y-2">
+			<Label for="title">Title</Label>
+			<input
+				id="title"
+				bind:value={title}
+				placeholder="Enter alert title..."
+				maxlength={100}
+				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+			/>
+			<div class="text-xs text-muted-foreground text-right">
+				{title.length}/100 characters
+			</div>
+		</div>
+
 		<!-- Message -->
 		<div class="space-y-2">
 			<Label for="message">Message</Label>
@@ -141,8 +164,8 @@
 		<!-- Push Notifications -->
 		<div class="flex items-center space-x-2">
 			<Switch id="push" bind:checked={enablePushNotifications} />
-			<Label for="push" class="text-sm cursor-pointer"
-				>Send push notifications to mobile devices</Label
+			<Label for="push" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+				>Send push alerts to mobile devices</Label
 			>
 		</div>
 
@@ -168,7 +191,7 @@
 		<!-- Send Button -->
 		<Button
 			onclick={handleSendBroadcast}
-			disabled={$sendBroadcastMutation.isPending || !message.trim()}
+			disabled={$sendBroadcastMutation.isPending || !title.trim() || !message.trim()}
 			class="w-full"
 			size="lg"
 		>

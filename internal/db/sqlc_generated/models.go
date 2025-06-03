@@ -34,6 +34,7 @@ type Broadcast struct {
 	SentCount      sql.NullInt64 `json:"sent_count"`
 	FailedCount    sql.NullInt64 `json:"failed_count"`
 	CreatedAt      sql.NullTime  `json:"created_at"`
+	Title          string        `json:"title"`
 }
 
 type EmergencyContact struct {

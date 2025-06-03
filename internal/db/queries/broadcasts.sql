@@ -1,5 +1,6 @@
 -- name: CreateBroadcast :one
 INSERT INTO broadcasts (
+    title,
     message,
     audience,
     sender_user_id,
@@ -7,6 +8,7 @@ INSERT INTO broadcasts (
     scheduled_at,
     recipient_count
 ) VALUES (
+    ?,
     ?,
     ?,
     ?,
@@ -27,6 +29,7 @@ ORDER BY created_at DESC;
 -- name: ListBroadcastsWithSender :many
 SELECT 
     b.broadcast_id,
+    b.title,
     b.message,
     b.audience,
     b.sender_user_id,

@@ -80,13 +80,13 @@
 			{:else}
 				<BellIcon class="h-4 w-4" />
 			{/if}
-			<span class="sr-only">Notifications</span>
+			<span class="sr-only">Alerts</span>
 		</Button>
 	</DropdownMenu.Trigger>
 
 	<DropdownMenu.Content class="w-72" align="end">
 		<div class="flex items-center justify-between px-2 py-1">
-			<h3 class="text-sm font-medium">Notifications</h3>
+			<h3 class="text-sm font-medium">Alerts</h3>
 			{#if $badgeCount > 0}
 				<Button variant="ghost" size="sm" onclick={handleMarkAllRead} class="h-5 px-1.5 text-xs">
 					<MarkAsReadIcon class="h-3 w-3 mr-1" />
@@ -105,7 +105,7 @@
 			{:else if $notificationState.notifications.length === 0}
 				<div class="flex flex-col items-center justify-center py-4 text-center">
 					<BellIcon class="h-6 w-6 text-muted-foreground mb-1" />
-					<div class="text-xs text-muted-foreground">No notifications</div>
+					<div class="text-xs text-muted-foreground">No alerts</div>
 				</div>
 			{:else}
 				{#each $notificationState.notifications as notification (notification.id)}

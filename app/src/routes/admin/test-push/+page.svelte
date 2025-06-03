@@ -7,7 +7,7 @@
 	<title>Push Notification Testing</title>
 </svelte:head>
 
-<SidebarPage title="Push Notifications Test">
+<SidebarPage title="Push Alerts Test">
 	<div class="space-y-6 p-4">
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight">Push Notification Testing</h1>

@@ -19,6 +19,7 @@
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
 	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
 	import DownloadIcon from 'lucide-svelte/icons/download';
+	import { Switch } from '$lib/components/ui/switch';
 
 	// Redirect to login if not authenticated
 	$effect(() => {
@@ -33,6 +34,7 @@
 	let notificationPermissionStatus = $state<string>('unknown');
 	let canInstallPWA = $state(false);
 	let isPWAInstalled = $state(false);
+	let notificationsEnabled = $state(false);
 
 	const totalSteps = 2;
 
@@ -57,6 +59,8 @@
 		if (isPWAInstalled) {
 			onboardingActions.markPWAInstalled();
 		}
+
+		notificationsEnabled = notificationPermissionStatus === 'granted';
 	});
 
 	// Handle location permission request
@@ -155,6 +159,16 @@
 	}
 
 	const progress = $derived(Math.round((currentStep / totalSteps) * 100));
+
+	function toggleNotifications() {
+		notificationsEnabled = !notificationsEnabled;
+		if (notificationsEnabled) {
+			handleNotificationPermission();
+		} else {
+			notificationPermissionStatus = 'denied';
+			onboardingActions.updateNotificationPermission('denied');
+		}
+	}
 </script>
 
 <svelte:head>
@@ -260,10 +274,29 @@
 									<BellIcon class="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
 								</div>
 								<div class="min-w-0 flex-1">
-									<h3 class="font-semibold text-base lg:text-lg">Notifications</h3>
-									<p class="text-sm lg:text-base text-muted-foreground mt-1">
-										Receive important alerts, emergency updates, and shift reminders
+									<h3 class="font-semibold text-base lg:text-lg">Alerts</h3>
+									<p class="text-sm lg:text-base text-muted-foreground mb-4">
+										Stay updated with important shift information and community updates.
 									</p>
+
+									<div class="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card">
+										<div class="flex-shrink-0">
+											<BellIcon class="h-5 w-5 text-primary" />
+										</div>
+										<div class="flex-1 min-w-0">
+											<div class="flex items-center justify-between">
+												<span class="text-sm lg:text-base">Push alerts</span>
+												<Switch
+													id="notifications"
+													bind:checked={notificationsEnabled}
+													onCheckedChange={toggleNotifications}
+												/>
+											</div>
+											<p class="text-xs lg:text-sm text-muted-foreground mt-1">
+												Get notified about shift reminders and important announcements
+											</p>
+										</div>
+									</div>
 								</div>
 							</div>
 							<div class="flex items-center gap-3 flex-shrink-0 ml-4">
@@ -353,7 +386,7 @@
 									</div>
 									<div class="flex items-center gap-3 text-left p-4 rounded-lg bg-muted/30">
 										<CheckCircleIcon class="h-5 w-5 text-green-500 flex-shrink-0" />
-										<span class="text-sm lg:text-base">Push notifications</span>
+										<span class="text-sm lg:text-base">Push alerts</span>
 									</div>
 								</div>
 
