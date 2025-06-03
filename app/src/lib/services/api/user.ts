@@ -45,6 +45,21 @@ export interface ReportResponse {
 	created_at: string;
 }
 
+export interface UserReport {
+	report_id: number;
+	booking_id?: number;
+	severity: number;
+	message: string;
+	created_at: string;
+	latitude?: number;
+	longitude?: number;
+	gps_accuracy?: number;
+	gps_timestamp?: string;
+	schedule_name?: string;
+	shift_start?: string;
+	shift_end?: string;
+}
+
 export class UserApiService {
 	/**
 	 * Get available shift slots
@@ -178,6 +193,17 @@ export class UserApiService {
 
 		if (!response.ok) {
 			throw new Error(`Failed to fetch user bookings: ${response.status}`);
+		}
+		return response.json();
+	}
+
+	/**
+	 * Get the current user's reports
+	 */
+	static async getMyReports(): Promise<UserReport[]> {
+		const response = await authenticatedFetch('/api/user/reports');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch user reports: ${response.status}`);
 		}
 		return response.json();
 	}

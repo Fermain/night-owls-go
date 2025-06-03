@@ -17,6 +17,7 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
+	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import { authenticatedFetch } from '$lib/utils/api';
 	import ReportMap from './ReportMap.svelte';
@@ -119,6 +120,23 @@
 			}
 		} catch (error) {
 			console.error('Error unarchiving report:', error);
+		}
+	}
+
+	async function handleDelete() {
+		try {
+			const response = await authenticatedFetch(`/api/admin/reports/${reportId}`, {
+				method: 'DELETE'
+			});
+
+			if (response.ok) {
+				// Navigate back to reports list after successful deletion
+				goto('/admin/reports');
+			} else {
+				console.error('Failed to delete report');
+			}
+		} catch (error) {
+			console.error('Error deleting report:', error);
 		}
 	}
 
@@ -531,6 +549,22 @@
 									>
 										<ArchiveRestoreIcon class="h-4 w-4 mr-2" />
 										Unarchive Report
+									</Button>
+									<Button
+										variant="outline"
+										class="w-full justify-start text-destructive hover:text-destructive"
+										onclick={() => {
+											if (
+												confirm(
+													'Are you sure you want to permanently delete this report? This action cannot be undone.'
+												)
+											) {
+												handleDelete();
+											}
+										}}
+									>
+										<TrashIcon class="h-4 w-4 mr-2" />
+										Delete Report
 									</Button>
 								{:else}
 									<Button

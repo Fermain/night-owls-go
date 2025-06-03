@@ -4,62 +4,59 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import { formatRelativeTime } from '$lib/utils/reports';
+	import {
+		getMapTheme,
+		getMarkerColors,
+		getMapThemeCSS,
+		type MapThemeKey
+	} from '$lib/config/mapThemes';
 
 	interface Report {
 		report_id: number;
 		severity: number;
 		latitude?: number;
 		longitude?: number;
+		gps_accuracy?: number;
 		message: string;
 		user_name: string;
 		created_at: string;
+		schedule_name?: string;
 	}
 
 	interface Props {
 		reports: Report[];
 		className?: string;
 		onReportClick?: (reportId: number) => void;
+		theme?: MapThemeKey;
 	}
 
-	let { reports, className = '', onReportClick }: Props = $props();
+	let { reports, className = '', onReportClick, theme = 'nightOwls' }: Props = $props();
 
-	// OpenStreetMap style
-	const mapStyle = {
-		version: 8 as const,
-		sources: {
-			'osm-tiles': {
-				type: 'raster' as const,
-				tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-				tileSize: 256,
-				attribution:
-					'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}
-		},
-		layers: [
-			{
-				id: 'osm-tiles',
-				type: 'raster' as const,
-				source: 'osm-tiles',
-				minzoom: 0,
-				maxzoom: 19
-			}
-		]
-	};
+	// Get the map theme configuration
+	const mapTheme = $derived(getMapTheme(theme));
+	const markerColors = $derived(getMarkerColors(theme));
+	const themeCSS = $derived(getMapThemeCSS(theme));
 
-	// Filter reports that have GPS coordinates (for demo, we'll add mock coordinates)
+	// Filter reports that have REAL GPS coordinates from the database
 	const reportsWithLocation = $derived.by(() => {
-		return reports.map((report, _index) => ({
-			...report,
-			// Mock GPS coordinates for demo - in real app these would come from the database
-			latitude: -33.9249 + (Math.random() - 0.5) * 0.1, // Cape Town area with some spread
-			longitude: 18.4241 + (Math.random() - 0.5) * 0.1
-		}));
+		return reports.filter(
+			(report) =>
+				report.latitude !== undefined &&
+				report.longitude !== undefined &&
+				report.latitude !== null &&
+				report.longitude !== null &&
+				!isNaN(report.latitude) &&
+				!isNaN(report.longitude)
+		);
 	});
 
-	// Calculate map bounds to fit all reports
+	// Calculate map bounds to fit all real report locations
 	const mapBounds = $derived.by(() => {
 		if (reportsWithLocation.length === 0) {
-			return { center: [18.4241, -33.9249] as [number, number], zoom: 12 }; // Default to Cape Town
+			// Default to Cape Town area when no GPS data is available
+			return { center: [18.4241, -33.9249] as [number, number], zoom: 12 };
 		}
 
 		const lats = reportsWithLocation.map((r) => r.latitude!);
@@ -103,13 +100,26 @@
 	function getSeverityColor(severity: number) {
 		switch (severity) {
 			case 0:
-				return '#3b82f6'; // blue
+				return markerColors.normal;
 			case 1:
-				return '#f59e0b'; // orange
+				return markerColors.suspicion;
 			case 2:
-				return '#ef4444'; // red
+				return markerColors.incident;
 			default:
-				return '#6b7280'; // gray
+				return markerColors.default;
+		}
+	}
+
+	function getSeverityLabel(severity: number) {
+		switch (severity) {
+			case 0:
+				return 'Normal';
+			case 1:
+				return 'Suspicion';
+			case 2:
+				return 'Incident';
+			default:
+				return 'Unknown';
 		}
 	}
 
@@ -120,13 +130,18 @@
 	}
 </script>
 
-<div class="map-container {className}">
+<div
+	class="map-container {className}"
+	style={Object.entries(themeCSS)
+		.map(([key, value]) => `${key}: ${value}`)
+		.join('; ')}
+>
 	<MapLibre
-		style={mapStyle}
+		style={mapTheme.style}
 		center={mapBounds.center}
 		zoom={mapBounds.zoom}
 		standardControls
-		class="w-full h-full"
+		class="w-full h-full night-owls-map"
 	>
 		{#each reportsWithLocation as report (report.report_id)}
 			{@const SeverityIcon = getSeverityIcon(report.severity)}
@@ -136,20 +151,39 @@
 						class="marker-pin"
 						style="background-color: {getSeverityColor(report.severity)}"
 						onclick={() => handleMarkerClick(report.report_id)}
-						title="Report #{report.report_id} - {report.message.slice(0, 50)}..."
+						title="Report #{report.report_id} - {getSeverityLabel(
+							report.severity
+						)} - {report.user_name} - {formatRelativeTime(report.created_at)}"
 					>
 						<SeverityIcon class="h-3 w-3 text-white" />
 					</button>
+					{#if report.gps_accuracy && report.gps_accuracy > 0}
+						<div
+							class="accuracy-circle"
+							style="width: {Math.max(
+								20,
+								Math.min(100, report.gps_accuracy / 5)
+							)}px; height: {Math.max(20, Math.min(100, report.gps_accuracy / 5))}px;"
+						></div>
+					{/if}
 				</div>
 			</Marker>
 		{/each}
 	</MapLibre>
 
 	{#if reportsWithLocation.length === 0}
-		<div class="absolute inset-0 flex items-center justify-center bg-muted/50">
-			<div class="text-center">
-				<InfoIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-				<p class="text-sm text-muted-foreground">No reports with location data</p>
+		<div class="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+			<div class="text-center p-8">
+				<MapPinIcon class="h-12 w-12 text-gray-400 mx-auto mb-4 opacity-50" />
+				<h3 class="text-lg font-medium mb-2 text-white">No reports with location data</h3>
+				<p class="text-sm text-gray-300 max-w-md">
+					{reports.length === 0
+						? 'No reports found matching current filters'
+						: `${reports.length} reports found, but none contain GPS location data`}
+				</p>
+				<p class="text-xs text-gray-400 mt-2">
+					Reports with GPS coordinates will appear here on the map
+				</p>
 			</div>
 		</div>
 	{/if}
@@ -161,15 +195,7 @@
 		border-radius: 0.5rem;
 		overflow: hidden;
 		border: 1px solid hsl(var(--border));
-	}
-
-	:global(.maplibregl-map) {
-		font-family: inherit;
-	}
-
-	:global(.maplibregl-ctrl-attrib) {
-		font-size: 10px;
-		background-color: rgba(255, 255, 255, 0.8);
+		background: #1a1a1a;
 	}
 
 	.marker-container {
@@ -185,17 +211,43 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-		border: 2px solid white;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+		border: 2px solid rgba(255, 255, 255, 0.9);
 		cursor: pointer;
-		transition: transform 0.2s ease;
+		transition: all 0.2s ease;
 	}
 
 	.marker-pin:hover {
-		transform: rotate(-45deg) scale(1.1);
+		transform: rotate(-45deg) scale(1.15);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
 	}
 
 	.marker-pin :global(svg) {
 		transform: rotate(45deg);
+		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+	}
+
+	.accuracy-circle {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		border: 2px solid rgba(96, 165, 250, 0.4);
+		border-radius: 50%;
+		background-color: rgba(96, 165, 250, 0.1);
+		z-index: 1;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+		100% {
+			opacity: 1;
+		}
 	}
 </style>

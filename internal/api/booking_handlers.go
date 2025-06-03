@@ -330,7 +330,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 
 	// For 204 No Content, we manually set the status and don't return any content
 	c.Response().WriteHeader(http.StatusNoContent)
-	
+
 	// Return nil with no error to prevent Fuego from trying to serialize anything
 	return nil, nil
 }
@@ -354,9 +354,9 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 // @Router /bookings/{id} [delete]
 func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug: Log the full request details
-	h.logger.InfoContext(r.Context(), "CancelBookingHandler - Full request details", 
-		"method", r.Method, 
-		"url", r.URL.String(), 
+	h.logger.InfoContext(r.Context(), "CancelBookingHandler - Full request details",
+		"method", r.Method,
+		"url", r.URL.String(),
 		"path", r.URL.Path,
 		"raw_path", r.URL.RawPath)
 
@@ -368,7 +368,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		h.logger.InfoContext(r.Context(), "Path parts for manual extraction", "path_parts", pathParts, "path", r.URL.Path)
-		
+
 		// Handle both /bookings/14 and /api/bookings/14 patterns
 		for i, part := range pathParts {
 			if part == "bookings" && i+1 < len(pathParts) {
@@ -377,7 +377,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 				break
 			}
 		}
-		
+
 		// If still empty, try a simpler approach - just get the last part of the path
 		if bookingIDStr == "" && len(pathParts) > 0 {
 			bookingIDStr = pathParts[len(pathParts)-1]
