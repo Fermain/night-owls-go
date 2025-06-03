@@ -6,9 +6,6 @@
 -- 
 -- SQLite doesn't support ALTER TABLE for FK constraints, so we use the temp table approach
 
--- Begin transaction to ensure atomicity and safe rollback on failure
-BEGIN TRANSACTION;
-
 -- Disable foreign key checks temporarily for the migration
 PRAGMA foreign_keys = OFF;
 
@@ -42,7 +39,4 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 DROP TABLE push_subscriptions_temp;
 
 -- Re-enable foreign key checks
-PRAGMA foreign_keys = ON;
-
--- Commit the transaction
-COMMIT; 
+PRAGMA foreign_keys = ON; 

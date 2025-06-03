@@ -4,9 +4,6 @@
 -- IMPACT: This rollback preserves existing subscription data while reverting the FK constraint
 -- NOTE: Rolling back will restore the original FK issue, but data is preserved
 
--- Begin transaction to ensure atomicity and safe rollback on failure
-BEGIN TRANSACTION;
-
 -- Disable foreign key checks temporarily for the migration
 PRAGMA foreign_keys = OFF;
 
@@ -40,7 +37,4 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 DROP TABLE push_subscriptions_temp;
 
 -- Re-enable foreign key checks (note: this will restore the original FK issue)
-PRAGMA foreign_keys = ON;
-
--- Commit the transaction
-COMMIT; 
+PRAGMA foreign_keys = ON; 
