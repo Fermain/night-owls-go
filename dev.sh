@@ -26,9 +26,6 @@ echo "Press Ctrl+C to stop both servers."
 echo "---------------------------------------------------------------------"
 echo
 
-# Wait for any of the background jobs to exit
+# Wait for any of the background jobs to exit (macOS compatible)
 # If one exits (e.g., crashes), the script will then exit, triggering the trap for cleanup.
-wait -n
-# Fallback wait in case -n isn't supported or one process exits very quickly
-wait $GO_PID 2>/dev/null
-wait $SVELTE_PID 2>/dev/null
+wait $GO_PID $SVELTE_PID
