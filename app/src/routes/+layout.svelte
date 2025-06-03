@@ -8,6 +8,7 @@
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 	import OfflineIndicator from '$lib/components/ui/offline/OfflineIndicator.svelte';
+	import PersistentTimeFilter from '$lib/components/layout/PersistentTimeFilter.svelte';
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
@@ -95,6 +96,7 @@
 			<!-- Public layout with header + mobile nav -->
 			<div class="flex flex-col min-h-screen">
 				<UnifiedHeader />
+				<PersistentTimeFilter />
 				<!-- Main content area that fills remaining height -->
 				<main class="flex-1 overflow-auto flex">
 					{@render children()}
