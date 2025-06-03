@@ -5,11 +5,11 @@ class ServiceWorkerService {
 	private isRegistered = false;
 
 	/**
-	 * Register the service worker
+	 * Check if service worker is registered (Vite PWA handles registration automatically)
 	 */
 	async register(): Promise<boolean> {
 		if (!browser) {
-			console.log('Not in browser, skipping service worker registration');
+			console.log('Not in browser, skipping service worker check');
 			return false;
 		}
 
@@ -19,44 +19,19 @@ class ServiceWorkerService {
 		}
 
 		try {
-			// Try to register the service worker from different possible locations
-			const possiblePaths = ['/sw.js', '/service-worker.js'];
+			// With Vite PWA, the service worker should already be registered
+			// We just need to wait for it to be ready
+			this.registration = await navigator.serviceWorker.ready;
 
-			for (const swPath of possiblePaths) {
-				try {
-					console.log(`Attempting to register service worker at: ${swPath}`);
-
-					this.registration = await navigator.serviceWorker.register(swPath, {
-						scope: '/'
-					});
-
-					console.log('✅ Service worker registered successfully:', this.registration);
-					this.isRegistered = true;
-
-					// Listen for updates
-					this.registration.addEventListener('updatefound', () => {
-						console.log('🔄 Service worker update found');
-						const newWorker = this.registration?.installing;
-						if (newWorker) {
-							newWorker.addEventListener('statechange', () => {
-								if (newWorker.state === 'installed') {
-									console.log('🆕 New service worker installed');
-									// Optionally notify user about update
-								}
-							});
-						}
-					});
-
-					return true;
-				} catch (error) {
-					console.log(`Failed to register SW at ${swPath}:`, error);
-					continue;
-				}
+			if (this.registration) {
+				console.log('✅ Service worker found (managed by Vite PWA):', this.registration);
+				this.isRegistered = true;
+				return true;
 			}
 
-			throw new Error('No valid service worker found at any path');
+			return false;
 		} catch (error) {
-			console.error('❌ Service worker registration failed:', error);
+			console.error('❌ Service worker check failed:', error);
 			return false;
 		}
 	}

@@ -30,20 +30,35 @@ class PushNotificationService {
 				return false;
 			}
 
-			// Wait for service worker to be ready or register it
-			try {
-				this.registration = await navigator.serviceWorker.ready;
-			} catch (_error) {
-				console.log('Service worker not ready, attempting registration...');
-				// Import and use our service worker registration service
-				const { serviceWorkerService } = await import('./serviceWorkerService');
-				const registered = await serviceWorkerService.register();
+			// Check if there's already a registration
+			const existingRegistration = await navigator.serviceWorker.getRegistration();
 
-				if (!registered) {
-					throw new Error('Failed to register service worker');
+			if (existingRegistration) {
+				this.registration = existingRegistration;
+			} else {
+				// Add timeout to prevent hanging
+				const timeoutPromise = new Promise<ServiceWorkerRegistration>((_, reject) => {
+					setTimeout(() => reject(new Error('Service worker ready timeout')), 10000);
+				});
+
+				try {
+					this.registration = await Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
+				} catch (_error) {
+					console.warn('Service worker ready timeout, attempting manual registration');
+					// Fallback: try to register manually
+					try {
+						this.registration = await navigator.serviceWorker.register('/sw.js');
+						await this.registration.update();
+					} catch (regError) {
+						console.error('Manual service worker registration failed:', regError);
+						return false;
+					}
 				}
+			}
 
-				this.registration = await navigator.serviceWorker.ready;
+			if (!this.registration) {
+				console.error('No service worker registration available');
+				return false;
 			}
 
 			// Get VAPID public key from server
@@ -141,7 +156,7 @@ class PushNotificationService {
 	}
 
 	/**
-	 * Check if user is subscribed to push notifications
+	 * Check if subscribed
 	 */
 	isSubscribed(): boolean {
 		return this.subscription !== null;
@@ -209,8 +224,8 @@ class PushNotificationService {
 			return;
 		}
 
-		const encodedEndpoint = encodeURIComponent(this.subscription.endpoint);
-		const response = await authenticatedFetch(`/api/push/subscribe/${encodedEndpoint}`, {
+		const endpoint = encodeURIComponent(this.subscription.endpoint);
+		const response = await authenticatedFetch(`/api/push/subscribe/${endpoint}`, {
 			method: 'DELETE'
 		});
 
@@ -225,10 +240,8 @@ class PushNotificationService {
 	private urlBase64ToUint8Array(base64String: string): Uint8Array {
 		const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
 		const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-
 		const rawData = window.atob(base64);
 		const outputArray = new Uint8Array(rawData.length);
-
 		for (let i = 0; i < rawData.length; ++i) {
 			outputArray[i] = rawData.charCodeAt(i);
 		}
@@ -236,7 +249,7 @@ class PushNotificationService {
 	}
 
 	/**
-	 * Convert ArrayBuffer to base64 string
+	 * Convert ArrayBuffer to base64
 	 */
 	private arrayBufferToBase64(buffer: ArrayBuffer): string {
 		const bytes = new Uint8Array(buffer);
@@ -281,8 +294,8 @@ class PushNotificationService {
 		try {
 			await this.registration.showNotification('Test Notification', {
 				body: 'This is a test notification from Night Owls',
-				icon: '/logo.png',
-				badge: '/logo.png',
+				icon: '/icons/icon-192x192.png',
+				badge: '/icons/icon-192x192.png',
 				tag: 'test',
 				requireInteraction: false
 			});
