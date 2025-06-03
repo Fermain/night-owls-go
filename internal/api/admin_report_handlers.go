@@ -417,3 +417,70 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 
 	RespondWithJSON(w, http.StatusOK, apiReports, h.logger)
 }
+
+// AdminDeleteReportHandler handles DELETE /api/admin/reports/{id}
+// @Summary Delete a report (Admin)
+// @Description Permanently delete a specific report by ID
+// @Tags admin/reports
+// @Param id path int true "Report ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} ErrorResponse "Invalid report ID"
+// @Failure 404 {object} ErrorResponse "Report not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/reports/{id} [delete]
+func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
+	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminDeleteReportHandler called", "id_param", idStr, "url", r.URL.Path)
+
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+
+	// Alternative method 2: Check request context for route values
+	if idStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					idStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
+					break
+				}
+			}
+		}
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse report ID", "id_param", idStr, "error", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid report ID", h.logger, "error", err)
+		return
+	}
+
+	// Check if report exists before deleting
+	_, err = h.querier.AdminGetReportWithContext(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			RespondWithError(w, http.StatusNotFound, "Report not found", h.logger)
+		} else {
+			h.logger.ErrorContext(r.Context(), "Failed to check report existence", "report_id", id, "error", err)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to delete report", h.logger)
+		}
+		return
+	}
+
+	err = h.querier.DeleteReport(r.Context(), id)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to delete report", "report_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete report", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report deleted successfully"}, h.logger)
+}

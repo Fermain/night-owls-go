@@ -57,7 +57,6 @@
 			goto(`/login?phone=${encodeURIComponent(phoneNumber)}`);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Registration failed');
-			console.error('Registration error:', error);
 		} finally {
 			isLoading = false;
 		}

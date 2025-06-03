@@ -1,70 +1,27 @@
-// Night Owls Service Worker
-// Basic service worker for push notifications and caching
-
-const CACHE_NAME = 'night-owls-v1';
-const CACHE_URLS = ['/'];
+// Night Owls Service Worker with Push Notifications
+// Vite PWA will inject Workbox precaching automatically via injectManifest
 
 // Install event
 self.addEventListener('install', (event) => {
-	console.log('🔧 Service worker installing');
-
+	console.log('Service worker installing');
 	event.waitUntil(
-		caches
-			.open(CACHE_NAME)
-			.then(async (cache) => {
-				console.log('💾 Caching app shell');
-
-				// Cache URLs individually with error handling
-				const cachePromises = CACHE_URLS.map(async (url) => {
-					try {
-						await cache.add(url);
-						console.log(`✅ Cached: ${url}`);
-					} catch (error) {
-						console.warn(`⚠️ Failed to cache ${url}:`, error.message);
-						// Don't fail the whole installation for individual cache errors
-					}
-				});
-
-				await Promise.allSettled(cachePromises);
-				console.log('📦 Cache initialization completed');
-			})
-			.then(() => {
-				console.log('⏩ Service worker skipping waiting');
-				return self.skipWaiting();
-			})
-			.catch((error) => {
-				console.error('❌ Service worker install failed:', error);
-				throw error;
-			})
+		Promise.resolve().then(() => {
+			return self.skipWaiting();
+		})
 	);
 });
 
 // Activate event
 self.addEventListener('activate', (event) => {
-	console.log('🚀 Service worker activating');
+	console.log('Service worker activating');
 
 	event.waitUntil(
-		caches
-			.keys()
-			.then((cacheNames) => {
-				return Promise.all(
-					cacheNames
-						.filter((cacheName) => {
-							return cacheName !== CACHE_NAME;
-						})
-						.map((cacheName) => {
-							console.log('🗑️ Deleting old cache:', cacheName);
-							return caches.delete(cacheName);
-						})
-				);
-			})
+		Promise.resolve()
 			.then(() => {
-				console.log('📡 Service worker claiming clients');
 				return self.clients.claim();
 			})
 			.then(() => {
-				console.log('✅ Service worker is now ACTIVE and ready!');
-				console.log('🎯 Service worker can now handle push notifications and caching');
+				console.log('Service worker is now active and ready');
 
 				// Notify all clients that SW is ready
 				return self.clients.matchAll().then((clients) => {
@@ -75,34 +32,6 @@ self.addEventListener('activate', (event) => {
 						});
 					});
 				});
-			})
-	);
-});
-
-// Fetch event (basic caching strategy)
-self.addEventListener('fetch', (event) => {
-	// Skip non-GET requests
-	if (event.request.method !== 'GET') {
-		return;
-	}
-
-	// Skip API requests (let them go to network)
-	if (event.request.url.includes('/api/')) {
-		return;
-	}
-
-	event.respondWith(
-		caches
-			.match(event.request)
-			.then((response) => {
-				// Return cached version or fetch from network
-				return response || fetch(event.request);
-			})
-			.catch(() => {
-				// Fallback for offline
-				if (event.request.mode === 'navigate') {
-					return caches.match('/');
-				}
 			})
 	);
 });
@@ -132,8 +61,8 @@ self.addEventListener('push', (event) => {
 
 	const options = {
 		body: data.body || 'You have a new notification',
-		icon: '/logo.png',
-		badge: '/logo.png',
+		icon: '/icons/icon-192x192.png',
+		badge: '/icons/icon-192x192.png',
 		data: data,
 		actions: data.actions || [],
 		requireInteraction: data.requireInteraction || false,
@@ -258,10 +187,10 @@ self.addEventListener('sync', (event) => {
 
 // Message handler for communication with main thread
 self.addEventListener('message', (event) => {
-	console.log('📨 Service worker received message:', event.data);
+	console.log('Service worker received message:', event.data);
 
 	if (event.data.type === 'TEST_MESSAGE') {
-		console.log('🧪 Test message received:', event.data.payload);
+		console.log('Test message received:', event.data.payload);
 
 		// Send response back to client
 		event.source.postMessage({
@@ -271,5 +200,3 @@ self.addEventListener('message', (event) => {
 		});
 	}
 });
-
-console.log('Service worker loaded and ready!');

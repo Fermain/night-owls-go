@@ -342,11 +342,13 @@ func main() {
 	fuego.GetStd(admin, "/reports/{id}", adminReportAPIHandler.AdminGetReportHandler)
 	fuego.PutStd(admin, "/reports/{id}/archive", adminReportAPIHandler.AdminArchiveReportHandler)
 	fuego.PutStd(admin, "/reports/{id}/unarchive", adminReportAPIHandler.AdminUnarchiveReportHandler)
+	fuego.DeleteStd(admin, "/reports/{id}", adminReportAPIHandler.AdminDeleteReportHandler)
 
 	// Admin Broadcasts
 	fuego.GetStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminListBroadcasts)
 	fuego.PostStd(admin, "/broadcasts", adminBroadcastAPIHandler.AdminCreateBroadcast)
 	fuego.GetStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminGetBroadcast)
+	fuego.DeleteStd(admin, "/broadcasts/{id}", adminBroadcastAPIHandler.AdminDeleteBroadcast)
 
 	// Test user broadcasts under admin for debugging
 	fuego.GetStd(admin, "/test-broadcasts", broadcastAPIHandler.ListUserBroadcasts)

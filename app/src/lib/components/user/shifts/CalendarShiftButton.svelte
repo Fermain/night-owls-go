@@ -40,30 +40,44 @@
 			);
 		});
 	});
+
+	// Compute button classes based on state
+	const buttonClasses = $derived(() => {
+		const baseClasses =
+			'text-center text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-center';
+
+		if (isBooked) {
+			if (isActive) {
+				return `${baseClasses} bg-green-600 text-white font-bold`;
+			} else {
+				return `${baseClasses} bg-green-100 text-green-800 border border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700`;
+			}
+		} else {
+			return `${baseClasses} bg-gray-100 text-gray-900 border border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-green-600 dark:hover:bg-gray-700`;
+		}
+	});
 </script>
 
 <button
-	class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
-		{isBooked
-		? isActive
-			? 'bg-green-600 text-white font-bold'
-			: 'bg-blue-100 text-blue-800 border border-blue-300'
-		: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
-	"
+	class={buttonClasses}
 	onclick={() => !isBooked && onShiftSelect(shift)}
 	disabled={isBooked || isPast}
 	title={isBooked
 		? 'Already booked'
 		: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
 >
-	<!-- Mobile: compact time format, Desktop: regular time format -->
-	<span class="truncate flex-1 text-left leading-none sm:hidden">
-		{formatTimeCompact(shift.start_time)}
-	</span>
-	<span class="truncate flex-1 text-left leading-none hidden sm:block">
-		{formatTime(shift.start_time)}
-	</span>
 	{#if isBooked}
-		<span class="ml-1 leading-none">🦉</span>
+		<span class="w-full leading-none text-[8px] text-left sm:text-xs sm:text-center"
+			>ME: {formatTimeCompact(shift.start_time)}</span
+		>
+	{:else}
+		<!-- Mobile: compact time format only -->
+		<span class="truncate flex-1 leading-none text-[8px] text-left sm:hidden">
+			{formatTimeCompact(shift.start_time)}
+		</span>
+		<!-- Desktop: time range format -->
+		<span class="truncate flex-1 leading-none text-xs text-center hidden sm:block">
+			{formatTimeCompact(shift.start_time)} - {formatTimeCompact(shift.end_time)}
+		</span>
 	{/if}
 </button>

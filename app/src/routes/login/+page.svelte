@@ -160,7 +160,7 @@
 			} else {
 				goto('/admin', { replaceState: true });
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Clean up loading toast
 			if (toastId) {
 				toast.dismiss(toastId);
@@ -170,7 +170,6 @@
 
 			// Clear OTP for retry
 			otpValue = '';
-			console.error('Login verification error:', error);
 		} finally {
 			isLoading = false;
 			isAutoVerifying = false;

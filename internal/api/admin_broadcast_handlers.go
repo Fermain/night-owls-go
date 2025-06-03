@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -177,9 +178,35 @@ func (h *AdminBroadcastHandler) AdminListBroadcasts(w http.ResponseWriter, r *ht
 
 // AdminGetBroadcast handles GET /api/admin/broadcasts/{id}
 func (h *AdminBroadcastHandler) AdminGetBroadcast(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
 	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminGetBroadcast called", "id_param", idStr, "url", r.URL.Path)
+
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "broadcasts" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+
+	// Alternative method 2: Check request context for route values
+	if idStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					idStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
+					break
+				}
+			}
+		}
+	}
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse broadcast ID", "id_param", idStr, "error", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid broadcast ID", h.logger, "id", idStr)
 		return
 	}
@@ -261,4 +288,60 @@ func nullInt64ToInt64(ni sql.NullInt64) int64 {
 		return ni.Int64
 	}
 	return 0
+}
+
+// AdminDeleteBroadcast handles DELETE /api/admin/broadcasts/{id}
+func (h *AdminBroadcastHandler) AdminDeleteBroadcast(w http.ResponseWriter, r *http.Request) {
+	// Try multiple methods to extract the ID parameter
+	idStr := chi.URLParam(r, "id")
+	h.logger.InfoContext(r.Context(), "AdminDeleteBroadcast called", "id_param", idStr, "url", r.URL.Path)
+
+	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	if idStr == "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "broadcasts" {
+			idStr = pathParts[3]
+			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
+		}
+	}
+
+	// Alternative method 2: Check request context for route values
+	if idStr == "" {
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			for i, param := range rctx.URLParams.Keys {
+				if param == "id" && i < len(rctx.URLParams.Values) {
+					idStr = rctx.URLParams.Values[i]
+					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
+					break
+				}
+			}
+		}
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to parse broadcast ID", "id_param", idStr, "error", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid broadcast ID", h.logger, "id", idStr)
+		return
+	}
+
+	// Check if broadcast exists before deleting
+	_, err = h.querier.GetBroadcastByID(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			RespondWithError(w, http.StatusNotFound, "Broadcast not found", h.logger, "id", id)
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to delete broadcast", h.logger, "error", err)
+		}
+		return
+	}
+
+	err = h.querier.DeleteBroadcast(r.Context(), id)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to delete broadcast", "broadcast_id", id, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete broadcast", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Broadcast deleted successfully"}, h.logger)
 }

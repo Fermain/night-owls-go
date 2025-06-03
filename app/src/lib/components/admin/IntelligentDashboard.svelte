@@ -52,8 +52,7 @@
 			await UsersApiService.updateRole(userId, 'owl');
 			toast.success(`${userName ?? 'User'} has been approved as an Owl volunteer!`);
 			window.location.reload();
-		} catch (error) {
-			console.error('Failed to approve guest:', error);
+		} catch (_error) {
 			toast.error('Failed to approve guest user');
 		}
 	}
@@ -64,7 +63,6 @@
 
 	function handleContactUser(userId: number, reason: string, userName?: string) {
 		toast.info(`Contact ${userName ?? 'user'} about: ${reason}`);
-		console.log('Contact action:', { userId, reason });
 	}
 
 	function handleCriticalAction(type: string) {

@@ -3,7 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode: _mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
 	const isE2ETesting = process.env.NODE_ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
 
@@ -16,6 +16,14 @@ export default defineConfig(({ mode }) => {
 				scope: '/',
 				base: '/',
 				selfDestroying: process.env.NODE_ENV === 'development',
+				strategies: 'generateSW',
+				filename: 'sw.js',
+				workbox: {
+					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
+					cleanupOutdatedCaches: true,
+					clientsClaim: true,
+					skipWaiting: true
+				},
 				manifest: {
 					name: 'Mount Moreland Night Owls',
 					short_name: 'Night Owls',
@@ -37,51 +45,6 @@ export default defineConfig(({ mode }) => {
 							sizes: '512x512',
 							type: 'image/png',
 							purpose: 'any maskable'
-						}
-					]
-				},
-				injectManifest: {
-					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
-				},
-				workbox: {
-					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
-					cleanupOutdatedCaches: true,
-					clientsClaim: true,
-					skipWaiting: true,
-					runtimeCaching: [
-						{
-							urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-							handler: 'CacheFirst',
-							options: {
-								cacheName: 'google-fonts-cache',
-								expiration: {
-									maxEntries: 10,
-									maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-								}
-							}
-						},
-						{
-							urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-							handler: 'CacheFirst',
-							options: {
-								cacheName: 'gstatic-fonts-cache',
-								expiration: {
-									maxEntries: 10,
-									maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-								}
-							}
-						},
-						{
-							urlPattern: /\/api\/.*/i,
-							handler: 'NetworkFirst',
-							options: {
-								cacheName: 'api-cache',
-								expiration: {
-									maxEntries: 100,
-									maxAgeSeconds: 60 * 5 // 5 minutes
-								},
-								networkTimeoutSeconds: 10
-							}
 						}
 					]
 				},
@@ -114,6 +77,10 @@ export default defineConfig(({ mode }) => {
 							secure: false
 						}
 					}
+		},
+
+		define: {
+			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
 		}
 	};
 });

@@ -424,7 +424,7 @@
 			{:else}
 				<div class="space-y-4">
 					<!-- Header with bulk assign -->
-					<div class="px-4">
+					<div>
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<h2 class="text-base font-semibold">Available shifts</h2>
 						</div>
@@ -448,7 +448,7 @@
 					</div>
 
 					{#if displayedShifts.length > 0}
-						<div class="px-4 space-y-2">
+						<div class="space-y-2">
 							{#each displayedShifts as shift (`${shift.schedule_id}-${shift.start_time}`)}
 								<CompactShiftCard
 									{shift}

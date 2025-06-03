@@ -61,4 +61,8 @@ RETURNING *;
 SELECT * FROM broadcasts
 WHERE status = 'pending'
 AND (scheduled_at IS NULL OR scheduled_at <= datetime('now'))
-ORDER BY created_at ASC; 
+ORDER BY created_at ASC;
+
+-- name: DeleteBroadcast :exec
+DELETE FROM broadcasts 
+WHERE broadcast_id = ?; 

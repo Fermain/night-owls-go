@@ -30,3 +30,13 @@ export async function getBroadcast(id: number): Promise<BroadcastData> {
 	}
 	return response.json();
 }
+
+export async function deleteBroadcast(id: number): Promise<{ message: string }> {
+	const response = await authenticatedFetch(`/api/admin/broadcasts/${id}`, {
+		method: 'DELETE'
+	});
+	if (!response.ok) {
+		throw new Error(`Failed to delete broadcast: ${response.status}`);
+	}
+	return response.json();
+}

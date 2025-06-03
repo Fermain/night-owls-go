@@ -12,7 +12,7 @@
 	} = $props();
 </script>
 
-<div class="px-4">
+<div>
 	<div class="space-y-1">
 		{#each monthGrid.weeks as week, weekIndex (weekIndex)}
 			<div class="grid grid-cols-7 gap-1">

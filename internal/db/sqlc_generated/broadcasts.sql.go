@@ -70,6 +70,16 @@ func (q *Queries) CreateBroadcast(ctx context.Context, arg CreateBroadcastParams
 	return i, err
 }
 
+const deleteBroadcast = `-- name: DeleteBroadcast :exec
+DELETE FROM broadcasts 
+WHERE broadcast_id = ?
+`
+
+func (q *Queries) DeleteBroadcast(ctx context.Context, broadcastID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteBroadcast, broadcastID)
+	return err
+}
+
 const getBroadcastByID = `-- name: GetBroadcastByID :one
 SELECT broadcast_id, message, audience, sender_user_id, push_enabled, scheduled_at, sent_at, status, recipient_count, sent_count, failed_count, created_at, title FROM broadcasts
 WHERE broadcast_id = ?
