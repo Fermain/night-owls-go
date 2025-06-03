@@ -4,15 +4,19 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import { formatRelativeTime } from '$lib/utils/reports';
 
 	interface Report {
 		report_id: number;
 		severity: number;
 		latitude?: number;
 		longitude?: number;
+		gps_accuracy?: number;
 		message: string;
 		user_name: string;
 		created_at: string;
+		schedule_name?: string;
 	}
 
 	interface Props {
@@ -46,20 +50,24 @@
 		]
 	};
 
-	// Filter reports that have GPS coordinates (for demo, we'll add mock coordinates)
+	// Filter reports that have REAL GPS coordinates from the database
 	const reportsWithLocation = $derived.by(() => {
-		return reports.map((report, _index) => ({
-			...report,
-			// Mock GPS coordinates for demo - in real app these would come from the database
-			latitude: -33.9249 + (Math.random() - 0.5) * 0.1, // Cape Town area with some spread
-			longitude: 18.4241 + (Math.random() - 0.5) * 0.1
-		}));
+		return reports.filter(
+			(report) =>
+				report.latitude !== undefined &&
+				report.longitude !== undefined &&
+				report.latitude !== null &&
+				report.longitude !== null &&
+				!isNaN(report.latitude) &&
+				!isNaN(report.longitude)
+		);
 	});
 
-	// Calculate map bounds to fit all reports
+	// Calculate map bounds to fit all real report locations
 	const mapBounds = $derived.by(() => {
 		if (reportsWithLocation.length === 0) {
-			return { center: [18.4241, -33.9249] as [number, number], zoom: 12 }; // Default to Cape Town
+			// Default to Cape Town area when no GPS data is available
+			return { center: [18.4241, -33.9249] as [number, number], zoom: 12 };
 		}
 
 		const lats = reportsWithLocation.map((r) => r.latitude!);
@@ -113,6 +121,19 @@
 		}
 	}
 
+	function getSeverityLabel(severity: number) {
+		switch (severity) {
+			case 0:
+				return 'Normal';
+			case 1:
+				return 'Suspicion';
+			case 2:
+				return 'Incident';
+			default:
+				return 'Unknown';
+		}
+	}
+
 	function handleMarkerClick(reportId: number) {
 		if (onReportClick) {
 			onReportClick(reportId);
@@ -136,10 +157,21 @@
 						class="marker-pin"
 						style="background-color: {getSeverityColor(report.severity)}"
 						onclick={() => handleMarkerClick(report.report_id)}
-						title="Report #{report.report_id} - {report.message.slice(0, 50)}..."
+						title="Report #{report.report_id} - {getSeverityLabel(
+							report.severity
+						)} - {report.user_name} - {formatRelativeTime(report.created_at)}"
 					>
 						<SeverityIcon class="h-3 w-3 text-white" />
 					</button>
+					{#if report.gps_accuracy && report.gps_accuracy > 0}
+						<div
+							class="accuracy-circle"
+							style="width: {Math.max(
+								20,
+								Math.min(100, report.gps_accuracy / 5)
+							)}px; height: {Math.max(20, Math.min(100, report.gps_accuracy / 5))}px;"
+						></div>
+					{/if}
 				</div>
 			</Marker>
 		{/each}
@@ -147,9 +179,17 @@
 
 	{#if reportsWithLocation.length === 0}
 		<div class="absolute inset-0 flex items-center justify-center bg-muted/50">
-			<div class="text-center">
-				<InfoIcon class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-				<p class="text-sm text-muted-foreground">No reports with location data</p>
+			<div class="text-center p-8">
+				<MapPinIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+				<h3 class="text-lg font-medium mb-2">No reports with location data</h3>
+				<p class="text-sm text-muted-foreground max-w-md">
+					{reports.length === 0
+						? 'No reports found matching current filters'
+						: `${reports.length} reports found, but none contain GPS location data`}
+				</p>
+				<p class="text-xs text-muted-foreground mt-2">
+					Reports with GPS coordinates will appear here on the map
+				</p>
 			</div>
 		</div>
 	{/if}
@@ -197,5 +237,16 @@
 
 	.marker-pin :global(svg) {
 		transform: rotate(45deg);
+	}
+
+	.accuracy-circle {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		border: 2px solid rgba(59, 130, 246, 0.5);
+		border-radius: 50%;
+		background-color: rgba(59, 130, 246, 0.1);
+		z-index: 1;
 	}
 </style>

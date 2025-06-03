@@ -17,6 +17,7 @@
 	import ReportDetail from '$lib/components/admin/reports/ReportDetail.svelte';
 	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
 	import ReportsFilters from '$lib/components/admin/reports/ReportsFilters.svelte';
+	import ReportsStats from '$lib/components/admin/reports/ReportsStats.svelte';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import {
 		getSeverityIcon,
@@ -262,6 +263,13 @@
 				/>
 			</div>
 
+			<!-- GPS Statistics (only show in map view or when there are reports) -->
+			{#if viewMode === 'map' && $reportsQuery.data && $reportsQuery.data.length > 0}
+				<div class="mb-4 sm:mb-6">
+					<ReportsStats reports={$reportsQuery.data} />
+				</div>
+			{/if}
+
 			<!-- Reports Content -->
 			{#if viewMode === 'map'}
 				<Card.Root class="p-3 sm:p-4 lg:p-6">
@@ -270,7 +278,20 @@
 							<MapPinIcon class="h-5 w-5" />
 							Reports Map Overview
 						</Card.Title>
-						<Card.Description>Click on markers to view report details</Card.Description>
+						<Card.Description>
+							{#if $reportsQuery.isLoading}
+								Loading reports map data...
+							{:else}
+								{@const reportsWithGPS =
+									$reportsQuery.data?.filter((r) => r.latitude && r.longitude) ?? []}
+								{#if reportsWithGPS.length === 0}
+									No reports contain GPS location data to display on map
+								{:else}
+									Showing {reportsWithGPS.length} of {$reportsQuery.data?.length ?? 0} reports with GPS
+									location data • Click markers to view details
+								{/if}
+							{/if}
+						</Card.Description>
 					</Card.Header>
 					<Card.Content class="px-0 pb-0">
 						<div class="h-64 sm:h-80 lg:h-96">
