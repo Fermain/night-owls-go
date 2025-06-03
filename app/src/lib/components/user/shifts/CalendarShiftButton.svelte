@@ -22,16 +22,6 @@
 			const timeDiff = Math.abs(shiftStart - bookingStart);
 			const isMatch = timeDiff < 60000; // Within 1 minute tolerance
 
-			// Debug logging for shift matching
-			if (isMatch) {
-				console.log('CalendarShiftButton - Found matching booking:', {
-					shift: shift.start_time,
-					booking: booking.shift_start,
-					timeDiff,
-					isMatch
-				});
-			}
-
 			return isMatch;
 		})
 	);

@@ -61,18 +61,6 @@
 		if (monthOffset === 1) return 'bg-muted/20'; // Next month - subtle background
 		return 'bg-muted/40'; // Third month - slightly more background
 	}
-
-	// Debug logging for this day's data
-	$effect(() => {
-		if (allShiftsForDay.length > 0) {
-			console.log(`CalendarDayCell - Day ${day}:`, {
-				availableShifts: shifts.length,
-				userBookings: userShifts.length,
-				totalShiftsShown: allShiftsForDay.length,
-				allShifts: allShiftsForDay
-			});
-		}
-	});
 </script>
 
 <div

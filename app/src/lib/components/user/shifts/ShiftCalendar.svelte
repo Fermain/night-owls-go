@@ -24,13 +24,6 @@
 	// Show calendar if there are shifts OR user bookings
 	const shouldShowCalendar = $derived(shifts.length > 0 || userBookings.length > 0);
 
-	// Debug logging
-	$effect(() => {
-		console.log('ShiftCalendar - userBookings:', userBookings);
-		console.log('ShiftCalendar - shifts:', shifts);
-		console.log('ShiftCalendar - selectedDayRange:', selectedDayRange);
-	});
-
 	// Calculate how many months to show based on selected day range
 	const monthsToShow = $derived.by(() => {
 		const days = parseInt(selectedDayRange);
@@ -128,17 +121,6 @@
 						const bookingDate = new Date(booking.shift_start).toISOString().split('T')[0];
 						return bookingDate === dateString;
 					});
-
-					// Debug logging for days with shifts or bookings
-					if (dayShifts.length > 0 || dayUserShifts.length > 0) {
-						console.log('Calendar day processing:', {
-							date: dateString,
-							dayShifts: dayShifts.length,
-							dayUserShifts: dayUserShifts.length,
-							shifts: dayShifts,
-							bookings: dayUserShifts
-						});
-					}
 
 					// Check if user is currently on duty (active shift)
 					const now = new Date();

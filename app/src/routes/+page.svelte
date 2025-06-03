@@ -66,14 +66,12 @@
 
 	// Initialize queries after component is mounted to avoid lifecycle errors
 	onMount(() => {
-		// Query for available shifts with dynamic date range
+		// Query for available shifts - reactive to dateRange changes
 		availableShiftsQuery = createQuery({
 			queryKey: ['available-shifts', dayRange],
 			queryFn: async () => {
 				const { from, to } = getShiftDateRange(dayRange);
-				console.log('API Request - Date range:', { from, to, dayRange });
 				const result = await UserApiService.getAvailableShifts({ from, to });
-				console.log('API Response - Available shifts:', result.length, result);
 				return result;
 			}
 		});
@@ -86,7 +84,6 @@
 					throw new Error('User not authenticated');
 				}
 				const result = await UserApiService.getMyBookings();
-				console.log('API Response - User bookings:', result);
 				return result;
 			},
 			enabled: $userSession.isAuthenticated,
@@ -132,12 +129,6 @@
 	// Derived data - with null checks since queries are initialized in onMount
 	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
 	const userBookings = $derived(($userBookingsQuery?.data as UserBooking[]) ?? []);
-
-	// Debug logging for derived data
-	$effect(() => {
-		console.log('Derived data - availableShifts:', availableShifts.length, availableShifts);
-		console.log('Derived data - userBookings:', userBookings.length, userBookings);
-	});
 
 	// Calculate how many shifts to display based on shiftLimit, but always show at least 5
 	const displayLimit = $derived(Math.max(5, Math.min(displayShiftLimit, availableShifts.length)));
@@ -207,12 +198,10 @@
 
 	// Event handlers
 	function handleCheckIn() {
-		console.log('Checking in to shift...');
 		toast.success('Checked in successfully!');
 	}
 
 	function handleCheckOut() {
-		console.log('Checking out of shift...');
 		toast.success('Checked out successfully!');
 	}
 

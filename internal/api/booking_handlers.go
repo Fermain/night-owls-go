@@ -272,7 +272,6 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 // @Summary Cancel a booking
 // @Description Cancel a user's booking if it's not too close to the shift start time
 // @Tags bookings
-// @Produce json
 // @Param id path int true "Booking ID"
 // @Success 204 "Booking cancelled successfully"
 // @Failure 400 {object} ErrorResponse "Invalid booking ID or booking cannot be cancelled"
@@ -282,14 +281,14 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
 // @Router /bookings/{id} [delete]
-func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessResponse, error) {
+func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) {
 	// Extract booking ID from URL using Fuego's context
 	bookingIDStr := c.PathParam("id")
 	h.logger.InfoContext(c.Context(), "CancelBookingFuego called", "id_param", bookingIDStr, "url", c.Request().URL.Path)
 
 	if bookingIDStr == "" {
 		h.logger.ErrorContext(c.Context(), "Booking ID not found in path", "handler", "BookingHandler")
-		return SuccessResponse{}, fuego.BadRequestError{
+		return nil, fuego.BadRequestError{
 			Err:    nil,
 			Detail: "Invalid booking ID",
 		}
@@ -298,7 +297,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to parse booking ID", "handler", "BookingHandler", "id_param", bookingIDStr, "error", err)
-		return SuccessResponse{}, fuego.BadRequestError{
+		return nil, fuego.BadRequestError{
 			Err:    err,
 			Detail: "Invalid booking ID",
 		}
@@ -308,7 +307,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	userID, ok := c.Context().Value(UserIDKey).(int64)
 	if !ok {
 		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
-		return SuccessResponse{}, fuego.UnauthorizedError{
+		return nil, fuego.UnauthorizedError{
 			Err:    nil,
 			Detail: "User authentication required",
 		}
@@ -320,7 +319,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to cancel booking", "booking_id", bookingID, "user_id", userID, "error", err)
 		status, detail := mapServiceErrorToHTTP(err)
-		return SuccessResponse{}, fuego.HTTPError{
+		return nil, fuego.HTTPError{
 			Err:    err,
 			Status: status,
 			Detail: detail,
@@ -329,10 +328,11 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 
 	h.logger.InfoContext(c.Context(), "Booking cancelled successfully", "booking_id", bookingID, "user_id", userID)
 
-	// Set the success status code
-	c.SetStatus(http.StatusNoContent)
-
-	return SuccessResponse{Message: "Booking cancelled successfully"}, nil
+	// For 204 No Content, we manually set the status and don't return any content
+	c.Response().WriteHeader(http.StatusNoContent)
+	
+	// Return nil with no error to prevent Fuego from trying to serialize anything
+	return nil, nil
 }
 
 // Legacy handlers - keeping for backwards compatibility during migration
@@ -353,6 +353,13 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (SuccessRespo
 // @Security BearerAuth
 // @Router /bookings/{id} [delete]
 func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug: Log the full request details
+	h.logger.InfoContext(r.Context(), "CancelBookingHandler - Full request details", 
+		"method", r.Method, 
+		"url", r.URL.String(), 
+		"path", r.URL.Path,
+		"raw_path", r.URL.RawPath)
+
 	// Extract booking ID from URL
 	bookingIDStr := chi.URLParam(r, "id")
 	h.logger.InfoContext(r.Context(), "CancelBookingHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
@@ -360,10 +367,28 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	// Alternative method: Parse from URL path directly if chi.URLParam fails
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) >= 2 && pathParts[0] == "bookings" {
-			bookingIDStr = pathParts[1]
-			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", bookingIDStr)
+		h.logger.InfoContext(r.Context(), "Path parts for manual extraction", "path_parts", pathParts, "path", r.URL.Path)
+		
+		// Handle both /bookings/14 and /api/bookings/14 patterns
+		for i, part := range pathParts {
+			if part == "bookings" && i+1 < len(pathParts) {
+				bookingIDStr = pathParts[i+1]
+				h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", bookingIDStr)
+				break
+			}
 		}
+		
+		// If still empty, try a simpler approach - just get the last part of the path
+		if bookingIDStr == "" && len(pathParts) > 0 {
+			bookingIDStr = pathParts[len(pathParts)-1]
+			h.logger.InfoContext(r.Context(), "Using last path segment as ID", "id_param", bookingIDStr)
+		}
+	}
+
+	if bookingIDStr == "" {
+		h.logger.ErrorContext(r.Context(), "Could not extract booking ID from path", "url", r.URL.Path)
+		RespondWithError(w, http.StatusBadRequest, "Invalid booking ID", h.logger)
+		return
 	}
 
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
