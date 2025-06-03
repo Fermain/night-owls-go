@@ -11,6 +11,7 @@ export interface CalendarDay {
 	isPast: boolean;
 	isOnDuty: boolean;
 	monthOffset: number;
+	isWithinRange: boolean; // Whether this day is within the selected date range
 }
 
 // Type for calendar cell (can be day or month title)

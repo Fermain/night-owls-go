@@ -8,6 +8,7 @@
 		isToday,
 		isOnDuty,
 		monthOffset,
+		isWithinRange,
 		shifts,
 		userShifts,
 		onShiftSelect
@@ -17,6 +18,7 @@
 		isToday: boolean;
 		isOnDuty: boolean;
 		monthOffset: number;
+		isWithinRange: boolean;
 		shifts: AvailableShiftSlot[];
 		userShifts: UserBooking[];
 		onShiftSelect: (shift: AvailableShiftSlot) => void;
@@ -68,6 +70,7 @@
 		{isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
 		{isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
 		{isOnDuty ? 'bg-green-100 border-green-400' : ''}
+		{!isWithinRange ? 'opacity-30 bg-muted/50' : ''}
 		{getMonthBackground(monthOffset)}
 	"
 >
@@ -75,15 +78,21 @@
 	<div
 		class="absolute top-1 left-1 text-xs font-medium leading-none
 		{isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
+		{!isWithinRange ? 'opacity-50' : ''}
 	"
 	>
 		{day}
 	</div>
 
-	<!-- Shift slots container -->
-	<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
-		{#each allShiftsForDay as shift (shift.start_time)}
-			<CalendarShiftButton {shift} {userShifts} {isPast} {onShiftSelect} />
-		{/each}
-	</div>
+	<!-- Shift slots container - only show shifts for days within range -->
+	{#if isWithinRange}
+		<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
+			{#each allShiftsForDay as shift (shift.start_time)}
+				<CalendarShiftButton {shift} {userShifts} {isPast} {onShiftSelect} />
+			{/each}
+		</div>
+	{:else}
+		<!-- Empty space for out-of-range days to maintain consistent height -->
+		<div class="pt-4 h-full"></div>
+	{/if}
 </div>
