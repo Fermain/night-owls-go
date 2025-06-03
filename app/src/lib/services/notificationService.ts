@@ -91,6 +91,12 @@ const createNotificationStore = () => {
 				return;
 			}
 
+			// Additional safeguard - ensure we have a valid session
+			if (!session.id) {
+				console.log('📦 Skipping notification fetch - invalid user session');
+				return;
+			}
+
 			// Don't fetch if already loading and not forced
 			const currentState: NotificationState = get({ subscribe });
 			if (currentState.isLoading && !force) {
@@ -109,6 +115,7 @@ const createNotificationStore = () => {
 			update((state) => ({ ...state, isLoading: true }));
 
 			try {
+				console.log('📦 Fetching notifications for user:', session.id);
 				// Fetch broadcasts from API
 				const response = await authenticatedFetch('/api/broadcasts');
 
@@ -116,10 +123,43 @@ const createNotificationStore = () => {
 					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 				}
 
+				// Check if response has content
+				const contentType = response.headers.get('content-type');
+				if (!contentType || !contentType.includes('application/json')) {
+					console.warn('📦 Unexpected content type from broadcasts API:', contentType);
+					// Return empty array if not JSON
+					update((state) => ({
+						...state,
+						notifications: [],
+						unreadCount: 0,
+						isLoading: false,
+						lastFetched: new Date().toISOString()
+					}));
+					return;
+				}
+
 				const broadcasts: BroadcastResponse[] = await response.json();
 
+				// Debug logging to understand API response
+				console.log('📦 Broadcasts API response:', {
+					type: typeof broadcasts,
+					isArray: Array.isArray(broadcasts),
+					isNull: broadcasts === null,
+					length: broadcasts?.length,
+					data: broadcasts
+				});
+
+				// Handle case where API returns null instead of empty array
+				const broadcastsArray = broadcasts || [];
+
+				// Validate that it's actually an array
+				if (!Array.isArray(broadcastsArray)) {
+					console.error('📦 API returned non-array data:', broadcastsArray);
+					throw new Error('API returned invalid data format');
+				}
+
 				// Transform broadcasts into notifications
-				const apiNotifications: UserNotification[] = broadcasts.map((broadcast) => ({
+				const apiNotifications: UserNotification[] = broadcastsArray.map((broadcast) => ({
 					id: broadcast.id,
 					type: 'broadcast' as const,
 					title: 'New Message',
