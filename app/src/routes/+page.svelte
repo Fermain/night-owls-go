@@ -26,6 +26,7 @@
 	import BulkAssignDialog from '$lib/components/user/bookings/BulkAssignDialog.svelte';
 	import ShiftCalendar from '$lib/components/user/shifts/ShiftCalendar.svelte';
 	import { onMount } from 'svelte';
+	import MyReportsWidget from '$lib/components/user/dashboard/MyReportsWidget.svelte';
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -392,6 +393,11 @@
 				selectedDayRange={dayRange}
 				onShiftSelect={handleBookShift}
 			/>
+
+			<!-- My Reports Widget -->
+			{#if $userSession.isAuthenticated}
+				<MyReportsWidget className="mb-4" />
+			{/if}
 
 			<!-- Available Shifts (broken out of card layout) -->
 			{#if !availableShiftsQuery}

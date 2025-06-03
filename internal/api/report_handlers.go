@@ -49,6 +49,22 @@ type CreateOffShiftReportRequest struct {
 	LocationTimestamp *string  `json:"location_timestamp,omitempty"`
 }
 
+// UserReportResponse is the user-facing report response (fewer fields than admin)
+type UserReportResponse struct {
+	ReportID      int64      `json:"report_id"`
+	BookingID     *int64     `json:"booking_id,omitempty"`
+	Severity      int64      `json:"severity"`
+	Message       string     `json:"message,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	Latitude      *float64   `json:"latitude,omitempty"`
+	Longitude     *float64   `json:"longitude,omitempty"`
+	GPSAccuracy   *float64   `json:"gps_accuracy,omitempty"`
+	GPSTimestamp  *time.Time `json:"gps_timestamp,omitempty"`
+	ScheduleName  *string    `json:"schedule_name,omitempty"`
+	ShiftStart    *time.Time `json:"shift_start,omitempty"`
+	ShiftEnd      *time.Time `json:"shift_end,omitempty"`
+}
+
 // CreateReportHandler handles POST /bookings/{id}/report
 // @Summary Create a report for a booking
 // @Description Submits an incident report for a specific booking
@@ -156,14 +172,78 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 	RespondWithJSON(w, http.StatusCreated, reportResponse, h.logger)
 }
 
-// ListReportsHandler (Optional as per guide) - Placeholder
+// ListReportsHandler handles GET /api/user/reports
+// @Summary Get current user's reports
+// @Description Get all reports submitted by the current authenticated user
+// @Tags reports
+// @Produce json
+// @Success 200 {array} UserReportResponse "List of user's reports"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/user/reports [get]
 func (h *ReportHandler) ListReportsHandler(w http.ResponseWriter, r *http.Request) {
-	// userIDFromAuthVal := r.Context().Value(UserIDKey)
-	// userIDFromAuth, ok := userIDFromAuthVal.(int64)
-	// if !ok { ... }
-	// Implementation would involve calling a service method like h.reportService.ListReportsByUser(r.Context(), userIDFromAuth)
-	// and then RespondWithJSON.
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Listing reports - TBD"}, h.logger)
+	userIDFromAuthVal := r.Context().Value(UserIDKey)
+	userIDFromAuth, ok := userIDFromAuthVal.(int64)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "User ID not found in context", h.logger)
+		return
+	}
+
+	reports, err := h.reportService.ListReportsByUser(r.Context(), userIDFromAuth)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to list reports for user", "user_id", userIDFromAuth, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to fetch reports", h.logger)
+		return
+	}
+
+	// Convert to user-facing API response format
+	userReports := make([]UserReportResponse, 0, len(reports))
+	for _, report := range reports {
+		userReport := UserReportResponse{
+			ReportID: report.ReportID,
+			Severity: report.Severity,
+			CreatedAt: report.CreatedAt.Time,
+		}
+
+		// Handle nullable BookingID
+		if report.BookingID.Valid {
+			userReport.BookingID = &report.BookingID.Int64
+		}
+
+		// Handle nullable Message
+		if report.Message.Valid {
+			userReport.Message = report.Message.String
+		}
+
+		// Handle GPS fields
+		if report.Latitude.Valid {
+			userReport.Latitude = &report.Latitude.Float64
+		}
+		if report.Longitude.Valid {
+			userReport.Longitude = &report.Longitude.Float64
+		}
+		if report.GpsAccuracy.Valid {
+			userReport.GPSAccuracy = &report.GpsAccuracy.Float64
+		}
+		if report.GpsTimestamp.Valid {
+			userReport.GPSTimestamp = &report.GpsTimestamp.Time
+		}
+
+		// Get schedule info if this is a shift report
+		if report.BookingID.Valid {
+			booking, err := h.reportService.GetBookingDetails(r.Context(), report.BookingID.Int64)
+			if err == nil && booking != nil {
+				userReport.ScheduleName = &booking.ScheduleName
+				userReport.ShiftStart = &booking.ShiftStart
+				userReport.ShiftEnd = &booking.ShiftEnd
+			}
+		}
+
+		userReports = append(userReports, userReport)
+	}
+
+	RespondWithJSON(w, http.StatusOK, userReports, h.logger)
 }
 
 // CreateOffShiftReportHandler handles POST /reports/off-shift

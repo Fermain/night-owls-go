@@ -150,3 +150,47 @@ func (s *ReportService) CreateOffShiftReport(ctx context.Context, userIDFromAuth
 	s.logger.InfoContext(ctx, "Off-shift report created successfully", "report_id", createdReport.ReportID, "user_id", userIDFromAuth)
 	return createdReport, nil
 }
+
+// BookingDetails represents booking information for reports
+type BookingDetails struct {
+	ScheduleName string
+	ShiftStart   time.Time
+	ShiftEnd     time.Time
+}
+
+// ListReportsByUser retrieves all reports for a specific user
+func (s *ReportService) ListReportsByUser(ctx context.Context, userID int64) ([]db.Report, error) {
+	reports, err := s.querier.ListReportsByUserID(ctx, sql.NullInt64{Int64: userID, Valid: true})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to list reports by user ID", "user_id", userID, "error", err)
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Successfully retrieved reports for user", "user_id", userID, "count", len(reports))
+	return reports, nil
+}
+
+// GetBookingDetails retrieves booking details for a report
+func (s *ReportService) GetBookingDetails(ctx context.Context, bookingID int64) (*BookingDetails, error) {
+	booking, err := s.querier.GetBookingByID(ctx, bookingID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // Return nil if booking not found
+		}
+		s.logger.ErrorContext(ctx, "Failed to get booking details", "booking_id", bookingID, "error", err)
+		return nil, err
+	}
+
+	// Get schedule details
+	schedule, err := s.querier.GetScheduleByID(ctx, booking.ScheduleID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get schedule details", "schedule_id", booking.ScheduleID, "error", err)
+		return nil, err
+	}
+
+	return &BookingDetails{
+		ScheduleName: schedule.Name,
+		ShiftStart:   booking.ShiftStart,
+		ShiftEnd:     booking.ShiftEnd,
+	}, nil
+}

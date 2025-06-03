@@ -306,6 +306,7 @@ func main() {
 	fuego.Delete(protected, "/bookings/{id}", bookingAPIHandler.CancelBookingFuego)
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
+	fuego.GetStd(protected, "/user/reports", reportAPIHandler.ListReportsHandler)
 	fuego.GetStd(protected, "/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
