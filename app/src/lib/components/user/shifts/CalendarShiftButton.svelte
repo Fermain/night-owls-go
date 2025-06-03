@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatTime } from '$lib/utils/shiftFormatting';
+	import { formatTime, formatTimeCompact } from '$lib/utils/shiftFormatting';
 	import type { AvailableShiftSlot, UserBooking } from '$lib/services/api/user';
 
 	let {
@@ -56,7 +56,11 @@
 		? 'Already booked'
 		: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
 >
-	<span class="truncate flex-1 text-left leading-none">
+	<!-- Mobile: compact time format, Desktop: regular time format -->
+	<span class="truncate flex-1 text-left leading-none sm:hidden">
+		{formatTimeCompact(shift.start_time)}
+	</span>
+	<span class="truncate flex-1 text-left leading-none hidden sm:block">
 		{formatTime(shift.start_time)}
 	</span>
 	{#if isBooked}

@@ -25,6 +25,7 @@ func NewBroadcastHandler(querier db.Querier, logger *slog.Logger) *BroadcastHand
 // UserBroadcastResponse represents a broadcast for user consumption.
 type UserBroadcastResponse struct {
 	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
 	Message   string    `json:"message"`
 	Audience  string    `json:"audience"`
 	CreatedAt time.Time `json:"created_at"`
@@ -69,6 +70,7 @@ func (h *BroadcastHandler) ListUserBroadcasts(w http.ResponseWriter, r *http.Req
 
 			userBroadcasts = append(userBroadcasts, UserBroadcastResponse{
 				ID:        broadcast.BroadcastID,
+				Title:     broadcast.Title,
 				Message:   broadcast.Message,
 				Audience:  broadcast.Audience,
 				CreatedAt: createdAt,

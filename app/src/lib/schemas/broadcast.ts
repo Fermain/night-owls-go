@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const broadcastSchema = z.object({
 	broadcast_id: z.number(),
+	title: z.string(),
 	message: z.string(),
 	audience: z.enum(['all', 'admins', 'owls', 'active']),
 	sender_user_id: z.number(),
@@ -17,6 +18,7 @@ export const broadcastSchema = z.object({
 });
 
 export const createBroadcastSchema = z.object({
+	title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
 	message: z.string().min(1, 'Message is required'),
 	audience: z.enum(['all', 'admins', 'owls', 'active']),
 	push_enabled: z.boolean(),

@@ -226,7 +226,7 @@
 							/>
 							<span
 								class="text-sm {notificationGranted ? 'text-green-800 dark:text-green-200' : ''}"
-								>Notifications</span
+								>Alerts</span
 							>
 						</div>
 						<div class="flex items-center gap-2">

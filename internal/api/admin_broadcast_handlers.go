@@ -30,6 +30,7 @@ func NewAdminBroadcastHandler(querier db.Querier, logger *slog.Logger) *AdminBro
 
 // CreateBroadcastRequest defines the expected JSON body for creating a broadcast.
 type CreateBroadcastRequest struct {
+	Title       string     `json:"title"`
 	Message     string     `json:"message"`
 	Audience    string     `json:"audience"`
 	PushEnabled bool       `json:"push_enabled"`
@@ -39,6 +40,7 @@ type CreateBroadcastRequest struct {
 // BroadcastResponse represents a broadcast in API responses.
 type BroadcastResponse struct {
 	BroadcastID    int64      `json:"broadcast_id"`
+	Title          string     `json:"title"`
 	Message        string     `json:"message"`
 	Audience       string     `json:"audience"`
 	SenderUserID   int64      `json:"sender_user_id"`
@@ -73,6 +75,11 @@ func (h *AdminBroadcastHandler) AdminCreateBroadcast(w http.ResponseWriter, r *h
 		return
 	}
 
+	if req.Title == "" {
+		RespondWithError(w, http.StatusBadRequest, "Title is required", h.logger)
+		return
+	}
+
 	if req.Audience == "" {
 		RespondWithError(w, http.StatusBadRequest, "Audience is required", h.logger)
 		return
@@ -103,6 +110,7 @@ func (h *AdminBroadcastHandler) AdminCreateBroadcast(w http.ResponseWriter, r *h
 	}
 
 	params := db.CreateBroadcastParams{
+		Title:          req.Title,
 		Message:        req.Message,
 		Audience:       req.Audience,
 		SenderUserID:   userID,
@@ -119,6 +127,7 @@ func (h *AdminBroadcastHandler) AdminCreateBroadcast(w http.ResponseWriter, r *h
 
 	response := BroadcastResponse{
 		BroadcastID:    broadcast.BroadcastID,
+		Title:          broadcast.Title,
 		Message:        broadcast.Message,
 		Audience:       broadcast.Audience,
 		SenderUserID:   broadcast.SenderUserID,
@@ -147,6 +156,7 @@ func (h *AdminBroadcastHandler) AdminListBroadcasts(w http.ResponseWriter, r *ht
 	for _, broadcast := range broadcasts {
 		response = append(response, BroadcastResponse{
 			BroadcastID:    broadcast.BroadcastID,
+			Title:          broadcast.Title,
 			Message:        broadcast.Message,
 			Audience:       broadcast.Audience,
 			SenderUserID:   broadcast.SenderUserID,
@@ -186,6 +196,7 @@ func (h *AdminBroadcastHandler) AdminGetBroadcast(w http.ResponseWriter, r *http
 
 	response := BroadcastResponse{
 		BroadcastID:    broadcast.BroadcastID,
+		Title:          broadcast.Title,
 		Message:        broadcast.Message,
 		Audience:       broadcast.Audience,
 		SenderUserID:   broadcast.SenderUserID,

@@ -12,6 +12,7 @@ interface NotificationData {
 
 interface BroadcastResponse {
 	id: number;
+	title: string;
 	message: string;
 	created_at: string;
 	audience: string;
@@ -162,7 +163,7 @@ const createNotificationStore = () => {
 				const apiNotifications: UserNotification[] = broadcastsArray.map((broadcast) => ({
 					id: broadcast.id,
 					type: 'broadcast' as const,
-					title: 'New Message',
+					title: broadcast.title,
 					message: broadcast.message,
 					timestamp: broadcast.created_at,
 					read: false, // Will be overridden by stored state

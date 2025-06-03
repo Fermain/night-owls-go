@@ -81,23 +81,19 @@
 		}
 	}
 
-	function getPermissionHelp(): string {
+	function getStatusText(): string {
 		if (!supported) {
-			return 'Push notifications are not supported on this browser or device.';
+			return 'Push alerts are not supported on this browser or device.';
 		}
-
-		switch (permission) {
-			case 'denied':
-				return 'Push notifications are blocked. Please enable them in your browser settings and refresh the page.';
-			case 'default':
-				return 'Enable push notifications to receive alerts about upcoming shifts and important messages.';
-			case 'granted':
-				return subscribed
-					? 'You will receive push notifications for shifts and messages.'
-					: 'Permission granted. Toggle the switch to subscribe.';
-			default:
-				return '';
+		if (permission === 'denied') {
+			return 'Push alerts are blocked. Please enable them in your browser settings and refresh the page.';
 		}
+		if (permission === 'default') {
+			return 'Enable push alerts to receive alerts about upcoming shifts and important messages.';
+		}
+		return subscribed
+			? 'You will receive push alerts for shifts and messages.'
+			: 'Push alerts are disabled.';
 	}
 </script>
 
@@ -114,8 +110,10 @@
 				</div>
 			{/if}
 			<div>
-				<Card.Title class="text-lg">Push Notifications</Card.Title>
-				<Card.Description>Receive alerts for shifts and important messages</Card.Description>
+				<Card.Title class="text-lg">Push Alerts</Card.Title>
+				<Card.Description>
+					Manage your push alert preferences for shifts and important messages.
+				</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -138,7 +136,7 @@
 
 		<!-- Help text -->
 		<div class="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-			{getPermissionHelp()}
+			{getStatusText()}
 		</div>
 
 		<!-- Actions -->

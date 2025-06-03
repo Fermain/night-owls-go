@@ -34,7 +34,7 @@
 				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
 					e.preventDefault();
 					const searchInput = document.querySelector(
-						'input[placeholder="Search messages..."]'
+						'input[placeholder="Search alerts..."]'
 					) as HTMLInputElement;
 					searchInput?.focus();
 				}
@@ -62,7 +62,7 @@
 				if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
 					e.preventDefault();
 					const searchInput = document.querySelector(
-						'input[placeholder="Search messages..."]'
+						'input[placeholder="Search alerts..."]'
 					) as HTMLInputElement;
 					searchInput?.focus();
 				}
@@ -155,7 +155,7 @@
 </script>
 
 <svelte:head>
-	<title>Messages - Night Owls</title>
+	<title>Alerts - Night Owls</title>
 </svelte:head>
 
 <div class="min-h-screen bg-background flex-1">
@@ -164,7 +164,7 @@
 		<div class="px-4 py-3">
 			<div class="flex items-center justify-between">
 				<div>
-					<h1 class="text-lg font-semibold text-foreground">Messages</h1>
+					<h1 class="text-lg font-semibold text-foreground">Alerts</h1>
 					<p class="text-sm text-muted-foreground">
 						{$notificationState.notifications.length} total, {unreadCount > 0
 							? `${unreadCount} unread`
@@ -208,7 +208,7 @@
 				/>
 				<input
 					type="text"
-					placeholder="Search messages..."
+					placeholder="Search alerts..."
 					bind:value={searchQuery}
 					class="w-full pl-10 pr-4 py-2 border border-input rounded bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
 				/>
@@ -227,7 +227,7 @@
 			{#if searchQuery || showUnreadOnly}
 				<div class="flex items-center justify-between mt-2">
 					<div class="text-sm text-muted-foreground">
-						{filteredNotifications.length} of {$notificationState.notifications.length} messages
+						{filteredNotifications.length} of {$notificationState.notifications.length} alerts
 					</div>
 					<Button variant="ghost" size="sm" onclick={clearFilters} class="h-6 px-2 text-xs">
 						Clear filters
@@ -241,32 +241,32 @@
 			{#if isLoading && $notificationState.notifications.length === 0}
 				<div class="p-6 text-center">
 					<LoaderCircleIcon class="h-8 w-8 text-muted-foreground mx-auto mb-3 animate-spin" />
-					<h3 class="text-base font-medium text-foreground mb-2">Loading messages...</h3>
-					<p class="text-sm text-muted-foreground">Fetching your latest messages and updates.</p>
+					<h3 class="text-base font-medium text-foreground mb-2">Loading alerts...</h3>
+					<p class="text-sm text-muted-foreground">Fetching your latest alerts and updates.</p>
 				</div>
 			{:else if filteredNotifications.length === 0}
 				<div class="p-6 text-center">
 					<MessageSquareIcon class="h-8 w-8 text-muted-foreground mx-auto mb-3" />
 					<h3 class="text-base font-medium text-foreground mb-2">
 						{#if $notificationState.notifications.length === 0}
-							No messages yet
+							No alerts yet
 						{:else if searchQuery}
-							No messages match your search
+							No alerts match your search
 						{:else if showUnreadOnly}
-							No unread messages
+							No unread alerts
 						{:else}
-							No messages found
+							No alerts found
 						{/if}
 					</h3>
 					<p class="text-sm text-muted-foreground">
 						{#if $notificationState.notifications.length === 0}
-							Messages from coordinators will appear here.
+							Alerts from coordinators will appear here.
 						{:else if searchQuery}
 							Try adjusting your search terms.
 						{:else if showUnreadOnly}
 							All caught up! Check back later for new updates.
 						{:else}
-							Try adjusting your filters to see more messages.
+							Try adjusting your filters to see more alerts.
 						{/if}
 					</p>
 					{#if searchQuery || showUnreadOnly}

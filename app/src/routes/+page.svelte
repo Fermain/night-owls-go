@@ -11,7 +11,6 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import XIcon from '@lucide/svelte/icons/x';
-	import ListChecksIcon from '@lucide/svelte/icons/list-checks';
 	import { userSession } from '$lib/stores/authStore';
 	import { selectedDayRange, getShiftDateRange } from '$lib/stores/shiftFilterStore';
 	import {
@@ -331,7 +330,7 @@
 <div class="bg-background flex-1">
 	{#if currentUser.isAuthenticated}
 		<!-- Authenticated Dashboard -->
-		<div class="p-4 space-y-4">
+		<div class="p-2 sm:p-4 space-y-4">
 			<!-- My Next/Active Shift -->
 			{#if nextShift}
 				<CompactShiftCard
@@ -428,21 +427,6 @@
 					<div class="px-4">
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<h2 class="text-base font-semibold">Available shifts</h2>
-							<div class="flex items-center gap-2 flex-wrap">
-								{#if availableShifts.length > 1}
-									<Button
-										variant="outline"
-										size="sm"
-										onclick={() => (showBulkAssignDialog = true)}
-										class="h-8 text-xs sm:text-sm"
-										disabled={$availableShiftsQuery?.isFetching}
-									>
-										<ListChecksIcon class="h-3 w-3 mr-1 sm:mr-2" />
-										<span class="hidden sm:inline">Bulk Assign ({availableShifts.length})</span>
-										<span class="sm:hidden">Bulk ({availableShifts.length})</span>
-									</Button>
-								{/if}
-							</div>
 						</div>
 
 						<!-- Results summary -->
@@ -460,16 +444,6 @@
 									{availableShifts.length} shift{availableShifts.length === 1 ? '' : 's'} available
 								{/if}
 							</span>
-							{#if hasMoreShifts && !$availableShiftsQuery?.isFetching}
-								<Button
-									variant="ghost"
-									size="sm"
-									onclick={handleShowMoreShifts}
-									class="h-6 px-2 text-xs whitespace-nowrap"
-								>
-									Show more
-								</Button>
-							{/if}
 						</div>
 					</div>
 
