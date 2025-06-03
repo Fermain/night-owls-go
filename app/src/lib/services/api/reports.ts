@@ -130,6 +130,48 @@ export class ReportsApiService {
 	}
 
 	/**
+	 * Archive a report (admin only) - soft delete
+	 */
+	static async archive(reportId: number): Promise<{ ok: boolean; message?: string }> {
+		const response = await authenticatedFetch(`/api/admin/reports/${reportId}/archive`, {
+			method: 'PUT'
+		});
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ message: 'Failed to archive report' }));
+			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+		}
+		// Handle both JSON response and empty response
+		try {
+			return await response.json();
+		} catch (_e) {
+			return { ok: response.ok };
+		}
+	}
+
+	/**
+	 * Unarchive a report (admin only) - restore from archive
+	 */
+	static async unarchive(reportId: number): Promise<{ ok: boolean; message?: string }> {
+		const response = await authenticatedFetch(`/api/admin/reports/${reportId}/unarchive`, {
+			method: 'PUT'
+		});
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ message: 'Failed to unarchive report' }));
+			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+		}
+		// Handle both JSON response and empty response
+		try {
+			return await response.json();
+		} catch (_e) {
+			return { ok: response.ok };
+		}
+	}
+
+	/**
 	 * Get reports for a specific booking
 	 */
 	static async getByBookingId(bookingId: number): Promise<AdminReportResponse[]> {

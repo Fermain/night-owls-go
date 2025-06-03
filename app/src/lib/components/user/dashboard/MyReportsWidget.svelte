@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { UserApiService } from '$lib/services/api/user';
+	import { UserApiService, type UserReport } from '$lib/services/api/user';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -12,8 +12,8 @@
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import ListIcon from '@lucide/svelte/icons/list';
 	import EyeIcon from '@lucide/svelte/icons/eye';
+	import ListIcon from '@lucide/svelte/icons/list';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 
 	interface Props {
@@ -84,8 +84,8 @@
 		}
 	}
 
-	function handleReportClick(reportId: number) {
-		selectedReportId = reportId;
+	function handleReportClick(report: UserReport) {
+		selectedReportId = report.report_id;
 		showDetailModal = true;
 	}
 
@@ -157,11 +157,12 @@
 		{:else}
 			<!-- List View -->
 			<div class="p-4 space-y-3">
-				{#each recentReports as report (report.report_id)}
+				{#each $userReportsQuery.data || [] as report (report.report_id)}
 					{@const SeverityIcon = getSeverityIcon(report.severity)}
-					<div
-						class="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-						onclick={() => handleReportClick(report.report_id)}
+					<button
+						type="button"
+						class="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer w-full text-left"
+						onclick={() => handleReportClick(report)}
 					>
 						<div class="flex items-center gap-3 flex-1 min-w-0">
 							<div class="p-2 rounded-lg {getSeverityColor(report.severity)} flex-shrink-0">
@@ -191,10 +192,10 @@
 								</div>
 							</div>
 						</div>
-						<Button variant="ghost" size="sm" class="flex-shrink-0 h-8 w-8 p-0">
+						<div class="flex-shrink-0 h-8 w-8 p-0 ml-2">
 							<EyeIcon class="h-4 w-4" />
-						</Button>
-					</div>
+						</div>
+					</button>
 				{/each}
 
 				{#if ($userReportsQuery.data?.length ?? 0) > 5}

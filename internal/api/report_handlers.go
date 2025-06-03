@@ -51,18 +51,18 @@ type CreateOffShiftReportRequest struct {
 
 // UserReportResponse is the user-facing report response (fewer fields than admin)
 type UserReportResponse struct {
-	ReportID      int64      `json:"report_id"`
-	BookingID     *int64     `json:"booking_id,omitempty"`
-	Severity      int64      `json:"severity"`
-	Message       string     `json:"message,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	Latitude      *float64   `json:"latitude,omitempty"`
-	Longitude     *float64   `json:"longitude,omitempty"`
-	GPSAccuracy   *float64   `json:"gps_accuracy,omitempty"`
-	GPSTimestamp  *time.Time `json:"gps_timestamp,omitempty"`
-	ScheduleName  *string    `json:"schedule_name,omitempty"`
-	ShiftStart    *time.Time `json:"shift_start,omitempty"`
-	ShiftEnd      *time.Time `json:"shift_end,omitempty"`
+	ReportID     int64      `json:"report_id"`
+	BookingID    *int64     `json:"booking_id,omitempty"`
+	Severity     int64      `json:"severity"`
+	Message      string     `json:"message,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	Latitude     *float64   `json:"latitude,omitempty"`
+	Longitude    *float64   `json:"longitude,omitempty"`
+	GPSAccuracy  *float64   `json:"gps_accuracy,omitempty"`
+	GPSTimestamp *time.Time `json:"gps_timestamp,omitempty"`
+	ScheduleName *string    `json:"schedule_name,omitempty"`
+	ShiftStart   *time.Time `json:"shift_start,omitempty"`
+	ShiftEnd     *time.Time `json:"shift_end,omitempty"`
 }
 
 // CreateReportHandler handles POST /bookings/{id}/report
@@ -201,8 +201,8 @@ func (h *ReportHandler) ListReportsHandler(w http.ResponseWriter, r *http.Reques
 	userReports := make([]UserReportResponse, 0, len(reports))
 	for _, report := range reports {
 		userReport := UserReportResponse{
-			ReportID: report.ReportID,
-			Severity: report.Severity,
+			ReportID:  report.ReportID,
+			Severity:  report.Severity,
 			CreatedAt: report.CreatedAt.Time,
 		}
 

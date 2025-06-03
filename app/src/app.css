@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Night Owls Map Styles */
+@import './lib/styles/maps.css';
+
 @layer base {
 	:root {
 		--background: 0 0% 100%;

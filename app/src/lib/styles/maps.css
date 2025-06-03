@@ -1,0 +1,59 @@
+/**
+ * Night Owls Map Styles
+ * Centralized styling for all map components using the night-owls-map class
+ */
+
+/* Base map styling */
+:global(.night-owls-map) {
+	font-family: inherit;
+}
+
+/* Map control groups (zoom buttons, etc.) */
+:global(.night-owls-map .maplibregl-ctrl-group) {
+	background: var(--map-control-bg);
+	border: var(--map-control-border);
+	border-radius: var(--map-control-radius);
+	backdrop-filter: var(--map-control-backdrop);
+	box-shadow: var(--map-control-shadow);
+}
+
+/* Map control buttons (+ - zoom buttons) */
+:global(.night-owls-map .maplibregl-ctrl-group button) {
+	background: transparent;
+	color: var(--map-control-color);
+	border: none;
+	font-weight: 600;
+	font-size: 16px;
+}
+
+:global(.night-owls-map .maplibregl-ctrl-group button:hover) {
+	background: rgba(30, 41, 59, 0.1);
+	color: #0f172a;
+}
+
+:global(.night-owls-map .maplibregl-ctrl-group button:focus) {
+	background: rgba(30, 41, 59, 0.15);
+	outline: 2px solid rgba(59, 130, 246, 0.6);
+	outline-offset: 2px;
+}
+
+/* Attribution control */
+:global(.night-owls-map .maplibregl-ctrl-attrib) {
+	font-size: 10px;
+	background: var(--map-control-bg);
+	color: var(--map-control-color);
+	border-radius: var(--map-control-radius);
+	backdrop-filter: var(--map-control-backdrop);
+	box-shadow: var(--map-control-shadow);
+	border: var(--map-control-border);
+}
+
+:global(.night-owls-map .maplibregl-ctrl-attrib a) {
+	color: #64748b;
+	text-decoration: none;
+}
+
+:global(.night-owls-map .maplibregl-ctrl-attrib a:hover) {
+	color: #334155;
+	text-decoration: underline;
+}

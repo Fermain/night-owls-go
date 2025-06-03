@@ -2,7 +2,7 @@
 	import type { components } from '$lib/types/api';
 	import { getSeverityIcon, getSeverityColor } from '$lib/utils/reports';
 	import { formatRelativeTime } from '$lib/utils/dateFormatting';
-	import TrashIcon from '@lucide/svelte/icons/trash-2';
+	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { ReportsApiService } from '$lib/services/api/reports';
 	import { toast } from 'svelte-sonner';
@@ -22,29 +22,31 @@
 	const SeverityIcon = $derived(getSeverityIcon(report.severity ?? 0));
 	const queryClient = useQueryClient();
 
-	// Delete mutation
-	const deleteMutation = createMutation({
-		mutationFn: ReportsApiService.delete,
+	// Archive mutation (changed from delete)
+	const archiveMutation = createMutation({
+		mutationFn: ReportsApiService.archive,
 		onSuccess: () => {
-			toast.success('Report deleted successfully');
+			toast.success('Report archived successfully');
 			// Refresh the reports list
 			queryClient.invalidateQueries({ queryKey: ['adminReportsForLayout'] });
 			queryClient.invalidateQueries({ queryKey: ['adminReports'] });
 		},
 		onError: (error: Error) => {
-			toast.error(`Failed to delete report: ${error.message}`);
+			toast.error(`Failed to archive report: ${error.message}`);
 		}
 	});
 
-	function handleDelete(event: Event) {
+	function handleArchive(event: Event) {
 		event.preventDefault();
 		event.stopPropagation();
 		if (!report.report_id) {
 			toast.error('Invalid report ID');
 			return;
 		}
-		if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-			$deleteMutation.mutate(report.report_id);
+		if (
+			confirm('Are you sure you want to archive this report? You can unarchive it later if needed.')
+		) {
+			$archiveMutation.mutate(report.report_id);
 		}
 	}
 </script>
@@ -54,15 +56,15 @@
 		? 'active'
 		: ''}"
 >
-	<!-- Delete button - appears on hover -->
+	<!-- Archive button - appears on hover -->
 	<button
-		class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded hover:bg-destructive/20 text-destructive"
-		onclick={handleDelete}
-		disabled={$deleteMutation.isPending}
-		title="Delete report"
-		aria-label="Delete report"
+		class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded hover:bg-orange-500/20 text-orange-600"
+		onclick={handleArchive}
+		disabled={$archiveMutation.isPending}
+		title="Archive report"
+		aria-label="Archive report"
 	>
-		<TrashIcon class="h-3 w-3" />
+		<ArchiveIcon class="h-3 w-3" />
 	</button>
 
 	<a
