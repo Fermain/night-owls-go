@@ -18,6 +18,11 @@
 		onShiftSelect: (shift: AvailableShiftSlot) => void;
 	} = $props();
 
+	// Helper function to format date as YYYY-MM-DD in local timezone
+	function formatLocalDate(date: Date): string {
+		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+	}
+
 	// Don't render anything if there are no shifts
 	const hasAnyShifts = $derived(shifts.length > 0);
 
@@ -103,71 +108,77 @@
 				}
 			}
 
-			// Add days of the month - but only include days within our selected date range
+			// Add days of the month - include ALL days to maintain calendar structure
 			for (let day = 1; day <= daysInMonth; day++) {
 				const date = new Date(year, month, day);
-				const dateString = date.toISOString().split('T')[0];
+				const dateString = formatLocalDate(date);
 
-				// Only include days within our selected date range
-				if (date >= startDate && date <= endDate) {
-					// Find available shifts for this date
-					const dayShifts = shifts.filter((shift) => {
-						const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
-						return shiftDate === dateString;
+				// Always create calendar cells to maintain grid structure
+				// but only include shift data for days within our selected date range
+				const isWithinRange = date >= startDate && date <= endDate;
+
+				let dayShifts: AvailableShiftSlot[] = [];
+				let dayUserShifts: UserBooking[] = [];
+				let isOnDuty = false;
+
+				if (isWithinRange) {
+					// Find available shifts for this date using local date comparison
+					dayShifts = shifts.filter((shift) => {
+						const shiftDate = new Date(shift.start_time);
+						return formatLocalDate(shiftDate) === dateString;
 					});
 
-					// Find user's bookings for this date
-					const dayUserShifts = userBookings.filter((booking) => {
-						const bookingDate = new Date(booking.shift_start).toISOString().split('T')[0];
-						return bookingDate === dateString;
+					// Find user's bookings for this date using local date comparison
+					dayUserShifts = userBookings.filter((booking) => {
+						const bookingDate = new Date(booking.shift_start);
+						return formatLocalDate(bookingDate) === dateString;
 					});
 
 					// Check if user is currently on duty (active shift)
 					const now = new Date();
-					const isOnDuty = dayUserShifts.some((booking) => {
+					isOnDuty = dayUserShifts.some((booking) => {
 						const shiftStart = new Date(booking.shift_start);
 						const shiftEnd = new Date(booking.shift_end);
 						return now >= shiftStart && now <= shiftEnd;
 					});
-
-					const dayData: CalendarDay = {
-						day,
-						date,
-						dateString,
-						shifts: dayShifts,
-						userShifts: dayUserShifts,
-						isToday: date.toDateString() === today.toDateString(),
-						isPast: date < today && date.toDateString() !== today.toDateString(),
-						isOnDuty,
-						monthOffset
-					};
-
-					monthCells.push({
-						type: 'day',
-						dayData
-					});
-				}
-			}
-
-			// Group cells into weeks - only if we have any day cells for this month
-			const dayCount = monthCells.filter((cell) => cell.type === 'day').length;
-			if (dayCount > 0) {
-				const weeks: CalendarCell[][] = [];
-				for (let i = 0; i < monthCells.length; i += 7) {
-					const week = monthCells.slice(i, i + 7);
-					// Pad the last week if necessary
-					while (week.length < 7) {
-						week.push({ type: 'empty' });
-					}
-					weeks.push(week);
 				}
 
-				monthGrids.push({
-					monthName,
+				const dayData: CalendarDay = {
+					day,
+					date,
+					dateString,
+					shifts: dayShifts,
+					userShifts: dayUserShifts,
+					isToday: date.toDateString() === today.toDateString(),
+					isPast: date < today && date.toDateString() !== today.toDateString(),
+					isOnDuty,
 					monthOffset,
-					weeks
+					isWithinRange // Add flag to indicate if day is within selected range
+				};
+
+				monthCells.push({
+					type: 'day',
+					dayData
 				});
 			}
+
+			// Group cells into weeks - show complete months to maintain grid alignment
+			const weeks: CalendarCell[][] = [];
+			for (let i = 0; i < monthCells.length; i += 7) {
+				const week = monthCells.slice(i, i + 7);
+				// Pad the last week if necessary
+				while (week.length < 7) {
+					week.push({ type: 'empty' });
+				}
+				weeks.push(week);
+			}
+
+			// Always add the month grid to maintain proper calendar structure
+			monthGrids.push({
+				monthName,
+				monthOffset,
+				weeks
+			});
 		}
 
 		return { monthGrids, firstMonthName };

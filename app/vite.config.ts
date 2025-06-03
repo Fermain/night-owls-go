@@ -72,7 +72,7 @@ export default defineConfig(({ mode: _mode }) => {
 				? undefined
 				: {
 						'/api': {
-							target: 'http://localhost:5888',
+							target: 'https://mm.nightowls.app',
 							changeOrigin: true,
 							secure: false
 						}

@@ -32,6 +32,7 @@
 		isToday={cell.dayData.isToday}
 		isOnDuty={cell.dayData.isOnDuty}
 		monthOffset={cell.dayData.monthOffset}
+		isWithinRange={cell.dayData.isWithinRange}
 		shifts={cell.dayData.shifts}
 		userShifts={cell.dayData.userShifts}
 		{onShiftSelect}
