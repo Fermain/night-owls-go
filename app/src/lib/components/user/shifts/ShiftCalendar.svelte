@@ -21,6 +21,9 @@
 	// Don't render anything if there are no shifts
 	const hasAnyShifts = $derived(shifts.length > 0);
 
+	// Show calendar if there are shifts OR user bookings
+	const shouldShowCalendar = $derived(shifts.length > 0 || userBookings.length > 0);
+
 	// Calculate how many months to show based on selected day range
 	const monthsToShow = $derived.by(() => {
 		const days = parseInt(selectedDayRange);
@@ -157,7 +160,7 @@
 </script>
 
 <!-- Only render if there are shifts -->
-{#if hasAnyShifts}
+{#if shouldShowCalendar}
 	<div class="space-y-6">
 		<!-- Header -->
 		<CalendarHeader firstMonthName={calendarData.firstMonthName} />
