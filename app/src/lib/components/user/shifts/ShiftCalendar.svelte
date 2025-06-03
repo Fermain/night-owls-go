@@ -1,7 +1,10 @@
 <script lang="ts">
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import { formatTime } from '$lib/utils/shiftFormatting';
+	import CalendarHeader from './CalendarHeader.svelte';
+	import CalendarDayNames from './CalendarDayNames.svelte';
+	import CalendarMonthGrid from './CalendarMonthGrid.svelte';
+	import CalendarLegend from './CalendarLegend.svelte';
 	import type { AvailableShiftSlot, UserBooking } from '$lib/services/api/user';
+	import type { CalendarDay, CalendarCell, MonthGrid } from './calendar-types.js';
 
 	let {
 		shifts = [],
@@ -17,34 +20,6 @@
 
 	// Don't render anything if there are no shifts
 	const hasAnyShifts = $derived(shifts.length > 0);
-
-	// Type for calendar day data
-	interface CalendarDay {
-		day: number;
-		date: Date;
-		dateString: string;
-		shifts: AvailableShiftSlot[];
-		userShifts: UserBooking[];
-		isToday: boolean;
-		isPast: boolean;
-		isOnDuty: boolean;
-		monthOffset: number;
-	}
-
-	// Type for calendar cell (can be day or month title)
-	interface CalendarCell {
-		type: 'day' | 'month-title' | 'empty';
-		dayData?: CalendarDay;
-		monthName?: string;
-		monthOffset?: number;
-	}
-
-	// Type for month grid
-	interface MonthGrid {
-		monthName: string;
-		monthOffset: number;
-		weeks: CalendarCell[][];
-	}
 
 	// Calculate how many months to show based on selected day range
 	const monthsToShow = $derived.by(() => {
@@ -179,164 +154,25 @@
 
 		return { monthGrids, firstMonthName };
 	});
-
-	// Day names
-	const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-	// Check if user is booked for a specific shift
-	function isUserBookedForShift(shift: AvailableShiftSlot, userShifts: UserBooking[]): boolean {
-		return userShifts.some((booking) => {
-			const shiftStart = new Date(shift.start_time).getTime();
-			const bookingStart = new Date(booking.shift_start).getTime();
-			return Math.abs(shiftStart - bookingStart) < 60000; // Within 1 minute tolerance
-		});
-	}
-
-	// Check if a specific shift is currently active
-	function isShiftActive(shift: AvailableShiftSlot, userShifts: UserBooking[]): boolean {
-		const now = new Date();
-		return userShifts.some((booking) => {
-			const shiftStart = new Date(shift.start_time).getTime();
-			const bookingStart = new Date(booking.shift_start).getTime();
-			const bookingEnd = new Date(booking.shift_end);
-			return (
-				Math.abs(shiftStart - bookingStart) < 60000 &&
-				now >= new Date(booking.shift_start) &&
-				now <= bookingEnd
-			);
-		});
-	}
-
-	// Get background class for month distinction
-	function getMonthBackground(monthOffset: number): string {
-		if (monthOffset === 0) return ''; // Current month - no background
-		if (monthOffset === 1) return 'bg-muted/20'; // Next month - subtle background
-		return 'bg-muted/40'; // Third month - slightly more background
-	}
 </script>
 
 <!-- Only render if there are shifts -->
 {#if hasAnyShifts}
 	<div class="space-y-6">
 		<!-- Header -->
-		<div class="flex items-center gap-2 px-4">
-			<CalendarIcon class="h-4 w-4" />
-			<h3 class="text-base font-semibold">Shift Calendar</h3>
-			<span class="text-sm text-muted-foreground">- {calendarData.firstMonthName}</span>
-		</div>
+		<CalendarHeader firstMonthName={calendarData.firstMonthName} />
 
-		<!-- Day names header (only once) -->
-		<div class="px-4">
-			<div class="grid grid-cols-7 gap-1 text-center">
-				{#each dayNames as dayName, index (index)}
-					<div class="text-xs font-medium text-muted-foreground p-2">
-						{dayName}
-					</div>
-				{/each}
-			</div>
-		</div>
+		<!-- Day names header -->
+		<CalendarDayNames />
 
 		<!-- Seamless Month Grids -->
 		<div class="space-y-8">
-			{#each calendarData.monthGrids as monthGrid, monthIndex (monthGrid.monthOffset)}
-				<div class="px-4">
-					<!-- Month grid with embedded month names -->
-					<div class="space-y-1">
-						{#each monthGrid.weeks as week, weekIndex (weekIndex)}
-							<div class="grid grid-cols-7 gap-1">
-								{#each week as cell, cellIndex (cellIndex)}
-									{#if cell.type === 'empty'}
-										<!-- Empty cell for padding -->
-										<div class="aspect-square"></div>
-									{:else if cell.type === 'month-title'}
-										<!-- Month name with overflow in first empty cell -->
-										<div
-											class="aspect-square border-2 border-dashed border-muted/30 rounded relative flex items-center justify-start overflow-visible z-10"
-										>
-											<span class="text-sm font-bold text-muted-foreground whitespace-nowrap pl-1">
-												{cell.monthName}
-											</span>
-										</div>
-									{:else if cell.type === 'day' && cell.dayData}
-										<!-- Regular day cell -->
-										<div
-											class="aspect-square border-2 rounded relative p-1
-												{cell.dayData.isPast ? 'bg-muted/30 border-muted/50' : 'border-muted/30'}
-												{cell.dayData.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-												{cell.dayData.isOnDuty ? 'bg-green-100 border-green-400' : ''}
-												{getMonthBackground(cell.dayData.monthOffset)}
-											"
-										>
-											<!-- Day number -->
-											<div
-												class="absolute top-1 left-1 text-xs font-medium leading-none
-												{cell.dayData.isOnDuty ? 'text-green-800' : 'text-muted-foreground'}
-											"
-											>
-												{cell.dayData.day}
-											</div>
-
-											<!-- Shift slots container -->
-											<div class="pt-4 h-full flex flex-col gap-0.5 overflow-hidden">
-												{#each cell.dayData.shifts as shift, shiftIndex (shift.start_time)}
-													{@const isBooked = isUserBookedForShift(shift, cell.dayData.userShifts)}
-													{@const isActive = isShiftActive(shift, cell.dayData.userShifts)}
-
-													<button
-														class="text-xs px-1 py-0.5 rounded transition-colors flex items-center justify-between
-															{isBooked
-															? isActive
-																? 'bg-green-600 text-white font-bold'
-																: 'bg-blue-100 text-blue-800 border border-blue-300'
-															: 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30'}
-														"
-														onclick={() => !isBooked && onShiftSelect(shift)}
-														disabled={isBooked || cell.dayData.isPast}
-														title={isBooked
-															? 'Already booked'
-															: `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`}
-													>
-														<span class="truncate flex-1 text-left leading-none">
-															{formatTime(shift.start_time)}
-														</span>
-														{#if isBooked}
-															<span class="ml-1 leading-none">🦉</span>
-														{/if}
-													</button>
-												{/each}
-											</div>
-										</div>
-									{/if}
-								{/each}
-							</div>
-						{/each}
-					</div>
-				</div>
+			{#each calendarData.monthGrids as monthGrid (monthGrid.monthOffset)}
+				<CalendarMonthGrid {monthGrid} {onShiftSelect} />
 			{/each}
 		</div>
 
 		<!-- Legend -->
-		<div class="px-4">
-			<div class="flex flex-wrap gap-4 text-xs text-muted-foreground">
-				<div class="flex items-center gap-1">
-					<div class="w-3 h-3 bg-primary/10 border border-primary/30 rounded"></div>
-					<span>Available slot</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<span class="text-base">🦉</span>
-					<span>My shift</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<div class="w-3 h-3 bg-green-600 rounded"></div>
-					<span>Active now</span>
-				</div>
-				{#if monthsToShow > 1}
-					<div class="flex items-center gap-1">
-						<div class="w-3 h-3 bg-muted/20 border border-muted/30 rounded"></div>
-						<span>Next month</span>
-					</div>
-				{/if}
-			</div>
-		</div>
+		<CalendarLegend {monthsToShow} />
 	</div>
 {/if}
