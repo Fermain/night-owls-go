@@ -414,6 +414,16 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Rep
 	return i, err
 }
 
+const deleteReport = `-- name: DeleteReport :exec
+DELETE FROM reports 
+WHERE report_id = ?
+`
+
+func (q *Queries) DeleteReport(ctx context.Context, reportID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteReport, reportID)
+	return err
+}
+
 const getReportByBookingID = `-- name: GetReportByBookingID :one
 SELECT report_id, booking_id, user_id, severity, message, created_at, latitude, longitude, gps_accuracy, gps_timestamp, archived_at FROM reports
 WHERE booking_id = ? AND archived_at IS NULL

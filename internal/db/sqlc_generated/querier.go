@@ -27,7 +27,9 @@ type Querier interface {
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteBooking(ctx context.Context, bookingID int64) error
+	DeleteBroadcast(ctx context.Context, broadcastID int64) error
 	DeleteEmergencyContact(ctx context.Context, contactID int64) error
+	DeleteReport(ctx context.Context, reportID int64) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error

@@ -157,4 +157,8 @@ AND (
 -- name: BulkArchiveReports :exec
 UPDATE reports 
 SET archived_at = CURRENT_TIMESTAMP 
-WHERE report_id IN (sqlc.slice('report_ids')) AND archived_at IS NULL; 
+WHERE report_id IN (sqlc.slice('report_ids')) AND archived_at IS NULL;
+
+-- name: DeleteReport :exec
+DELETE FROM reports 
+WHERE report_id = ?; 
