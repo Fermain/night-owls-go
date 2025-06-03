@@ -157,6 +157,24 @@ export function formatTime(timeString: string | undefined): string {
 }
 
 /**
+ * Formats time in compact hour format (e.g., '0AM', '2AM', '4AM').
+ * Optimized for mobile displays where space is limited.
+ */
+export function formatTimeCompact(timeString: string | undefined): string {
+	if (!timeString) return '--';
+	try {
+		const date = new Date(timeString);
+		const hour = date.getHours();
+		const period = hour >= 12 ? 'PM' : 'AM';
+		const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+		return `${hour12}${period}`;
+	} catch (error) {
+		console.error('Error formatting compact time:', error);
+		return '--';
+	}
+}
+
+/**
  * Formats a time range (start-end).
  * Helper function for displaying time ranges.
  */

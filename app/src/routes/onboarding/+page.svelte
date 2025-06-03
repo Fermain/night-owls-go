@@ -279,7 +279,9 @@
 										Stay updated with important shift information and community updates.
 									</p>
 
-									<div class="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card">
+									<div
+										class="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card"
+									>
 										<div class="flex-shrink-0">
 											<BellIcon class="h-5 w-5 text-primary" />
 										</div>

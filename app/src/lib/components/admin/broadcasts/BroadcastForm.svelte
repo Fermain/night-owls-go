@@ -164,7 +164,9 @@
 		<!-- Push Notifications -->
 		<div class="flex items-center space-x-2">
 			<Switch id="push" bind:checked={enablePushNotifications} />
-			<Label for="push" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+			<Label
+				for="push"
+				class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 				>Send push alerts to mobile devices</Label
 			>
 		</div>
