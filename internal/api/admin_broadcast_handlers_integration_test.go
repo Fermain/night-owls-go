@@ -43,6 +43,7 @@ func TestAdminBroadcastHandlers_CreateBroadcast_Success(t *testing.T) {
 
 	// Test create immediate broadcast
 	createReq := map[string]interface{}{
+		"title":        "Test Broadcast",
 		"message":      "Test broadcast message",
 		"audience":     "all",
 		"push_enabled": true,
@@ -76,6 +77,7 @@ func TestAdminBroadcastHandlers_CreateBroadcast_Scheduled(t *testing.T) {
 	// Test create scheduled broadcast
 	scheduledTime := time.Now().UTC().Add(24 * time.Hour)
 	createReq := map[string]interface{}{
+		"title":        "Scheduled Broadcast",
 		"message":      "Scheduled broadcast message",
 		"audience":     "owls",
 		"push_enabled": false,
@@ -135,6 +137,7 @@ func TestAdminBroadcastHandlers_CreateBroadcast_DifferentAudiences(t *testing.T)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			createReq := map[string]interface{}{
+				"title":        fmt.Sprintf("Test Broadcast for %s", tc.audience),
 				"message":      fmt.Sprintf("Test message for %s", tc.audience),
 				"audience":     tc.audience,
 				"push_enabled": true,
@@ -167,23 +170,28 @@ func TestAdminBroadcastHandlers_CreateBroadcast_ValidationErrors(t *testing.T) {
 		expectedMsg string
 	}{
 		{
-			name:        "missing message",
+			name:        "missing title",
 			request:     map[string]interface{}{"audience": "all", "push_enabled": true},
+			expectedMsg: "Title is required",
+		},
+		{
+			name:        "missing message",
+			request:     map[string]interface{}{"title": "Test Broadcast", "audience": "all", "push_enabled": true},
 			expectedMsg: "Message is required",
 		},
 		{
 			name:        "missing audience",
-			request:     map[string]interface{}{"message": "Test", "push_enabled": true},
+			request:     map[string]interface{}{"title": "Test Broadcast", "message": "Test", "push_enabled": true},
 			expectedMsg: "Audience is required",
 		},
 		{
 			name:        "invalid audience",
-			request:     map[string]interface{}{"message": "Test", "audience": "invalid", "push_enabled": true},
+			request:     map[string]interface{}{"title": "Test Broadcast", "message": "Test", "audience": "invalid", "push_enabled": true},
 			expectedMsg: "Invalid audience",
 		},
 		{
 			name:        "empty message",
-			request:     map[string]interface{}{"message": "", "audience": "all", "push_enabled": true},
+			request:     map[string]interface{}{"title": "Test Broadcast", "message": "", "audience": "all", "push_enabled": true},
 			expectedMsg: "Message is required",
 		},
 	}
@@ -373,6 +381,7 @@ func TestAdminBroadcastHandlers_BroadcastWorkflow_Complete(t *testing.T) {
 
 	// Step 1: Create a broadcast
 	createReq := map[string]interface{}{
+		"title":        "Complete Workflow Test Broadcast",
 		"message":      "Complete workflow test broadcast",
 		"audience":     "all",
 		"push_enabled": true,
@@ -460,6 +469,7 @@ func TestAdminBroadcastHandlers_RecipientCountCalculation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("audience_%s", tc.audience), func(t *testing.T) {
 			createReq := map[string]interface{}{
+				"title":        fmt.Sprintf("Test Broadcast for %s", tc.audience),
 				"message":      fmt.Sprintf("Test for %s", tc.audience),
 				"audience":     tc.audience,
 				"push_enabled": false,
@@ -494,7 +504,7 @@ func TestAdminBroadcastHandlers_Unauthorized_NonAdmin(t *testing.T) {
 	}{
 		{"GET", "/api/admin/broadcasts", nil},
 		{"GET", "/api/admin/broadcasts/1", nil},
-		{"POST", "/api/admin/broadcasts", []byte(`{"message":"test","audience":"all","push_enabled":true}`)},
+		{"POST", "/api/admin/broadcasts", []byte(`{"title":"Test Broadcast","message":"test","audience":"all","push_enabled":true}`)},
 	}
 
 	for _, endpoint := range endpoints {
