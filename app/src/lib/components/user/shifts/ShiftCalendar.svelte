@@ -129,6 +129,17 @@
 						return bookingDate === dateString;
 					});
 
+					// Debug logging for days with shifts or bookings
+					if (dayShifts.length > 0 || dayUserShifts.length > 0) {
+						console.log('Calendar day processing:', {
+							date: dateString,
+							dayShifts: dayShifts.length,
+							dayUserShifts: dayUserShifts.length,
+							shifts: dayShifts,
+							bookings: dayUserShifts
+						});
+					}
+
 					// Check if user is currently on duty (active shift)
 					const now = new Date();
 					const isOnDuty = dayUserShifts.some((booking) => {

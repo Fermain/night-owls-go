@@ -45,8 +45,8 @@
 	// State for bulk assign dialog
 	let showBulkAssignDialog = $state(false);
 
-	// Shift limit for pagination
-	let shiftLimit = $state(10);
+	// Shift limit for pagination in the list view only (not API limit)
+	let displayShiftLimit = $state(10);
 
 	// Query states - will be initialized in onMount with proper types
 	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
@@ -68,21 +68,26 @@
 	onMount(() => {
 		// Query for available shifts with dynamic date range
 		availableShiftsQuery = createQuery({
-			queryKey: ['available-shifts', dayRange, shiftLimit],
-			queryFn: () => {
+			queryKey: ['available-shifts', dayRange],
+			queryFn: async () => {
 				const { from, to } = getShiftDateRange(dayRange);
-				return UserApiService.getAvailableShifts({ from, to, limit: shiftLimit });
+				console.log('API Request - Date range:', { from, to, dayRange });
+				const result = await UserApiService.getAvailableShifts({ from, to });
+				console.log('API Response - Available shifts:', result.length, result);
+				return result;
 			}
 		});
 
 		// Query for user's bookings (only if authenticated)
 		userBookingsQuery = createQuery({
 			queryKey: ['user-bookings'],
-			queryFn: () => {
+			queryFn: async () => {
 				if (!$userSession.isAuthenticated) {
 					throw new Error('User not authenticated');
 				}
-				return UserApiService.getMyBookings();
+				const result = await UserApiService.getMyBookings();
+				console.log('API Response - User bookings:', result);
+				return result;
 			},
 			enabled: $userSession.isAuthenticated,
 			retry: false
@@ -128,13 +133,19 @@
 	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
 	const userBookings = $derived(($userBookingsQuery?.data as UserBooking[]) ?? []);
 
+	// Debug logging for derived data
+	$effect(() => {
+		console.log('Derived data - availableShifts:', availableShifts.length, availableShifts);
+		console.log('Derived data - userBookings:', userBookings.length, userBookings);
+	});
+
 	// Calculate how many shifts to display based on shiftLimit, but always show at least 5
-	const displayLimit = $derived(Math.max(5, Math.min(shiftLimit, availableShifts.length)));
+	const displayLimit = $derived(Math.max(5, Math.min(displayShiftLimit, availableShifts.length)));
 	const displayedShifts = $derived(availableShifts.slice(0, displayLimit));
 
 	// Event handlers
 	function handleShowMoreShifts() {
-		shiftLimit = shiftLimit + 10; // Increase limit by 10
+		displayShiftLimit = displayShiftLimit + 10; // Increase limit by 10
 	}
 
 	// Bulk assign handlers
@@ -320,7 +331,7 @@
 	// Check if there are more shifts to load
 	const hasMoreShifts = $derived(
 		availableShifts.length > displayedShifts.length ||
-			($availableShiftsQuery?.data?.length === shiftLimit && shiftLimit < 100)
+			($availableShiftsQuery?.data?.length === displayShiftLimit && displayShiftLimit < 100)
 	); // Assume more might be available if we hit the limit
 </script>
 
