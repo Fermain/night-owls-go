@@ -6,10 +6,18 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
+	// Components
 	import EmergencyContactThumbnail from '$lib/components/admin/emergency-contacts/EmergencyContactThumbnail.svelte';
-	import type { EmergencyContact } from '$lib/utils/emergencyContacts';
-	import { filterContacts } from '$lib/utils/emergencyContacts';
+
+	// Types using our new domain types and API mappings
+	import type { EmergencyContact } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIEmergencyContactArrayToDomain } from '$lib/types/api-mappings';
 
 	let searchTerm = $state('');
 
@@ -22,16 +30,19 @@
 		}
 	];
 
-	// Create a query for emergency contacts
+	// Create a query for emergency contacts using our new API utilities
 	const contactsQuery = $derived(
-		createQuery<EmergencyContact[], Error, EmergencyContact[], [string]>({
+		createQuery<EmergencyContact[], Error>({
 			queryKey: ['adminEmergencyContacts'],
 			queryFn: async () => {
-				const response = await authenticatedFetch('/api/admin/emergency-contacts');
-				if (!response.ok) {
-					throw new Error('Failed to load emergency contacts');
+				try {
+					const apiContacts = await apiGet<components['schemas']['api.EmergencyContactResponse'][]>(
+						'/api/admin/emergency-contacts'
+					);
+					return mapAPIEmergencyContactArrayToDomain(apiContacts);
+				} catch (error) {
+					throw classifyError(error);
 				}
-				return response.json();
 			},
 			staleTime: 1000 * 60 * 5, // 5 minutes
 			gcTime: 1000 * 60 * 10, // 10 minutes
@@ -39,10 +50,33 @@
 		})
 	);
 
+	// Domain-aware filter function
+	function filterEmergencyContacts(
+		contacts: EmergencyContact[],
+		searchTerm: string
+	): EmergencyContact[] {
+		if (!searchTerm) return sortContactsByDisplayOrder(contacts);
+
+		const term = searchTerm.toLowerCase();
+		return contacts
+			.filter(
+				(contact) =>
+					contact.name?.toLowerCase().includes(term) ||
+					contact.number?.includes(term) ||
+					contact.description?.toLowerCase().includes(term)
+			)
+			.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+	}
+
+	// Sort contacts by display order (domain-aware)
+	function sortContactsByDisplayOrder(contacts: EmergencyContact[]): EmergencyContact[] {
+		return [...contacts].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+	}
+
 	// Filtered contacts for display in sidebar
 	const filteredContacts = $derived.by(() => {
 		const contacts = $contactsQuery.data ?? [];
-		return filterContacts(contacts, searchTerm);
+		return filterEmergencyContacts(contacts, searchTerm);
 	});
 
 	// Handle selecting a contact for editing
@@ -82,7 +116,7 @@
 				<div class="p-4 text-sm">Loading contacts...</div>
 			{:else if $contactsQuery.isError}
 				<div class="p-4 text-sm text-destructive">
-					Error loading contacts: {$contactsQuery.error.message}
+					Error loading contacts: {$contactsQuery.error?.message || 'Failed to load contacts'}
 				</div>
 			{:else if filteredContacts && filteredContacts.length > 0}
 				{#each filteredContacts as contact (contact.id)}

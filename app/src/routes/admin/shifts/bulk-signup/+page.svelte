@@ -18,9 +18,17 @@
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet, apiPost } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
 	import { formatDistanceToNow, format } from 'date-fns';
-	import type { UserData } from '$lib/schemas/user';
+
+	// Types - using domain User type but keeping AdminShiftSlot for now
+	import type { User } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIUserArrayToDomain } from '$lib/types/api-mappings';
 	import type { AdminShiftSlot } from '$lib/types';
 	import { formatShiftTitle, formatTimeSlot } from '$lib/utils/shiftFormatting';
 
@@ -44,86 +52,79 @@
 		scheduleId: number;
 	} | null>(null);
 
-	// Fetch users
-	const usersQuery = createQuery<UserData[], Error>({
+	// Fetch users using our new API utilities
+	const usersQuery = createQuery<User[], Error>({
 		queryKey: ['adminUsers'],
 		queryFn: async () => {
-			const response = await authenticatedFetch('/api/admin/users');
-			if (!response.ok) throw new Error('Failed to fetch users');
-			return response.json();
+			try {
+				const apiUsers =
+					await apiGet<components['schemas']['api.UserAPIResponse'][]>('/api/admin/users');
+				return mapAPIUserArrayToDomain(apiUsers);
+			} catch (error) {
+				throw classifyError(error);
+			}
 		}
 	});
 
-	// Fetch shift slots with date range
+	// Fetch shift slots with date range using our new API utilities
 	const shiftsQuery = createQuery<AdminShiftSlot[], Error>({
 		queryKey: ['adminShiftSlots', 'bulk-assignment'],
 		queryFn: async () => {
-			// Calculate date range on each query
-			let fromDate: string;
-			let toDate: string;
+			try {
+				// Calculate date range on each query
+				let fromDate: string;
+				let toDate: string;
 
-			if (dateRangeStart) {
-				fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
-				console.log('Using selected start date:', dateRangeStart, '→', fromDate);
-			} else {
-				fromDate = new Date().toISOString();
-				console.log('Using default start date (now):', fromDate);
+				if (dateRangeStart) {
+					fromDate = new Date(dateRangeStart + 'T00:00:00Z').toISOString();
+					console.log('Using selected start date:', dateRangeStart, '→', fromDate);
+				} else {
+					fromDate = new Date().toISOString();
+					console.log('Using default start date (now):', fromDate);
+				}
+
+				if (dateRangeEnd) {
+					toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
+					console.log('Using selected end date:', dateRangeEnd, '→', toDate);
+				} else {
+					const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+					toDate = futureDate.toISOString();
+					console.log('Using default end date (30 days):', toDate);
+				}
+
+				const params = { from: fromDate, to: toDate };
+
+				console.log('Fetching shifts with URL:', `/api/admin/schedules/all-slots`);
+
+				const data = await apiGet<AdminShiftSlot[]>('/api/admin/schedules/all-slots', { params });
+				console.log('Received shifts data:', data.length, 'shifts');
+				return data;
+			} catch (error) {
+				throw classifyError(error);
 			}
-
-			if (dateRangeEnd) {
-				toDate = new Date(dateRangeEnd + 'T23:59:59Z').toISOString();
-				console.log('Using selected end date:', dateRangeEnd, '→', toDate);
-			} else {
-				const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-				toDate = futureDate.toISOString();
-				console.log('Using default end date (30 days):', toDate);
-			}
-
-			const params = new URLSearchParams();
-			params.append('from', fromDate);
-			params.append('to', toDate);
-
-			console.log(
-				'Fetching shifts with URL:',
-				`/api/admin/schedules/all-slots?${params.toString()}`
-			);
-
-			const response = await authenticatedFetch(
-				`/api/admin/schedules/all-slots?${params.toString()}`
-			);
-			if (!response.ok) throw new Error('Failed to fetch shifts');
-			const data = await response.json();
-			console.log('Received shifts data:', data.length, 'shifts');
-			return data;
 		},
 		staleTime: 1000 * 60 * 5
 	});
 
-	// Bulk assignment mutation
+	// Bulk assignment mutation using our new API utilities
 	const bulkAssignMutation = createMutation({
 		mutationFn: async (assignments: Array<{ scheduleId: number; startTime: string }>) => {
 			const results = [];
 			for (const assignment of assignments) {
-				const response = await authenticatedFetch('/api/admin/bookings/assign', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
+				try {
+					const booking = await apiPost('/api/admin/bookings/assign', {
 						user_id: parseInt(selectedUserId),
 						schedule_id: assignment.scheduleId,
 						start_time: assignment.startTime
-					})
-				});
-
-				if (!response.ok) {
-					const errorData = await response.json();
+					});
+					results.push({ success: true, booking });
+				} catch (error) {
+					const appError = classifyError(error);
 					results.push({
 						success: false,
-						error: errorData.error || 'Failed to create booking',
+						error: appError.message || 'Failed to create booking',
 						startTime: assignment.startTime
 					});
-				} else {
-					const booking = await response.json();
-					results.push({ success: true, booking });
 				}
 			}
 			return results;
@@ -146,7 +147,8 @@
 			}
 		},
 		onError: (error: Error) => {
-			formError = error.message;
+			const appError = classifyError(error);
+			formError = appError.message;
 		}
 	});
 

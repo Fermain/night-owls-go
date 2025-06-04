@@ -1,4 +1,7 @@
 import type { components } from '$lib/types/api';
+import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
+import { apiGet } from './api';
 
 /**
  * Emergency contact types from OpenAPI spec
@@ -99,4 +102,118 @@ export function getDefaultContact(contacts: EmergencyContact[]): EmergencyContac
  */
 export function canDeleteContact(contact: EmergencyContact): boolean {
 	return !contact.is_default;
+}
+
+const STORAGE_KEY = 'night-owls-emergency-contacts';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// Store for emergency contacts
+export const emergencyContacts = writable<EmergencyContact[]>([]);
+export const emergencyContactsLoading = writable(false);
+export const emergencyContactsError = writable<string | null>(null);
+
+// Get cached contacts from localStorage
+function getCachedContacts(): EmergencyContact[] {
+	if (!browser) return [];
+
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (!stored) return [];
+
+		const data = JSON.parse(stored);
+		if (!data.contacts || !data.timestamp) return [];
+
+		// Check if cache is still valid
+		const age = Date.now() - data.timestamp;
+		if (age > CACHE_DURATION) {
+			localStorage.removeItem(STORAGE_KEY);
+			return [];
+		}
+
+		return data.contacts;
+	} catch {
+		localStorage.removeItem(STORAGE_KEY);
+		return [];
+	}
+}
+
+// Cache contacts to localStorage
+function cacheContacts(contacts: EmergencyContact[]): void {
+	if (!browser) return;
+
+	try {
+		const data = {
+			contacts,
+			timestamp: Date.now()
+		};
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	} catch (error) {
+		console.error('Failed to cache emergency contacts:', error);
+	}
+}
+
+// Fetch contacts from API and cache them
+export async function fetchEmergencyContacts(): Promise<EmergencyContact[]> {
+	try {
+		emergencyContactsLoading.set(true);
+		emergencyContactsError.set(null);
+
+		const response = await apiGet('/api/emergency-contacts');
+		const contacts = response as EmergencyContact[];
+
+		// Sort using existing utility function
+		const sortedContacts = sortContactsByDisplayOrder(contacts);
+
+		// Cache for offline use
+		cacheContacts(sortedContacts);
+
+		// Update store
+		emergencyContacts.set(sortedContacts);
+
+		return sortedContacts;
+	} catch (error) {
+		const errorMessage =
+			error instanceof Error ? error.message : 'Failed to load emergency contacts';
+		emergencyContactsError.set(errorMessage);
+		throw error;
+	} finally {
+		emergencyContactsLoading.set(false);
+	}
+}
+
+// Load contacts (try cache first, then fetch if online)
+export async function loadEmergencyContacts(): Promise<EmergencyContact[]> {
+	emergencyContactsLoading.set(true);
+
+	// Try cache first
+	const cached = getCachedContacts();
+	if (cached.length > 0) {
+		emergencyContacts.set(cached);
+		emergencyContactsLoading.set(false);
+
+		// If online, refresh in background
+		if (browser && navigator.onLine) {
+			fetchEmergencyContacts().catch(console.error);
+		}
+
+		return cached;
+	}
+
+	// No cache, try to fetch if online
+	if (browser && navigator.onLine) {
+		return await fetchEmergencyContacts();
+	}
+
+	// Offline with no cache
+	emergencyContactsLoading.set(false);
+	emergencyContactsError.set(
+		'Emergency contacts not available offline. Connect to internet to download.'
+	);
+	return [];
+}
+
+// Clear cache
+export function clearEmergencyContactsCache(): void {
+	if (!browser) return;
+	localStorage.removeItem(STORAGE_KEY);
 }

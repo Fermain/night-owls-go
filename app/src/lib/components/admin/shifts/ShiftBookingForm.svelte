@@ -17,12 +17,20 @@
 	import { cn } from '$lib/utils';
 	import { formatTimeSlot, formatRelativeTime } from '$lib/utils/dateFormatting';
 	import type { AdminShiftSlot } from '$lib/types';
-	import type { UserData } from '$lib/schemas/user';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet, apiPost } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import { formatShiftTitle } from '$lib/utils/shiftFormatting';
+
+	// Types - using domain User type but keeping AdminShiftSlot for now
+	import type { User } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIUserArrayToDomain } from '$lib/types/api-mappings';
 
 	interface Props {
 		selectedShift: AdminShiftSlot;
@@ -41,15 +49,17 @@
 	let assignmentError = $state<string | null>(null);
 	let showReassignForm = $state(false);
 
-	// Fetch users query
-	const usersQuery = createQuery<UserData[], Error>({
+	// Fetch users query using our new API utilities
+	const usersQuery = createQuery<User[], Error>({
 		queryKey: ['allAdminUsersForBooking'],
 		queryFn: async () => {
-			const response = await authenticatedFetch('/api/admin/users');
-			if (!response.ok) {
-				throw new Error('Failed to fetch users');
+			try {
+				const apiUsers =
+					await apiGet<components['schemas']['api.UserAPIResponse'][]>('/api/admin/users');
+				return mapAPIUserArrayToDomain(apiUsers);
+			} catch (error) {
+				throw classifyError(error);
 			}
-			return response.json();
 		}
 	});
 
@@ -57,7 +67,7 @@
 	const users = $derived($usersQuery.data ?? []);
 	const selectedUser = $derived(users.find((u) => u.id.toString() === primaryUserValue));
 
-	// Assignment mutation
+	// Assignment mutation using our new API utilities
 	const assignShiftMutation = createMutation({
 		mutationFn: async (assignmentData: {
 			schedule_id: number;
@@ -65,26 +75,19 @@
 			user_id: number;
 			buddy_name?: string;
 		}) => {
-			// Note: Admin assignment may need to be extended to support buddy
-			// For now, we'll send the basic assignment and buddy separately if needed
-			const response = await authenticatedFetch('/api/admin/bookings/assign', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+			try {
+				// Note: Admin assignment may need to be extended to support buddy
+				// For now, we'll send the basic assignment and buddy separately if needed
+				return await apiPost('/api/admin/bookings/assign', {
 					schedule_id: assignmentData.schedule_id,
 					start_time: assignmentData.start_time,
 					user_id: assignmentData.user_id
 					// TODO: Add buddy support to admin endpoint
 					// buddy_name: assignmentData.buddy_name
-				})
-			});
-
-			if (!response.ok) {
-				const error = await response.json().catch(() => ({ message: 'Assignment failed' }));
-				throw new Error(error.message || 'Failed to assign shift');
+				});
+			} catch (error) {
+				throw classifyError(error);
 			}
-
-			return response.json();
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
@@ -97,31 +100,23 @@
 			onBookingSuccess();
 		},
 		onError: (error: Error) => {
-			assignmentError = error.message;
+			const appError = classifyError(error);
+			assignmentError = appError.message;
 		}
 	});
 
-	// Clear assignment mutation
+	// Clear assignment mutation using our new API utilities
 	const clearAssignmentMutation = createMutation({
 		mutationFn: async () => {
-			// Note: This endpoint may need to be implemented in the backend
-			const response = await authenticatedFetch(`/api/admin/bookings/unassign`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+			try {
+				// Note: This endpoint may need to be implemented in the backend
+				return await apiPost('/api/admin/bookings/unassign', {
 					schedule_id: selectedShift.schedule_id,
 					start_time: selectedShift.start_time
-				})
-			});
-
-			if (!response.ok) {
-				const error = await response
-					.json()
-					.catch(() => ({ message: 'Failed to clear assignment' }));
-				throw new Error(error.message || 'Failed to clear assignment');
+				});
+			} catch (error) {
+				throw classifyError(error);
 			}
-
-			return response.json();
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['adminShiftSlots'] });
@@ -131,7 +126,8 @@
 			onBookingSuccess();
 		},
 		onError: (error: Error) => {
-			assignmentError = error.message;
+			const appError = classifyError(error);
+			assignmentError = appError.message;
 		}
 	});
 
@@ -202,8 +198,6 @@
 		buddyName = '';
 		assignmentError = null;
 	}
-
-	// Generate proper shift title following "XYZ Night 0-2AM" convention - using utility function now
 
 	// Check if shift is assigned
 	const isAssigned = $derived(selectedShift.is_booked);

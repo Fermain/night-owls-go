@@ -13,14 +13,22 @@
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
 
+	// Initialize background sync for offline forms
+	import '$lib/utils/backgroundSync';
+
 	let { children } = $props();
 
-	// Create QueryClient
+	// Create QueryClient with smart polling for community watch use case
 	let queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
 				staleTime: 5 * 60 * 1000, // 5 minutes
-				gcTime: 10 * 60 * 1000 // 10 minutes
+				gcTime: 10 * 60 * 1000, // 10 minutes
+				refetchOnWindowFocus: true,
+				refetchOnReconnect: true,
+				// For critical data (reports, emergency contacts)
+				retry: 3,
+				retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
 			}
 		}
 	});

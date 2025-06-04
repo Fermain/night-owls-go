@@ -21,43 +21,18 @@
 	} from 'lucide-svelte';
 	import { formatDistanceToNow } from 'date-fns';
 
-	// Types
-	interface AuditEventDetails {
-		old_role?: string;
-		new_role?: string;
-		name?: { old: string; new: string };
-		phone?: { old: string; new: string };
-		target_user_name?: string;
-		target_user_phone?: string;
-		target_role?: string;
-		deleted_count?: number;
-		[key: string]: unknown; // For any additional properties
-	}
-
-	interface AuditEvent {
-		event_id: number;
-		event_type: string;
-		actor_user_id?: number;
-		actor_name: string;
-		actor_phone: string;
-		target_user_id?: number;
-		target_name: string;
-		target_phone: string;
-		entity_type: string;
-		entity_id?: number;
-		action: string;
-		details?: AuditEventDetails;
-		ip_address: string;
-		user_agent: string;
-		created_at: string;
-	}
+	// Use our domain types
+	import type { AuditEvent } from '$lib/types/domain';
 
 	export let events: AuditEvent[];
 
 	// Get icon for event type
-	function getEventIcon(eventType: string, action: string) {
+	function getEventIcon(eventType: string, action?: string) {
+		// Extract action from eventType if not provided separately
+		const eventAction = action || eventType.split('.')[1] || '';
+
 		if (eventType.startsWith('user.')) {
-			switch (action) {
+			switch (eventAction) {
 				case 'login':
 					return Shield;
 				case 'created':
@@ -78,9 +53,12 @@
 	}
 
 	// Get color scheme for event type
-	function getEventColors(eventType: string, action: string) {
+	function getEventColors(eventType: string, action?: string) {
+		// Extract action from eventType if not provided separately
+		const eventAction = action || eventType.split('.')[1] || '';
+
 		if (eventType.startsWith('user.')) {
-			switch (action) {
+			switch (eventAction) {
 				case 'login':
 					return {
 						bg: 'bg-green-50 dark:bg-green-950/30',
@@ -129,10 +107,10 @@
 
 	// Format event description
 	function getEventDescription(event: AuditEvent): string {
-		const actor = event.actor_name || 'System';
-		const target = event.target_name;
+		const actor = event.userName || 'System';
+		const target = event.targetUserName;
 
-		switch (event.event_type) {
+		switch (event.eventType) {
 			case 'user.login':
 				return `${actor} logged in`;
 			case 'user.created':
@@ -145,13 +123,16 @@
 				return `${actor} deleted user ${target}`;
 			case 'user.bulk_deleted':
 				return `${actor} bulk deleted users`;
-			default:
-				return `${actor} performed ${event.action} on ${event.entity_type}`;
+			default: {
+				const action = event.eventType.split('.')[1] || 'performed action';
+				const entityType = event.eventType.split('.')[0] || 'entity';
+				return `${actor} ${action} on ${entityType}`;
+			}
 		}
 	}
 
 	// Format details for display
-	function formatDetails(details: AuditEventDetails | undefined): string {
+	function formatDetails(details: Record<string, unknown> | undefined): string {
 		if (!details) return '';
 
 		const parts: string[] = [];
@@ -163,10 +144,12 @@
 
 		// Handle field changes
 		if (details.name && typeof details.name === 'object') {
-			parts.push(`Name: "${details.name.old}" → "${details.name.new}"`);
+			const nameObj = details.name as { old: string; new: string };
+			parts.push(`Name: "${nameObj.old}" → "${nameObj.new}"`);
 		}
 		if (details.phone && typeof details.phone === 'object') {
-			parts.push(`Phone: ${details.phone.old} → ${details.phone.new}`);
+			const phoneObj = details.phone as { old: string; new: string };
+			parts.push(`Phone: ${phoneObj.old} → ${phoneObj.new}`);
 		}
 
 		// Handle creation details
@@ -215,9 +198,9 @@
 </script>
 
 <div class="space-y-4">
-	{#each events as event, index (event.event_id)}
-		{@const colors = getEventColors(event.event_type, event.action)}
-		{@const IconComponent = getEventIcon(event.event_type, event.action)}
+	{#each events as event, index (event.id)}
+		{@const colors = getEventColors(event.eventType)}
+		{@const IconComponent = getEventIcon(event.eventType)}
 		{@const description = getEventDescription(event)}
 		{@const detailsText = formatDetails(event.details)}
 
@@ -245,14 +228,14 @@
 							{description}
 						</h3>
 						<Badge variant="secondary" class="text-xs {colors.badge}">
-							{event.event_type}
+							{event.eventType}
 						</Badge>
 					</div>
 
 					<div class="flex items-center gap-2 text-xs text-muted-foreground">
 						<Clock class="h-3 w-3" />
-						<span title={formatTime(event.created_at)}>
-							{formatRelativeTime(event.created_at)}
+						<span title={formatTime(event.createdAt)}>
+							{formatRelativeTime(event.createdAt)}
 						</span>
 					</div>
 				</div>
@@ -266,22 +249,22 @@
 
 				<!-- Metadata -->
 				<div class="flex items-center gap-4 text-xs text-muted-foreground">
-					{#if event.ip_address}
+					{#if event.ipAddress}
 						<div class="flex items-center gap-1">
 							<MapPin class="h-3 w-3" />
-							<span>{event.ip_address}</span>
+							<span>{event.ipAddress}</span>
 						</div>
 					{/if}
-					{#if event.user_agent}
+					{#if event.userAgent}
 						<div class="flex items-center gap-1">
 							<Monitor class="h-3 w-3" />
-							<span>{parseUserAgent(event.user_agent)}</span>
+							<span>{parseUserAgent(event.userAgent)}</span>
 						</div>
 					{/if}
 				</div>
 
 				<!-- View Details Button -->
-				{#if (event.details && Object.keys(event.details).length > 0) || (event.user_agent && event.user_agent !== 'Unknown' && event.user_agent !== 'cURL/API')}
+				{#if (event.details && Object.keys(event.details).length > 0) || (event.userAgent && event.userAgent !== 'Unknown' && event.userAgent !== 'cURL/API')}
 					<Dialog>
 						<DialogTrigger>
 							<button
@@ -307,25 +290,17 @@
 										<dl class="space-y-1 text-sm">
 											<div class="flex justify-between">
 												<dt class="text-muted-foreground">Event ID:</dt>
-												<dd class="font-mono">{event.event_id}</dd>
+												<dd class="font-mono">{event.id}</dd>
 											</div>
 											<div class="flex justify-between">
 												<dt class="text-muted-foreground">Type:</dt>
 												<dd>
-													<Badge variant="secondary" class={colors.badge}>{event.event_type}</Badge>
+													<Badge variant="secondary" class={colors.badge}>{event.eventType}</Badge>
 												</dd>
 											</div>
 											<div class="flex justify-between">
-												<dt class="text-muted-foreground">Action:</dt>
-												<dd>{event.action}</dd>
-											</div>
-											<div class="flex justify-between">
-												<dt class="text-muted-foreground">Entity:</dt>
-												<dd>{event.entity_type}</dd>
-											</div>
-											<div class="flex justify-between">
 												<dt class="text-muted-foreground">Timestamp:</dt>
-												<dd class="font-mono">{formatTime(event.created_at)}</dd>
+												<dd class="font-mono">{formatTime(event.createdAt)}</dd>
 											</div>
 										</dl>
 									</div>
@@ -333,22 +308,22 @@
 									<div>
 										<h4 class="text-sm font-medium mb-2">User Information</h4>
 										<dl class="space-y-1 text-sm">
-											{#if event.actor_name}
+											{#if event.userName}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">Actor:</dt>
-													<dd>{event.actor_name}</dd>
+													<dd>{event.userName}</dd>
 												</div>
 											{/if}
-											{#if event.target_name}
+											{#if event.targetUserName}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">Target:</dt>
-													<dd>{event.target_name}</dd>
+													<dd>{event.targetUserName}</dd>
 												</div>
 											{/if}
-											{#if event.ip_address}
+											{#if event.ipAddress}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">IP Address:</dt>
-													<dd class="font-mono">{event.ip_address}</dd>
+													<dd class="font-mono">{event.ipAddress}</dd>
 												</div>
 											{/if}
 										</dl>
@@ -368,11 +343,11 @@
 								{/if}
 
 								<!-- User Agent -->
-								{#if event.user_agent && event.user_agent !== 'Unknown'}
+								{#if event.userAgent && event.userAgent !== 'Unknown'}
 									<div>
 										<h4 class="text-sm font-medium mb-2">User Agent</h4>
 										<p class="text-xs bg-muted p-3 rounded-md font-mono break-all">
-											{event.user_agent}
+											{event.userAgent}
 										</p>
 									</div>
 								{/if}

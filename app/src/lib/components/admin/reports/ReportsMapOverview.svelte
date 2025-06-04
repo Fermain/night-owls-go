@@ -13,17 +13,8 @@
 		type MapThemeKey
 	} from '$lib/config/mapThemes';
 
-	interface Report {
-		report_id: number;
-		severity: number;
-		latitude?: number;
-		longitude?: number;
-		gps_accuracy?: number;
-		message: string;
-		user_name: string;
-		created_at: string;
-		schedule_name?: string;
-	}
+	// Use our domain Report type
+	import type { Report } from '$lib/types/domain';
 
 	interface Props {
 		reports: Report[];
@@ -143,27 +134,26 @@
 		standardControls
 		class="w-full h-full night-owls-map"
 	>
-		{#each reportsWithLocation as report (report.report_id)}
+		{#each reportsWithLocation as report (report.id)}
 			{@const SeverityIcon = getSeverityIcon(report.severity)}
 			<Marker lngLat={[report.longitude!, report.latitude!]}>
 				<div class="marker-container">
 					<button
 						class="marker-pin"
 						style="background-color: {getSeverityColor(report.severity)}"
-						onclick={() => handleMarkerClick(report.report_id)}
-						title="Report #{report.report_id} - {getSeverityLabel(
-							report.severity
-						)} - {report.user_name} - {formatRelativeTime(report.created_at)}"
+						onclick={() => handleMarkerClick(report.id)}
+						title="Report #{report.id} - {getSeverityLabel(report.severity)} - {report.userName ||
+							'Unknown'} - {formatRelativeTime(report.createdAt)}"
 					>
 						<SeverityIcon class="h-3 w-3 text-white" />
 					</button>
-					{#if report.gps_accuracy && report.gps_accuracy > 0}
+					{#if report.gpsAccuracy && report.gpsAccuracy > 0}
 						<div
 							class="accuracy-circle"
 							style="width: {Math.max(
 								20,
-								Math.min(100, report.gps_accuracy / 5)
-							)}px; height: {Math.max(20, Math.min(100, report.gps_accuracy / 5))}px;"
+								Math.min(100, report.gpsAccuracy / 5)
+							)}px; height: {Math.max(20, Math.min(100, report.gpsAccuracy / 5))}px;"
 						></div>
 					{/if}
 				</div>

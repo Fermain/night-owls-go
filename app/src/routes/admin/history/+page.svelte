@@ -1,6 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { authenticatedFetch } from '$lib/utils/api';
+	import { createQuery } from '@tanstack/svelte-query';
+
+	// Utilities with new patterns
+	import { apiGet } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
+	// Components
 	import AuditTimeline from '$lib/components/admin/audit/AuditTimeline.svelte';
 	import AuditFilters from '$lib/components/admin/audit/AuditFilters.svelte';
 	import AuditStats from '$lib/components/admin/audit/AuditStats.svelte';
@@ -14,37 +19,11 @@
 	} from '$lib/components/ui/card';
 	import { Shield, Clock, Activity, Users } from 'lucide-svelte';
 
-	// Types
-	interface AuditEventDetails {
-		old_role?: string;
-		new_role?: string;
-		name?: { old: string; new: string };
-		phone?: { old: string; new: string };
-		target_user_name?: string;
-		target_user_phone?: string;
-		target_role?: string;
-		deleted_count?: number;
-		[key: string]: unknown; // For any additional properties
-	}
+	// Types using our new domain types and API mappings
+	import type { AuditEvent } from '$lib/types/domain';
+	import { mapAPIAuditEventToDomain } from '$lib/types/api-mappings';
 
-	interface AuditEvent {
-		event_id: number;
-		event_type: string;
-		actor_user_id?: number;
-		actor_name: string;
-		actor_phone: string;
-		target_user_id?: number;
-		target_name: string;
-		target_phone: string;
-		entity_type: string;
-		entity_id?: number;
-		action: string;
-		details?: AuditEventDetails;
-		ip_address: string;
-		user_agent: string;
-		created_at: string;
-	}
-
+	// Legacy interface for stats (until backend provides typed responses)
 	interface AuditStats {
 		total_events: number;
 		unique_actors: number;
@@ -59,121 +38,109 @@
 		latest_event: string;
 	}
 
-	// State
-	let events: AuditEvent[] = [];
-	let stats: AuditStats | null = null;
-	let typeStats: EventTypeStats[] = [];
-	let loading = true;
-	let error = '';
-
 	// Filters
-	let currentFilters = {
+	let currentFilters = $state({
 		event_type: '',
 		actor_user_id: '',
 		target_user_id: '',
 		limit: 50,
 		offset: 0
-	};
+	});
 
-	// Load audit data
-	async function loadAuditData() {
-		loading = true;
-		error = '';
+	// Query for audit events using our new API utilities
+	const auditEventsQuery = $derived(
+		createQuery<AuditEvent[], Error>({
+			queryKey: ['auditEvents', currentFilters],
+			queryFn: async () => {
+				try {
+					const params: Record<string, string | number> = {
+						limit: currentFilters.limit,
+						offset: currentFilters.offset
+					};
 
-		try {
-			// Build query parameters
-			const params = new URLSearchParams();
-			if (currentFilters.event_type) params.append('event_type', currentFilters.event_type);
-			if (currentFilters.actor_user_id)
-				params.append('actor_user_id', currentFilters.actor_user_id);
-			if (currentFilters.target_user_id)
-				params.append('target_user_id', currentFilters.target_user_id);
-			params.append('limit', currentFilters.limit.toString());
-			params.append('offset', currentFilters.offset.toString());
+					if (currentFilters.event_type) params.event_type = currentFilters.event_type;
+					if (currentFilters.actor_user_id) params.actor_user_id = currentFilters.actor_user_id;
+					if (currentFilters.target_user_id) params.target_user_id = currentFilters.target_user_id;
 
-			// Fetch events using authenticatedFetch
-			const eventsResponse = await authenticatedFetch(`/api/admin/audit-events?${params}`);
-
-			if (!eventsResponse.ok) {
-				throw new Error(`Failed to load audit events: ${eventsResponse.status}`);
+					const apiEvents = await apiGet<Record<string, unknown>[]>('/api/admin/audit-events', {
+						params
+					});
+					return apiEvents.map(mapAPIAuditEventToDomain);
+				} catch (error) {
+					throw classifyError(error);
+				}
 			}
+		})
+	);
 
-			events = await eventsResponse.json();
+	// Query for stats using our new API utilities
+	const statsQuery = $derived(
+		createQuery<AuditStats, Error>({
+			queryKey: ['auditStats'],
+			queryFn: async () => {
+				try {
+					return await apiGet<AuditStats>('/api/admin/audit-events/stats');
+				} catch (error) {
+					throw classifyError(error);
+				}
+			},
+			// Only fetch stats once and cache them
+			staleTime: 1000 * 60 * 10 // 10 minutes
+		})
+	);
 
-			// Load stats only on initial load
-			if (
-				currentFilters.offset === 0 &&
-				!currentFilters.event_type &&
-				!currentFilters.actor_user_id &&
-				!currentFilters.target_user_id
-			) {
-				await loadStats();
-			}
-		} catch (err) {
-			console.error('Error loading audit data:', err);
-			error = err instanceof Error ? err.message : 'Failed to load audit data';
-		} finally {
-			loading = false;
-		}
-	}
-
-	async function loadStats() {
-		try {
-			// Load overall stats using authenticatedFetch
-			const statsResponse = await authenticatedFetch('/api/admin/audit-events/stats');
-
-			if (statsResponse.ok) {
-				stats = await statsResponse.json();
-			}
-
-			// Load type stats using authenticatedFetch
-			const typeStatsResponse = await authenticatedFetch('/api/admin/audit-events/type-stats');
-
-			if (typeStatsResponse.ok) {
-				typeStats = await typeStatsResponse.json();
-			}
-		} catch (err) {
-			console.error('Error loading stats:', err);
-		}
-	}
+	// Query for type stats using our new API utilities
+	const typeStatsQuery = $derived(
+		createQuery<EventTypeStats[], Error>({
+			queryKey: ['auditTypeStats'],
+			queryFn: async () => {
+				try {
+					return await apiGet<EventTypeStats[]>('/api/admin/audit-events/type-stats');
+				} catch (error) {
+					throw classifyError(error);
+				}
+			},
+			// Only fetch type stats once and cache them
+			staleTime: 1000 * 60 * 10 // 10 minutes
+		})
+	);
 
 	// Handle filter changes
 	function handleFiltersChange(newFilters: typeof currentFilters) {
 		currentFilters = { ...newFilters, offset: 0 }; // Reset pagination
-		loadAuditData();
 	}
 
-	// Handle pagination
+	// Handle pagination - load more events
 	function loadMore() {
-		currentFilters.offset += currentFilters.limit;
-		loadMoreEvents();
+		currentFilters = {
+			...currentFilters,
+			offset: currentFilters.offset + currentFilters.limit
+		};
 	}
 
-	async function loadMoreEvents() {
-		try {
-			const params = new URLSearchParams();
-			if (currentFilters.event_type) params.append('event_type', currentFilters.event_type);
-			if (currentFilters.actor_user_id)
-				params.append('actor_user_id', currentFilters.actor_user_id);
-			if (currentFilters.target_user_id)
-				params.append('target_user_id', currentFilters.target_user_id);
-			params.append('limit', currentFilters.limit.toString());
-			params.append('offset', currentFilters.offset.toString());
+	// Derived state for events array (for pagination support)
+	let allEvents = $state<AuditEvent[]>([]);
 
-			const response = await authenticatedFetch(`/api/admin/audit-events?${params}`);
-
-			if (response.ok) {
-				const moreEvents = await response.json();
-				events = [...events, ...moreEvents];
+	// Effect to handle pagination accumulation
+	$effect(() => {
+		const events = $auditEventsQuery.data;
+		if (events) {
+			if (currentFilters.offset === 0) {
+				// New search - replace events
+				allEvents = events;
+			} else {
+				// Load more - append events
+				allEvents = [...allEvents, ...events];
 			}
-		} catch (err) {
-			console.error('Error loading more events:', err);
 		}
-	}
+	});
 
-	// Load data on mount
-	onMount(() => {
-		loadAuditData();
+	// Reset events when filters change (except offset)
+	$effect(() => {
+		// Track changes to filters except offset
+		const { offset: _, ...filterWithoutOffset } = currentFilters;
+		// When any filter except offset changes, reset the events
+		allEvents = [];
 	});
 </script>
 
@@ -195,7 +162,8 @@
 		</div>
 
 		<!-- Quick Stats -->
-		{#if stats}
+		{#if $statsQuery.data}
+			{@const stats = $statsQuery.data}
 			<div class="flex items-center gap-4">
 				<div class="flex items-center gap-2 text-sm">
 					<Activity class="h-4 w-4 text-primary" />
@@ -217,14 +185,14 @@
 	</div>
 
 	<!-- Statistics Overview -->
-	{#if stats && typeStats.length > 0}
-		<AuditStats {stats} {typeStats} />
+	{#if $statsQuery.data && $typeStatsQuery.data && $typeStatsQuery.data.length > 0}
+		<AuditStats stats={$statsQuery.data} typeStats={$typeStatsQuery.data} />
 	{/if}
 
 	<!-- Filters -->
 	<AuditFilters
 		filters={currentFilters}
-		{typeStats}
+		typeStats={$typeStatsQuery.data ?? []}
 		on:change={(e) => handleFiltersChange(e.detail)}
 	/>
 
@@ -238,19 +206,23 @@
 			<CardDescription>Chronological view of all administrative and user actions</CardDescription>
 		</CardHeader>
 		<CardContent>
-			{#if loading && events.length === 0}
+			{#if $auditEventsQuery.isLoading && allEvents.length === 0}
 				<div class="flex items-center justify-center py-12">
 					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 				</div>
-			{:else if error}
+			{:else if $auditEventsQuery.isError}
 				<div class="flex items-center justify-center py-12">
 					<div class="text-center">
 						<p class="text-destructive font-medium mb-2">Error loading audit events</p>
-						<p class="text-sm text-muted-foreground mb-4">{error}</p>
-						<Button onclick={loadAuditData} variant="outline" size="sm">Try Again</Button>
+						<p class="text-sm text-muted-foreground mb-4">
+							{$auditEventsQuery.error?.message || 'Failed to load audit data'}
+						</p>
+						<Button onclick={() => $auditEventsQuery.refetch()} variant="outline" size="sm"
+							>Try Again</Button
+						>
 					</div>
 				</div>
-			{:else if events.length === 0}
+			{:else if allEvents.length === 0}
 				<div class="flex items-center justify-center py-12">
 					<div class="text-center">
 						<Shield class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -259,13 +231,13 @@
 					</div>
 				</div>
 			{:else}
-				<AuditTimeline {events} />
+				<AuditTimeline events={allEvents} />
 
 				<!-- Load More Button -->
-				{#if events.length >= currentFilters.limit}
+				{#if ($auditEventsQuery.data?.length ?? 0) >= currentFilters.limit}
 					<div class="flex justify-center mt-6">
-						<Button onclick={loadMore} variant="outline" disabled={loading}>
-							{#if loading}
+						<Button onclick={loadMore} variant="outline" disabled={$auditEventsQuery.isLoading}>
+							{#if $auditEventsQuery.isLoading}
 								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
 							{/if}
 							Load More Events

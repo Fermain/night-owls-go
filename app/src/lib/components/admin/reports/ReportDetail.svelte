@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -19,8 +19,21 @@
 	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import InfoIcon from '@lucide/svelte/icons/info';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet, apiPut, apiDelete } from '$lib/utils/api';
+	import { classifyError, getErrorMessage } from '$lib/utils/errors';
+	import { toast } from 'svelte-sonner';
+
+	// Components
 	import ReportMap from './ReportMap.svelte';
+
+	// Types using our new domain types and API mappings
+	import type { Report } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIReportToDomain } from '$lib/types/api-mappings';
+
+	// Utilities
 	import { formatShiftTime, formatRelativeTime } from '$lib/utils/dateFormatting';
 	import { getSeverityIcon, getSeverityColor, getSeverityLabel } from '$lib/utils/reports';
 	import { differenceInMinutes, format } from 'date-fns';
@@ -30,38 +43,75 @@
 	}
 
 	let { reportId }: Props = $props();
+	const queryClient = useQueryClient();
 
-	// Fetch report details
+	// Fetch report details using our new API utilities
 	const reportQuery = $derived(
-		createQuery({
+		createQuery<Report, Error>({
 			queryKey: ['adminReport', reportId],
 			queryFn: async () => {
-				const response = await authenticatedFetch(`/api/admin/reports/${reportId}`);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch report: ${response.status}`);
+				try {
+					const apiReport = await apiGet<components['schemas']['api.AdminReportResponse']>(
+						`/api/admin/reports/${reportId}`
+					);
+					return mapAPIReportToDomain(apiReport);
+				} catch (error) {
+					throw classifyError(error);
 				}
-				return (await response.json()) as {
-					report_id: number;
-					severity: number;
-					message: string;
-					created_at: string;
-					archived_at?: string;
-					schedule_name: string;
-					user_name: string;
-					user_phone: string;
-					shift_start: string;
-					shift_end: string;
-					booking_id: number;
-					user_id: number;
-					schedule_id: number;
-					latitude?: number;
-					longitude?: number;
-					gps_accuracy?: number;
-					gps_timestamp?: string;
-				};
 			}
 		})
 	);
+
+	// Archive mutation using our new API utilities
+	const archiveMutation = createMutation({
+		mutationFn: async () => {
+			await apiPut(`/api/admin/reports/${reportId}/archive`);
+		},
+		onSuccess: () => {
+			toast.success('Report archived successfully');
+			queryClient.invalidateQueries({ queryKey: ['adminReport', reportId] });
+			queryClient.invalidateQueries({ queryKey: ['adminReports'] });
+			queryClient.invalidateQueries({ queryKey: ['adminReportsForLayout'] });
+		},
+		onError: (error: Error) => {
+			const appError = classifyError(error);
+			toast.error(getErrorMessage(appError));
+		}
+	});
+
+	// Unarchive mutation using our new API utilities
+	const unarchiveMutation = createMutation({
+		mutationFn: async () => {
+			await apiPut(`/api/admin/reports/${reportId}/unarchive`);
+		},
+		onSuccess: () => {
+			toast.success('Report unarchived successfully');
+			queryClient.invalidateQueries({ queryKey: ['adminReport', reportId] });
+			queryClient.invalidateQueries({ queryKey: ['adminReports'] });
+			queryClient.invalidateQueries({ queryKey: ['adminReportsForLayout'] });
+		},
+		onError: (error: Error) => {
+			const appError = classifyError(error);
+			toast.error(getErrorMessage(appError));
+		}
+	});
+
+	// Delete mutation using our new API utilities
+	const deleteMutation = createMutation({
+		mutationFn: async () => {
+			await apiDelete(`/api/admin/reports/${reportId}`);
+		},
+		onSuccess: () => {
+			toast.success('Report deleted successfully');
+			queryClient.invalidateQueries({ queryKey: ['adminReports'] });
+			queryClient.invalidateQueries({ queryKey: ['adminReportsForLayout'] });
+			goto('/admin/reports');
+		},
+		onError: (error: Error) => {
+			const appError = classifyError(error);
+			toast.error(getErrorMessage(appError));
+		}
+	});
 
 	// Calculate duration between two dates
 	function calculateDuration(startDate: Date, endDate: Date): string {
@@ -89,54 +139,27 @@
 		goto('/admin/reports');
 	}
 
-	async function handleArchive() {
-		try {
-			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/archive`, {
-				method: 'PUT'
-			});
-
-			if (response.ok) {
-				// Refresh the report data
-				$reportQuery.refetch();
-			} else {
-				console.error('Failed to archive report');
-			}
-		} catch (error) {
-			console.error('Error archiving report:', error);
+	function handleArchive() {
+		if (
+			confirm('Are you sure you want to archive this report? You can unarchive it later if needed.')
+		) {
+			$archiveMutation.mutate();
 		}
 	}
 
-	async function handleUnarchive() {
-		try {
-			const response = await authenticatedFetch(`/api/admin/reports/${reportId}/unarchive`, {
-				method: 'PUT'
-			});
-
-			if (response.ok) {
-				// Refresh the report data
-				$reportQuery.refetch();
-			} else {
-				console.error('Failed to unarchive report');
-			}
-		} catch (error) {
-			console.error('Error unarchiving report:', error);
+	function handleUnarchive() {
+		if (confirm('Are you sure you want to unarchive this report?')) {
+			$unarchiveMutation.mutate();
 		}
 	}
 
-	async function handleDelete() {
-		try {
-			const response = await authenticatedFetch(`/api/admin/reports/${reportId}`, {
-				method: 'DELETE'
-			});
-
-			if (response.ok) {
-				// Navigate back to reports list after successful deletion
-				goto('/admin/reports');
-			} else {
-				console.error('Failed to delete report');
-			}
-		} catch (error) {
-			console.error('Error deleting report:', error);
+	function handleDelete() {
+		if (
+			confirm(
+				'Are you sure you want to permanently delete this report? This action cannot be undone.'
+			)
+		) {
+			$deleteMutation.mutate();
 		}
 	}
 
@@ -146,18 +169,20 @@
 		if (!report) return [];
 
 		// Check if this is an off-shift report (no booking_id or schedule_name is "Off-Shift Report")
-		const isOffShiftReport = !report.booking_id || report.schedule_name === 'Off-Shift Report';
+		const isOffShiftReport = !report.bookingId || report.scheduleName === 'Off-Shift Report';
 		if (isOffShiftReport) return [];
 
-		const shiftStart = new Date(report.shift_start);
-		const reportTime = new Date(report.created_at);
-		const shiftEnd = new Date(report.shift_end);
+		if (!report.shiftStart || !report.shiftEnd) return [];
+
+		const shiftStart = new Date(report.shiftStart);
+		const reportTime = new Date(report.createdAt);
+		const shiftEnd = new Date(report.shiftEnd);
 
 		return [
 			{
 				time: shiftStart,
 				title: 'Shift Started',
-				description: `${report.user_name} began their shift`,
+				description: `${report.userName || 'Unknown'} began their shift`,
 				icon: CheckCircleIcon,
 				color: 'text-green-600'
 			},
@@ -182,7 +207,7 @@
 	const isOffShiftReport = $derived.by(() => {
 		const report = $reportQuery.data;
 		if (!report) return false;
-		return !report.booking_id || report.schedule_name === 'Off-Shift Report';
+		return !report.bookingId || report.scheduleName === 'Off-Shift Report';
 	});
 
 	// GPS data from the report
@@ -195,8 +220,8 @@
 			return {
 				latitude: report.latitude,
 				longitude: report.longitude,
-				accuracy: report.gps_accuracy || 0,
-				timestamp: report.gps_timestamp || report.created_at
+				accuracy: report.gpsAccuracy || 0,
+				timestamp: report.gpsTimestamp || report.createdAt
 			};
 		}
 
@@ -228,18 +253,16 @@
 						<SeverityIcon class="h-6 w-6" />
 					</div>
 					<div>
-						<h1 class="text-3xl font-bold">Report #{report.report_id}</h1>
+						<h1 class="text-3xl font-bold">Report #{report.id}</h1>
 						<p class="text-muted-foreground">
-							Submitted {formatRelativeTime(report.created_at)} • {formatShiftTime(
-								report.created_at
-							)}
+							Submitted {formatRelativeTime(report.createdAt)} • {formatShiftTime(report.createdAt)}
 						</p>
 					</div>
 					<div class="ml-auto flex gap-2">
 						<Badge class="{getSeverityFullColor(report.severity)} border text-sm px-3 py-1">
 							{getSeverityLabel(report.severity)}
 						</Badge>
-						{#if report.archived_at}
+						{#if report.archivedAt}
 							<Badge variant="secondary" class="text-sm px-3 py-1">
 								<ArchiveIcon class="h-3 w-3 mr-1" />
 								Archived
@@ -405,10 +428,10 @@
 						<Card.Content class="px-0 pb-0">
 							<div class="space-y-2">
 								<p class="text-2xl font-semibold">
-									{format(new Date(report.created_at), 'dd MMM yyyy')}
+									{format(new Date(report.createdAt), 'dd MMM yyyy')}
 								</p>
 								<p class="text-sm text-muted-foreground">
-									{format(new Date(report.created_at), 'EEEE, HH:mm:ss')} UTC
+									{format(new Date(report.createdAt), 'EEEE, HH:mm:ss')} UTC
 								</p>
 							</div>
 						</Card.Content>
@@ -427,22 +450,23 @@
 								<div class="space-y-4">
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Schedule</span>
-										<p class="text-sm font-medium">{report.schedule_name}</p>
+										<p class="text-sm font-medium">{report.scheduleName}</p>
 									</div>
 									<Separator />
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Shift Time</span>
 										<p class="text-sm">
-											{formatShiftTime(report.shift_start)} - {format(
-												new Date(report.shift_end),
-												'HH:mm'
-											)}
+											{report.shiftStart ? formatShiftTime(report.shiftStart) : 'N/A'} - {report.shiftEnd
+												? format(new Date(report.shiftEnd), 'HH:mm')
+												: 'N/A'}
 										</p>
 									</div>
 									<div>
 										<span class="text-sm font-medium text-muted-foreground">Duration</span>
 										<p class="text-sm">
-											{calculateDuration(new Date(report.shift_start), new Date(report.shift_end))}
+											{report.shiftStart && report.shiftEnd
+												? calculateDuration(new Date(report.shiftStart), new Date(report.shiftEnd))
+												: 'N/A'}
 										</p>
 									</div>
 								</div>
@@ -492,14 +516,14 @@
 										<UserIcon class="h-4 w-4" />
 									</div>
 									<div>
-										<p class="font-medium">{report.user_name}</p>
+										<p class="font-medium">{report.userName || 'Unknown'}</p>
 										<p class="text-sm text-muted-foreground">Volunteer</p>
 									</div>
 								</div>
 								<Separator />
 								<div class="flex items-center gap-2">
 									<PhoneIcon class="h-4 w-4 text-muted-foreground" />
-									<span class="text-sm">{report.user_phone}</span>
+									<span class="text-sm">{report.userPhone}</span>
 								</div>
 								<div class="flex gap-2">
 									<Button variant="outline" size="sm" class="flex-1">
@@ -541,7 +565,7 @@
 									Contact Reporter
 								</Button>
 
-								{#if report.archived_at}
+								{#if report.archivedAt}
 									<Button
 										variant="outline"
 										class="w-full justify-start text-green-600 hover:text-green-700"
@@ -553,15 +577,7 @@
 									<Button
 										variant="outline"
 										class="w-full justify-start text-destructive hover:text-destructive"
-										onclick={() => {
-											if (
-												confirm(
-													'Are you sure you want to permanently delete this report? This action cannot be undone.'
-												)
-											) {
-												handleDelete();
-											}
-										}}
+										onclick={handleDelete}
 									>
 										<TrashIcon class="h-4 w-4 mr-2" />
 										Delete Report

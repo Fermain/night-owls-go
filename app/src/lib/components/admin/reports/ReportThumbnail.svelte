@@ -1,22 +1,27 @@
 <script lang="ts">
-	import type { components } from '$lib/types/api';
+	// Types using our new domain types
+	import type { Report } from '$lib/types/domain';
+
+	// Utilities
 	import { getSeverityIcon, getSeverityColor } from '$lib/utils/reports';
 	import { formatRelativeTime } from '$lib/utils/dateFormatting';
+
+	// Components and icons
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
+
+	// API and state management
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { ReportsApiService } from '$lib/services/api/reports';
 	import { toast } from 'svelte-sonner';
-
-	type AdminReport = components['schemas']['api.AdminReportResponse'];
 
 	let {
 		report,
 		isSelected = false,
 		onSelect
 	}: {
-		report: AdminReport;
+		report: Report;
 		isSelected?: boolean;
-		onSelect: (report: AdminReport) => void;
+		onSelect: (report: Report) => void;
 	} = $props();
 
 	const SeverityIcon = $derived(getSeverityIcon(report.severity ?? 0));
@@ -39,14 +44,14 @@
 	function handleArchive(event: Event) {
 		event.preventDefault();
 		event.stopPropagation();
-		if (!report.report_id) {
+		if (!report.id) {
 			toast.error('Invalid report ID');
 			return;
 		}
 		if (
 			confirm('Are you sure you want to archive this report? You can unarchive it later if needed.')
 		) {
-			$archiveMutation.mutate(report.report_id);
+			$archiveMutation.mutate(report.id);
 		}
 	}
 </script>
@@ -68,7 +73,7 @@
 	</button>
 
 	<a
-		href={`/admin/reports?reportId=${report.report_id}`}
+		href={`/admin/reports?reportId=${report.id}`}
 		class="flex items-center gap-2 w-full pr-6"
 		onclick={(event) => {
 			event.preventDefault();
@@ -79,9 +84,9 @@
 			<SeverityIcon class="h-3 w-3 {getSeverityColor(report.severity ?? 0)}" />
 		</div>
 		<div class="flex-1 min-w-0">
-			<div class="font-medium truncate">Report #{report.report_id}</div>
+			<div class="font-medium truncate">Report #{report.id}</div>
 			<div class="text-xs text-muted-foreground truncate">
-				{report.user_name} • {formatRelativeTime(report.created_at ?? '')}
+				{report.userName || 'Unknown'} • {formatRelativeTime(report.createdAt ?? '')}
 			</div>
 		</div>
 	</a>

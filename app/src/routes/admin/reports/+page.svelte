@@ -13,12 +13,24 @@
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
+	// Components
 	import ReportDetail from '$lib/components/admin/reports/ReportDetail.svelte';
 	import ReportsMapOverview from '$lib/components/admin/reports/ReportsMapOverview.svelte';
 	import ReportsFilters from '$lib/components/admin/reports/ReportsFilters.svelte';
 	import ReportsStats from '$lib/components/admin/reports/ReportsStats.svelte';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+
+	// Types using our new domain types and API mappings
+	import type { Report } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIReportArrayToDomain } from '$lib/types/api-mappings';
+
+	// Utilities
 	import {
 		getSeverityIcon,
 		getSeverityColor,
@@ -42,9 +54,9 @@
 	let viewMode = $state<'list' | 'map'>('list');
 	let showArchived = $state<boolean>(false);
 
-	// Fetch shift reports from the real API
+	// Fetch shift reports using our new API utilities
 	const reportsQuery = $derived(
-		createQuery({
+		createQuery<Report[], Error>({
 			queryKey: [
 				'adminReports',
 				showArchived,
@@ -56,89 +68,74 @@
 				sortBy
 			],
 			queryFn: async () => {
-				const endpoint = showArchived ? '/api/admin/reports/archived' : '/api/admin/reports';
-				const response = await authenticatedFetch(endpoint);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch reports: ${response.status}`);
+				try {
+					const endpoint = showArchived ? '/api/admin/reports/archived' : '/api/admin/reports';
+					const apiReports =
+						await apiGet<components['schemas']['api.AdminReportResponse'][]>(endpoint);
+					const domainReports = mapAPIReportArrayToDomain(apiReports);
+
+					// Apply client-side filters and search
+					let filteredReports = domainReports.filter((report) => {
+						// Search filter
+						if (searchQuery.trim()) {
+							const query = searchQuery.toLowerCase();
+							const searchableText = [
+								report.message,
+								report.userName || '',
+								report.scheduleName || '',
+								getSeverityLabel(report.severity)
+							]
+								.join(' ')
+								.toLowerCase();
+
+							if (!searchableText.includes(query)) {
+								return false;
+							}
+						}
+
+						// Severity filter
+						if (severityFilter !== 'all' && report.severity.toString() !== severityFilter) {
+							return false;
+						}
+
+						// Schedule filter
+						if (scheduleFilter !== 'all' && report.scheduleName !== scheduleFilter) {
+							return false;
+						}
+
+						// Date range filter
+						if (dateRangeStart && dateRangeEnd) {
+							const reportDate = new Date(report.createdAt);
+							const startDate = new Date(dateRangeStart + 'T00:00:00Z');
+							const endDate = new Date(dateRangeEnd + 'T23:59:59Z');
+
+							if (reportDate < startDate || reportDate > endDate) {
+								return false;
+							}
+						}
+
+						return true;
+					});
+
+					// Apply sorting
+					filteredReports.sort((a, b) => {
+						switch (sortBy) {
+							case 'oldest':
+								return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+							case 'severity':
+								return b.severity - a.severity;
+							case 'schedule':
+								return (a.scheduleName || '').localeCompare(b.scheduleName || '');
+							case 'newest':
+							default:
+								return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+						}
+					});
+
+					return filteredReports;
+				} catch (error) {
+					throw classifyError(error);
 				}
-				const reports = (await response.json()) as Array<{
-					report_id: number;
-					severity: number;
-					message: string;
-					created_at: string;
-					archived_at?: string;
-					schedule_name: string;
-					user_name: string;
-					user_phone: string;
-					shift_start: string;
-					shift_end: string;
-					latitude?: number;
-					longitude?: number;
-					gps_accuracy?: number;
-					gps_timestamp?: string;
-					user_id?: number;
-					booking_id?: number;
-				}>;
-
-				// Apply client-side filters and search
-				let filteredReports = reports.filter((report) => {
-					// Search filter
-					if (searchQuery.trim()) {
-						const query = searchQuery.toLowerCase();
-						const searchableText = [
-							report.message,
-							report.user_name,
-							report.schedule_name,
-							getSeverityLabel(report.severity)
-						]
-							.join(' ')
-							.toLowerCase();
-
-						if (!searchableText.includes(query)) {
-							return false;
-						}
-					}
-
-					// Severity filter
-					if (severityFilter !== 'all' && report.severity.toString() !== severityFilter) {
-						return false;
-					}
-
-					// Schedule filter
-					if (scheduleFilter !== 'all' && report.schedule_name !== scheduleFilter) {
-						return false;
-					}
-
-					// Date range filter
-					if (dateRangeStart && dateRangeEnd) {
-						const reportDate = new Date(report.created_at);
-						const startDate = new Date(dateRangeStart + 'T00:00:00Z');
-						const endDate = new Date(dateRangeEnd + 'T23:59:59Z');
-
-						if (reportDate < startDate || reportDate > endDate) {
-							return false;
-						}
-					}
-
-					return true;
-				});
-
-				// Apply sorting
-				filteredReports.sort((a, b) => {
-					switch (sortBy) {
-						case 'oldest':
-							return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-						case 'severity':
-							return b.severity - a.severity;
-						case 'schedule':
-							return a.schedule_name.localeCompare(b.schedule_name);
-						case 'newest':
-						default:
-							return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-					}
-				});
-
-				return filteredReports;
 			}
 		})
 	);
@@ -349,10 +346,10 @@
 							</div>
 						</Card.Root>
 					{:else}
-						{#each $reportsQuery.data ?? [] as report (report.report_id)}
+						{#each $reportsQuery.data ?? [] as report (report.id)}
 							<Card.Root
 								class="p-3 sm:p-4 lg:p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
-								onclick={() => viewReportDetail(report.report_id)}
+								onclick={() => viewReportDetail(report.id)}
 							>
 								<div class="space-y-3 sm:space-y-4">
 									<!-- Header -->
@@ -367,10 +364,10 @@
 												</div>
 												<div class="min-w-0 flex-1">
 													<h3 class="font-semibold text-base sm:text-lg truncate">
-														Report #{report.report_id}
+														Report #{report.id}
 													</h3>
 													<p class="text-xs sm:text-sm text-muted-foreground">
-														{formatFullDateTime(report.created_at)}
+														{formatFullDateTime(report.createdAt)}
 													</p>
 												</div>
 											</div>
@@ -403,15 +400,17 @@
 										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
 											<UserIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
 											<div class="min-w-0 flex-1">
-												<p class="font-medium truncate">{report.user_name}</p>
-												<p class="text-xs text-muted-foreground truncate">{report.user_phone}</p>
+												<p class="font-medium truncate">{report.userName || 'Unknown'}</p>
+												<p class="text-xs text-muted-foreground truncate">
+													{report.userPhone || ''}
+												</p>
 											</div>
 										</div>
 
 										<div class="flex items-center gap-2 p-3 bg-muted/20 rounded-lg">
 											<CalendarIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
 											<div class="min-w-0 flex-1">
-												<p class="font-medium truncate">{report.schedule_name}</p>
+												<p class="font-medium truncate">{report.scheduleName || 'Unknown'}</p>
 												<p class="text-xs text-muted-foreground">Schedule</p>
 											</div>
 										</div>
@@ -421,7 +420,9 @@
 										>
 											<ClockIcon class="h-4 w-4 text-muted-foreground flex-shrink-0" />
 											<div class="min-w-0 flex-1">
-												<p class="font-medium truncate">{formatShiftTime(report.shift_start)}</p>
+												<p class="font-medium truncate">
+													{report.shiftStart ? formatShiftTime(report.shiftStart) : 'N/A'}
+												</p>
 												<p class="text-xs text-muted-foreground">Shift Time</p>
 											</div>
 										</div>
@@ -432,7 +433,7 @@
 										class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t"
 									>
 										<div class="flex items-center gap-2 text-xs text-muted-foreground">
-											<span>Reported {formatRelativeTime(report.created_at)}</span>
+											<span>Reported {formatRelativeTime(report.createdAt)}</span>
 										</div>
 										<div class="flex items-center gap-2">
 											<Button
@@ -440,7 +441,7 @@
 												size="sm"
 												onclick={(e) => {
 													e.stopPropagation();
-													viewReportDetail(report.report_id);
+													viewReportDetail(report.id);
 												}}
 												class="w-full sm:w-auto"
 											>

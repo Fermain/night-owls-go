@@ -2,8 +2,29 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import StarIcon from '@lucide/svelte/icons/star';
-	import type { EmergencyContact } from '$lib/utils/emergencyContacts';
-	import { formatPhoneNumber } from '$lib/utils/emergencyContacts';
+
+	// Use our domain types
+	import type { EmergencyContact } from '$lib/types/domain';
+
+	// Phone number formatting utility
+	function formatPhoneNumber(number: string): string {
+		// Remove all non-digit characters
+		const cleaned = number.replace(/\D/g, '');
+
+		// Basic South African number formatting
+		if (cleaned.length === 10 && cleaned.startsWith('0')) {
+			// Format: 012 345 6789
+			return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+		}
+
+		if (cleaned.length === 9 && !cleaned.startsWith('0')) {
+			// Format: 12 345 6789 (without leading 0)
+			return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5)}`;
+		}
+
+		// Return original if no pattern matches
+		return number;
+	}
 
 	let {
 		contact,
@@ -42,7 +63,7 @@
 		<div class="flex-grow min-w-0">
 			<div class="flex items-center gap-2">
 				<span class="truncate font-medium">{contact.name ?? 'Unknown'}</span>
-				{#if contact.is_default}
+				{#if contact.isDefault}
 					<Badge variant="default" class="text-xs">
 						<StarIcon class="h-2 w-2 mr-1" />
 						Default

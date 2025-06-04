@@ -9,7 +9,14 @@
 	import HeartHandshakeIcon from '@lucide/svelte/icons/heart-handshake';
 	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
 	import CloudOffIcon from '@lucide/svelte/icons/cloud-off';
-	import { offlineService, type EmergencyContact } from '$lib/services/offlineService';
+	import {
+		loadEmergencyContacts,
+		emergencyContacts,
+		emergencyContactsLoading,
+		emergencyContactsError,
+		type EmergencyContact
+	} from '$lib/utils/emergencyContacts';
+	import { isOnline as onlineStore } from '$lib/utils/offline';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -21,72 +28,49 @@
 	let showEmergencyConfirm = $state(false);
 
 	onMount(() => {
-		let unsubscribe: (() => void) | undefined;
-
-		const initializeService = async () => {
-			try {
-				// Initialize offline service
-				await offlineService.init();
-
-				// Subscribe to online/offline status
-				unsubscribe = offlineService.state.subscribe((state) => {
-					isOnline = state.isOnline;
-				});
-
-				// Try to get emergency contacts (offline-first approach)
-				contacts = await offlineService.getEmergencyContacts();
-
-				if (contacts.length > 0) {
-					// We have cached data
-					usingCachedData = !isOnline;
-					loading = false;
-
-					// If online, try to refresh in the background
-					if (isOnline) {
-						try {
-							await offlineService.cacheEmergencyContacts();
-							// Refresh contacts after cache update
-							contacts = await offlineService.getEmergencyContacts();
-							usingCachedData = false;
-						} catch (refreshError) {
-							console.warn('Failed to refresh emergency contacts:', refreshError);
-							// Keep using cached data
-						}
-					}
-				} else {
-					// No cached data available
-					if (isOnline) {
-						// Try to fetch from API
-						try {
-							await offlineService.cacheEmergencyContacts();
-							contacts = await offlineService.getEmergencyContacts();
-						} catch (_fetchError) {
-							error = 'Failed to load emergency contacts';
-						}
-					} else {
-						error = 'Emergency contacts not available offline. Connect to internet to download.';
-					}
-				}
-			} catch (err) {
+		// Load emergency contacts when component mounts
+		loadEmergencyContacts()
+			.then((loadedContacts) => {
+				contacts = loadedContacts;
+				usingCachedData = loadedContacts.length > 0 && !$onlineStore;
+			})
+			.catch((err) => {
 				error = err instanceof Error ? err.message : 'Failed to load emergency contacts';
-			} finally {
-				loading = false;
+			});
+
+		// Subscribe to store updates
+		const unsubscribeContacts = emergencyContacts.subscribe((value) => {
+			contacts = value;
+		});
+
+		const unsubscribeLoading = emergencyContactsLoading.subscribe((value) => {
+			loading = value;
+		});
+
+		const unsubscribeError = emergencyContactsError.subscribe((value) => {
+			error = value || '';
+		});
+
+		const unsubscribeOnline = onlineStore.subscribe((online) => {
+			isOnline = online;
+			// Update cached data flag when connectivity changes
+			if (contacts.length > 0 && !online) {
+				usingCachedData = true;
+			} else if (online && usingCachedData) {
+				usingCachedData = false;
 			}
-		};
+		});
 
-		// Start the async initialization
-		initializeService();
-
-		// Return cleanup function
 		return () => {
-			if (unsubscribe) {
-				unsubscribe();
-			}
+			unsubscribeContacts();
+			unsubscribeLoading();
+			unsubscribeError();
+			unsubscribeOnline();
 		};
 	});
 
 	function getContactIcon(name: string) {
-		const nameLower = name.toLowerCase();
+		const nameLower = (name || '').toLowerCase();
 		if (nameLower.includes('rusa') || nameLower.includes('security')) {
 			return ShieldIcon;
 		}
@@ -104,7 +88,7 @@
 	}
 
 	function getContactColor(name: string) {
-		const nameLower = name.toLowerCase();
+		const nameLower = (name || '').toLowerCase();
 		if (nameLower.includes('rusa') || nameLower.includes('security')) {
 			return 'text-blue-600 dark:text-blue-400';
 		}
@@ -196,7 +180,7 @@
 			{:else}
 				<div class="space-y-3 overflow-y-auto">
 					{#each contacts as contact (contact.id)}
-						{@const IconComponent = getContactIcon(contact.name)}
+						{@const IconComponent = getContactIcon(contact.name || '')}
 						<div
 							class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors"
 						>
@@ -204,13 +188,13 @@
 								<div
 									class="w-10 h-10 bg-background rounded-full flex items-center justify-center border"
 								>
-									<IconComponent class="h-5 w-5 {getContactColor(contact.name)}" />
+									<IconComponent class="h-5 w-5 {getContactColor(contact.name || '')}" />
 								</div>
 							</div>
 							<div class="flex-grow min-w-0">
 								<div class="flex items-center gap-2 mb-1">
 									<p class="font-medium text-sm truncate">{contact.name}</p>
-									{#if contact.isDefault}
+									{#if contact.is_default}
 										<Badge variant="secondary" class="text-xs">Default</Badge>
 									{/if}
 								</div>
@@ -220,9 +204,9 @@
 							<div class="flex-shrink-0">
 								<Button
 									size="sm"
-									variant={contact.isDefault ? 'default' : 'outline'}
+									variant={contact.is_default ? 'default' : 'outline'}
 									class="h-8 px-3"
-									onclick={() => callNumber(contact.number, contact.name)}
+									onclick={() => callNumber(contact.number || '', contact.name || '')}
 								>
 									<PhoneIcon class="h-3 w-3 mr-1" />
 									Call
