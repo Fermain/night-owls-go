@@ -60,7 +60,11 @@ func (h *AdminBookingHandler) AssignUserToShiftHandler(w http.ResponseWriter, r 
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to close request body", "error", closeErr)
+		}
+	}()
 
 	if req.ScheduleID <= 0 || req.UserID <= 0 || req.StartTime.IsZero() {
 		RespondWithError(w, http.StatusBadRequest, "Missing or invalid schedule_id, user_id, or start_time", h.logger)

@@ -21,13 +21,15 @@ import (
 type AdminScheduleHandlers struct {
 	logger          *slog.Logger
 	scheduleService *service.ScheduleService
+	auditService    *service.AuditService
 }
 
 // NewAdminScheduleHandlers creates a new AdminScheduleHandlers.
-func NewAdminScheduleHandlers(logger *slog.Logger, scheduleService *service.ScheduleService) *AdminScheduleHandlers {
+func NewAdminScheduleHandlers(logger *slog.Logger, scheduleService *service.ScheduleService, auditService *service.AuditService) *AdminScheduleHandlers {
 	return &AdminScheduleHandlers{
 		logger:          logger.With("handler", "AdminScheduleHandlers"),
 		scheduleService: scheduleService,
+		auditService:    auditService,
 	}
 }
 
@@ -112,6 +114,27 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
+
+	// Log audit event for schedule creation
+	var timezonePtr *string
+	if params.Timezone.Valid {
+		timezonePtr = &params.Timezone.String
+	}
+
+	WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+		return h.auditService.LogScheduleCreated(
+			r.Context(),
+			userID,
+			schedule.ScheduleID,
+			schedule.Name,
+			schedule.CronExpr,
+			timezonePtr,
+			schedule.DurationMinutes,
+			ipAddress,
+			userAgent,
+		)
+	})
+
 	RespondWithJSON(w, http.StatusCreated, ToScheduleResponse(schedule), h.logger)
 }
 
@@ -265,6 +288,9 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	}
 	params.Timezone = sql.NullString{String: timezone, Valid: true}
 
+	// Get original schedule for audit logging (before update)
+	originalSchedule, originalErr := h.scheduleService.AdminGetScheduleByID(r.Context(), scheduleID)
+
 	schedule, err := h.scheduleService.AdminUpdateSchedule(r.Context(), params)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
@@ -274,6 +300,48 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to update schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
+
+	// Log audit event for schedule update
+	if originalErr == nil {
+		// Build changes map
+		changes := make(map[string]interface{})
+		if originalSchedule.Name != schedule.Name {
+			changes["name"] = map[string]interface{}{
+				"before": originalSchedule.Name,
+				"after":  schedule.Name,
+			}
+		}
+		if originalSchedule.CronExpr != schedule.CronExpr {
+			changes["cron_expr"] = map[string]interface{}{
+				"before": originalSchedule.CronExpr,
+				"after":  schedule.CronExpr,
+			}
+		}
+		if originalSchedule.Timezone.String != schedule.Timezone.String {
+			changes["timezone"] = map[string]interface{}{
+				"before": originalSchedule.Timezone.String,
+				"after":  schedule.Timezone.String,
+			}
+		}
+		if originalSchedule.DurationMinutes != schedule.DurationMinutes {
+			changes["duration_minutes"] = map[string]interface{}{
+				"before": originalSchedule.DurationMinutes,
+				"after":  schedule.DurationMinutes,
+			}
+		}
+
+		WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+			return h.auditService.LogScheduleUpdated(
+				r.Context(),
+				userID,
+				schedule.ScheduleID,
+				changes,
+				ipAddress,
+				userAgent,
+			)
+		})
+	}
+
 	RespondWithJSON(w, http.StatusOK, ToScheduleResponse(schedule), h.logger)
 }
 
@@ -312,6 +380,9 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Get schedule details before deletion for audit logging
+	schedule, scheduleErr := h.scheduleService.AdminGetScheduleByID(r.Context(), scheduleID)
+
 	err = h.scheduleService.AdminDeleteSchedule(r.Context(), scheduleID)
 	if err != nil {
 		// Assuming service.ErrNotFound might not be returned by a simple delete if 0 rows affected.
@@ -323,6 +394,21 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedule", h.logger, "schedule_id", scheduleID, "error", err)
 		return
 	}
+
+	// Log audit event for schedule deletion
+	if scheduleErr == nil {
+		WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+			return h.auditService.LogScheduleDeleted(
+				r.Context(),
+				userID,
+				scheduleID,
+				schedule.Name,
+				ipAddress,
+				userAgent,
+			)
+		})
+	}
+
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedule deleted successfully"}, h.logger)
 }
 
@@ -405,6 +491,18 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedules", h.logger)
 		return
 	}
+
+	// Log audit event for bulk schedule deletion
+	WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+		return h.auditService.LogScheduleBulkDeleted(
+			r.Context(),
+			userID,
+			req.ScheduleIDs,
+			len(req.ScheduleIDs),
+			ipAddress,
+			userAgent,
+		)
+	})
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedules deleted successfully"}, h.logger)
 }

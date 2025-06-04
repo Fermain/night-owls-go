@@ -125,22 +125,25 @@ func newTestApp(t *testing.T) *testApp {
 
 	querier := db.New(dbConn)
 	otpStore := auth.NewInMemoryOTPStore()
+	mockSender := new(MockMessageSender)
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
-	outboxService := outbox.NewDispatcherService(querier, nil, nil, logger, cfg)
+	auditService := service.NewAuditService(querier, logger)
+	pushService := service.NewPushSender(querier, cfg, logger)
+	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
 
 	cronScheduler := cron.New()
 
 	router := chi.NewRouter()
 	router.Use(chiMiddleware.Recoverer)
 
-	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
-	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
-	reportAPIHandler := api.NewReportHandler(reportService, logger)
+	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
+	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
 
 	router.Post("/auth/register", authAPIHandler.RegisterHandler)
 	router.Post("/auth/verify", authAPIHandler.VerifyHandler)

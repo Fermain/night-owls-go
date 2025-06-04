@@ -131,10 +131,8 @@ func RespondWithAPIError(w http.ResponseWriter, r *http.Request, statusCode int,
 		logFields = append(logFields, "internal_error", internalErr.Error())
 	}
 
-	if context != nil {
-		for k, v := range context {
-			logFields = append(logFields, k, v)
-		}
+	for key, value := range context {
+		logFields = append(logFields, key, value)
 	}
 
 	if statusCode >= 500 {

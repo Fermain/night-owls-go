@@ -20,15 +20,17 @@ type AdminReportHandler struct {
 	reportService   *service.ReportService
 	scheduleService *service.ScheduleService
 	querier         db.Querier
+	auditService    *service.AuditService
 	logger          *slog.Logger
 }
 
 // NewAdminReportHandler creates a new AdminReportHandler.
-func NewAdminReportHandler(reportService *service.ReportService, scheduleService *service.ScheduleService, querier db.Querier, logger *slog.Logger) *AdminReportHandler {
+func NewAdminReportHandler(reportService *service.ReportService, scheduleService *service.ScheduleService, querier db.Querier, auditService *service.AuditService, logger *slog.Logger) *AdminReportHandler {
 	return &AdminReportHandler{
 		reportService:   reportService,
 		scheduleService: scheduleService,
 		querier:         querier,
+		auditService:    auditService,
 		logger:          logger.With("handler", "AdminReportHandler"),
 	}
 }
@@ -292,6 +294,34 @@ func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	// Get report details for audit logging
+	report, reportErr := h.querier.AdminGetReportWithContext(r.Context(), id)
+	if reportErr == nil {
+		// Get user ID from auth context for audit logging
+		userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+		if ok {
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+
+			var reporterUserID *int64
+			if report.UserID.Valid {
+				reporterUserID = &report.UserID.Int64
+			}
+
+			auditErr := h.auditService.LogReportArchived(
+				r.Context(),
+				userIDFromAuth,
+				id,
+				reporterUserID,
+				report.Severity,
+				ipAddress,
+				userAgent,
+			)
+			if auditErr != nil {
+				h.logger.WarnContext(r.Context(), "Failed to log report archive audit event", "report_id", id, "error", auditErr)
+			}
+		}
+	}
+
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report archived successfully"}, h.logger)
 }
 
@@ -325,6 +355,34 @@ func (h *AdminReportHandler) AdminUnarchiveReportHandler(w http.ResponseWriter, 
 		h.logger.ErrorContext(r.Context(), "Failed to unarchive report", "report_id", id, "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to unarchive report", h.logger)
 		return
+	}
+
+	// Get report details for audit logging
+	report, reportErr := h.querier.AdminGetReportWithContext(r.Context(), id)
+	if reportErr == nil {
+		// Get user ID from auth context for audit logging
+		userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+		if ok {
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+
+			var reporterUserID *int64
+			if report.UserID.Valid {
+				reporterUserID = &report.UserID.Int64
+			}
+
+			auditErr := h.auditService.LogReportUnarchived(
+				r.Context(),
+				userIDFromAuth,
+				id,
+				reporterUserID,
+				report.Severity,
+				ipAddress,
+				userAgent,
+			)
+			if auditErr != nil {
+				h.logger.WarnContext(r.Context(), "Failed to log report unarchive audit event", "report_id", id, "error", auditErr)
+			}
+		}
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report unarchived successfully"}, h.logger)
@@ -464,7 +522,7 @@ func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *
 	}
 
 	// Check if report exists before deleting
-	_, err = h.querier.AdminGetReportWithContext(r.Context(), id)
+	report, err := h.querier.AdminGetReportWithContext(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			RespondWithError(w, http.StatusNotFound, "Report not found", h.logger)
@@ -480,6 +538,30 @@ func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *
 		h.logger.ErrorContext(r.Context(), "Failed to delete report", "report_id", id, "error", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete report", h.logger)
 		return
+	}
+
+	// Log audit event for report deletion
+	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+	if ok {
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+
+		var reporterUserID *int64
+		if report.UserID.Valid {
+			reporterUserID = &report.UserID.Int64
+		}
+
+		auditErr := h.auditService.LogReportDeleted(
+			r.Context(),
+			userIDFromAuth,
+			id,
+			reporterUserID,
+			report.Severity,
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(r.Context(), "Failed to log report deletion audit event", "report_id", id, "error", auditErr)
+		}
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Report deleted successfully"}, h.logger)

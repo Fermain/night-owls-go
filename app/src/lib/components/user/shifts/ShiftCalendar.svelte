@@ -23,9 +23,6 @@
 		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 	}
 
-	// Don't render anything if there are no shifts
-	const hasAnyShifts = $derived(shifts.length > 0);
-
 	// Show calendar if there are shifts OR user bookings
 	const shouldShowCalendar = $derived(shifts.length > 0 || userBookings.length > 0);
 

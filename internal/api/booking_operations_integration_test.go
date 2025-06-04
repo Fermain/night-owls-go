@@ -122,6 +122,7 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
+	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
 
@@ -131,8 +132,8 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register handlers
-	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
-	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 
 	// Public routes

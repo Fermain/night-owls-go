@@ -18,13 +18,15 @@ import (
 // ReportHandler handles report-related HTTP requests.
 type ReportHandler struct {
 	reportService *service.ReportService
+	auditService  *service.AuditService
 	logger        *slog.Logger
 }
 
 // NewReportHandler creates a new ReportHandler.
-func NewReportHandler(reportService *service.ReportService, logger *slog.Logger) *ReportHandler {
+func NewReportHandler(reportService *service.ReportService, auditService *service.AuditService, logger *slog.Logger) *ReportHandler {
 	return &ReportHandler{
 		reportService: reportService,
+		auditService:  auditService,
 		logger:        logger.With("handler", "ReportHandler"),
 	}
 }
@@ -167,6 +169,24 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Log audit event for report creation
+	ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+
+	hasLocation := gpsLocation != nil
+	auditErr := h.auditService.LogReportCreated(
+		r.Context(),
+		userID,
+		report.ReportID,
+		&bookingID,
+		int64(req.Severity),
+		hasLocation,
+		ipAddress,
+		userAgent,
+	)
+	if auditErr != nil {
+		h.logger.WarnContext(r.Context(), "Failed to log report creation audit event", "report_id", report.ReportID, "error", auditErr)
+	}
+
 	// Convert to API response format
 	reportResponse := ToReportResponse(report)
 	RespondWithJSON(w, http.StatusCreated, reportResponse, h.logger)
@@ -307,6 +327,24 @@ func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *ht
 			RespondWithError(w, http.StatusInternalServerError, "Failed to create off-shift report", h.logger, "error", err.Error())
 		}
 		return
+	}
+
+	// Log audit event for off-shift report creation
+	ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+
+	hasLocation := gpsLocation != nil
+	auditErr := h.auditService.LogReportCreated(
+		r.Context(),
+		userID,
+		report.ReportID,
+		nil, // No booking ID for off-shift reports
+		int64(req.Severity),
+		hasLocation,
+		ipAddress,
+		userAgent,
+	)
+	if auditErr != nil {
+		h.logger.WarnContext(r.Context(), "Failed to log off-shift report creation audit event", "report_id", report.ReportID, "error", auditErr)
 	}
 
 	// Convert to API response format

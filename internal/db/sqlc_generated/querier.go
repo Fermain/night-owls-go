@@ -18,6 +18,7 @@ type Querier interface {
 	ArchiveReport(ctx context.Context, reportID int64) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
 	CountUsers(ctx context.Context) (int64, error)
+	CreateAuditEvent(ctx context.Context, arg CreateAuditEventParams) (AuditEvent, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
@@ -34,6 +35,8 @@ type Querier interface {
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
 	GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error)
+	GetAuditEventStats(ctx context.Context) (GetAuditEventStatsRow, error)
+	GetAuditEventsByTypeStats(ctx context.Context) ([]GetAuditEventsByTypeStatsRow, error)
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
 	// Admin Dashboard Metrics Queries
@@ -60,6 +63,11 @@ type Querier interface {
 	GetUserByPhone(ctx context.Context, phone string) (User, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
+	ListAuditEvents(ctx context.Context, arg ListAuditEventsParams) ([]ListAuditEventsRow, error)
+	ListAuditEventsByActor(ctx context.Context, arg ListAuditEventsByActorParams) ([]ListAuditEventsByActorRow, error)
+	ListAuditEventsByDateRange(ctx context.Context, arg ListAuditEventsByDateRangeParams) ([]ListAuditEventsByDateRangeRow, error)
+	ListAuditEventsByTarget(ctx context.Context, arg ListAuditEventsByTargetParams) ([]ListAuditEventsByTargetRow, error)
+	ListAuditEventsByType(ctx context.Context, arg ListAuditEventsByTypeParams) ([]ListAuditEventsByTypeRow, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
 	ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error)
 	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
