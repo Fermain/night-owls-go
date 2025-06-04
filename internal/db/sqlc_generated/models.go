@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+type Achievement struct {
+	AchievementID    int64          `json:"achievement_id"`
+	Name             string         `json:"name"`
+	Description      string         `json:"description"`
+	Icon             sql.NullString `json:"icon"`
+	PointsThreshold  sql.NullInt64  `json:"points_threshold"`
+	StreakThreshold  sql.NullInt64  `json:"streak_threshold"`
+	SpecialCondition sql.NullString `json:"special_condition"`
+	CreatedAt        sql.NullTime   `json:"created_at"`
+}
+
 type AuditEvent struct {
 	EventID      int64          `json:"event_id"`
 	EventType    string         `json:"event_type"`
@@ -76,6 +87,16 @@ type Outbox struct {
 	SendAt      time.Time      `json:"send_at"`
 }
 
+type PointsHistory struct {
+	HistoryID     int64           `json:"history_id"`
+	UserID        int64           `json:"user_id"`
+	BookingID     sql.NullInt64   `json:"booking_id"`
+	PointsAwarded int64           `json:"points_awarded"`
+	Reason        string          `json:"reason"`
+	Multiplier    sql.NullFloat64 `json:"multiplier"`
+	CreatedAt     sql.NullTime    `json:"created_at"`
+}
+
 type PushSubscription struct {
 	ID        int64          `json:"id"`
 	UserID    int64          `json:"user_id"`
@@ -112,9 +133,19 @@ type Schedule struct {
 }
 
 type User struct {
-	UserID    int64          `json:"user_id"`
-	Phone     string         `json:"phone"`
-	Name      sql.NullString `json:"name"`
-	CreatedAt sql.NullTime   `json:"created_at"`
-	Role      string         `json:"role"`
+	UserID           int64          `json:"user_id"`
+	Phone            string         `json:"phone"`
+	Name             sql.NullString `json:"name"`
+	CreatedAt        sql.NullTime   `json:"created_at"`
+	Role             string         `json:"role"`
+	TotalPoints      sql.NullInt64  `json:"total_points"`
+	CurrentStreak    sql.NullInt64  `json:"current_streak"`
+	LongestStreak    sql.NullInt64  `json:"longest_streak"`
+	LastActivityDate sql.NullTime   `json:"last_activity_date"`
+}
+
+type UserAchievement struct {
+	UserID        int64        `json:"user_id"`
+	AchievementID int64        `json:"achievement_id"`
+	EarnedAt      sql.NullTime `json:"earned_at"`
 }

@@ -539,3 +539,93 @@ func (q *Queries) ListAuditEventsByType(ctx context.Context, arg ListAuditEvents
 	}
 	return items, nil
 }
+
+const listAuditEventsWithFilters = `-- name: ListAuditEventsWithFilters :many
+SELECT 
+    ae.event_id, ae.event_type, ae.actor_user_id, ae.target_user_id, ae.entity_type, ae.entity_id, ae."action", ae.details, ae.ip_address, ae.user_agent, ae.created_at,
+    COALESCE(actor.name, '') as actor_name,
+    actor.phone as actor_phone,
+    COALESCE(target.name, '') as target_name,
+    target.phone as target_phone
+FROM audit_events ae
+LEFT JOIN users actor ON ae.actor_user_id = actor.user_id
+LEFT JOIN users target ON ae.target_user_id = target.user_id
+WHERE (? = '' OR ae.event_type = ?)
+  AND (? = '' OR ae.actor_user_id IN (SELECT value FROM json_each(?)))
+  AND (? = '' OR ae.target_user_id IN (SELECT value FROM json_each(?)))
+ORDER BY ae.created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListAuditEventsWithFiltersParams struct {
+	Column1   interface{} `json:"column_1"`
+	EventType string      `json:"event_type"`
+	Column3   interface{} `json:"column_3"`
+	Column4   interface{} `json:"column_4"`
+	Limit     int64       `json:"limit"`
+	Offset    int64       `json:"offset"`
+}
+
+type ListAuditEventsWithFiltersRow struct {
+	EventID      int64          `json:"event_id"`
+	EventType    string         `json:"event_type"`
+	ActorUserID  sql.NullInt64  `json:"actor_user_id"`
+	TargetUserID sql.NullInt64  `json:"target_user_id"`
+	EntityType   string         `json:"entity_type"`
+	EntityID     sql.NullInt64  `json:"entity_id"`
+	Action       string         `json:"action"`
+	Details      sql.NullString `json:"details"`
+	IpAddress    sql.NullString `json:"ip_address"`
+	UserAgent    sql.NullString `json:"user_agent"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	ActorName    string         `json:"actor_name"`
+	ActorPhone   sql.NullString `json:"actor_phone"`
+	TargetName   string         `json:"target_name"`
+	TargetPhone  sql.NullString `json:"target_phone"`
+}
+
+func (q *Queries) ListAuditEventsWithFilters(ctx context.Context, arg ListAuditEventsWithFiltersParams) ([]ListAuditEventsWithFiltersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAuditEventsWithFilters,
+		arg.Column1,
+		arg.EventType,
+		arg.Column3,
+		arg.Column4,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAuditEventsWithFiltersRow{}
+	for rows.Next() {
+		var i ListAuditEventsWithFiltersRow
+		if err := rows.Scan(
+			&i.EventID,
+			&i.EventType,
+			&i.ActorUserID,
+			&i.TargetUserID,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Action,
+			&i.Details,
+			&i.IpAddress,
+			&i.UserAgent,
+			&i.CreatedAt,
+			&i.ActorName,
+			&i.ActorPhone,
+			&i.TargetName,
+			&i.TargetPhone,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
