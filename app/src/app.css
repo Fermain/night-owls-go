@@ -1,9 +1,9 @@
+/* Night Owls Map Styles */
+@import './lib/styles/maps.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Night Owls Map Styles */
-@import './lib/styles/maps.css';
 
 @layer base {
 	:root {

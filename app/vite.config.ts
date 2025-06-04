@@ -10,18 +10,19 @@ export default defineConfig(({ mode: _mode }) => {
 	return {
 		plugins: [
 			sveltekit(),
-                        SvelteKitPWA({
-                                srcDir: './static',
-                                mode: 'production',
-                                scope: '/',
-                                base: '/',
-                                selfDestroying: process.env.NODE_ENV === 'development',
-                                strategies: 'injectManifest',
-                                filename: 'sw.js',
-                                injectRegister: 'script',
-                                injectManifest: {
-                                        globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
-                                },
+			SvelteKitPWA({
+				srcDir: './src',
+				mode: 'production',
+				scope: '/',
+				base: '/',
+				selfDestroying: process.env.NODE_ENV === 'development',
+				strategies: 'injectManifest',
+				filename: 'sw.js',
+				injectRegister: 'script',
+				injectManifest: {
+					swSrc: 'src/service-worker.js',
+					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
+				},
 				manifest: {
 					name: 'Mount Moreland Night Owls',
 					short_name: 'Night Owls',
