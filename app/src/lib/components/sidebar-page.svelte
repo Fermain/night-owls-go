@@ -2,7 +2,6 @@
 	import UnifiedSidebar from '$lib/components/layout/UnifiedSidebar.svelte';
 	import UnifiedHeader from '$lib/components/layout/UnifiedHeader.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -11,9 +10,6 @@
 		title,
 		searchTerm = $bindable('')
 	}: { children?: Snippet; listContent?: Snippet; title?: string; searchTerm?: string } = $props();
-
-	// Check if we're in admin area for breadcrumbs
-	const isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
 </script>
 
 {#snippet mainContent()}

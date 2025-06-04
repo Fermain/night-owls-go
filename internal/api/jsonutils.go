@@ -11,10 +11,9 @@ import (
 func RespondWithError(w http.ResponseWriter, code int, message string, logger *slog.Logger, details ...any) {
 	// Try to extract request from details for enhanced error handling
 	var r *http.Request
-	var context map[string]interface{}
 
 	// Parse details to find request and build context
-	context = make(map[string]interface{})
+	context := make(map[string]interface{})
 	for i := 0; i < len(details); i++ {
 		switch v := details[i].(type) {
 		case *http.Request:

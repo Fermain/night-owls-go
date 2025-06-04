@@ -143,6 +143,8 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
 	bookingService := service.NewBookingService(querier, cfg, logger)
 	reportService := service.NewReportService(querier, logger)
+
+	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
 
@@ -153,12 +155,12 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register all relevant handlers, including admin
-	authAPIHandler := api.NewAuthHandler(userService, logger, cfg, querier)
-	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
-	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
-	adminUserAPIHandler := api.NewAdminUserHandler(querier, logger)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
+	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService, auditService)
+	adminUserAPIHandler := api.NewAdminUserHandler(querier, auditService, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
-	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
+	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, auditService, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)

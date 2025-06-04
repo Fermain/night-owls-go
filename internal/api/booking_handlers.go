@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -26,15 +27,19 @@ type ErrorResponse struct {
 
 // BookingHandler handles user-facing booking operations.
 type BookingHandler struct {
-	service *service.BookingService
-	logger  *slog.Logger
+	service      *service.BookingService
+	auditService *service.AuditService
+	querier      db.Querier
+	logger       *slog.Logger
 }
 
 // NewBookingHandler creates a new BookingHandler.
-func NewBookingHandler(service *service.BookingService, logger *slog.Logger) *BookingHandler {
+func NewBookingHandler(service *service.BookingService, auditService *service.AuditService, querier db.Querier, logger *slog.Logger) *BookingHandler {
 	return &BookingHandler{
-		service: service,
-		logger:  logger,
+		service:      service,
+		auditService: auditService,
+		querier:      querier,
+		logger:       logger,
 	}
 }
 
@@ -164,6 +169,41 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 
 	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
 
+	// Log audit event for booking creation
+	ipAddress := c.Request().Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = c.Request().Header.Get("X-Real-IP")
+	}
+	if ipAddress == "" {
+		ipAddress = c.Request().RemoteAddr
+	}
+	userAgent := c.Request().Header.Get("User-Agent")
+
+	// Get schedule name for audit logging (we need to look it up)
+	// For now, we'll use the schedule ID as a string since we don't have the schedule name easily available
+	scheduleName := fmt.Sprintf("Schedule %d", req.ScheduleID)
+
+	var buddyNamePtr *string
+	if buddyName.Valid && buddyName.String != "" {
+		buddyNamePtr = &buddyName.String
+	}
+
+	auditErr := h.auditService.LogBookingCreated(
+		c.Context(),
+		userID,
+		booking.BookingID,
+		req.ScheduleID,
+		scheduleName,
+		booking.ShiftStart.Format(time.RFC3339),
+		booking.ShiftEnd.Format(time.RFC3339),
+		buddyNamePtr,
+		ipAddress,
+		userAgent,
+	)
+	if auditErr != nil {
+		h.logger.WarnContext(c.Context(), "Failed to log booking creation audit event", "booking_id", booking.BookingID, "error", auditErr)
+	}
+
 	// Set the success status code for creation
 	c.SetStatus(http.StatusCreated)
 
@@ -252,7 +292,7 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 	h.logger.InfoContext(c.Context(), "Processing check-in", "booking_id", bookingID, "user_id", userID)
 
 	// Note: MarkCheckIn returns (db.Booking, error) but we don't need the booking for the response
-	_, err = h.service.MarkCheckIn(c.Context(), bookingID, userID)
+	updatedBooking, err := h.service.MarkCheckIn(c.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to mark check-in", "booking_id", bookingID, "user_id", userID, "error", err)
 		status, detail := mapServiceErrorToHTTP(err)
@@ -264,6 +304,31 @@ func (h *BookingHandler) MarkCheckInFuego(c fuego.ContextNoBody) (SuccessRespons
 	}
 
 	h.logger.InfoContext(c.Context(), "Check-in recorded successfully", "booking_id", bookingID, "user_id", userID)
+
+	// Log audit event for booking check-in
+	ipAddress := c.Request().Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = c.Request().Header.Get("X-Real-IP")
+	}
+	if ipAddress == "" {
+		ipAddress = c.Request().RemoteAddr
+	}
+	userAgent := c.Request().Header.Get("User-Agent")
+
+	scheduleName := fmt.Sprintf("Schedule %d", updatedBooking.ScheduleID)
+	auditErr := h.auditService.LogBookingCheckedIn(
+		c.Context(),
+		userID,
+		bookingID,
+		updatedBooking.ScheduleID,
+		scheduleName,
+		updatedBooking.ShiftStart.Format(time.RFC3339),
+		ipAddress,
+		userAgent,
+	)
+	if auditErr != nil {
+		h.logger.WarnContext(c.Context(), "Failed to log booking check-in audit event", "booking_id", bookingID, "error", auditErr)
+	}
 
 	return SuccessResponse{Message: "Check-in recorded successfully"}, nil
 }
@@ -315,6 +380,18 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 
 	h.logger.InfoContext(c.Context(), "Processing booking cancellation", "booking_id", bookingID, "user_id", userID)
 
+	// Get booking details before cancellation for audit logging
+	bookingDetails, bookingErr := h.querier.GetBookingByID(c.Context(), bookingID)
+	var scheduleID int64
+	var scheduleName string
+	var shiftStart, shiftEnd string
+	if bookingErr == nil {
+		scheduleID = bookingDetails.ScheduleID
+		scheduleName = fmt.Sprintf("Schedule %d", scheduleID)
+		shiftStart = bookingDetails.ShiftStart.Format(time.RFC3339)
+		shiftEnd = bookingDetails.ShiftEnd.Format(time.RFC3339)
+	}
+
 	err = h.service.CancelBooking(c.Context(), bookingID, userID)
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to cancel booking", "booking_id", bookingID, "user_id", userID, "error", err)
@@ -327,6 +404,33 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 	}
 
 	h.logger.InfoContext(c.Context(), "Booking cancelled successfully", "booking_id", bookingID, "user_id", userID)
+
+	// Log audit event for booking cancellation
+	if bookingErr == nil {
+		ipAddress := c.Request().Header.Get("X-Forwarded-For")
+		if ipAddress == "" {
+			ipAddress = c.Request().Header.Get("X-Real-IP")
+		}
+		if ipAddress == "" {
+			ipAddress = c.Request().RemoteAddr
+		}
+		userAgent := c.Request().Header.Get("User-Agent")
+
+		auditErr := h.auditService.LogBookingCancelled(
+			c.Context(),
+			userID,
+			bookingID,
+			scheduleID,
+			scheduleName,
+			shiftStart,
+			shiftEnd,
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(c.Context(), "Failed to log booking cancellation audit event", "booking_id", bookingID, "error", auditErr)
+		}
+	}
 
 	// For 204 No Content, we manually set the status and don't return any content
 	c.Response().WriteHeader(http.StatusNoContent)

@@ -124,7 +124,11 @@ func main() {
 		logger.Error("Failed to open database", "path", databasePath, "error", err)
 		os.Exit(1)
 	}
-	defer dbConn.Close()
+	defer func() {
+		if closeErr := dbConn.Close(); closeErr != nil {
+			log.Printf("Failed to close database connection: %v", closeErr)
+		}
+	}()
 
 	if err = dbConn.Ping(); err != nil {
 		logger.Error("Failed to ping database", "error", err)
@@ -505,7 +509,11 @@ func exportSeededData(seedData SeedData, filePath string, logger *slog.Logger) e
 	if err != nil {
 		return fmt.Errorf("failed to create export file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			logger.Error("Failed to close export file", "error", closeErr)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")

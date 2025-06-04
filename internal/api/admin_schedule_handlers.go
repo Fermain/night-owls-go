@@ -21,13 +21,15 @@ import (
 type AdminScheduleHandlers struct {
 	logger          *slog.Logger
 	scheduleService *service.ScheduleService
+	auditService    *service.AuditService
 }
 
 // NewAdminScheduleHandlers creates a new AdminScheduleHandlers.
-func NewAdminScheduleHandlers(logger *slog.Logger, scheduleService *service.ScheduleService) *AdminScheduleHandlers {
+func NewAdminScheduleHandlers(logger *slog.Logger, scheduleService *service.ScheduleService, auditService *service.AuditService) *AdminScheduleHandlers {
 	return &AdminScheduleHandlers{
 		logger:          logger.With("handler", "AdminScheduleHandlers"),
 		scheduleService: scheduleService,
+		auditService:    auditService,
 	}
 }
 
@@ -112,6 +114,40 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
+
+	// Log audit event for schedule creation
+	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+	if ok {
+		ipAddress := r.Header.Get("X-Forwarded-For")
+		if ipAddress == "" {
+			ipAddress = r.Header.Get("X-Real-IP")
+		}
+		if ipAddress == "" {
+			ipAddress = r.RemoteAddr
+		}
+		userAgent := r.Header.Get("User-Agent")
+
+		var timezonePtr *string
+		if params.Timezone.Valid {
+			timezonePtr = &params.Timezone.String
+		}
+
+		auditErr := h.auditService.LogScheduleCreated(
+			r.Context(),
+			userIDFromAuth,
+			schedule.ScheduleID,
+			schedule.Name,
+			schedule.CronExpr,
+			timezonePtr,
+			schedule.DurationMinutes,
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(r.Context(), "Failed to log schedule creation audit event", "schedule_id", schedule.ScheduleID, "error", auditErr)
+		}
+	}
+
 	RespondWithJSON(w, http.StatusCreated, ToScheduleResponse(schedule), h.logger)
 }
 
@@ -265,6 +301,9 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	}
 	params.Timezone = sql.NullString{String: timezone, Valid: true}
 
+	// Get original schedule for audit logging (before update)
+	originalSchedule, originalErr := h.scheduleService.AdminGetScheduleByID(r.Context(), scheduleID)
+
 	schedule, err := h.scheduleService.AdminUpdateSchedule(r.Context(), params)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
@@ -274,6 +313,59 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to update schedule", h.logger, "db_params", params, "error", err)
 		return
 	}
+
+	// Log audit event for schedule update
+	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+	if ok && originalErr == nil {
+		ipAddress := r.Header.Get("X-Forwarded-For")
+		if ipAddress == "" {
+			ipAddress = r.Header.Get("X-Real-IP")
+		}
+		if ipAddress == "" {
+			ipAddress = r.RemoteAddr
+		}
+		userAgent := r.Header.Get("User-Agent")
+
+		// Build changes map
+		changes := make(map[string]interface{})
+		if originalSchedule.Name != schedule.Name {
+			changes["name"] = map[string]interface{}{
+				"before": originalSchedule.Name,
+				"after":  schedule.Name,
+			}
+		}
+		if originalSchedule.CronExpr != schedule.CronExpr {
+			changes["cron_expr"] = map[string]interface{}{
+				"before": originalSchedule.CronExpr,
+				"after":  schedule.CronExpr,
+			}
+		}
+		if originalSchedule.Timezone.String != schedule.Timezone.String {
+			changes["timezone"] = map[string]interface{}{
+				"before": originalSchedule.Timezone.String,
+				"after":  schedule.Timezone.String,
+			}
+		}
+		if originalSchedule.DurationMinutes != schedule.DurationMinutes {
+			changes["duration_minutes"] = map[string]interface{}{
+				"before": originalSchedule.DurationMinutes,
+				"after":  schedule.DurationMinutes,
+			}
+		}
+
+		auditErr := h.auditService.LogScheduleUpdated(
+			r.Context(),
+			userIDFromAuth,
+			schedule.ScheduleID,
+			changes,
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(r.Context(), "Failed to log schedule update audit event", "schedule_id", schedule.ScheduleID, "error", auditErr)
+		}
+	}
+
 	RespondWithJSON(w, http.StatusOK, ToScheduleResponse(schedule), h.logger)
 }
 
@@ -312,6 +404,9 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Get schedule details before deletion for audit logging
+	schedule, scheduleErr := h.scheduleService.AdminGetScheduleByID(r.Context(), scheduleID)
+
 	err = h.scheduleService.AdminDeleteSchedule(r.Context(), scheduleID)
 	if err != nil {
 		// Assuming service.ErrNotFound might not be returned by a simple delete if 0 rows affected.
@@ -323,6 +418,32 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedule", h.logger, "schedule_id", scheduleID, "error", err)
 		return
 	}
+
+	// Log audit event for schedule deletion
+	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+	if ok && scheduleErr == nil {
+		ipAddress := r.Header.Get("X-Forwarded-For")
+		if ipAddress == "" {
+			ipAddress = r.Header.Get("X-Real-IP")
+		}
+		if ipAddress == "" {
+			ipAddress = r.RemoteAddr
+		}
+		userAgent := r.Header.Get("User-Agent")
+
+		auditErr := h.auditService.LogScheduleDeleted(
+			r.Context(),
+			userIDFromAuth,
+			scheduleID,
+			schedule.Name,
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(r.Context(), "Failed to log schedule deletion audit event", "schedule_id", scheduleID, "error", auditErr)
+		}
+	}
+
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedule deleted successfully"}, h.logger)
 }
 
@@ -404,6 +525,31 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 		// For a simple bulk delete, a generic server error might be sufficient if any part fails.
 		RespondWithError(w, http.StatusInternalServerError, "Failed to delete schedules", h.logger)
 		return
+	}
+
+	// Log audit event for bulk schedule deletion
+	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
+	if ok {
+		ipAddress := r.Header.Get("X-Forwarded-For")
+		if ipAddress == "" {
+			ipAddress = r.Header.Get("X-Real-IP")
+		}
+		if ipAddress == "" {
+			ipAddress = r.RemoteAddr
+		}
+		userAgent := r.Header.Get("User-Agent")
+
+		auditErr := h.auditService.LogScheduleBulkDeleted(
+			r.Context(),
+			userIDFromAuth,
+			req.ScheduleIDs,
+			len(req.ScheduleIDs),
+			ipAddress,
+			userAgent,
+		)
+		if auditErr != nil {
+			h.logger.WarnContext(r.Context(), "Failed to log schedule bulk deletion audit event", "schedule_ids", req.ScheduleIDs, "error", auditErr)
+		}
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedules deleted successfully"}, h.logger)

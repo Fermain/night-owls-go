@@ -91,6 +91,22 @@ WHERE ae.created_at >= ? AND ae.created_at <= ?
 ORDER BY ae.created_at DESC
 LIMIT ? OFFSET ?;
 
+-- name: ListAuditEventsWithFilters :many
+SELECT 
+    ae.*,
+    COALESCE(actor.name, '') as actor_name,
+    actor.phone as actor_phone,
+    COALESCE(target.name, '') as target_name,
+    target.phone as target_phone
+FROM audit_events ae
+LEFT JOIN users actor ON ae.actor_user_id = actor.user_id
+LEFT JOIN users target ON ae.target_user_id = target.user_id
+WHERE (? = '' OR ae.event_type = ?)
+  AND (? = '' OR ae.actor_user_id IN (SELECT value FROM json_each(?)))
+  AND (? = '' OR ae.target_user_id IN (SELECT value FROM json_each(?)))
+ORDER BY ae.created_at DESC
+LIMIT ? OFFSET ?;
+
 -- name: GetAuditEventStats :one
 SELECT 
     COUNT(*) as total_events,

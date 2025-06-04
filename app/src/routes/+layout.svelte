@@ -34,8 +34,8 @@
 	});
 
 	// State to track if stores are initialized
-	let storesInitialized = $state(false);
-	let currentUserSession = $state({ isAuthenticated: false });
+	let _storesInitialized = $state(false);
+	let _currentUserSession = $state({ isAuthenticated: false });
 
 	// Initialize everything after component is mounted to avoid ALL lifecycle errors
 	onMount(() => {
@@ -44,7 +44,7 @@
 
 		// Subscribe to user session changes
 		const userSessionUnsubscribe = userSession.subscribe((session) => {
-			currentUserSession = session;
+			_currentUserSession = session;
 
 			// Only fetch notifications if user is authenticated
 			if (session.isAuthenticated) {
@@ -77,7 +77,7 @@
 		});
 
 		// Mark stores as initialized
-		storesInitialized = true;
+		_storesInitialized = true;
 
 		// Return cleanup function
 		return () => {

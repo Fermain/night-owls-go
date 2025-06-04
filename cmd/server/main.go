@@ -99,7 +99,11 @@ func main() {
 		slog.Error("Failed to open database connection", "path", cfg.DatabasePath, "error", err)
 		os.Exit(1)
 	}
-	defer dbConn.Close()
+	defer func() {
+		if closeErr := dbConn.Close(); closeErr != nil {
+			slog.Error("Failed to close database connection", "error", closeErr)
+		}
+	}()
 	if err = dbConn.Ping(); err != nil {
 		slog.Error("Failed to ping database", "path", cfg.DatabasePath, "error", err)
 		os.Exit(1)
@@ -228,16 +232,17 @@ func main() {
 	// Initialize handlers
 	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
-	bookingAPIHandler := api.NewBookingHandler(bookingService, logger)
-	reportAPIHandler := api.NewReportHandler(reportService, logger)
-	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService)
+	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
+	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
+	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService, auditService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, auditService, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
-	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, logger)
+	adminReportAPIHandler := api.NewAdminReportHandler(reportService, scheduleService, querier, auditService, logger)
 	adminBroadcastAPIHandler := api.NewAdminBroadcastHandler(querier, logger)
 	broadcastAPIHandler := api.NewBroadcastHandler(querier, logger)
 	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
 	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
+	adminAuditAPIHandler := api.NewAdminAuditHandler(auditService, querier, logger)
 
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
@@ -443,6 +448,11 @@ func main() {
 	fuego.DeleteStd(admin, "/emergency-contacts/{id}", emergencyContactAPIHandler.AdminDeleteEmergencyContactHandler)
 	fuego.PutStd(admin, "/emergency-contacts/{id}/default", emergencyContactAPIHandler.AdminSetDefaultEmergencyContactHandler)
 
+	// Admin Audit Trail
+	fuego.GetStd(admin, "/audit-events", adminAuditAPIHandler.AdminListAuditEvents)
+	fuego.GetStd(admin, "/audit-events/stats", adminAuditAPIHandler.AdminGetAuditStats)
+	fuego.GetStd(admin, "/audit-events/type-stats", adminAuditAPIHandler.AdminGetAuditEventTypeStats)
+
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {
 		handler := httpSwagger.Handler(
@@ -462,7 +472,7 @@ func main() {
 	})
 	fuego.GetStd(s, "/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		// Generate OpenAPI spec and serve it
-		spec := s.Engine.OutputOpenAPISpec()
+		spec := s.OutputOpenAPISpec()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(spec); err != nil {
