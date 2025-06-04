@@ -174,7 +174,9 @@
 			async function registerServiceWorker() {
 				log('📱 Registering service worker...');
 				try {
-					registration = await navigator.serviceWorker.register('/sw.js');
+                                        registration = await navigator.serviceWorker.register('/sw.js', {
+                                                type: 'module'
+                                        });
 					log('✅ Service worker registered successfully', 'success');
 
 					await navigator.serviceWorker.ready;

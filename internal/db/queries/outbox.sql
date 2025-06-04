@@ -3,8 +3,10 @@ INSERT INTO outbox (
     message_type,
     recipient,
     payload,
-    user_id
+    user_id,
+    send_at
 ) VALUES (
+    ?,
     ?,
     ?,
     ?,
@@ -15,6 +17,7 @@ RETURNING *;
 -- name: GetPendingOutboxItems :many
 SELECT * FROM outbox
 WHERE status = 'pending'
+  AND send_at <= CURRENT_TIMESTAMP
 ORDER BY created_at ASC
 LIMIT ?; -- Limit to prevent processing too many at once
 

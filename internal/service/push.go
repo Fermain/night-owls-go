@@ -58,8 +58,18 @@ func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "failed to send web push notification", "user_id", userID, "endpoint", sub.Endpoint, "error", err)
-			// Consider if we should remove the subscription if it's permanently failed (e.g., 404, 410)
-			// For now, just log the error.
+			// Close response body to prevent resource leaks
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+			if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
+				params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
+				if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
+					s.logger.ErrorContext(ctx, "failed to remove expired subscription", "user_id", userID, "endpoint", sub.Endpoint, "error", delErr)
+				} else {
+					s.logger.InfoContext(ctx, "removed expired push subscription", "user_id", userID, "endpoint", sub.Endpoint)
+				}
+			}
 		} else {
 			// Closing the response body is important to avoid resource leaks
 			if resp != nil && resp.Body != nil {

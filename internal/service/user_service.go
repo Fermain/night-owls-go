@@ -20,6 +20,12 @@ var (
 	ErrInternalServer      = errors.New("internal server error")
 )
 
+// immediateSendAt returns a time that ensures immediate dispatch by the outbox processor.
+// Uses a small negative offset to ensure the message is processed immediately.
+func immediateSendAt() time.Time {
+	return time.Now().Add(-1 * time.Second)
+}
+
 // JWTGenerator defines a function that generates a JWT token
 type JWTGenerator func(userID int64, phone string, name string, role string, secret string, expiryHours int) (string, error)
 
@@ -150,6 +156,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			MessageType: "OTP_VERIFICATION",
 			Recipient:   phone,
 			Payload:     sql.NullString{String: outboxPayload, Valid: true},
+			SendAt:      immediateSendAt(),
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create outbox item for mock OTP", "phone", phone, "error", err)

@@ -158,6 +158,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 		MessageType: "BOOKING_CONFIRMATION",
 		Recipient:   fmt.Sprintf("%d", createdBooking.UserID), // Could be phone number or user ID
 		Payload:     sql.NullString{String: outboxPayload, Valid: true},
+		SendAt:      time.Now().Add(-1 * time.Second),
 	})
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create outbox item for booking confirmation", "booking_id", createdBooking.BookingID, "error", err)
@@ -264,6 +265,7 @@ func (s *BookingService) CancelBooking(ctx context.Context, bookingID int64, use
 		MessageType: "BOOKING_CANCELLATION",
 		Recipient:   fmt.Sprintf("%d", booking.UserID),
 		Payload:     sql.NullString{String: outboxPayload, Valid: true},
+		SendAt:      time.Now().Add(-1 * time.Second),
 	})
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create outbox item for booking cancellation", "booking_id", bookingID, "error", err)
@@ -389,6 +391,7 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 		Recipient:   fmt.Sprintf("%d", createdBooking.UserID), // Or user's phone if preferred for notification
 		Payload:     sql.NullString{String: outboxPayload, Valid: true},
 		UserID:      sql.NullInt64{Int64: targetUserID, Valid: true},
+		SendAt:      time.Now().Add(-1 * time.Second),
 	})
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create outbox item for admin assignment notification", "booking_id", createdBooking.BookingID, "error", err)

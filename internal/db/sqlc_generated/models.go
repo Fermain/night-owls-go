@@ -73,6 +73,7 @@ type Outbox struct {
 	SentAt      sql.NullTime   `json:"sent_at"`
 	RetryCount  sql.NullInt64  `json:"retry_count"`
 	UserID      sql.NullInt64  `json:"user_id"`
+	SendAt      time.Time      `json:"send_at"`
 }
 
 type PushSubscription struct {
