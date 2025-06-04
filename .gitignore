@@ -10,6 +10,7 @@
 /night-owls-server
 /cmd/server/server
 /cmd/server/main
+# /cmd/seed/seed
 
 # Test coverage
 *.out
