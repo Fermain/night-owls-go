@@ -82,7 +82,7 @@ func (h *BroadcastHandler) ListUserBroadcasts(w http.ResponseWriter, r *http.Req
 }
 
 // shouldUserSeeBroadcast determines if a user should see a particular broadcast
-func (h *BroadcastHandler) shouldUserSeeBroadcast(user db.User, broadcast db.Broadcast) bool {
+func (h *BroadcastHandler) shouldUserSeeBroadcast(user db.GetUserByIDRow, broadcast db.Broadcast) bool {
 	// Only show sent broadcasts
 	if broadcast.Status != "sent" {
 		return false

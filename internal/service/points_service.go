@@ -294,4 +294,19 @@ func (ps *PointsService) GetUserAchievements(ctx context.Context, userID int64) 
 
 func (ps *PointsService) GetRecentActivity(ctx context.Context, limit int32) ([]db.GetRecentActivityRow, error) {
 	return ps.querier.GetRecentActivity(ctx, int64(limit))
+}
+
+func (ps *PointsService) GetStreakLeaderboard(ctx context.Context, limit int32) ([]db.GetStreakLeaderboardRow, error) {
+	return ps.querier.GetStreakLeaderboard(ctx, int64(limit))
+}
+
+func (ps *PointsService) GetUserPointsHistory(ctx context.Context, userID int64, limit int64) ([]db.GetUserPointsHistoryRow, error) {
+	return ps.querier.GetUserPointsHistory(ctx, db.GetUserPointsHistoryParams{
+		UserID: userID,
+		Limit:  limit,
+	})
+}
+
+func (ps *PointsService) GetAvailableAchievements(ctx context.Context, userID int64) ([]db.GetAvailableAchievementsRow, error) {
+	return ps.querier.GetAvailableAchievements(ctx, userID)
 } 

@@ -132,13 +132,13 @@ func (s *BroadcastService) processBroadcast(ctx context.Context, broadcast db.Br
 }
 
 // getRecipients gets the list of users based on the audience filter
-func (s *BroadcastService) getRecipients(ctx context.Context, audience string) ([]db.User, error) {
+func (s *BroadcastService) getRecipients(ctx context.Context, audience string) ([]db.ListUsersRow, error) {
 	allUsers, err := s.querier.ListUsers(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var recipients []db.User
+	var recipients []db.ListUsersRow
 	switch audience {
 	case "all":
 		recipients = allUsers
@@ -165,7 +165,7 @@ func (s *BroadcastService) getRecipients(ctx context.Context, audience string) (
 }
 
 // createPushOutboxEntries creates outbox entries for push notifications
-func (s *BroadcastService) createPushOutboxEntries(ctx context.Context, broadcast db.Broadcast, recipients []db.User) (int64, error) {
+func (s *BroadcastService) createPushOutboxEntries(ctx context.Context, broadcast db.Broadcast, recipients []db.ListUsersRow) (int64, error) {
 	// Create push notification payload
 	pushPayload := map[string]interface{}{
 		"type":  "broadcast",
