@@ -42,7 +42,7 @@ func (s *LogFileMessageSender) Send(recipient, messageType, payload string) erro
 		payload,
 	)
 
-	file, err := os.OpenFile(s.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // #nosec G304 - filePath is controlled by application configuration
+	file, err := os.OpenFile(s.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600) // #nosec G304 - filePath is controlled by application configuration
 	if err != nil {
 		s.logger.Error("Failed to open OTP log file for writing", "path", s.logFilePath, "error", err)
 		return fmt.Errorf("failed to open OTP log file %s: %w", s.logFilePath, err)

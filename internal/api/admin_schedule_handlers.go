@@ -116,18 +116,15 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	// Log audit event for schedule creation
-	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
-	if ok {
-		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+	var timezonePtr *string
+	if params.Timezone.Valid {
+		timezonePtr = &params.Timezone.String
+	}
 
-		var timezonePtr *string
-		if params.Timezone.Valid {
-			timezonePtr = &params.Timezone.String
-		}
-
-		auditErr := h.auditService.LogScheduleCreated(
+	WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+		return h.auditService.LogScheduleCreated(
 			r.Context(),
-			userIDFromAuth,
+			userID,
 			schedule.ScheduleID,
 			schedule.Name,
 			schedule.CronExpr,
@@ -136,10 +133,7 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 			ipAddress,
 			userAgent,
 		)
-		if auditErr != nil {
-			h.logger.WarnContext(r.Context(), "Failed to log schedule creation audit event", "schedule_id", schedule.ScheduleID, "error", auditErr)
-		}
-	}
+	})
 
 	RespondWithJSON(w, http.StatusCreated, ToScheduleResponse(schedule), h.logger)
 }
@@ -308,10 +302,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	}
 
 	// Log audit event for schedule update
-	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
-	if ok && originalErr == nil {
-		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
-
+	if originalErr == nil {
 		// Build changes map
 		changes := make(map[string]interface{})
 		if originalSchedule.Name != schedule.Name {
@@ -339,17 +330,16 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 			}
 		}
 
-		auditErr := h.auditService.LogScheduleUpdated(
-			r.Context(),
-			userIDFromAuth,
-			schedule.ScheduleID,
-			changes,
-			ipAddress,
-			userAgent,
-		)
-		if auditErr != nil {
-			h.logger.WarnContext(r.Context(), "Failed to log schedule update audit event", "schedule_id", schedule.ScheduleID, "error", auditErr)
-		}
+		WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+			return h.auditService.LogScheduleUpdated(
+				r.Context(),
+				userID,
+				schedule.ScheduleID,
+				changes,
+				ipAddress,
+				userAgent,
+			)
+		})
 	}
 
 	RespondWithJSON(w, http.StatusOK, ToScheduleResponse(schedule), h.logger)
@@ -406,21 +396,17 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 	}
 
 	// Log audit event for schedule deletion
-	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
-	if ok && scheduleErr == nil {
-		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
-
-		auditErr := h.auditService.LogScheduleDeleted(
-			r.Context(),
-			userIDFromAuth,
-			scheduleID,
-			schedule.Name,
-			ipAddress,
-			userAgent,
-		)
-		if auditErr != nil {
-			h.logger.WarnContext(r.Context(), "Failed to log schedule deletion audit event", "schedule_id", scheduleID, "error", auditErr)
-		}
+	if scheduleErr == nil {
+		WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+			return h.auditService.LogScheduleDeleted(
+				r.Context(),
+				userID,
+				scheduleID,
+				schedule.Name,
+				ipAddress,
+				userAgent,
+			)
+		})
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedule deleted successfully"}, h.logger)
@@ -507,22 +493,16 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 	}
 
 	// Log audit event for bulk schedule deletion
-	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
-	if ok {
-		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
-
-		auditErr := h.auditService.LogScheduleBulkDeleted(
+	WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+		return h.auditService.LogScheduleBulkDeleted(
 			r.Context(),
-			userIDFromAuth,
+			userID,
 			req.ScheduleIDs,
 			len(req.ScheduleIDs),
 			ipAddress,
 			userAgent,
 		)
-		if auditErr != nil {
-			h.logger.WarnContext(r.Context(), "Failed to log schedule bulk deletion audit event", "schedule_ids", req.ScheduleIDs, "error", auditErr)
-		}
-	}
+	})
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Schedules deleted successfully"}, h.logger)
 }
