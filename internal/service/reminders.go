@@ -32,19 +32,11 @@ func (s *Scheduler) EnqueueShiftReminders(ctx context.Context, booking db.Bookin
 	remindAt24h := booking.ShiftStart.Add(-24 * time.Hour)
 
 	params24h := db.CreateOutboxItemParams{
-		MessageType: "push", // Channel
-		Recipient:   "",     // Not used for push, UserID is primary
+		MessageType: "push",
+		Recipient:   "",
 		Payload:     sql.NullString{String: payload24h, Valid: true},
 		UserID:      sql.NullInt64{Int64: booking.UserID, Valid: true},
-		// Status will default to 'pending' in the DB or by CreateOutboxItem logic if it sets defaults.
-		// CreatedAt will also typically be defaulted by the DB.
-		// SendAt needs to be handled by the outbox item itself or dispatcher logic if SendAt is a concept there.
-		// For now, assuming the dispatcher sends immediately based on MessageType and Status.
-		// If SendAt is a field in outbox table that dispatcher respects, it should be set here.
-		// The PWA.md example implies SendAt is part of model.Notification: SendAt: b.ShiftStart.Add(-24 * time.Hour)
-		// This requires outbox_items table to have a send_at column and relevant queries to use it.
-		// Current outbox table does NOT have send_at.
-		// Let's log a warning for now and proceed without SendAt functionality in outbox.
+		SendAt:      remindAt24h,
 	}
 	s.logger.InfoContext(ctx, "Enqueueing 24h shift reminder", "booking_id", booking.BookingID, "user_id", booking.UserID, "remind_at", remindAt24h, "payload", payload24h)
 	_, err := s.querier.CreateOutboxItem(ctx, params24h)
@@ -61,6 +53,7 @@ func (s *Scheduler) EnqueueShiftReminders(ctx context.Context, booking db.Bookin
 		Recipient:   "",
 		Payload:     sql.NullString{String: payload1h, Valid: true},
 		UserID:      sql.NullInt64{Int64: booking.UserID, Valid: true},
+		SendAt:      remindAt1h,
 	}
 	s.logger.InfoContext(ctx, "Enqueueing 1h shift reminder", "booking_id", booking.BookingID, "user_id", booking.UserID, "remind_at", remindAt1h, "payload", payload1h)
 	_, err = s.querier.CreateOutboxItem(ctx, params1h)
@@ -69,6 +62,6 @@ func (s *Scheduler) EnqueueShiftReminders(ctx context.Context, booking db.Bookin
 		return fmt.Errorf("failed to enqueue 1h reminder: %w", err)
 	}
 
-	s.logger.WarnContext(ctx, "Reminder scheduling currently does not use a 'SendAt' field in outbox. Reminders will be dispatched when outbox processor runs.")
+	s.logger.InfoContext(ctx, "Shift reminders queued", "booking_id", booking.BookingID)
 	return nil
 }

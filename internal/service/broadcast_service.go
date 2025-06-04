@@ -190,6 +190,7 @@ func (s *BroadcastService) createPushOutboxEntries(ctx context.Context, broadcas
 			Recipient:   "", // Not used for push notifications
 			MessageType: "push",
 			Payload:     sql.NullString{String: string(payloadBytes), Valid: true},
+			SendAt:      time.Now().Add(-1 * time.Second),
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create outbox entry for push notification",

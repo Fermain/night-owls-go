@@ -150,6 +150,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			MessageType: "OTP_VERIFICATION",
 			Recipient:   phone,
 			Payload:     sql.NullString{String: outboxPayload, Valid: true},
+			SendAt:      time.Now().Add(-1 * time.Second),
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create outbox item for mock OTP", "phone", phone, "error", err)
