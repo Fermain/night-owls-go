@@ -2,13 +2,25 @@
 	import UserForm from '$lib/components/admin/users/UserForm.svelte';
 	import IntelligentDashboard from '$lib/components/admin/IntelligentDashboard.svelte';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
-	import type { UserData } from '$lib/schemas/user';
+	import type { User } from '$lib/types/domain';
 	import UsersIcon from '@lucide/svelte/icons/users';
 
 	// currentUserForForm is derived from the store, which is synced with URL by the layout
-	let currentUserForForm = $state<UserData | undefined>(undefined);
+	let currentUserForForm = $state<User | undefined>(undefined);
 	selectedUserForForm.subscribe((value) => {
-		currentUserForForm = value;
+		if (value) {
+			// Convert UserData from store to our domain User type
+			currentUserForForm = {
+				id: value.id,
+				name: value.name ?? '',
+				phone: value.phone,
+				role: value.role,
+				createdAt: value.created_at,
+				isActive: true // Default value for new domain field
+			};
+		} else {
+			currentUserForForm = undefined;
+		}
 	});
 </script>
 
