@@ -2,7 +2,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
-import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ mode: _mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
@@ -18,10 +17,9 @@ export default defineConfig(({ mode: _mode }) => {
 				base: '/',
 				selfDestroying: process.env.NODE_ENV === 'development',
 				strategies: 'injectManifest',
-				filename: 'sw.js',
+				filename: 'service-worker.js',
 				injectRegister: 'script',
 				injectManifest: {
-					swSrc: fileURLToPath(new URL('./src/service-worker.js', import.meta.url)),
 					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
 				},
 				manifest: {
