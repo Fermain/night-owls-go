@@ -58,6 +58,10 @@ func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "failed to send web push notification", "user_id", userID, "endpoint", sub.Endpoint, "error", err)
+			// Close response body to prevent resource leaks
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
 			if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
 				params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
 				if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
