@@ -118,14 +118,7 @@ func (h *AdminScheduleHandlers) AdminCreateSchedule(w http.ResponseWriter, r *ht
 	// Log audit event for schedule creation
 	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 	if ok {
-		ipAddress := r.Header.Get("X-Forwarded-For")
-		if ipAddress == "" {
-			ipAddress = r.Header.Get("X-Real-IP")
-		}
-		if ipAddress == "" {
-			ipAddress = r.RemoteAddr
-		}
-		userAgent := r.Header.Get("User-Agent")
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 		var timezonePtr *string
 		if params.Timezone.Valid {
@@ -317,14 +310,7 @@ func (h *AdminScheduleHandlers) AdminUpdateSchedule(w http.ResponseWriter, r *ht
 	// Log audit event for schedule update
 	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 	if ok && originalErr == nil {
-		ipAddress := r.Header.Get("X-Forwarded-For")
-		if ipAddress == "" {
-			ipAddress = r.Header.Get("X-Real-IP")
-		}
-		if ipAddress == "" {
-			ipAddress = r.RemoteAddr
-		}
-		userAgent := r.Header.Get("User-Agent")
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 		// Build changes map
 		changes := make(map[string]interface{})
@@ -422,14 +408,7 @@ func (h *AdminScheduleHandlers) AdminDeleteSchedule(w http.ResponseWriter, r *ht
 	// Log audit event for schedule deletion
 	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 	if ok && scheduleErr == nil {
-		ipAddress := r.Header.Get("X-Forwarded-For")
-		if ipAddress == "" {
-			ipAddress = r.Header.Get("X-Real-IP")
-		}
-		if ipAddress == "" {
-			ipAddress = r.RemoteAddr
-		}
-		userAgent := r.Header.Get("User-Agent")
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 		auditErr := h.auditService.LogScheduleDeleted(
 			r.Context(),
@@ -530,14 +509,7 @@ func (h *AdminScheduleHandlers) AdminBulkDeleteSchedules(w http.ResponseWriter, 
 	// Log audit event for bulk schedule deletion
 	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 	if ok {
-		ipAddress := r.Header.Get("X-Forwarded-For")
-		if ipAddress == "" {
-			ipAddress = r.Header.Get("X-Real-IP")
-		}
-		if ipAddress == "" {
-			ipAddress = r.RemoteAddr
-		}
-		userAgent := r.Header.Get("User-Agent")
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 		auditErr := h.auditService.LogScheduleBulkDeleted(
 			r.Context(),

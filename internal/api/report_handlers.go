@@ -154,16 +154,9 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Log audit event for report creation
-	ipAddress := r.Header.Get("X-Forwarded-For")
-	if ipAddress == "" {
-		ipAddress = r.Header.Get("X-Real-IP")
-	}
-	if ipAddress == "" {
-		ipAddress = r.RemoteAddr
-	}
-	userAgent := r.Header.Get("User-Agent")
+	ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
-	hasLocation := gpsLocation != nil && gpsLocation.Latitude != nil && gpsLocation.Longitude != nil
+	hasLocation := gpsLocation != nil
 	auditErr := h.auditService.LogReportCreated(
 		r.Context(),
 		userID,
@@ -257,16 +250,9 @@ func (h *ReportHandler) CreateOffShiftReportHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Log audit event for off-shift report creation
-	ipAddress := r.Header.Get("X-Forwarded-For")
-	if ipAddress == "" {
-		ipAddress = r.Header.Get("X-Real-IP")
-	}
-	if ipAddress == "" {
-		ipAddress = r.RemoteAddr
-	}
-	userAgent := r.Header.Get("User-Agent")
+	ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
-	hasLocation := gpsLocation != nil && gpsLocation.Latitude != nil && gpsLocation.Longitude != nil
+	hasLocation := gpsLocation != nil
 	auditErr := h.auditService.LogReportCreated(
 		r.Context(),
 		userID,

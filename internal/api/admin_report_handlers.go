@@ -300,14 +300,7 @@ func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r 
 		// Get user ID from auth context for audit logging
 		userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 		if ok {
-			ipAddress := r.Header.Get("X-Forwarded-For")
-			if ipAddress == "" {
-				ipAddress = r.Header.Get("X-Real-IP")
-			}
-			if ipAddress == "" {
-				ipAddress = r.RemoteAddr
-			}
-			userAgent := r.Header.Get("User-Agent")
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 			var reporterUserID *int64
 			if report.UserID.Valid {
@@ -370,14 +363,7 @@ func (h *AdminReportHandler) AdminUnarchiveReportHandler(w http.ResponseWriter, 
 		// Get user ID from auth context for audit logging
 		userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 		if ok {
-			ipAddress := r.Header.Get("X-Forwarded-For")
-			if ipAddress == "" {
-				ipAddress = r.Header.Get("X-Real-IP")
-			}
-			if ipAddress == "" {
-				ipAddress = r.RemoteAddr
-			}
-			userAgent := r.Header.Get("User-Agent")
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 			var reporterUserID *int64
 			if report.UserID.Valid {
@@ -557,14 +543,7 @@ func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *
 	// Log audit event for report deletion
 	userIDFromAuth, ok := r.Context().Value(UserIDKey).(int64)
 	if ok {
-		ipAddress := r.Header.Get("X-Forwarded-For")
-		if ipAddress == "" {
-			ipAddress = r.Header.Get("X-Real-IP")
-		}
-		if ipAddress == "" {
-			ipAddress = r.RemoteAddr
-		}
-		userAgent := r.Header.Get("User-Agent")
+		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 
 		var reporterUserID *int64
 		if report.UserID.Valid {

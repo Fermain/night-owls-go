@@ -68,15 +68,16 @@ export default defineConfig(({ mode: _mode }) => {
 		},
 
 		server: {
-			proxy: isE2ETesting
-				? undefined
-				: {
-						'/api': {
-							target: 'http://localhost:5888',
-							changeOrigin: true,
-							secure: false
+			proxy:
+				_mode === 'production'
+					? undefined
+					: {
+							'/api': {
+								target: process.env.PUBLIC_API_BASE_URL || 'http://localhost:5888',
+								changeOrigin: true,
+								secure: false
+							}
 						}
-					}
 		},
 
 		define: {
