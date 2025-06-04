@@ -7,14 +7,8 @@
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
 
-	interface Report {
-		report_id: number;
-		severity: number;
-		latitude?: number;
-		longitude?: number;
-		gps_accuracy?: number;
-		created_at: string;
-	}
+	// Use our domain Report type
+	import type { Report } from '$lib/types/domain';
 
 	interface Props {
 		reports: Report[];
@@ -40,8 +34,8 @@
 
 		// Average GPS accuracy
 		const accuracyValues = reportsWithGPS
-			.filter((r) => r.gps_accuracy && r.gps_accuracy > 0)
-			.map((r) => r.gps_accuracy!);
+			.filter((r) => r.gpsAccuracy && r.gpsAccuracy > 0)
+			.map((r) => r.gpsAccuracy!);
 		const avgAccuracy =
 			accuracyValues.length > 0
 				? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)

@@ -6,11 +6,18 @@
 	import { goto } from '$app/navigation';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import { authenticatedFetch } from '$lib/utils/api';
-	import { getSeverityLabel } from '$lib/utils/reports';
-	import type { components } from '$lib/types/api';
 
-	type AdminReport = components['schemas']['api.AdminReportResponse'];
+	// Utilities with new patterns
+	import { apiGet } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
+	// Types using our new domain types and API mappings
+	import type { Report } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIReportArrayToDomain } from '$lib/types/api-mappings';
+
+	// Utilities
+	import { getSeverityLabel } from '$lib/utils/reports';
 
 	let searchTerm = $state('');
 	let { children } = $props();
@@ -29,17 +36,18 @@
 		}
 	];
 
-	// Fetch shift reports from the real API
+	// Fetch shift reports using our new API utilities
 	const reportsQuery = $derived(
-		createQuery({
+		createQuery<Report[], Error>({
 			queryKey: ['adminReportsForLayout'],
 			queryFn: async () => {
-				const response = await authenticatedFetch('/api/admin/reports');
-				if (!response.ok) {
-					throw new Error(`Failed to fetch reports: ${response.status}`);
+				try {
+					const apiReports =
+						await apiGet<components['schemas']['api.AdminReportResponse'][]>('/api/admin/reports');
+					return mapAPIReportArrayToDomain(apiReports);
+				} catch (error) {
+					throw classifyError(error);
 				}
-				const data = await response.json();
-				return data as AdminReport[];
 			}
 		})
 	);
@@ -53,10 +61,10 @@
 		return reports.filter((report) => {
 			const searchableText = [
 				report.message,
-				report.user_name,
-				report.schedule_name,
+				report.userName || '',
+				report.scheduleName || '',
 				getSeverityLabel(report.severity ?? 0),
-				`#${report.report_id}`
+				`#${report.id}`
 			]
 				.join(' ')
 				.toLowerCase();
@@ -66,8 +74,8 @@
 	});
 
 	// Handle selecting a report from the dynamic list
-	const selectReportForViewing = (report: AdminReport) => {
-		goto(`/admin/reports?reportId=${report.report_id}`);
+	const selectReportForViewing = (report: Report) => {
+		goto(`/admin/reports?reportId=${report.id}`);
 	};
 
 	// Get current selected report ID from URL
@@ -99,13 +107,13 @@
 				<div class="p-4 text-sm">Loading reports...</div>
 			{:else if $reportsQuery.isError}
 				<div class="p-4 text-sm text-destructive">
-					Error loading reports: {$reportsQuery.error.message}
+					Error loading reports: {$reportsQuery.error?.message || 'Unknown error'}
 				</div>
 			{:else if filteredReports && filteredReports.length > 0}
-				{#each filteredReports as report (report.report_id)}
+				{#each filteredReports as report (report.id)}
 					<ReportThumbnail
 						{report}
-						isSelected={currentSelectedReportId === report.report_id}
+						isSelected={currentSelectedReportId === report.id}
 						onSelect={selectReportForViewing}
 					/>
 				{/each}

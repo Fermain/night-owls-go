@@ -47,9 +47,9 @@ class PushNotificationService {
 					console.warn('Service worker ready timeout, attempting manual registration');
 					// Fallback: try to register manually
 					try {
-                                                this.registration = await navigator.serviceWorker.register('/sw.js', {
-                                                        type: 'module'
-                                                });
+						this.registration = await navigator.serviceWorker.register('/sw.js', {
+							type: 'module'
+						});
 						await this.registration.update();
 					} catch (regError) {
 						console.error('Manual service worker registration failed:', regError);

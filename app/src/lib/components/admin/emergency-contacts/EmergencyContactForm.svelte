@@ -1,128 +1,202 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import { Checkbox } from '$lib/components/ui/checkbox';
-	import * as Card from '$lib/components/ui/card';
+	// === IMPORTS ===
+	// UI Components (centralized imports)
+	import {
+		Button,
+		Input,
+		Label,
+		Textarea,
+		Checkbox,
+		Card,
+		CardContent,
+		LoadingState,
+		ErrorState
+	} from '$lib/components/ui';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
+
+	// Utilities with new patterns
+	import { apiPost, apiPut, apiDelete } from '$lib/utils/api';
+	import { classifyError, getErrorMessage } from '$lib/utils/errors';
 	import { toast } from 'svelte-sonner';
-	import { authenticatedFetch } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import {
-		validateEmergencyContact,
-		type EmergencyContact,
-		type CreateEmergencyContactRequest
-	} from '$lib/utils/emergencyContacts';
 
-	interface Props {
+	// Types using our new domain types and API mappings
+	import type { EmergencyContact, CreateEmergencyContactData } from '$lib/types/domain';
+	import type { BaseComponentProps } from '$lib/types/ui';
+	import {
+		mapCreateEmergencyContactToAPIRequest,
+		mapUpdateEmergencyContactToAPIRequest
+	} from '$lib/types/api-mappings';
+
+	// Legacy validation utility (will migrate this later)
+	import { validateEmergencyContact } from '$lib/utils/emergencyContacts';
+
+	// === COMPONENT PROPS ===
+	interface EmergencyContactFormProps extends BaseComponentProps {
 		contact?: EmergencyContact;
 		onSuccess?: () => void;
 	}
 
-	let { contact, onSuccess }: Props = $props();
+	let {
+		contact,
+		onSuccess,
+		className,
+		id,
+		'data-testid': testId,
+		...props
+	}: EmergencyContactFormProps = $props();
 
+	// === STATE MANAGEMENT ===
 	const queryClient = useQueryClient();
 
-	// Form state - handle optional properties from OpenAPI types
-	let formName = $state(contact?.name ?? '');
-	let formNumber = $state(contact?.number ?? '');
-	let formDescription = $state(contact?.description ?? '');
-	let formIsDefault = $state(contact?.is_default ?? false);
-	let formDisplayOrder = $state(contact?.display_order ?? 1);
-	let formSubmitting = $state(false);
-
-	// Update form fields when contact prop changes
-	$effect(() => {
-		if (contact) {
-			formName = contact.name ?? '';
-			formNumber = contact.number ?? '';
-			formDescription = contact.description ?? '';
-			formIsDefault = contact.is_default ?? false;
-			formDisplayOrder = contact.display_order ?? 1;
-		} else {
-			// Reset form for new contact creation
-			formName = '';
-			formNumber = '';
-			formDescription = '';
-			formIsDefault = false;
-			formDisplayOrder = 1;
-		}
+	// Form values using our domain types
+	let formValues = $state<CreateEmergencyContactData>({
+		name: contact?.name ?? '',
+		number: contact?.number ?? '',
+		description: contact?.description ?? '',
+		isDefault: contact?.isDefault ?? false,
+		displayOrder: contact?.displayOrder ?? 1
 	});
 
+	// Form state - simplified approach that works with our domain types
+	let formState = $state({
+		errors: {} as Partial<Record<keyof CreateEmergencyContactData, string>>,
+		touched: {} as Partial<Record<keyof CreateEmergencyContactData, boolean>>,
+		dirty: false,
+		valid: true,
+		submitting: false
+	});
+
+	// Derived values to track form state
+	const currentFormValues = $derived(formValues);
+
+	// API operation states
+	let deleteState = $state<{ loading: boolean; error: Error | null }>({
+		loading: false,
+		error: null
+	});
+	let setDefaultState = $state<{ loading: boolean; error: Error | null }>({
+		loading: false,
+		error: null
+	});
+
+	// === DERIVED VALUES ===
 	const isEditing = $derived(!!contact);
 	const title = $derived(isEditing ? 'Edit Emergency Contact' : 'Create Emergency Contact');
 	const submitText = $derived(isEditing ? 'Update Contact' : 'Create Contact');
 
+	// === EFFECTS ===
+	// Update form when contact prop changes
+	$effect(() => {
+		if (contact) {
+			const newValues = {
+				name: contact.name ?? '',
+				number: contact.number ?? '',
+				description: contact.description ?? '',
+				isDefault: contact.isDefault ?? false,
+				displayOrder: contact.displayOrder ?? 1
+			};
+			formValues = newValues;
+			formState.dirty = false;
+			formState.errors = {};
+			formState.touched = {};
+		} else {
+			// Reset for new contact creation
+			const newValues = {
+				name: '',
+				number: '',
+				description: '',
+				isDefault: false,
+				displayOrder: 1
+			};
+			formValues = newValues;
+			formState.dirty = false;
+			formState.errors = {};
+			formState.touched = {};
+		}
+	});
+
+	// Update form state when values change
+	$effect(() => {
+		formState.dirty = true;
+
+		// Validate form
+		const validation = validateEmergencyContact({
+			name: formValues.name,
+			number: formValues.number,
+			description: formValues.description,
+			is_default: formValues.isDefault,
+			display_order: formValues.displayOrder
+		});
+
+		formState.valid = validation.isValid;
+		// Convert validation errors to our FormState format
+		formState.errors = validation.isValid
+			? {}
+			: {
+					name: validation.errors.find((e) => e.includes('Name')) || undefined,
+					number: validation.errors.find((e) => e.includes('Phone')) || undefined,
+					displayOrder: validation.errors.find((e) => e.includes('Display order')) || undefined
+				};
+	});
+
+	// === FORM HANDLERS ===
+	function markFieldTouched(field: keyof CreateEmergencyContactData) {
+		formState.touched[field] = true;
+	}
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 
-		// Validate form data using centralized validation
-		const formData: CreateEmergencyContactRequest = {
-			name: formName,
-			number: formNumber,
-			description: formDescription,
-			is_default: formIsDefault,
-			display_order: formDisplayOrder
-		};
-
-		const validation = validateEmergencyContact(formData);
-		if (!validation.isValid) {
-			toast.error(validation.errors.join(', '));
+		if (!formState.valid) {
+			// Mark all fields as touched to show errors
+			(Object.keys(formValues) as Array<keyof CreateEmergencyContactData>).forEach((key) => {
+				formState.touched[key] = true;
+			});
+			toast.error('Please fix the form errors before submitting');
 			return;
 		}
 
-		formSubmitting = true;
+		formState.submitting = true;
 
 		try {
-			const url =
-				isEditing && contact?.id
-					? `/api/admin/emergency-contacts/${contact.id}`
-					: '/api/admin/emergency-contacts';
+			if (isEditing && contact?.id) {
+				// Update existing contact
+				const requestData = mapUpdateEmergencyContactToAPIRequest(formValues);
+				await apiPut(`/emergency-contacts/${contact.id}`, requestData);
+				toast.success('Contact updated successfully');
+			} else {
+				// Create new contact
+				const requestData = mapCreateEmergencyContactToAPIRequest(formValues);
+				await apiPost('/emergency-contacts', requestData);
+				toast.success('Contact created successfully');
 
-			const method = isEditing ? 'PUT' : 'POST';
-
-			const response = await authenticatedFetch(url, {
-				method,
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					name: formData.name?.trim(),
-					number: formData.number?.trim(),
-					description: formData.description?.trim(),
-					is_default: formData.is_default,
-					display_order: formData.display_order
-				})
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to save contact');
+				// Reset form for new contact creation
+				const newValues = {
+					name: '',
+					number: '',
+					description: '',
+					isDefault: false,
+					displayOrder: 1
+				};
+				formValues = newValues;
+				formState.touched = {};
+				formState.dirty = false;
 			}
 
-			toast.success(isEditing ? 'Contact updated successfully' : 'Contact created successfully');
-
-			// Invalidate the query to refresh the sidebar list
+			// Refresh the emergency contacts list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
 
 			if (onSuccess) {
 				onSuccess();
-			} else if (!isEditing) {
-				// Reset form for new contact creation
-				formName = '';
-				formNumber = '';
-				formDescription = '';
-				formIsDefault = false;
-				formDisplayOrder = 1;
 			}
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to save contact';
-			toast.error(message);
+		} catch (error) {
+			const appError = classifyError(error);
+			toast.error(getErrorMessage(appError));
 		} finally {
-			formSubmitting = false;
+			formState.submitting = false;
 		}
 	}
 
@@ -133,57 +207,50 @@
 			return;
 		}
 
+		deleteState.loading = true;
+		deleteState.error = null;
+
 		try {
-			const response = await authenticatedFetch(`/api/admin/emergency-contacts/${contact.id}`, {
-				method: 'DELETE'
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to delete contact');
-			}
-
+			await apiDelete(`/emergency-contacts/${contact.id}`);
 			toast.success('Contact deleted successfully');
 
-			// Invalidate the query to refresh the sidebar list
+			// Refresh the contacts list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
 
-			// Navigate back to the create form
+			// Navigate back to create form
 			goto('/admin/emergency-contacts');
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to delete contact';
-			toast.error(message);
+		} catch (error) {
+			const appError = classifyError(error);
+			deleteState.error = appError;
+			toast.error(getErrorMessage(appError));
+		} finally {
+			deleteState.loading = false;
 		}
 	}
 
 	async function handleSetDefault() {
 		if (!isEditing || !contact?.id) return;
 
+		setDefaultState.loading = true;
+		setDefaultState.error = null;
+
 		try {
-			const response = await authenticatedFetch(
-				`/api/admin/emergency-contacts/${contact.id}/default`,
-				{
-					method: 'PUT'
-				}
-			);
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to set default contact');
-			}
-
+			await apiPut(`/emergency-contacts/${contact.id}/default`);
 			toast.success(`${contact.name ?? 'Contact'} set as default emergency contact`);
 
-			// Invalidate the query to refresh the sidebar list
+			// Refresh the contacts list
 			queryClient.invalidateQueries({ queryKey: ['adminEmergencyContacts'] });
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to set default contact';
-			toast.error(message);
+		} catch (error) {
+			const appError = classifyError(error);
+			setDefaultState.error = appError;
+			toast.error(getErrorMessage(appError));
+		} finally {
+			setDefaultState.loading = false;
 		}
 	}
 </script>
 
-<div class="container mx-auto p-6 max-w-6xl">
+<div {id} data-testid={testId} class="container mx-auto p-6 max-w-6xl {className}" {...props}>
 	<AdminPageHeader
 		icon={PhoneIcon}
 		heading={title}
@@ -192,57 +259,141 @@
 			: 'Add a new emergency contact for the community'}
 	/>
 
-	<Card.Root>
-		<Card.Content class="p-6">
-			<form onsubmit={handleSubmit} class="space-y-4">
-				<div class="space-y-2">
-					<Label for="name">Name *</Label>
-					<Input id="name" bind:value={formName} placeholder="e.g., RUSA, SAPS, ER24" required />
-				</div>
-
-				<div class="space-y-2">
-					<Label for="number">Phone Number *</Label>
-					<Input id="number" bind:value={formNumber} placeholder="e.g., 086 123 4333" required />
-				</div>
-
-				<div class="space-y-2">
-					<Label for="description">Description</Label>
-					<Textarea
-						id="description"
-						bind:value={formDescription}
-						placeholder="Brief description of the service"
-						rows={2}
-					/>
-				</div>
-
-				<div class="space-y-2">
-					<Label for="display-order">Display Order</Label>
-					<Input id="display-order" type="number" bind:value={formDisplayOrder} min="1" />
-				</div>
-
-				<div class="flex items-center space-x-2">
-					<Checkbox id="is-default" bind:checked={formIsDefault} />
-					<Label for="is-default" class="text-sm">Set as default emergency contact</Label>
-				</div>
-
-				<div class="flex gap-2 pt-4">
-					<Button type="submit" disabled={formSubmitting} class="flex-1">
-						{formSubmitting ? 'Saving...' : submitText}
-					</Button>
-
-					{#if isEditing && contact}
-						{#if !contact.is_default}
-							<Button type="button" variant="outline" onclick={handleSetDefault}>
-								Set as Default
-							</Button>
+	<Card>
+		<CardContent class="p-6">
+			{#if formState.submitting}
+				<LoadingState isLoading={true} loadingText="Saving contact..." />
+			{:else}
+				<form onsubmit={handleSubmit} class="space-y-4">
+					<!-- Name Field -->
+					<div class="space-y-2">
+						<Label for="name">Name *</Label>
+						<Input
+							id="name"
+							bind:value={formValues.name}
+							onblur={() => markFieldTouched('name')}
+							placeholder="e.g., RUSA, SAPS, ER24"
+							required
+							class={formState.touched.name && formState.errors.name ? 'border-destructive' : ''}
+						/>
+						{#if formState.touched.name && formState.errors.name}
+							<p class="text-sm text-destructive">{formState.errors.name}</p>
 						{/if}
+					</div>
 
-						{#if !contact.is_default}
-							<Button type="button" variant="destructive" onclick={handleDelete}>Delete</Button>
+					<!-- Number Field -->
+					<div class="space-y-2">
+						<Label for="number">Phone Number *</Label>
+						<Input
+							id="number"
+							bind:value={formValues.number}
+							onblur={() => markFieldTouched('number')}
+							placeholder="e.g., 086 123 4333"
+							required
+							class={formState.touched.number && formState.errors.number
+								? 'border-destructive'
+								: ''}
+						/>
+						{#if formState.touched.number && formState.errors.number}
+							<p class="text-sm text-destructive">{formState.errors.number}</p>
 						{/if}
-					{/if}
-				</div>
-			</form>
-		</Card.Content>
-	</Card.Root>
+					</div>
+
+					<!-- Description Field -->
+					<div class="space-y-2">
+						<Label for="description">Description</Label>
+						<Textarea
+							id="description"
+							bind:value={formValues.description}
+							onblur={() => markFieldTouched('description')}
+							placeholder="Brief description of the service"
+							rows={2}
+						/>
+					</div>
+
+					<!-- Display Order Field -->
+					<div class="space-y-2">
+						<Label for="display-order">Display Order</Label>
+						<Input
+							id="display-order"
+							type="number"
+							bind:value={formValues.displayOrder}
+							onblur={() => markFieldTouched('displayOrder')}
+							min="1"
+							class={formState.touched.displayOrder && formState.errors.displayOrder
+								? 'border-destructive'
+								: ''}
+						/>
+						{#if formState.touched.displayOrder && formState.errors.displayOrder}
+							<p class="text-sm text-destructive">{formState.errors.displayOrder}</p>
+						{/if}
+					</div>
+
+					<!-- Default Checkbox -->
+					<div class="flex items-center space-x-2">
+						<Checkbox id="is-default" bind:checked={formValues.isDefault} />
+						<Label for="is-default" class="text-sm">Set as default emergency contact</Label>
+					</div>
+
+					<!-- Action Buttons -->
+					<div class="flex gap-2 pt-4">
+						<Button
+							type="submit"
+							disabled={formState.submitting || !formState.valid}
+							class="flex-1"
+						>
+							{submitText}
+						</Button>
+
+						{#if isEditing && contact}
+							{#if !contact.isDefault}
+								<Button
+									type="button"
+									variant="outline"
+									onclick={handleSetDefault}
+									disabled={setDefaultState.loading}
+								>
+									{setDefaultState.loading ? 'Setting...' : 'Set as Default'}
+								</Button>
+							{/if}
+
+							{#if !contact.isDefault}
+								<Button
+									type="button"
+									variant="destructive"
+									onclick={handleDelete}
+									disabled={deleteState.loading}
+								>
+									{deleteState.loading ? 'Deleting...' : 'Delete'}
+								</Button>
+							{/if}
+						{/if}
+					</div>
+				</form>
+
+				<!-- Error States for Operations -->
+				{#if setDefaultState.error}
+					<div class="mt-4">
+						<ErrorState
+							error={setDefaultState.error}
+							title="Failed to set default"
+							showRetry={true}
+							onRetry={handleSetDefault}
+						/>
+					</div>
+				{/if}
+
+				{#if deleteState.error}
+					<div class="mt-4">
+						<ErrorState
+							error={deleteState.error}
+							title="Failed to delete contact"
+							showRetry={true}
+							onRetry={handleDelete}
+						/>
+					</div>
+				{/if}
+			{/if}
+		</CardContent>
+	</Card>
 </div>

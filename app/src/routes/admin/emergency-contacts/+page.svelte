@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { authenticatedFetch } from '$lib/utils/api';
+	import { apiGet } from '$lib/utils/api';
+	import { mapAPIEmergencyContactArrayToDomain } from '$lib/types/api-mappings';
 	import EmergencyContactForm from '$lib/components/admin/emergency-contacts/EmergencyContactForm.svelte';
 	import * as Card from '$lib/components/ui/card';
-	import type { EmergencyContact } from '$lib/utils/emergencyContacts';
+	import type { EmergencyContact } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
 
 	// Get contact ID from query parameters
 	const contactId = $derived(() => {
@@ -12,16 +14,15 @@
 		return id ? parseInt(id, 10) : undefined;
 	});
 
-	// Query for all contacts and find the specific one
+	// Query for all contacts and find the specific one using our new API utilities
 	const contactsQuery = $derived(
 		createQuery<EmergencyContact[], Error>({
 			queryKey: ['adminEmergencyContacts'],
 			queryFn: async () => {
-				const response = await authenticatedFetch('/api/admin/emergency-contacts');
-				if (!response.ok) {
-					throw new Error('Failed to load emergency contacts');
-				}
-				return response.json();
+				const apiContacts = await apiGet<components['schemas']['api.EmergencyContactResponse'][]>(
+					'api/admin/emergency-contacts'
+				);
+				return mapAPIEmergencyContactArrayToDomain(apiContacts);
 			}
 		})
 	);

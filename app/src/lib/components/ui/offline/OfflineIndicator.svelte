@@ -7,106 +7,82 @@
 	import WifiIcon from '@lucide/svelte/icons/wifi';
 	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
-	import CloudOffIcon from '@lucide/svelte/icons/cloud-off';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
-	import LoaderIcon from '@lucide/svelte/icons/loader-2';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
-	import { offlineService } from '$lib/services/offlineService';
+	import { isOnline, getQueuedForms } from '$lib/utils/offline';
 
-	let offlineState = $state<{
-		isOnline: boolean;
-		lastOnline: string | null;
-		emergencyContactsAvailable: boolean;
-		queuedReports: number;
-		syncInProgress: boolean;
-		lastSync: string | null;
-	}>({
-		isOnline: true,
-		lastOnline: null,
-		emergencyContactsAvailable: false,
-		queuedReports: 0,
-		syncInProgress: false,
-		lastSync: null
-	});
-
+	let queuedCount = $state(0);
 	let isVisible = $state(false);
+	let lastOnline = $state<Date | null>(null);
 
 	onMount(() => {
-		let unsubscribe: (() => void) | undefined;
-
-		// Initialize offline service
-		const initializeService = async () => {
-			try {
-				await offlineService.init();
-
-				// Subscribe to offline state changes
-				unsubscribe = offlineService.state.subscribe((state) => {
-					offlineState = state;
-
-					// Auto-show indicator when going offline or when there are queued items
-					if (!state.isOnline || state.queuedReports > 0) {
-						isVisible = true;
-					}
-				});
-			} catch (error) {
-				console.error('Failed to initialize offline service:', error);
-			}
+		// Update queued forms count
+		const updateQueuedCount = () => {
+			queuedCount = getQueuedForms().length;
 		};
 
-		initializeService();
+		// Track last online time
+		const unsubscribe = isOnline.subscribe((online) => {
+			if (online) {
+				lastOnline = new Date();
+			}
+
+			// Show indicator when offline or have queued items
+			updateQueuedCount();
+			if (!online || queuedCount > 0) {
+				isVisible = true;
+			}
+		});
+
+		// Initial update
+		updateQueuedCount();
+
+		// Refresh queued count periodically
+		const interval = setInterval(updateQueuedCount, 5000);
 
 		return () => {
-			if (unsubscribe) {
-				unsubscribe();
-			}
+			unsubscribe();
+			clearInterval(interval);
 		};
 	});
 
 	function getStatusIcon() {
-		if (offlineState.syncInProgress) {
-			return LoaderIcon;
-		}
-		if (!offlineState.isOnline) {
+		if (!$isOnline) {
 			return WifiOffIcon;
 		}
-		if (offlineState.queuedReports > 0) {
+		if (queuedCount > 0) {
 			return RefreshCwIcon;
 		}
 		return WifiIcon;
 	}
 
 	function getStatusColor() {
-		if (!offlineState.isOnline) {
+		if (!$isOnline) {
 			return 'destructive';
 		}
-		if (offlineState.queuedReports > 0) {
+		if (queuedCount > 0) {
 			return 'warning';
 		}
 		return 'default';
 	}
 
 	function getStatusText() {
-		if (offlineState.syncInProgress) {
-			return 'Syncing...';
-		}
-		if (!offlineState.isOnline) {
+		if (!$isOnline) {
 			return 'Offline';
 		}
-		if (offlineState.queuedReports > 0) {
-			return `${offlineState.queuedReports} pending`;
+		if (queuedCount > 0) {
+			return `${queuedCount} pending`;
 		}
 		return 'Online';
 	}
 
-	function formatRelativeTime(timestamp: string | null): string {
-		if (!timestamp) return 'Never';
+	function formatRelativeTime(date: Date | null): string {
+		if (!date) return 'Never';
 
 		const now = new Date();
-		const time = new Date(timestamp);
-		const diffMs = now.getTime() - time.getTime();
+		const diffMs = now.getTime() - date.getTime();
 		const diffMins = Math.floor(diffMs / (1000 * 60));
 
 		if (diffMins < 1) return 'Just now';
@@ -117,14 +93,6 @@
 
 		const diffDays = Math.floor(diffHours / 24);
 		return `${diffDays}d ago`;
-	}
-
-	async function handleSync() {
-		try {
-			await offlineService.syncAllData();
-		} catch (error) {
-			console.error('Manual sync failed:', error);
-		}
 	}
 </script>
 
@@ -141,12 +109,8 @@
 							? 'border-orange-200 bg-orange-50 hover:bg-orange-100'
 							: 'border-green-200 bg-green-50 hover:bg-green-100'}"
 				>
-					{#if offlineState.syncInProgress}
-						<LoaderIcon class="h-4 w-4 mr-2 animate-spin" />
-					{:else}
-						{@const StatusIcon = getStatusIcon()}
-						<StatusIcon class="h-4 w-4 mr-2" />
-					{/if}
+					{@const StatusIcon = getStatusIcon()}
+					<StatusIcon class="h-4 w-4 mr-2" />
 					{getStatusText()}
 				</Button>
 			</Popover.Trigger>
@@ -158,7 +122,7 @@
 						<h4 class="font-medium text-sm">Network Status</h4>
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2">
-								{#if offlineState.isOnline}
+								{#if $isOnline}
 									<WifiIcon class="h-4 w-4 text-green-600" />
 									<span class="text-sm text-green-600">Connected</span>
 								{:else}
@@ -166,11 +130,9 @@
 									<span class="text-sm text-red-600">Offline</span>
 								{/if}
 							</div>
-							{#if offlineState.lastOnline}
+							{#if lastOnline}
 								<span class="text-xs text-muted-foreground">
-									{offlineState.isOnline
-										? 'Connected'
-										: `Last: ${formatRelativeTime(offlineState.lastOnline)}`}
+									{$isOnline ? 'Connected' : `Last: ${formatRelativeTime(lastOnline)}`}
 								</span>
 							{/if}
 						</div>
@@ -188,11 +150,7 @@
 									<PhoneIcon class="h-3 w-3" />
 									<span class="text-sm">Emergency Contacts</span>
 								</div>
-								{#if offlineState.emergencyContactsAvailable}
-									<CheckCircleIcon class="h-4 w-4 text-green-600" />
-								{:else}
-									<AlertCircleIcon class="h-4 w-4 text-orange-600" />
-								{/if}
+								<CheckCircleIcon class="h-4 w-4 text-green-600" />
 							</div>
 
 							<!-- Incident Reports -->
@@ -203,9 +161,9 @@
 								</div>
 								<div class="flex items-center gap-1">
 									<CheckCircleIcon class="h-4 w-4 text-green-600" />
-									{#if offlineState.queuedReports > 0}
+									{#if queuedCount > 0}
 										<Badge variant="outline" class="text-xs">
-											{offlineState.queuedReports} queued
+											{queuedCount} queued
 										</Badge>
 									{/if}
 								</div>
@@ -222,62 +180,24 @@
 						</div>
 					</div>
 
-					<Separator />
-
-					<!-- Sync Status -->
-					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<h4 class="font-medium text-sm">Sync Status</h4>
-							{#if offlineState.syncInProgress}
-								<LoaderIcon class="h-4 w-4 animate-spin text-blue-600" />
-							{:else if offlineState.isOnline}
-								<Button
-									variant="ghost"
-									size="sm"
-									onclick={handleSync}
-									disabled={offlineState.syncInProgress}
-								>
-									<RefreshCwIcon class="h-3 w-3 mr-1" />
-									Sync Now
-								</Button>
-							{:else}
-								<CloudOffIcon class="h-4 w-4 text-gray-400" />
-							{/if}
-						</div>
-
-						{#if offlineState.lastSync}
-							<p class="text-xs text-muted-foreground">
-								Last sync: {formatRelativeTime(offlineState.lastSync)}
-							</p>
-						{/if}
-					</div>
-
 					<!-- Offline Guidance -->
-					{#if !offlineState.isOnline}
+					{#if !$isOnline}
 						<div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
 							<h5 class="text-sm font-medium text-blue-900 mb-1">Offline Mode</h5>
 							<p class="text-xs text-blue-700">
-								{#if offlineState.emergencyContactsAvailable}
-									Emergency contacts and reporting are available offline. Reports will sync when
-									connection is restored.
-								{:else}
-									Limited offline functionality. Emergency calling still works via phone.
-								{/if}
+								Form submissions will be queued and synced when connection is restored. Emergency
+								calling still works via phone.
 							</p>
 						</div>
 					{/if}
 
 					<!-- Queue Information -->
-					{#if offlineState.queuedReports > 0}
+					{#if queuedCount > 0}
 						<div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
 							<h5 class="text-sm font-medium text-orange-900 mb-1">Pending Sync</h5>
 							<p class="text-xs text-orange-700">
-								{offlineState.queuedReports} incident report{offlineState.queuedReports > 1
-									? 's'
-									: ''} waiting to sync.
-								{offlineState.isOnline
-									? 'Syncing automatically...'
-									: 'Will sync when connection returns.'}
+								{queuedCount} form submission{queuedCount > 1 ? 's' : ''} waiting to sync.
+								{$isOnline ? 'Will sync automatically...' : 'Will sync when connection returns.'}
 							</p>
 						</div>
 					{/if}

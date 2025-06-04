@@ -15,7 +15,15 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
-	import { authenticatedFetch } from '$lib/utils/api';
+
+	// Utilities with new patterns
+	import { apiGet } from '$lib/utils/api';
+	import { classifyError } from '$lib/utils/errors';
+
+	// Types using our new domain types and API mappings
+	import type { Report } from '$lib/types/domain';
+	import type { components } from '$lib/types/api';
+	import { mapAPIReportArrayToDomain } from '$lib/types/api-mappings';
 
 	// Filter state
 	let dateRangeStart = $state<string | null>(null);
@@ -29,26 +37,18 @@
 		{ value: 'custom', label: 'Custom range' }
 	];
 
-	// Fetch reports for analytics
+	// Fetch reports for analytics using our new API utilities
 	const reportsQuery = $derived(
-		createQuery({
+		createQuery<Report[], Error>({
 			queryKey: ['adminReportsAnalytics', timeframe, dateRangeStart, dateRangeEnd],
 			queryFn: async () => {
-				const response = await authenticatedFetch('/api/admin/reports');
-				if (!response.ok) {
-					throw new Error(`Failed to fetch reports: ${response.status}`);
+				try {
+					const apiReports =
+						await apiGet<components['schemas']['api.AdminReportResponse'][]>('/api/admin/reports');
+					return mapAPIReportArrayToDomain(apiReports);
+				} catch (error) {
+					throw classifyError(error);
 				}
-				return (await response.json()) as Array<{
-					report_id: number;
-					severity: number;
-					message: string;
-					created_at: string;
-					schedule_name: string;
-					user_name: string;
-					user_phone: string;
-					shift_start: string;
-					shift_end: string;
-				}>;
 			}
 		})
 	);
@@ -63,12 +63,12 @@
 		if (timeframe !== 'custom') {
 			const days = parseInt(timeframe.replace('d', ''));
 			const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-			filteredReports = reports.filter((r) => new Date(r.created_at) >= cutoff);
+			filteredReports = reports.filter((r) => new Date(r.createdAt) >= cutoff);
 		} else if (dateRangeStart && dateRangeEnd) {
 			const start = new Date(dateRangeStart + 'T00:00:00Z');
 			const end = new Date(dateRangeEnd + 'T23:59:59Z');
 			filteredReports = reports.filter((r) => {
-				const date = new Date(r.created_at);
+				const date = new Date(r.createdAt);
 				return date >= start && date <= end;
 			});
 		}
@@ -85,7 +85,7 @@
 		const previousPeriodEnd = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
 		const previousReports = reports.filter((r) => {
-			const date = new Date(r.created_at);
+			const date = new Date(r.createdAt);
 			return date >= previousPeriodStart && date < previousPeriodEnd;
 		});
 
@@ -104,7 +104,7 @@
 		for (let i = periodDays - 1; i >= 0; i--) {
 			const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
 			const dayReports = filteredReports.filter((r) => {
-				const reportDate = new Date(r.created_at);
+				const reportDate = new Date(r.createdAt);
 				return reportDate.toDateString() === date.toDateString();
 			});
 
@@ -120,7 +120,8 @@
 		// Top reporters
 		const reporterCounts = filteredReports.reduce(
 			(acc, report) => {
-				acc[report.user_name] = (acc[report.user_name] || 0) + 1;
+				const reporterName = report.userName || 'Unknown';
+				acc[reporterName] = (acc[reporterName] || 0) + 1;
 				return acc;
 			},
 			{} as Record<string, number>
@@ -134,7 +135,8 @@
 		// Schedule breakdown
 		const scheduleCounts = filteredReports.reduce(
 			(acc, report) => {
-				acc[report.schedule_name] = (acc[report.schedule_name] || 0) + 1;
+				const scheduleName = report.scheduleName || 'Unknown';
+				acc[scheduleName] = (acc[scheduleName] || 0) + 1;
 				return acc;
 			},
 			{} as Record<string, number>
@@ -147,7 +149,7 @@
 		// Time of day analysis
 		const hourCounts = new Array(24).fill(0);
 		filteredReports.forEach((report) => {
-			const hour = new Date(report.created_at).getHours();
+			const hour = new Date(report.createdAt).getHours();
 			hourCounts[hour]++;
 		});
 
