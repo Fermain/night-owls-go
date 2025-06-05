@@ -161,7 +161,7 @@ func newTestApp(t *testing.T) *testApp {
 	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
 	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
 	fuego.GetStd(protected, "/user/reports", reportAPIHandler.ListReportsHandler)
-	
+
 	// Leaderboard routes
 	fuego.GetStd(protected, "/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
 	fuego.GetStd(protected, "/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
