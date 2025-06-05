@@ -1,161 +1,106 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Switch } from '$lib/components/ui/switch';
-	import * as Card from '$lib/components/ui/card';
-	import BellIcon from '@lucide/svelte/icons/bell';
-	import BellOffIcon from '@lucide/svelte/icons/bell-off';
-	import TestTubeIcon from '@lucide/svelte/icons/test-tube';
 	import { pushNotificationService } from '$lib/services/pushNotificationService';
-	import { toast } from 'svelte-sonner';
-	import ServiceWorkerDebug from '$lib/components/debug/ServiceWorkerDebug.svelte';
+	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Switch } from '$lib/components/ui/switch';
 
-	// State
-	let isLoading = $state(true);
-	let supported = $state(false);
-	let permission = $state<NotificationPermission>('default');
-	let subscribed = $state(false);
-
-	// Reactive status text
-	const statusText = $derived.by(() => {
-		if (!supported) return 'Not supported on this device';
-		if (permission === 'denied') return 'Permission denied';
-		if (permission === 'default') return 'Permission not requested';
-		if (permission === 'granted' && subscribed) return 'Enabled';
-		if (permission === 'granted' && !subscribed) return 'Ready to enable';
-		return 'Unknown status';
+	let status = $state({
+		supported: false,
+		permission: 'default' as NotificationPermission,
+		subscribed: false
 	});
 
-	const statusColor = $derived.by(() => {
-		if (!supported || permission === 'denied') return 'text-destructive';
-		if (permission === 'granted' && subscribed) return 'text-green-600 dark:text-green-400';
-		return 'text-muted-foreground';
-	});
+	let isLoading = $state(false);
 
 	onMount(async () => {
-		await refreshStatus();
-
-		// Initialize the service
-		await pushNotificationService.initialize();
-		await refreshStatus();
+		await checkStatus();
 	});
 
-	async function refreshStatus() {
+	async function checkStatus() {
 		try {
-			const status = await pushNotificationService.getStatus();
-			supported = status.supported;
-			permission = status.permission;
-			subscribed = status.subscribed;
+			status = await pushNotificationService.getStatus();
 		} catch (error) {
 			console.error('Failed to get push notification status:', error);
-		} finally {
-			isLoading = false;
 		}
 	}
 
-	async function handleToggle() {
+	async function togglePushNotifications() {
 		isLoading = true;
-
 		try {
-			if (subscribed) {
+			if (status.subscribed) {
 				await pushNotificationService.unsubscribe();
 			} else {
 				await pushNotificationService.subscribe();
 			}
-			await refreshStatus();
+			await checkStatus();
 		} catch (error) {
 			console.error('Failed to toggle push notifications:', error);
-			toast.error('Failed to update notification settings');
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	async function handleTest() {
+	async function testNotification() {
 		try {
 			await pushNotificationService.testNotification();
-			toast.success('Test notification sent!');
 		} catch (error) {
 			console.error('Failed to send test notification:', error);
-			toast.error('Failed to send test notification');
 		}
 	}
 
-	function getStatusText(): string {
-		if (!supported) {
-			return 'Push alerts are not supported on this browser or device.';
-		}
-		if (permission === 'denied') {
-			return 'Push alerts are blocked. Please enable them in your browser settings and refresh the page.';
-		}
-		if (permission === 'default') {
-			return 'Enable push alerts to receive alerts about upcoming shifts and important messages.';
-		}
-		return subscribed
-			? 'You will receive push alerts for shifts and messages.'
-			: 'Push alerts are disabled.';
-	}
+	const supported = $derived(status.supported);
+	const enabled = $derived(status.subscribed && status.permission === 'granted');
+	const canEnable = $derived(status.supported && status.permission !== 'denied');
 </script>
 
 <Card.Root>
 	<Card.Header>
-		<div class="flex items-center gap-3">
-			{#if subscribed}
-				<div class="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-					<BellIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
-				</div>
-			{:else}
-				<div class="p-2 bg-gray-100 dark:bg-gray-900/20 rounded-lg">
-					<BellOffIcon class="h-5 w-5 text-gray-600 dark:text-gray-400" />
-				</div>
-			{/if}
-			<div>
-				<Card.Title class="text-lg">Push Alerts</Card.Title>
-				<Card.Description>
-					Manage your push alert preferences for shifts and important messages.
-				</Card.Description>
-			</div>
-		</div>
+		<Card.Title class="flex items-center justify-between">
+			Push Notifications
+			<Badge variant={supported ? 'default' : 'secondary'}>
+				{supported ? 'Supported' : 'Not Supported'}
+			</Badge>
+		</Card.Title>
 	</Card.Header>
 
 	<Card.Content class="space-y-4">
-		<!-- Status -->
-		<div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-			<div>
-				<p class="text-sm font-medium">Status</p>
-				<p class="text-sm {statusColor}">{statusText}</p>
+		{#if supported}
+			<div class="flex items-center justify-between">
+				<div class="space-y-1">
+					<p class="text-sm font-medium">Enable push notifications</p>
+					<p class="text-xs text-muted-foreground">
+						Receive important security alerts and shift reminders
+					</p>
+				</div>
+				<Switch
+					checked={enabled}
+					disabled={!canEnable || isLoading}
+					onCheckedChange={togglePushNotifications}
+				/>
 			</div>
-			{#if isLoading}
-				<div
-					class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
-				></div>
-			{:else if supported && permission !== 'denied'}
-				<Switch checked={subscribed} onCheckedChange={handleToggle} disabled={isLoading} />
+
+			{#if enabled}
+				<div class="pt-4 border-t">
+					<Button size="sm" variant="outline" onclick={testNotification}>
+						Send Test Notification
+					</Button>
+				</div>
 			{/if}
-		</div>
 
-		<!-- Help text -->
-		<div class="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-			{getStatusText()}
-		</div>
-
-		<!-- Actions -->
-		{#if supported && subscribed}
-			<div class="flex gap-2">
-				<Button variant="outline" size="sm" onclick={handleTest} class="flex items-center gap-2">
-					<TestTubeIcon class="h-4 w-4" />
-					Test Notification
-				</Button>
-
-				<Button variant="ghost" size="sm" onclick={() => refreshStatus()} disabled={isLoading}>
-					Refresh Status
-				</Button>
-			</div>
-		{/if}
-
-		<!-- Browser support info -->
-		{#if !supported}
-			<div class="text-xs text-muted-foreground border-t pt-4">
+			{#if status.permission === 'denied'}
+				<div class="text-xs text-muted-foreground p-3 bg-muted rounded-md">
+					<p class="font-medium mb-1">Permission Denied</p>
+					<p>
+						Push notifications are blocked. Please enable them in your browser settings and refresh
+						the page.
+					</p>
+				</div>
+			{/if}
+		{:else}
+			<div class="text-xs text-muted-foreground">
+				<p class="mb-2"><strong>Push notifications are not supported in this browser.</strong></p>
 				<p class="mb-1"><strong>Supported browsers:</strong></p>
 				<ul class="list-disc list-inside space-y-1">
 					<li>Chrome/Edge 50+</li>
@@ -167,10 +112,3 @@
 		{/if}
 	</Card.Content>
 </Card.Root>
-
-<!-- Debug Component (only in development) -->
-{#if typeof window !== 'undefined' && window.location.hostname === 'localhost'}
-	<div class="mt-6">
-		<ServiceWorkerDebug />
-	</div>
-{/if}

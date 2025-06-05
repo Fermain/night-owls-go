@@ -14,94 +14,118 @@ interface PushSubscriptionData {
 	platform: string;
 }
 
+/**
+ * Rock-solid push notification service for community security app
+ * Designed for maximum reliability with minimal complexity
+ */
 class PushNotificationService {
 	private vapidPublicKey: string | null = null;
 	private registration: ServiceWorkerRegistration | null = null;
 	private subscription: PushSubscription | null = null;
+	private isInitialized = false;
 
 	/**
 	 * Initialize the push notification service
+	 * Simple, reliable initialization with proper error handling
 	 */
 	async initialize(): Promise<boolean> {
 		try {
-			// Check if service workers and push notifications are supported
-			if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-				console.warn('Push notifications not supported');
+			// Basic support check
+			if (!this.isSupported()) {
+				console.warn('[PushService] Push notifications not supported');
 				return false;
 			}
 
-			// Check if there's already a registration
-			const existingRegistration = await navigator.serviceWorker.getRegistration();
-
-			if (existingRegistration) {
-				this.registration = existingRegistration;
-			} else {
-				// Add timeout to prevent hanging
-				const timeoutPromise = new Promise<ServiceWorkerRegistration>((_, reject) => {
-					setTimeout(() => reject(new Error('Service worker ready timeout')), 10000);
-				});
-
-				try {
-					this.registration = await Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
-				} catch (_error) {
-					console.warn('Service worker ready timeout, attempting manual registration');
-					// Fallback: try to register manually
-					try {
-						this.registration = await navigator.serviceWorker.register('/sw.js', {
-							type: 'module'
-						});
-						await this.registration.update();
-					} catch (regError) {
-						console.error('Manual service worker registration failed:', regError);
-						return false;
-					}
-				}
-			}
+			// Wait for service worker to be ready (PWA plugin handles registration)
+			this.registration = await navigator.serviceWorker.ready;
 
 			if (!this.registration) {
-				console.error('No service worker registration available');
+				console.error('[PushService] No service worker registration available');
 				return false;
 			}
 
-			// Get VAPID public key from server
-			await this.fetchVAPIDPublicKey();
+			// Get VAPID key from server with retry logic
+			await this.fetchVAPIDKey();
 
 			// Check for existing subscription
 			this.subscription = await this.registration.pushManager.getSubscription();
 
+			// Set up message listener
+			this.setupMessageListener();
+
+			this.isInitialized = true;
+			console.log('[PushService] Initialized successfully');
 			return true;
 		} catch (error) {
-			console.error('Failed to initialize push notification service:', error);
+			console.error('[PushService] Initialization failed:', error);
 			return false;
 		}
 	}
 
 	/**
-	 * Fetch VAPID public key from server
+	 * Check if push notifications are supported
 	 */
-	private async fetchVAPIDPublicKey(): Promise<void> {
-		try {
-			const response = await fetch('/api/push/vapid-public');
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			}
+	private isSupported(): boolean {
+		return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+	}
 
-			const data: VAPIDKeyResponse = await response.json();
-			this.vapidPublicKey = data.key;
-		} catch (error) {
-			console.error('Failed to fetch VAPID public key:', error);
-			throw error;
+	/**
+	 * Fetch VAPID public key with retry logic
+	 */
+	private async fetchVAPIDKey(): Promise<void> {
+		// Try to get from cache first
+		const cached = sessionStorage.getItem('vapid-key');
+		if (cached) {
+			this.vapidPublicKey = cached;
+			return;
+		}
+
+		// Fetch from server with retries
+		let attempts = 0;
+		const maxAttempts = 3;
+
+		while (attempts < maxAttempts) {
+			try {
+				const response = await fetch('/api/push/vapid-public');
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+				}
+
+				const data: VAPIDKeyResponse = await response.json();
+				this.vapidPublicKey = data.key;
+
+				// Cache for session
+				sessionStorage.setItem('vapid-key', data.key);
+				console.log('[PushService] VAPID key fetched successfully');
+				return;
+			} catch (error) {
+				attempts++;
+				console.warn(`[PushService] VAPID key fetch attempt ${attempts} failed:`, error);
+
+				if (attempts >= maxAttempts) {
+					throw new Error(`Failed to fetch VAPID key after ${maxAttempts} attempts`);
+				}
+
+				// Wait before retry
+				await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+			}
 		}
 	}
 
 	/**
-	 * Request permission and subscribe to push notifications
+	 * Subscribe to push notifications
 	 */
 	async subscribe(): Promise<boolean> {
 		try {
+			if (!this.isInitialized) {
+				const initialized = await this.initialize();
+				if (!initialized) {
+					throw new Error('Failed to initialize push service');
+				}
+			}
+
 			if (!this.registration || !this.vapidPublicKey) {
-				console.error('Service not initialized properly');
-				return false;
+				throw new Error('Service not properly initialized');
 			}
 
 			// Request permission
@@ -120,13 +144,11 @@ class PushNotificationService {
 			// Send subscription to server
 			await this.sendSubscriptionToServer();
 
-			// Set up listener for push messages
-			this.setupPushMessageListener();
-
 			toast.success('Push notifications enabled successfully!');
+			console.log('[PushService] Subscription successful');
 			return true;
 		} catch (error) {
-			console.error('Failed to subscribe to push notifications:', error);
+			console.error('[PushService] Subscription failed:', error);
 			toast.error('Failed to enable push notifications');
 			return false;
 		}
@@ -138,41 +160,33 @@ class PushNotificationService {
 	async unsubscribe(): Promise<boolean> {
 		try {
 			if (!this.subscription) {
-				return true; // Already unsubscribed
+				console.log('[PushService] No subscription to unsubscribe from');
+				return true;
 			}
 
-			// Unsubscribe from browser
+			// Unsubscribe from push manager
 			await this.subscription.unsubscribe();
-
-			// Remove subscription from server
-			await this.removeSubscriptionFromServer();
-
 			this.subscription = null;
+
 			toast.success('Push notifications disabled');
+			console.log('[PushService] Unsubscribed successfully');
 			return true;
 		} catch (error) {
-			console.error('Failed to unsubscribe from push notifications:', error);
+			console.error('[PushService] Unsubscription failed:', error);
 			toast.error('Failed to disable push notifications');
 			return false;
 		}
 	}
 
 	/**
-	 * Check if subscribed
-	 */
-	isSubscribed(): boolean {
-		return this.subscription !== null;
-	}
-
-	/**
-	 * Get current subscription status and permission
+	 * Get current subscription status
 	 */
 	async getStatus(): Promise<{
 		supported: boolean;
 		permission: NotificationPermission;
 		subscribed: boolean;
 	}> {
-		const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+		const supported = this.isSupported();
 		const permission = supported ? Notification.permission : 'denied';
 
 		return {
@@ -180,6 +194,13 @@ class PushNotificationService {
 			permission,
 			subscribed: this.isSubscribed()
 		};
+	}
+
+	/**
+	 * Check if currently subscribed
+	 */
+	isSubscribed(): boolean {
+		return !!this.subscription;
 	}
 
 	/**
@@ -216,24 +237,8 @@ class PushNotificationService {
 		if (!response.ok) {
 			throw new Error(`Failed to send subscription to server: ${response.statusText}`);
 		}
-	}
 
-	/**
-	 * Remove subscription from server
-	 */
-	private async removeSubscriptionFromServer(): Promise<void> {
-		if (!this.subscription) {
-			return;
-		}
-
-		const endpoint = encodeURIComponent(this.subscription.endpoint);
-		const response = await authenticatedFetch(`/api/push/subscribe/${endpoint}`, {
-			method: 'DELETE'
-		});
-
-		if (!response.ok && response.status !== 404) {
-			throw new Error(`Failed to remove subscription from server: ${response.statusText}`);
-		}
+		console.log('[PushService] Subscription sent to server successfully');
 	}
 
 	/**
@@ -263,14 +268,13 @@ class PushNotificationService {
 	}
 
 	/**
-	 * Set up listener for push messages to integrate with notification store
+	 * Set up message listener for push notifications
 	 */
-	private setupPushMessageListener(): void {
+	private setupMessageListener(): void {
 		if (!('serviceWorker' in navigator)) return;
 
-		// Listen for messages from service worker
 		navigator.serviceWorker.addEventListener('message', (event) => {
-			if (event.data.type === 'PUSH_RECEIVED') {
+			if (event.data?.type === 'PUSH_RECEIVED') {
 				// Add notification to store when push message is received
 				notificationStore.addNotification({
 					type: event.data.notificationType || 'broadcast',
@@ -285,7 +289,7 @@ class PushNotificationService {
 	}
 
 	/**
-	 * Test push notification (for development/testing)
+	 * Test notification (for development/testing)
 	 */
 	async testNotification(): Promise<void> {
 		if (!this.registration) {
@@ -294,15 +298,16 @@ class PushNotificationService {
 		}
 
 		try {
-			await this.registration.showNotification('Test Notification', {
-				body: 'This is a test notification from Night Owls',
+			await this.registration.showNotification('Night Owls Test', {
+				body: 'Push notifications are working correctly!',
 				icon: '/icons/icon-192x192.png',
 				badge: '/icons/icon-192x192.png',
 				tag: 'test',
 				requireInteraction: false
 			});
+			console.log('[PushService] Test notification shown');
 		} catch (error) {
-			console.error('Failed to show test notification:', error);
+			console.error('[PushService] Test notification failed:', error);
 			toast.error('Failed to show test notification');
 		}
 	}
@@ -310,4 +315,3 @@ class PushNotificationService {
 
 // Export singleton instance
 export const pushNotificationService = new PushNotificationService();
-export default pushNotificationService;

@@ -5,7 +5,16 @@
 
 import { build, files, version } from '$service-worker';
 
-declare const self: ServiceWorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope & {
+	__WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
+
+// Workbox precaching manifest injection point
+const WB_MANIFEST = self.__WB_MANIFEST || [];
+
+// Additional files to precache from Workbox
+
+const precacheManifest = self.__WB_MANIFEST;
 
 // Extend NotificationOptions to include missing properties
 interface NotificationAction {
@@ -38,70 +47,69 @@ interface PushNotificationData {
 	booking_id?: string;
 }
 
-// Create a unique cache name for this deployment
+// Create a unique cache name for this version
 const CACHE = `cache-${version}`;
 
+// Assets to cache: build files + static files
 const ASSETS = [
 	...build, // the app itself
-	...files // everything in static
+	...files // everything in `static`
 ];
 
-// Install event
+// Install event - cache assets
 self.addEventListener('install', (event) => {
-	console.log('SvelteKit service worker installing');
-
-	// Create a new cache and add all files to it
 	async function addFilesToCache() {
 		const cache = await caches.open(CACHE);
 		await cache.addAll(ASSETS);
+		console.log('[SW] Assets cached successfully');
 	}
 
 	event.waitUntil(addFilesToCache());
+	// Immediately take control
+	self.skipWaiting();
 });
 
-// Activate event
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-	console.log('SvelteKit service worker activating');
-
-	// Remove previous cached data from disk
 	async function deleteOldCaches() {
 		for (const key of await caches.keys()) {
-			if (key !== CACHE) await caches.delete(key);
+			if (key !== CACHE) {
+				await caches.delete(key);
+				console.log(`[SW] Deleted old cache: ${key}`);
+			}
 		}
+		console.log('[SW] Service worker activated');
 	}
 
-	event.waitUntil(deleteOldCaches());
+	event.waitUntil(deleteOldCaches().then(() => self.clients.claim()));
 });
 
-// Fetch event
+// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
-	// ignore POST requests etc
+	// Only handle GET requests
 	if (event.request.method !== 'GET') return;
 
 	async function respond() {
 		const url = new URL(event.request.url);
 		const cache = await caches.open(CACHE);
 
-		// `build`/`files` can always be served from the cache
+		// Always serve assets from cache
 		if (ASSETS.includes(url.pathname)) {
 			const response = await cache.match(url.pathname);
-
 			if (response) {
 				return response;
 			}
 		}
 
-		// for everything else, try the network first, but
-		// fall back to the cache if we're offline
+		// For everything else, try network first, then cache
 		try {
 			const response = await fetch(event.request);
 
-			// if we're offline, fetch can return a value that is not a Response
-			// instead of throwing - and we can't pass this non-Response to respondWith
 			if (!(response instanceof Response)) {
-				throw new Error('invalid response from fetch');
+				throw new Error('Invalid response from fetch');
 			}
 
+			// Cache successful responses
 			if (response.status === 200) {
 				cache.put(event.request, response.clone());
 			}
@@ -109,13 +117,9 @@ self.addEventListener('fetch', (event) => {
 			return response;
 		} catch (err) {
 			const response = await cache.match(event.request);
-
 			if (response) {
 				return response;
 			}
-
-			// if there's no cache, then just error out
-			// as there is nothing we can do to respond to this request
 			throw err;
 		}
 	}
@@ -123,168 +127,148 @@ self.addEventListener('fetch', (event) => {
 	event.respondWith(respond());
 });
 
-// Push notification event handler
+// Push notification event handler - CRITICAL FOR COMMUNITY SECURITY
 self.addEventListener('push', (event) => {
-	console.log('Push event received:', event);
+	console.log('[SW] Push notification received');
 
 	if (!event.data) {
-		console.log('Push event has no data');
+		console.warn('[SW] Push event has no data');
 		return;
 	}
 
-	let data: PushNotificationData;
+	let data;
 	try {
 		data = event.data.json();
 	} catch (error) {
-		console.error('Failed to parse push data:', error);
+		console.error('[SW] Failed to parse push data:', error);
+		// Fallback to generic notification
 		data = {
-			title: 'Night Owls',
-			body: 'You have a new notification',
-			type: 'default'
+			title: 'Night Owls Alert',
+			body: 'You have a new security notification',
+			type: 'emergency'
 		};
 	}
 
-	console.log('Push data:', data);
+	console.log('[SW] Push data:', data);
 
-	const options: ExtendedNotificationOptions = {
+	// Base notification options
+	const options = {
 		body: data.body || 'You have a new notification',
 		icon: '/icons/icon-192x192.png',
 		badge: '/icons/icon-192x192.png',
 		data: data,
-		requireInteraction: data.requireInteraction || false,
-		silent: data.silent || false,
-		tag: data.tag || 'default',
-		vibrate: data.vibrate || [200, 100, 200]
+		requireInteraction: false,
+		silent: false,
+		tag: data.tag || 'night-owls',
+		timestamp: Date.now(),
+		vibrate: [200, 100, 200, 100, 200]
 	};
 
-	// Handle different notification types
+	// Customize based on notification type - CRITICAL TYPES GET PRIORITY
+	let title = data.title || 'Night Owls';
+
 	switch (data.type) {
-		case 'shift_reminder':
-			options.title = 'Upcoming Shift Reminder';
-			options.body = data.body || 'You have a shift starting soon';
-			options.tag = 'shift_reminder';
+		case 'emergency':
+		case 'incident':
+			title = '🚨 EMERGENCY ALERT';
 			options.requireInteraction = true;
-			options.actions = [
-				{
-					action: 'view_shift',
-					title: 'View Shift'
-				},
-				{
-					action: 'dismiss',
-					title: 'Dismiss'
-				}
-			];
+			options.vibrate = [500, 200, 500, 200, 500];
+			options.tag = 'emergency';
 			break;
+
+		case 'shift_reminder':
+			title = '🦉 Shift Reminder';
+			options.requireInteraction = true;
+			options.tag = 'shift_reminder';
+			break;
+
 		case 'broadcast':
-			options.title = data.title || 'New Message';
-			options.body = data.body || 'You have a new message from coordinators';
+			title = '📢 ' + (data.title || 'Community Message');
 			options.tag = 'broadcast';
 			break;
+
 		case 'shift_assignment':
-			options.title = 'New Shift Assignment';
-			options.body = data.body || 'You have been assigned a new shift';
-			options.tag = 'shift_assignment';
+			title = '🔔 New Shift Assignment';
 			options.requireInteraction = true;
+			options.tag = 'shift_assignment';
 			break;
+
 		default:
-			options.title = data.title || 'Night Owls';
+			title = data.title || 'Night Owls';
 	}
 
 	event.waitUntil(
-		self.registration.showNotification(options.title!, options).then(() => {
-			// Notify all clients about the new push notification
-			return self.clients.matchAll().then((clients) => {
-				clients.forEach((client) => {
-					client.postMessage({
-						type: 'PUSH_RECEIVED',
-						notificationType: data.type,
-						title: options.title,
-						body: options.body,
-						data: data
+		self.registration
+			.showNotification(title, options)
+			.then(() => {
+				console.log('[SW] Notification displayed successfully');
+
+				// Notify all clients about the push notification
+				return self.clients.matchAll().then((clients) => {
+					clients.forEach((client) => {
+						client.postMessage({
+							type: 'PUSH_RECEIVED',
+							notificationType: data.type,
+							title: title,
+							body: options.body,
+							data: data
+						});
 					});
 				});
-			});
-		})
+			})
+			.catch((error) => {
+				console.error('[SW] Failed to show notification:', error);
+			})
 	);
 });
 
 // Notification click event handler
 self.addEventListener('notificationclick', (event) => {
-	console.log('Notification clicked:', event);
+	console.log('[SW] Notification clicked:', event.notification.tag);
 
 	event.notification.close();
 
+	// Handle different notification types
 	const data = event.notification.data;
-	const action = event.action;
-
-	let url = '/';
-
-	// Handle different actions and notification types
-	if (action === 'dismiss') {
-		return;
-	}
+	let urlToOpen = '/';
 
 	switch (data?.type) {
+		case 'emergency':
+		case 'incident':
+			urlToOpen = '/emergency';
+			break;
 		case 'shift_reminder':
-			if (action === 'view_shift') {
-				url = data.booking_id ? `/bookings` : '/shifts';
-			}
+		case 'shift_assignment':
+			urlToOpen = '/shifts';
 			break;
 		case 'broadcast':
-			url = '/broadcasts';
-			break;
-		case 'shift_assignment':
-			url = '/shifts';
+			urlToOpen = '/broadcasts';
 			break;
 		default:
-			url = '/';
+			urlToOpen = '/';
 	}
 
-	// Open or focus the app window
 	event.waitUntil(
-		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-			// Check if there's already a window open
+		self.clients.matchAll().then((clients) => {
+			// Check if we already have a window open
 			for (const client of clients) {
-				if (client.url.includes(url) && 'focus' in client) {
-					return client.focus();
+				if (client.url === new URL(urlToOpen, self.location.origin).href && 'focus' in client) {
+					return (client as WindowClient).focus();
 				}
 			}
-
-			// Open new window if none found
+			// If no window is open, open a new one
 			if (self.clients.openWindow) {
-				return self.clients.openWindow(url);
+				return self.clients.openWindow(urlToOpen);
 			}
 		})
 	);
 });
 
-// Background sync for offline actions (future enhancement)
-self.addEventListener('sync', (event) => {
-	const syncEvent = event as SyncEvent;
-	console.log('Background sync:', syncEvent.tag);
-
-	if (syncEvent.tag === 'background-sync') {
-		syncEvent.waitUntil(
-			// Handle offline actions when back online
-			Promise.resolve()
-		);
-	}
-});
-
-// Message handler for communication with main thread
+// Message event handler for communication with main thread
 self.addEventListener('message', (event) => {
-	console.log('Service worker received message:', event.data);
-
-	if (event.data.type === 'TEST_MESSAGE') {
-		console.log('Test message received:', event.data.payload);
-
-		// Send response back to client
-		if (event.source) {
-			event.source.postMessage({
-				type: 'TEST_RESPONSE',
-				message: 'Service worker received and processed your test message!',
-				timestamp: new Date().toISOString()
-			});
-		}
+	if (event.data?.type === 'SKIP_WAITING') {
+		self.skipWaiting();
 	}
 });
+
+console.log('[SW] Service worker loaded and ready for community security notifications');

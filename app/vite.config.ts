@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-// import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig(({ mode: _mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
@@ -9,68 +9,49 @@ export default defineConfig(({ mode: _mode }) => {
 
 	return {
 		plugins: [
-			sveltekit()
-			// SvelteKitPWA({
-			// 	srcDir: './src',
-			// 	mode: 'production',
-			// 	scope: '/',
-			// 	base: '/',
-			// 	selfDestroying: process.env.NODE_ENV === 'development',
-			// 	strategies: 'generateSW',
-			// 	filename: 'service-worker.js',
-			// 	injectRegister: 'script',
-			// 	workbox: {
-			// 		globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
-			// 		cleanupOutdatedCaches: true,
-			// 		clientsClaim: true,
-			// 		skipWaiting: true,
-			// 		runtimeCaching: [
-			// 			{
-			// 				urlPattern: /^https:\/\/api\./,
-			// 				handler: 'NetworkFirst',
-			// 				options: {
-			// 					cacheName: 'api-cache',
-			// 					networkTimeoutSeconds: 3,
-			// 					cacheableResponse: {
-			// 						statuses: [0, 200]
-			// 					}
-			// 				}
-			// 			}
-			// 		]
-			// 	},
-			// 	manifest: {
-			// 		name: 'Mount Moreland Night Owls',
-			// 		short_name: 'Night Owls',
-			// 		description: 'Community watch scheduling and incident reporting for Mount Moreland',
-			// 		theme_color: '#1f2937',
-			// 		background_color: '#ffffff',
-			// 		display: 'standalone',
-			// 		scope: '/',
-			// 		start_url: '/',
-			// 		icons: [
-			// 			{
-			// 				src: '/icons/icon-192x192.png',
-			// 				sizes: '192x192',
-			// 				type: 'image/png',
-			// 				purpose: 'any maskable'
-			// 			},
-			// 			{
-			// 				src: '/icons/icon-512x512.png',
-			// 				sizes: '512x512',
-			// 				type: 'image/png',
-			// 				purpose: 'any maskable'
-			// 			}
-			// 		]
-			// 	},
-			// 	registerType: 'autoUpdate',
-			// 	devOptions: {
-			// 		enabled: process.env.NODE_ENV === 'development',
-			// 		suppressWarnings: true,
-			// 		navigateFallback: '/',
-			// 		navigateFallbackAllowlist: [/^\/$/],
-			// 		type: 'module'
-			// 	}
-			// })
+			sveltekit(),
+			SvelteKitPWA({
+				srcDir: './src',
+				mode: 'production',
+				scope: '/',
+				base: '/',
+				selfDestroying: process.env.NODE_ENV === 'development',
+				strategies: 'injectManifest',
+				filename: 'service-worker.js',
+				injectRegister: 'script-defer',
+				manifest: {
+					name: 'Mount Moreland Night Owls',
+					short_name: 'Night Owls',
+					description: 'Community watch scheduling and incident reporting for Mount Moreland',
+					theme_color: '#1f2937',
+					background_color: '#ffffff',
+					display: 'standalone',
+					scope: '/',
+					start_url: '/',
+					icons: [
+						{
+							src: '/icons/icon-192x192.png',
+							sizes: '192x192',
+							type: 'image/png',
+							purpose: 'any maskable'
+						},
+						{
+							src: '/icons/icon-512x512.png',
+							sizes: '512x512',
+							type: 'image/png',
+							purpose: 'any maskable'
+						}
+					]
+				},
+				registerType: 'autoUpdate',
+				devOptions: {
+					enabled: true,
+					suppressWarnings: true,
+					navigateFallback: '/',
+					navigateFallbackAllowlist: [/^\/$/],
+					type: 'module'
+				}
+			})
 		],
 
 		test: {
