@@ -6,7 +6,6 @@ toolchain go1.24.3
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
-	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fuego/fuego v0.18.8
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.3
@@ -28,6 +27,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/getkin/kin-openapi v0.131.0 // indirect
+	github.com/go-chi/chi/v5 v5.2.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect

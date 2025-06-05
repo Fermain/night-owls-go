@@ -27,8 +27,7 @@ import (
 	"night-owls-go/internal/outbox"
 	"night-owls-go/internal/service"
 
-	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-fuego/fuego"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert" // For MockMessageSender
@@ -38,7 +37,7 @@ import (
 
 // testApp holds all components needed for integration testing the API.
 type testApp struct {
-	Router          *chi.Mux
+	Server          *fuego.Server
 	DB              *sql.DB
 	Logger          *slog.Logger
 	Config          *config.Config
@@ -129,35 +128,51 @@ func newTestApp(t *testing.T) *testApp {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
 
 	cronScheduler := cron.New()
 
-	router := chi.NewRouter()
-	router.Use(chiMiddleware.Recoverer)
+	// Create fuego server like in production
+	server := fuego.NewServer()
 
 	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
+	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
 
-	router.Post("/auth/register", authAPIHandler.RegisterHandler)
-	router.Post("/auth/verify", authAPIHandler.VerifyHandler)
-	router.Get("/schedules", scheduleAPIHandler.ListSchedulesHandler)
-	router.Get("/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
-	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
-		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
-		r.Post("/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
-		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
-	})
+	// Public API routes (no auth required)
+	fuego.PostStd(server, "/auth/register", authAPIHandler.RegisterHandler)
+	fuego.PostStd(server, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.GetStd(server, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
+	fuego.GetStd(server, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+
+	// Protected routes (require auth) - creating a group like in production
+	protected := fuego.Group(server, "")
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
+	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
+	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
+	fuego.PostStd(protected, "/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+	fuego.PostStd(protected, "/reports/off-shift", reportAPIHandler.CreateOffShiftReportHandler)
+	fuego.GetStd(protected, "/user/reports", reportAPIHandler.ListReportsHandler)
+
+	// Leaderboard routes
+	fuego.GetStd(protected, "/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
+	fuego.GetStd(protected, "/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
+	fuego.GetStd(protected, "/leaderboard/activity", leaderboardAPIHandler.GetActivityFeedHandler)
+	fuego.GetStd(protected, "/user/stats", leaderboardAPIHandler.GetUserStatsHandler)
+	fuego.GetStd(protected, "/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)
+	fuego.GetStd(protected, "/user/achievements", leaderboardAPIHandler.GetUserAchievementsHandler)
+	fuego.GetStd(protected, "/user/achievements/available", leaderboardAPIHandler.GetAvailableAchievementsHandler)
 
 	return &testApp{
-		Router:          router,
+		Server:          server,
 		DB:              dbConn,
 		Logger:          logger,
 		Config:          cfg,
@@ -183,7 +198,7 @@ func (app *testApp) makeRequest(t *testing.T, method, path string, body io.Reade
 	}
 
 	rr := httptest.NewRecorder()
-	app.Router.ServeHTTP(rr, req)
+	app.Server.Mux.ServeHTTP(rr, req)
 	return rr
 }
 

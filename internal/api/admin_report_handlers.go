@@ -11,8 +11,6 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
-
-	"github.com/go-chi/chi/v5"
 )
 
 // AdminReportHandler handles admin-specific report operations.
@@ -165,10 +163,10 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 // @Router /api/admin/reports/{id} [get]
 func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *http.Request) {
 	// Try multiple methods to extract the ID parameter (following users pattern)
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminGetReportHandler called", "id_param", idStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
@@ -273,7 +271,7 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 // @Security BearerAuth
 // @Router /api/admin/reports/{id}/archive [put]
 func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
@@ -336,7 +334,7 @@ func (h *AdminReportHandler) AdminArchiveReportHandler(w http.ResponseWriter, r 
 // @Security BearerAuth
 // @Router /api/admin/reports/{id}/unarchive [put]
 func (h *AdminReportHandler) AdminUnarchiveReportHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
@@ -489,28 +487,15 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 // @Router /api/admin/reports/{id} [delete]
 func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *http.Request) {
 	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminDeleteReportHandler called", "id_param", idStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "reports" {
 			idStr = pathParts[3]
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
-
-	// Alternative method 2: Check request context for route values
-	if idStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					idStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
-					break
-				}
-			}
 		}
 	}
 

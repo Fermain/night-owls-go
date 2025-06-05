@@ -8,8 +8,6 @@ import (
 	"strconv"
 
 	"night-owls-go/internal/service"
-
-	"github.com/go-chi/chi/v5"
 )
 
 type EmergencyContactHandler struct {
@@ -146,7 +144,7 @@ func (h *EmergencyContactHandler) AdminGetEmergencyContactsHandler(w http.Respon
 // @Security BearerAuth
 // @Router /api/admin/emergency-contacts/{id} [get]
 func (h *EmergencyContactHandler) AdminGetEmergencyContactHandler(w http.ResponseWriter, r *http.Request) {
-	contactIDStr := chi.URLParam(r, "id")
+	contactIDStr := r.PathValue("id")
 	contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid contact ID", h.logger, "contact_id", contactIDStr)
@@ -249,7 +247,7 @@ func (h *EmergencyContactHandler) AdminCreateEmergencyContactHandler(w http.Resp
 // @Security BearerAuth
 // @Router /api/admin/emergency-contacts/{id} [put]
 func (h *EmergencyContactHandler) AdminUpdateEmergencyContactHandler(w http.ResponseWriter, r *http.Request) {
-	contactIDStr := chi.URLParam(r, "id")
+	contactIDStr := r.PathValue("id")
 	contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid contact ID", h.logger, "contact_id", contactIDStr)
@@ -316,7 +314,7 @@ func (h *EmergencyContactHandler) AdminUpdateEmergencyContactHandler(w http.Resp
 // @Security BearerAuth
 // @Router /api/admin/emergency-contacts/{id} [delete]
 func (h *EmergencyContactHandler) AdminDeleteEmergencyContactHandler(w http.ResponseWriter, r *http.Request) {
-	contactIDStr := chi.URLParam(r, "id")
+	contactIDStr := r.PathValue("id")
 	contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid contact ID", h.logger, "contact_id", contactIDStr)
@@ -355,7 +353,7 @@ func (h *EmergencyContactHandler) AdminDeleteEmergencyContactHandler(w http.Resp
 // @Security BearerAuth
 // @Router /api/admin/emergency-contacts/{id}/default [put]
 func (h *EmergencyContactHandler) AdminSetDefaultEmergencyContactHandler(w http.ResponseWriter, r *http.Request) {
-	contactIDStr := chi.URLParam(r, "id")
+	contactIDStr := r.PathValue("id")
 	contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid contact ID", h.logger, "contact_id", contactIDStr)

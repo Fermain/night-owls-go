@@ -120,8 +120,9 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)
@@ -191,7 +192,7 @@ func (app *bookingTestApp) makeRequest(t *testing.T, method, path string, body i
 	return rr
 }
 
-func (app *bookingTestApp) createTestUserAndLogin(t *testing.T, phone, name, role string) (db.User, string) {
+func (app *bookingTestApp) createTestUserAndLogin(t *testing.T, phone, name, role string) (db.CreateUserRow, string) {
 	t.Helper()
 	ctx := context.Background()
 	user, err := app.Querier.CreateUser(ctx, db.CreateUserParams{

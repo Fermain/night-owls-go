@@ -11,6 +11,7 @@
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import BellIcon from '@lucide/svelte/icons/bell';
+	import CameraIcon from '@lucide/svelte/icons/camera';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
@@ -23,11 +24,13 @@
 	// Permission states
 	let locationPermissionStatus = $state<string>('unknown');
 	let notificationPermissionStatus = $state<string>('unknown');
+	let cameraPermissionStatus = $state<string>('unknown');
 	let isCheckingPermissions = $state(false);
 
 	// Computed permission statuses for styling
 	const locationGranted = $derived(locationPermissionStatus === 'granted');
 	const notificationGranted = $derived(notificationPermissionStatus === 'granted');
+	const cameraGranted = $derived(cameraPermissionStatus === 'granted');
 
 	// Theme options
 	const themeOptions = [
@@ -58,6 +61,7 @@
 		try {
 			locationPermissionStatus = await permissionUtils.checkLocationPermission();
 			notificationPermissionStatus = await permissionUtils.checkNotificationPermission();
+			cameraPermissionStatus = await permissionUtils.checkCameraPermission();
 		} catch (_error) {
 			console.warn('Failed to check permissions:', _error);
 		} finally {
@@ -101,6 +105,17 @@
 			}
 		} catch (_error) {
 			toast.error('Failed to request notification permission');
+		}
+	}
+
+	// Handle camera permission (informational)
+	async function handleCameraPermission() {
+		try {
+			await permissionUtils.requestCameraPermission();
+			cameraPermissionStatus = 'prompt';
+			toast.success('Camera ready for photo uploads!');
+		} catch (_error) {
+			toast.error('Failed to set up camera');
 		}
 	}
 
@@ -249,6 +264,48 @@
 									class="text-xs px-2 py-1 h-6"
 								>
 									Enable
+								</Button>
+							{/if}
+						</div>
+					</div>
+
+					<!-- Camera Permission -->
+					<div
+						class="flex items-center justify-between p-2 border rounded-lg
+						{cameraGranted
+							? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-800/30 opacity-75'
+							: 'border-border'}"
+					>
+						<div class="flex items-center gap-2 flex-1">
+							<CameraIcon
+								class="h-4 w-4 {cameraGranted
+									? 'text-green-600 dark:text-green-400'
+									: 'text-primary'}"
+							/>
+							<span class="text-sm {cameraGranted ? 'text-green-800 dark:text-green-200' : ''}"
+								>Camera</span
+							>
+						</div>
+						<div class="flex items-center gap-2">
+							{#if cameraPermissionStatus}
+								{@const badgeInfo = getPermissionBadge(cameraPermissionStatus)}
+								{@const BadgeIcon = badgeInfo.icon}
+								<Badge
+									variant={badgeInfo.variant}
+									class="text-xs {cameraGranted ? 'opacity-75' : ''}"
+								>
+									<BadgeIcon class="h-3 w-3 mr-1" />
+									{badgeInfo.text}
+								</Badge>
+							{/if}
+							{#if !cameraGranted}
+								<Button
+									size="sm"
+									onclick={handleCameraPermission}
+									disabled={isCheckingPermissions}
+									class="text-xs px-2 py-1 h-6"
+								>
+									Setup
 								</Button>
 							{/if}
 						</div>

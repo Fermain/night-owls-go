@@ -126,8 +126,9 @@ func main() {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 	reportArchivingService := service.NewReportArchivingService(querier, logger)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
@@ -243,6 +244,7 @@ func main() {
 	adminDashboardAPIHandler := api.NewAdminDashboardHandler(adminDashboardService, logger)
 	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
 	adminAuditAPIHandler := api.NewAdminAuditHandler(auditService, querier, logger)
+	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
 
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
@@ -319,6 +321,15 @@ func main() {
 	fuego.GetStd(protected, "/broadcasts", broadcastAPIHandler.ListUserBroadcasts)
 	fuego.PostStd(protected, "/push/subscribe", pushAPIHandler.SubscribePush)
 	fuego.DeleteStd(protected, "/push/subscribe/{endpoint}", pushAPIHandler.UnsubscribePush)
+
+	// Leaderboard routes (require auth)
+	fuego.GetStd(protected, "/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
+	fuego.GetStd(protected, "/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
+	fuego.GetStd(protected, "/leaderboard/activity", leaderboardAPIHandler.GetActivityFeedHandler)
+	fuego.GetStd(protected, "/user/stats", leaderboardAPIHandler.GetUserStatsHandler)
+	fuego.GetStd(protected, "/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)
+	fuego.GetStd(protected, "/user/achievements", leaderboardAPIHandler.GetUserAchievementsHandler)
+	fuego.GetStd(protected, "/user/achievements/available", leaderboardAPIHandler.GetAvailableAchievementsHandler)
 
 	// Admin routes
 	admin := fuego.Group(s, apiPrefix+"/admin")

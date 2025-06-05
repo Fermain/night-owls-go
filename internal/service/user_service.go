@@ -22,8 +22,9 @@ var (
 
 // immediateSendAt returns a time that ensures immediate dispatch by the outbox processor.
 // Uses a small negative offset to ensure the message is processed immediately.
+// Returns UTC time to match SQLite's CURRENT_TIMESTAMP behavior.
 func immediateSendAt() time.Time {
-	return time.Now().Add(-1 * time.Second)
+	return time.Now().UTC().Add(-1 * time.Second)
 }
 
 // JWTGenerator defines a function that generates a JWT token
@@ -105,11 +106,21 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 				Name:  name,        // sql.NullString handles optional name
 				Role:  defaultRole, // Pass role as interface{} (string)
 			}
-			user, err = s.querier.CreateUser(ctx, createUserParams)
+			createResult, err := s.querier.CreateUser(ctx, createUserParams)
 			if err != nil {
 				s.logger.ErrorContext(ctx, "Failed to create user", "phone", phone, "error", err)
 				return ErrInternalServer
 			}
+
+			// Convert CreateUserRow to GetUserByPhoneRow since they have the same structure
+			user = db.GetUserByPhoneRow{
+				UserID:    createResult.UserID,
+				Phone:     createResult.Phone,
+				Name:      createResult.Name,
+				CreatedAt: createResult.CreatedAt,
+				Role:      createResult.Role,
+			}
+
 			s.logger.InfoContext(ctx, "New user created during registration", "phone", phone, "user_id", user.UserID, "role", defaultRole, "name", name.String)
 		} else {
 			s.logger.ErrorContext(ctx, "Failed to get user by phone", "phone", phone, "error", err)

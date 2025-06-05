@@ -27,17 +27,19 @@ var (
 
 // BookingService handles logic related to bookings.
 type BookingService struct {
-	querier db.Querier
-	cfg     *config.Config
-	logger  *slog.Logger
+	querier       db.Querier
+	cfg           *config.Config
+	logger        *slog.Logger
+	pointsService *PointsService
 }
 
 // NewBookingService creates a new BookingService.
-func NewBookingService(querier db.Querier, cfg *config.Config, logger *slog.Logger) *BookingService {
+func NewBookingService(querier db.Querier, cfg *config.Config, logger *slog.Logger, pointsService *PointsService) *BookingService {
 	return &BookingService{
-		querier: querier,
-		cfg:     cfg,
-		logger:  logger.With("service", "BookingService"),
+		querier:       querier,
+		cfg:           cfg,
+		logger:        logger.With("service", "BookingService"),
+		pointsService: pointsService,
 	}
 }
 
@@ -217,6 +219,16 @@ func (s *BookingService) MarkCheckIn(ctx context.Context, bookingID int64, userI
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update booking check-in in DB", "booking_id", bookingID, "check_in_time", checkInTime, "error", err)
 		return db.Booking{}, ErrInternalServer
+	}
+
+	// Award check-in points to the user
+	if s.pointsService != nil {
+		if err := s.pointsService.AwardShiftCheckinPoints(ctx, userIDFromAuth, updatedBooking); err != nil {
+			s.logger.WarnContext(ctx, "Failed to award check-in points", "booking_id", bookingID, "user_id", userIDFromAuth, "error", err)
+			// Non-fatal - don't fail the check-in if points can't be awarded
+		} else {
+			s.logger.InfoContext(ctx, "Check-in points awarded", "booking_id", bookingID, "user_id", userIDFromAuth)
+		}
 	}
 
 	s.logger.InfoContext(ctx, "Booking check-in marked successfully", "booking_id", updatedBooking.BookingID, "checked_in_at", updatedBooking.CheckedInAt)

@@ -16,6 +16,11 @@ type Querier interface {
 	AdminListArchivedReportsWithContext(ctx context.Context) ([]AdminListArchivedReportsWithContextRow, error)
 	AdminListReportsWithContext(ctx context.Context) ([]AdminListReportsWithContextRow, error)
 	ArchiveReport(ctx context.Context, reportID int64) error
+	// Award an achievement to a user
+	AwardAchievement(ctx context.Context, arg AwardAchievementParams) error
+	// Points System Queries
+	// Award points to a user for a specific reason
+	AwardPoints(ctx context.Context, arg AwardPointsParams) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAuditEvent(ctx context.Context, arg CreateAuditEventParams) (AuditEvent, error)
@@ -25,18 +30,23 @@ type Querier interface {
 	CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
+	// Photo operations
+	CreateReportPhoto(ctx context.Context, arg CreateReportPhotoParams) (ReportPhoto, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteBooking(ctx context.Context, bookingID int64) error
 	DeleteBroadcast(ctx context.Context, broadcastID int64) error
 	DeleteEmergencyContact(ctx context.Context, contactID int64) error
 	DeleteReport(ctx context.Context, reportID int64) error
+	DeleteReportPhoto(ctx context.Context, arg DeleteReportPhotoParams) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
 	GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error)
 	GetAuditEventStats(ctx context.Context) (GetAuditEventStatsRow, error)
 	GetAuditEventsByTypeStats(ctx context.Context) ([]GetAuditEventsByTypeStatsRow, error)
+	// Get achievements a user hasn't earned yet
+	GetAvailableAchievements(ctx context.Context, userID int64) ([]GetAvailableAchievementsRow, error)
 	GetBookingByID(ctx context.Context, bookingID int64) (Booking, error)
 	GetBookingByScheduleAndStartTime(ctx context.Context, arg GetBookingByScheduleAndStartTimeParams) (Booking, error)
 	// Admin Dashboard Metrics Queries
@@ -53,14 +63,32 @@ type Querier interface {
 	// Get member contribution analysis for the past month
 	GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
+	// Get recent point-earning activities across all users for activity feed
+	GetRecentActivity(ctx context.Context, limit int64) ([]GetRecentActivityRow, error)
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
 	GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error)
+	GetReportPhoto(ctx context.Context, arg GetReportPhotoParams) (ReportPhoto, error)
+	GetReportPhotos(ctx context.Context, reportID int64) ([]ReportPhoto, error)
 	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
-	GetUserByID(ctx context.Context, userID int64) (User, error)
-	GetUserByPhone(ctx context.Context, phone string) (User, error)
+	// Get leaderboard of top users by points
+	GetTopUsers(ctx context.Context, limit int64) ([]GetTopUsersRow, error)
+	// Get leaderboard of top users by shift count
+	GetTopUsersByShifts(ctx context.Context, limit int64) ([]GetTopUsersByShiftsRow, error)
+	// Get all achievements earned by a user
+	GetUserAchievements(ctx context.Context, userID int64) ([]GetUserAchievementsRow, error)
+	GetUserByID(ctx context.Context, userID int64) (GetUserByIDRow, error)
+	GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error)
+	// Get a user's current points and shift information
+	GetUserPoints(ctx context.Context, userID int64) (GetUserPointsRow, error)
+	// Get recent points history for a user
+	GetUserPointsHistory(ctx context.Context, arg GetUserPointsHistoryParams) ([]GetUserPointsHistoryRow, error)
+	// Get a specific user's rank by points
+	GetUserRank(ctx context.Context, userID int64) (int64, error)
+	// Get the number of shifts a user has completed in a specific month
+	GetUserShiftCountForMonth(ctx context.Context, arg GetUserShiftCountForMonthParams) (int64, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAuditEvents(ctx context.Context, arg ListAuditEventsParams) ([]ListAuditEventsRow, error)
@@ -68,21 +96,27 @@ type Querier interface {
 	ListAuditEventsByDateRange(ctx context.Context, arg ListAuditEventsByDateRangeParams) ([]ListAuditEventsByDateRangeRow, error)
 	ListAuditEventsByTarget(ctx context.Context, arg ListAuditEventsByTargetParams) ([]ListAuditEventsByTargetRow, error)
 	ListAuditEventsByType(ctx context.Context, arg ListAuditEventsByTypeParams) ([]ListAuditEventsByTypeRow, error)
+	ListAuditEventsWithFilters(ctx context.Context, arg ListAuditEventsWithFiltersParams) ([]ListAuditEventsWithFiltersRow, error)
 	ListBookingsByUserID(ctx context.Context, userID int64) ([]Booking, error)
 	ListBookingsByUserIDWithSchedule(ctx context.Context, userID int64) ([]ListBookingsByUserIDWithScheduleRow, error)
 	ListBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListBroadcastsWithSender(ctx context.Context) ([]ListBroadcastsWithSenderRow, error)
 	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error)
-	ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error)
+	ListUsers(ctx context.Context, searchTerm interface{}) ([]ListUsersRow, error)
 	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
 	UnarchiveReport(ctx context.Context, reportID int64) error
 	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateEmergencyContact(ctx context.Context, arg UpdateEmergencyContactParams) (EmergencyContact, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
+	UpdateReportPhotoCount(ctx context.Context, reportID int64) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
-	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
+	// Update user's shift count and last activity
+	UpdateUserShiftCount(ctx context.Context, userID int64) error
+	// Update user's total points (should be called after AwardPoints)
+	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 }
 

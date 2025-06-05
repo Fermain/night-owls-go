@@ -28,7 +28,7 @@ func NewScheduler(querier db.Querier, logger *slog.Logger) *Scheduler {
 // scheduleReminder creates a scheduled outbox item for a shift reminder.
 // This helper reduces duplication in scheduling logic.
 func (s *Scheduler) scheduleReminder(ctx context.Context, booking db.Booking, hours int, sendAt time.Time) error {
-	payload := fmt.Sprintf(`{"type":"shift_reminder","hours":%d,"start_time":"%s","booking_id":%d}`, 
+	payload := fmt.Sprintf(`{"type":"shift_reminder","hours":%d,"start_time":"%s","booking_id":%d}`,
 		hours, booking.ShiftStart.Format(time.RFC3339), booking.BookingID)
 
 	params := db.CreateOutboxItemParams{
@@ -39,18 +39,18 @@ func (s *Scheduler) scheduleReminder(ctx context.Context, booking db.Booking, ho
 		SendAt:      sendAt,
 	}
 
-	s.logger.InfoContext(ctx, "Enqueueing shift reminder", 
-		"booking_id", booking.BookingID, 
-		"user_id", booking.UserID, 
+	s.logger.InfoContext(ctx, "Enqueueing shift reminder",
+		"booking_id", booking.BookingID,
+		"user_id", booking.UserID,
 		"hours", hours,
-		"remind_at", sendAt, 
+		"remind_at", sendAt,
 		"payload", payload)
 
 	_, err := s.querier.CreateOutboxItem(ctx, params)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "failed to enqueue shift reminder", 
-			"booking_id", booking.BookingID, 
-			"user_id", booking.UserID, 
+		s.logger.ErrorContext(ctx, "failed to enqueue shift reminder",
+			"booking_id", booking.BookingID,
+			"user_id", booking.UserID,
 			"hours", hours,
 			"error", err)
 		return fmt.Errorf("failed to enqueue %dh reminder: %w", hours, err)

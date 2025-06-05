@@ -141,8 +141,9 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 
 	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
@@ -258,7 +259,7 @@ func (app *adminTestApp) makeRequest(t *testing.T, method, path string, body io.
 	return rr
 }
 
-func (app *adminTestApp) createTestUserAndLogin(t *testing.T, phone, name, role string) (db.User, string) {
+func (app *adminTestApp) createTestUserAndLogin(t *testing.T, phone, name, role string) (db.CreateUserRow, string) {
 	t.Helper()
 	ctx := context.Background()
 	user, err := app.Querier.CreateUser(ctx, db.CreateUserParams{
@@ -362,14 +363,6 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 	}
 	assert.True(t, foundOutboxMsg, "Expected ADMIN_SHIFT_ASSIGNMENT outbox message for the target user")
 }
-
-// TODO: Add more tests for failure cases:
-// - Non-admin user trying to assign
-// - Assigning to non-existent user
-// - Assigning to non-existent schedule
-// - Assigning to invalid shift time
-// - Assigning to already booked slot
-// - Invalid request payload
 
 // parseSQLStatements parses SQL content and splits it into individual statements,
 // handling comments and multi-line statements correctly.

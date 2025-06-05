@@ -16,6 +16,7 @@ export { Textarea } from './textarea';
 export { Select, SelectContent, SelectItem, SelectTrigger } from './select';
 export { Checkbox } from './checkbox';
 export { Switch } from './switch';
+export { Progress } from './progress';
 
 // === LAYOUT COMPONENTS ===
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
@@ -89,7 +90,9 @@ export {
 
 // === APP-SPECIFIC COMPONENTS ===
 export { PhoneInput } from './phone-input';
+export { PhotoUploadArea } from './photo-upload';
 export { UserMultiSelect } from './user-multiselect';
+export { HelpDialog } from './help';
 
 // === UTILITY COMPONENTS ===
 export { Skeleton } from './skeleton';

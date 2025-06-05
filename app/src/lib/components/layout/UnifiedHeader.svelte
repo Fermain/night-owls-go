@@ -9,6 +9,7 @@
 	import EmergencyContactsDialog from '$lib/components/emergency/EmergencyContactsDialog.svelte';
 	import ReportDialog from '$lib/components/user/report/ReportDialog.svelte';
 	import UserSettingsDialog from '$lib/components/user/settings/UserSettingsDialog.svelte';
+	import { HelpDialog } from '$lib/components/ui/help';
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { logout } from '$lib/stores/authStore';
 	import { toast } from 'svelte-sonner';
@@ -20,11 +21,13 @@
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import HelpCircleIcon from '@lucide/svelte/icons/help-circle';
 
 	// State for dialogs
 	let emergencyDialogOpen = $state(false);
 	let reportDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
+	let helpDialogOpen = $state(false);
 
 	// State to track if component is mounted to prevent Dialog lifecycle errors
 	let mounted = $state(false);
@@ -59,6 +62,11 @@
 	// Handle settings dialog
 	function handleSettings() {
 		settingsDialogOpen = true;
+	}
+
+	// Handle help dialog
+	function handleHelp() {
+		helpDialogOpen = true;
 	}
 
 	// Get user initials for avatar
@@ -147,6 +155,14 @@
 		<!-- Notifications (only for authenticated users) -->
 		{#if $isAuthenticated}
 			<NotificationDropdown />
+		{/if}
+
+		<!-- Help button (only for authenticated users) -->
+		{#if $isAuthenticated}
+			<Button variant="ghost" size="sm" class="h-9 w-9 p-0" onclick={handleHelp}>
+				<HelpCircleIcon class="h-4 w-4" />
+				<span class="sr-only">Help</span>
+			</Button>
 		{/if}
 
 		<!-- User Menu -->
@@ -250,4 +266,7 @@
 
 	<!-- Settings Dialog -->
 	<UserSettingsDialog bind:open={settingsDialogOpen} />
+
+	<!-- Help Dialog -->
+	<HelpDialog bind:open={helpDialogOpen} />
 {/if}

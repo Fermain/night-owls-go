@@ -53,3 +53,51 @@ type ScheduleResponse struct {
 	DurationMinutes int64   `json:"duration_minutes"`
 	Timezone        string  `json:"timezone,omitempty"`
 }
+
+// LeaderboardEntry represents a user's position on the leaderboard
+type LeaderboardEntry struct {
+	UserID           int64  `json:"user_id"`
+	Name             string `json:"name"`
+	TotalPoints      int64  `json:"total_points"`
+	ShiftCount       int64  `json:"shift_count"`
+	AchievementCount int64  `json:"achievement_count"`
+	ActivityStatus   string `json:"activity_status"` // 'active', 'moderate', 'inactive'
+}
+
+// UserStatsResponse represents a user's complete points and achievement stats
+type UserStatsResponse struct {
+	UserID           int64   `json:"user_id"`
+	Name             string  `json:"name"`
+	TotalPoints      int64   `json:"total_points"`
+	ShiftCount       int64   `json:"shift_count"`
+	LastActivityDate *string `json:"last_activity_date,omitempty"`
+	Rank             int64   `json:"rank"`
+}
+
+// PointsHistoryEntry represents a single points transaction
+type PointsHistoryEntry struct {
+	PointsAwarded int64      `json:"points_awarded"`
+	Reason        string     `json:"reason"`
+	Multiplier    float64    `json:"multiplier"`
+	CreatedAt     time.Time  `json:"created_at"`
+	ShiftStart    *time.Time `json:"shift_start,omitempty"`
+}
+
+// AchievementResponse represents an achievement badge
+type AchievementResponse struct {
+	AchievementID   int64      `json:"achievement_id"`
+	Name            string     `json:"name"`
+	Description     string     `json:"description"`
+	Icon            string     `json:"icon"`
+	ShiftsThreshold *int64     `json:"shifts_threshold,omitempty"`
+	EarnedAt        *time.Time `json:"earned_at,omitempty"`
+}
+
+// ActivityFeedEntry represents recent point-earning activities
+type ActivityFeedEntry struct {
+	UserName      string    `json:"user_name"`
+	PointsAwarded int64     `json:"points_awarded"`
+	Reason        string    `json:"reason"`
+	ActivityType  string    `json:"activity_type"` // 'major', 'significant', 'standard'
+	CreatedAt     time.Time `json:"created_at"`
+}

@@ -61,9 +61,17 @@ type CreateUserParams struct {
 	Role  interface{}    `json:"role"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+type CreateUserRow struct {
+	UserID    int64          `json:"user_id"`
+	Phone     string         `json:"phone"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Phone, arg.Name, arg.Role)
-	var i User
+	var i CreateUserRow
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
@@ -89,9 +97,17 @@ SELECT user_id, phone, name, created_at, role FROM users
 WHERE user_id = ?
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, userID int64) (User, error) {
+type GetUserByIDRow struct {
+	UserID    int64          `json:"user_id"`
+	Phone     string         `json:"phone"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, userID int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, userID)
-	var i User
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
@@ -107,9 +123,17 @@ SELECT user_id, phone, name, created_at, role FROM users
 WHERE phone = ?
 `
 
-func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error) {
+type GetUserByPhoneRow struct {
+	UserID    int64          `json:"user_id"`
+	Phone     string         `json:"phone"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
+}
+
+func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByPhone, phone)
-	var i User
+	var i GetUserByPhoneRow
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
@@ -126,15 +150,23 @@ WHERE (?1 IS NULL OR name LIKE ?1 OR phone LIKE ?1)
 ORDER BY name
 `
 
-func (q *Queries) ListUsers(ctx context.Context, searchTerm interface{}) ([]User, error) {
+type ListUsersRow struct {
+	UserID    int64          `json:"user_id"`
+	Phone     string         `json:"phone"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, searchTerm interface{}) ([]ListUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUsers, searchTerm)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []User{}
+	items := []ListUsersRow{}
 	for rows.Next() {
-		var i User
+		var i ListUsersRow
 		if err := rows.Scan(
 			&i.UserID,
 			&i.Phone,
@@ -173,14 +205,22 @@ type UpdateUserParams struct {
 	UserID int64          `json:"user_id"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+type UpdateUserRow struct {
+	UserID    int64          `json:"user_id"`
+	Phone     string         `json:"phone"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	Role      string         `json:"role"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, updateUser,
 		arg.Phone,
 		arg.Name,
 		arg.Role,
 		arg.UserID,
 	)
-	var i User
+	var i UpdateUserRow
 	err := row.Scan(
 		&i.UserID,
 		&i.Phone,
