@@ -50,8 +50,10 @@ func NewPhotoService(querier db.Querier, logger *slog.Logger) *PhotoService {
 	storagePath := "./data/report-photos"
 	
 	// Create storage directory if it doesn't exist
-	if err := os.MkdirAll(storagePath, 0755); err != nil {
+	if err := os.MkdirAll(storagePath, 0750); err != nil {
 		logger.Error("Failed to create photo storage directory", "error", err)
+		// Continue with service creation even if directory creation fails
+		// The error will be caught during actual upload attempts
 	}
 
 	return &PhotoService{
@@ -97,13 +99,13 @@ func (ps *PhotoService) UploadPhoto(ctx context.Context, req PhotoUploadRequest)
 	// Create storage path with date structure
 	dateDir := timestamp.Format("2006/01/02")
 	fullStorageDir := filepath.Join(ps.storagePath, dateDir)
-	if err := os.MkdirAll(fullStorageDir, 0755); err != nil {
+	if err := os.MkdirAll(fullStorageDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
 	// Save file
 	fullPath := filepath.Join(fullStorageDir, filename)
-	if err := os.WriteFile(fullPath, fileBytes, 0644); err != nil {
+	if err := os.WriteFile(fullPath, fileBytes, 0600); err != nil {
 		return nil, fmt.Errorf("failed to save file: %w", err)
 	}
 
@@ -123,7 +125,9 @@ func (ps *PhotoService) UploadPhoto(ctx context.Context, req PhotoUploadRequest)
 	})
 	if err != nil {
 		// Clean up file if database insert fails
-		os.Remove(fullPath)
+		if removeErr := os.Remove(fullPath); removeErr != nil {
+			ps.logger.Warn("Failed to clean up file after database error", "path", fullPath, "error", removeErr)
+		}
 		return nil, fmt.Errorf("failed to save photo metadata: %w", err)
 	}
 
