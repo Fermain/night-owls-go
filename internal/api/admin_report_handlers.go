@@ -52,6 +52,7 @@ type AdminReportResponse struct {
 	Longitude    *float64   `json:"longitude,omitempty"`
 	GPSAccuracy  *float64   `json:"gps_accuracy,omitempty"`
 	GPSTimestamp *time.Time `json:"gps_timestamp,omitempty"`
+	PhotoCount   int64      `json:"photo_count"`
 }
 
 // AdminListReportsHandler handles GET /api/admin/reports
@@ -141,6 +142,13 @@ func (h *AdminReportHandler) AdminListReportsHandler(w http.ResponseWriter, r *h
 		}
 		if report.GpsTimestamp.Valid {
 			apiReport.GPSTimestamp = &report.GpsTimestamp.Time
+		}
+
+		// Include photo count
+		if report.PhotoCount.Valid {
+			apiReport.PhotoCount = report.PhotoCount.Int64
+		} else {
+			apiReport.PhotoCount = 0
 		}
 
 		apiReports = append(apiReports, apiReport)
@@ -254,6 +262,13 @@ func (h *AdminReportHandler) AdminGetReportHandler(w http.ResponseWriter, r *htt
 	}
 	if report.GpsTimestamp.Valid {
 		apiReport.GPSTimestamp = &report.GpsTimestamp.Time
+	}
+
+	// Include photo count
+	if report.PhotoCount.Valid {
+		apiReport.PhotoCount = report.PhotoCount.Int64
+	} else {
+		apiReport.PhotoCount = 0
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiReport, h.logger)
@@ -466,6 +481,13 @@ func (h *AdminReportHandler) AdminListArchivedReportsHandler(w http.ResponseWrit
 		}
 		if report.GpsTimestamp.Valid {
 			apiReport.GPSTimestamp = &report.GpsTimestamp.Time
+		}
+
+		// Include photo count
+		if report.PhotoCount.Valid {
+			apiReport.PhotoCount = report.PhotoCount.Int64
+		} else {
+			apiReport.PhotoCount = 0
 		}
 
 		apiReports = append(apiReports, apiReport)

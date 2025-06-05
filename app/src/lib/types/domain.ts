@@ -74,6 +74,7 @@ export interface Report {
 	gpsTimestamp?: string | null;
 	createdAt: string;
 	archivedAt?: string | null;
+	photoCount?: number;
 	// Additional context for admin views
 	userName?: string;
 	userPhone?: string;

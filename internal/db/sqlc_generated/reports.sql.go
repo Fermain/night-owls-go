@@ -24,6 +24,7 @@ SELECT
     r.longitude,
     r.gps_accuracy,
     r.gps_timestamp,
+    r.photo_count,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -49,6 +50,7 @@ type AdminGetReportWithContextRow struct {
 	Longitude    sql.NullFloat64 `json:"longitude"`
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	PhotoCount   sql.NullInt64   `json:"photo_count"`
 	UserName     string          `json:"user_name"`
 	UserPhone    string          `json:"user_phone"`
 	ScheduleID   int64           `json:"schedule_id"`
@@ -72,6 +74,7 @@ func (q *Queries) AdminGetReportWithContext(ctx context.Context, reportID int64)
 		&i.Longitude,
 		&i.GpsAccuracy,
 		&i.GpsTimestamp,
+		&i.PhotoCount,
 		&i.UserName,
 		&i.UserPhone,
 		&i.ScheduleID,
@@ -95,6 +98,7 @@ SELECT
     r.longitude,
     r.gps_accuracy,
     r.gps_timestamp,
+    r.photo_count,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -121,6 +125,7 @@ type AdminListArchivedReportsWithContextRow struct {
 	Longitude    sql.NullFloat64 `json:"longitude"`
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	PhotoCount   sql.NullInt64   `json:"photo_count"`
 	UserName     string          `json:"user_name"`
 	UserPhone    string          `json:"user_phone"`
 	ScheduleID   int64           `json:"schedule_id"`
@@ -150,6 +155,7 @@ func (q *Queries) AdminListArchivedReportsWithContext(ctx context.Context) ([]Ad
 			&i.Longitude,
 			&i.GpsAccuracy,
 			&i.GpsTimestamp,
+			&i.PhotoCount,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,
@@ -183,6 +189,7 @@ SELECT
     r.longitude,
     r.gps_accuracy,
     r.gps_timestamp,
+    r.photo_count,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     COALESCE(b.schedule_id, 0) as schedule_id,
@@ -209,6 +216,7 @@ type AdminListReportsWithContextRow struct {
 	Longitude    sql.NullFloat64 `json:"longitude"`
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
+	PhotoCount   sql.NullInt64   `json:"photo_count"`
 	UserName     string          `json:"user_name"`
 	UserPhone    string          `json:"user_phone"`
 	ScheduleID   int64           `json:"schedule_id"`
@@ -238,6 +246,7 @@ func (q *Queries) AdminListReportsWithContext(ctx context.Context) ([]AdminListR
 			&i.Longitude,
 			&i.GpsAccuracy,
 			&i.GpsTimestamp,
+			&i.PhotoCount,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleID,

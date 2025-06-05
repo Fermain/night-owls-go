@@ -27,6 +27,7 @@
 
 	// Components
 	import ReportMap from './ReportMap.svelte';
+	import ReportPhotos from './ReportPhotos.svelte';
 
 	// Types using our new domain types and API mappings
 	import type { Report } from '$lib/types/domain';
@@ -413,6 +414,9 @@
 							</Card.Content>
 						</Card.Root>
 					{/if}
+
+					<!-- Photo Evidence -->
+					<ReportPhotos reportId={report.id} />
 				</div>
 
 				<!-- Sidebar -->

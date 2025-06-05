@@ -127,6 +127,7 @@ export function mapAPIReportToDomain(apiReport: APIReport): Report {
 		gpsTimestamp: apiReport.gps_timestamp ?? null,
 		createdAt: apiReport.created_at ?? new Date().toISOString(),
 		archivedAt: apiReport.archived_at ?? null,
+		photoCount: 0, // Fetched separately by ReportPhotos component
 		// Admin context fields - convert null to undefined
 		userName: apiReport.user_name || undefined,
 		userPhone: apiReport.user_phone || undefined,

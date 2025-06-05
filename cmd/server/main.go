@@ -130,6 +130,7 @@ func main() {
 	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
 	reportService := service.NewReportService(querier, logger, pointsService)
 	reportArchivingService := service.NewReportArchivingService(querier, logger)
+	photoService := service.NewPhotoService(querier, logger)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
 	emergencyContactService := service.NewEmergencyContactService(querier, logger)
@@ -245,6 +246,7 @@ func main() {
 	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
 	adminAuditAPIHandler := api.NewAdminAuditHandler(auditService, querier, logger)
 	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
+	// photoAPIHandler := api.NewPhotoHandler(photoService, logger) // Temporarily disabled for testing
 
 	// Debug: Check handler initialization
 	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
@@ -353,6 +355,8 @@ func main() {
 	fuego.PutStd(admin, "/users/{id}", adminUserAPIHandler.AdminUpdateUser)
 	fuego.DeleteStd(admin, "/users/{id}", adminUserAPIHandler.AdminDeleteUser)
 	fuego.PostStd(admin, "/users/bulk-delete", adminUserAPIHandler.AdminBulkDeleteUsers)
+
+
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
@@ -464,6 +468,15 @@ func main() {
 	fuego.GetStd(admin, "/audit-events", adminAuditAPIHandler.AdminListAuditEvents)
 	fuego.GetStd(admin, "/audit-events/stats", adminAuditAPIHandler.AdminGetAuditStats)
 	fuego.GetStd(admin, "/audit-events/type-stats", adminAuditAPIHandler.AdminGetAuditEventTypeStats)
+
+	// Admin Report Photos - simple test implementation
+	fuego.GetStd(admin, "/report-photos/{reportId}", func(w http.ResponseWriter, r *http.Request) {
+		reportId := r.PathValue("reportId")
+		w.Header().Set("Content-Type", "application/json")
+		response := []map[string]interface{}{}
+		logger.Info("Photo endpoint called", "report_id", reportId)
+		json.NewEncoder(w).Encode(response)
+	})
 
 	// Explicit Swagger routes (must be before SPA fallback)
 	fuego.GetStd(s, "/swagger", func(w http.ResponseWriter, r *http.Request) {
