@@ -93,24 +93,6 @@ export class UsersApiService {
 	}
 
 	/**
-	 * Update user role
-	 */
-	static async updateRole(userId: number, role: string): Promise<{ message: string }> {
-		const response = await authenticatedFetch(`/api/admin/users/${userId}/role`, {
-			method: 'PUT',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ role })
-		});
-		if (!response.ok) {
-			const errorData = await response
-				.json()
-				.catch(() => ({ message: 'Failed to update user role' }));
-			throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-		}
-		return response.json();
-	}
-
-	/**
 	 * Bulk delete users
 	 */
 	static async bulkDelete(userIds: number[]): Promise<{ message: string; deleted_count: number }> {

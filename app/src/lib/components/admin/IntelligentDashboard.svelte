@@ -49,7 +49,16 @@
 	// Quick actions - following your patterns
 	async function handleApproveGuest(userId: number, userName?: string) {
 		try {
-			await UsersApiService.updateRole(userId, 'owl');
+			// Get current user data first since update requires all fields
+			const currentUser = await UsersApiService.getById(userId);
+
+			// Update user with new role while keeping existing data
+			await UsersApiService.update(userId, {
+				name: currentUser.name || '',
+				phone: currentUser.phone,
+				role: 'owl'
+			});
+
 			toast.success(`${userName ?? 'User'} has been approved as an Owl volunteer!`);
 			window.location.reload();
 		} catch (_error) {

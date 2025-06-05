@@ -7,10 +7,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import { authService } from '$lib/services/authService';
 	import { toast } from 'svelte-sonner';
-	import { isAuthenticated } from '$lib/services/userService';
+	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import { onboardingActions, onboardingState } from '$lib/stores/onboardingStore';
 	import type { E164Number } from 'svelte-tel-input/types';
+	import { getPageOpenGraph } from '$lib/utils/opengraph';
+
+	// OpenGraph tags for this page
+	const ogTags = getPageOpenGraph('login');
 
 	// Redirect if already authenticated
 	$effect(() => {
@@ -20,7 +24,13 @@
 			if (needsOnboarding) {
 				goto('/onboarding', { replaceState: true });
 			} else {
-				goto('/admin', { replaceState: true });
+				// Role-based redirect: admin to admin area, others to main dashboard
+				const userRole = $currentUser?.role;
+				if (userRole === 'admin') {
+					goto('/admin', { replaceState: true });
+				} else {
+					goto('/', { replaceState: true });
+				}
 			}
 		}
 	});
@@ -153,12 +163,18 @@
 			}
 			toast.success('Welcome back!');
 
-			// Navigate based on onboarding status
+			// Navigate based on onboarding status and user role
 			const needsOnboarding = onboardingActions.needsOnboarding($onboardingState);
 			if (needsOnboarding) {
 				goto('/onboarding', { replaceState: true });
 			} else {
-				goto('/admin', { replaceState: true });
+				// Role-based redirect: admin to admin area, others to main dashboard
+				const userRole = $currentUser?.role;
+				if (userRole === 'admin') {
+					goto('/admin', { replaceState: true });
+				} else {
+					goto('/', { replaceState: true });
+				}
 			}
 		} catch (_error) {
 			// Clean up loading toast
@@ -193,7 +209,31 @@
 </script>
 
 <svelte:head>
-	<title>Sign In - Night Owls Control</title>
+	<title>{ogTags.title}</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.description}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImageAlt}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogType}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogSiteName}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterCard}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImageAlt}
 </svelte:head>
 
 <div class="flex flex-1 flex-col items-center justify-center gap-6 p-4 md:p-10">
