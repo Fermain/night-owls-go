@@ -11,8 +11,6 @@ import (
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
-
-	"github.com/go-chi/chi/v5"
 )
 
 // AdminBroadcastHandler handles admin broadcast operations.
@@ -179,28 +177,15 @@ func (h *AdminBroadcastHandler) AdminListBroadcasts(w http.ResponseWriter, r *ht
 // AdminGetBroadcast handles GET /api/admin/broadcasts/{id}
 func (h *AdminBroadcastHandler) AdminGetBroadcast(w http.ResponseWriter, r *http.Request) {
 	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminGetBroadcast called", "id_param", idStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "broadcasts" {
 			idStr = pathParts[3]
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
-
-	// Alternative method 2: Check request context for route values
-	if idStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					idStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
-					break
-				}
-			}
 		}
 	}
 
@@ -293,28 +278,15 @@ func nullInt64ToInt64(ni sql.NullInt64) int64 {
 // AdminDeleteBroadcast handles DELETE /api/admin/broadcasts/{id}
 func (h *AdminBroadcastHandler) AdminDeleteBroadcast(w http.ResponseWriter, r *http.Request) {
 	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminDeleteBroadcast called", "id_param", idStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if idStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "broadcasts" {
 			idStr = pathParts[3]
 			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
-
-	// Alternative method 2: Check request context for route values
-	if idStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					idStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
-					break
-				}
-			}
 		}
 	}
 

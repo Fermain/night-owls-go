@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"night-owls-go/internal/service"
-
-	"github.com/go-chi/chi/v5"
 )
 
 // ReportHandler handles report-related HTTP requests.
@@ -92,10 +90,10 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Try multiple methods to extract the ID parameter
-	bookingIDStr := chi.URLParam(r, "id")
+	bookingIDStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "CreateReportHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 3 && pathParts[0] == "bookings" && pathParts[2] == "report" {
@@ -104,18 +102,7 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	// Alternative method 2: Check request context for route values
-	if bookingIDStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					bookingIDStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", bookingIDStr)
-					break
-				}
-			}
-		}
-	}
+
 
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {

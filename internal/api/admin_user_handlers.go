@@ -7,13 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
-
-	"github.com/go-chi/chi/v5"
 )
 
 // Request/response types
@@ -114,18 +111,9 @@ func (h *AdminUserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [get]
 func (h *AdminUserHandler) AdminGetUser(w http.ResponseWriter, r *http.Request) {
-	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	// Extract the ID parameter using Go 1.22's PathValue
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminGetUser called", "id_param", idStr, "url", r.URL.Path)
-
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
-	if idStr == "" {
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
-			idStr = pathParts[3]
-			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -282,35 +270,9 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [put]
 func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	// Extract the ID parameter using Go 1.22's PathValue
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminUpdateUser called", "id_param", idStr, "url", r.URL.Path)
-
-	// Alternative method 1: Parse from URL path directly
-	if idStr == "" {
-		// Extract ID from path manually: /api/admin/users/{id}
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		h.logger.InfoContext(r.Context(), "URL path parts", "parts", pathParts)
-
-		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
-			idStr = pathParts[3]
-			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
-
-	// Alternative method 2: Check request context for route values
-	if idStr == "" {
-		if rctx := chi.RouteContext(r.Context()); rctx != nil {
-			h.logger.InfoContext(r.Context(), "Chi route context", "url_params", rctx.URLParams)
-			for i, param := range rctx.URLParams.Keys {
-				if param == "id" && i < len(rctx.URLParams.Values) {
-					idStr = rctx.URLParams.Values[i]
-					h.logger.InfoContext(r.Context(), "Found ID in route context", "id_param", idStr)
-					break
-				}
-			}
-		}
-	}
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -489,18 +451,9 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/admin/users/{id} [delete]
 func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
-	// Try multiple methods to extract the ID parameter
-	idStr := chi.URLParam(r, "id")
+	// Extract the ID parameter using Go 1.22's PathValue
+	idStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "AdminDeleteUser called", "id_param", idStr, "url", r.URL.Path)
-
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
-	if idStr == "" {
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) >= 4 && pathParts[0] == "api" && pathParts[1] == "admin" && pathParts[2] == "users" {
-			idStr = pathParts[3]
-			h.logger.InfoContext(r.Context(), "Extracted ID from path manually", "id_param", idStr)
-		}
-	}
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {

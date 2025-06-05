@@ -13,7 +13,6 @@ import (
 
 	"night-owls-go/internal/service"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-fuego/fuego"
 
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -465,10 +464,10 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 		"raw_path", r.URL.RawPath)
 
 	// Extract booking ID from URL
-	bookingIDStr := chi.URLParam(r, "id")
+	bookingIDStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "CancelBookingHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		h.logger.InfoContext(r.Context(), "Path parts for manual extraction", "path_parts", pathParts, "path", r.URL.Path)
@@ -540,10 +539,10 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 // @Router /bookings/{id}/checkin [post]
 func (h *BookingHandler) MarkCheckInHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract booking ID from URL
-	bookingIDStr := chi.URLParam(r, "id")
+	bookingIDStr := r.PathValue("id")
 	h.logger.InfoContext(r.Context(), "MarkCheckInHandler called", "id_param", bookingIDStr, "url", r.URL.Path)
 
-	// Alternative method: Parse from URL path directly if chi.URLParam fails
+	// Alternative method: Parse from URL path directly if r.PathValue fails
 	if bookingIDStr == "" {
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 3 && pathParts[0] == "bookings" && pathParts[2] == "checkin" {
