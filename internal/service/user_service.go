@@ -22,8 +22,9 @@ var (
 
 // immediateSendAt returns a time that ensures immediate dispatch by the outbox processor.
 // Uses a small negative offset to ensure the message is processed immediately.
+// Returns UTC time to match SQLite's CURRENT_TIMESTAMP behavior.
 func immediateSendAt() time.Time {
-	return time.Now().Add(-1 * time.Second)
+	return time.Now().UTC().Add(-1 * time.Second)
 }
 
 // JWTGenerator defines a function that generates a JWT token
