@@ -2,7 +2,6 @@
 	import CalendarHeader from './CalendarHeader.svelte';
 	import CalendarDayNames from './CalendarDayNames.svelte';
 	import CalendarMonthGrid from './CalendarMonthGrid.svelte';
-	import CalendarLegend from './CalendarLegend.svelte';
 	import type { AvailableShiftSlot, UserBooking } from '$lib/services/api/user';
 	import type { CalendarDay, CalendarCell, MonthGrid } from './calendar-types.js';
 
@@ -197,8 +196,5 @@
 				<CalendarMonthGrid {monthGrid} {onShiftSelect} />
 			{/each}
 		</div>
-
-		<!-- Legend -->
-		<CalendarLegend />
 	</div>
 {/if}

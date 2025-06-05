@@ -13,7 +13,13 @@
 	$effect(() => {
 		if ($isAuthenticated) {
 			toast.info(`Already logged in as ${$currentUser?.name || 'user'}. Redirecting...`);
-			goto('/admin', { replaceState: true });
+			// Role-based redirect: admin to admin area, others to main dashboard
+			const userRole = $currentUser?.role;
+			if (userRole === 'admin') {
+				goto('/admin', { replaceState: true });
+			} else {
+				goto('/', { replaceState: true });
+			}
 		}
 	});
 

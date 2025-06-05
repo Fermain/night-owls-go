@@ -27,6 +27,10 @@
 	import ShiftCalendar from '$lib/components/user/shifts/ShiftCalendar.svelte';
 	import { onMount } from 'svelte';
 	import MyReportsWidget from '$lib/components/user/dashboard/MyReportsWidget.svelte';
+	import { getPageOpenGraph } from '$lib/utils/opengraph';
+
+	// OpenGraph tags for this page
+	const ogTags = getPageOpenGraph('home');
 
 	// Get current user from auth store
 	const currentUser = $derived($userSession);
@@ -325,7 +329,31 @@
 </script>
 
 <svelte:head>
-	<title>Mount Moreland Night Owls</title>
+	<title>{ogTags.title}</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.description}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImageAlt}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogType}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogSiteName}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterCard}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImageAlt}
 </svelte:head>
 
 <div class="bg-background flex-1">

@@ -114,17 +114,17 @@
 		const apiResponse = await apiPut<
 			typeof requestData,
 			components['schemas']['api.UserAPIResponse']
-		>(`api/admin/users/${userId}`, requestData);
+		>(`/api/admin/users/${userId}`, requestData);
 		return mapAPIUserToDomain(apiResponse);
 	}
 
 	async function deleteUser(userId: number): Promise<void> {
-		await apiDelete(`api/admin/users/${userId}`);
+		await apiDelete(`/api/admin/users/${userId}`);
 	}
 
 	async function fetchUserBookings(userId: number): Promise<Booking[]> {
 		const apiBookings = await apiGet<components['schemas']['api.BookingWithScheduleResponse'][]>(
-			`api/admin/users/${userId}/bookings`
+			`/api/admin/users/${userId}/bookings`
 		);
 		return mapAPIBookingArrayToDomain(apiBookings);
 	}

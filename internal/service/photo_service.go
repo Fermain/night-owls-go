@@ -48,7 +48,7 @@ type PhotoMetadata struct {
 
 func NewPhotoService(querier db.Querier, logger *slog.Logger) *PhotoService {
 	storagePath := "./data/report-photos"
-	
+
 	// Create storage directory if it doesn't exist
 	if err := os.MkdirAll(storagePath, 0750); err != nil {
 		logger.Error("Failed to create photo storage directory", "error", err)
@@ -90,10 +90,10 @@ func (ps *PhotoService) UploadPhoto(ctx context.Context, req PhotoUploadRequest)
 
 	// Generate filename
 	timestamp := time.Now()
-	filename := fmt.Sprintf("%d_%d_%s.%s", 
-		req.ReportID, 
-		timestamp.Unix(), 
-		checksum[:8], 
+	filename := fmt.Sprintf("%d_%d_%s.%s",
+		req.ReportID,
+		timestamp.Unix(),
+		checksum[:8],
 		getFileExtension(contentType))
 
 	// Create storage path with date structure
@@ -136,9 +136,9 @@ func (ps *PhotoService) UploadPhoto(ctx context.Context, req PhotoUploadRequest)
 		ps.logger.Warn("Failed to update report photo count", "report_id", req.ReportID, "error", err)
 	}
 
-	ps.logger.Info("Photo uploaded successfully", 
-		"photo_id", photoData.PhotoID, 
-		"report_id", req.ReportID, 
+	ps.logger.Info("Photo uploaded successfully",
+		"photo_id", photoData.PhotoID,
+		"report_id", req.ReportID,
 		"filename", filename,
 		"size_bytes", req.Header.Size)
 
@@ -261,4 +261,4 @@ func convertIntToNullInt64(val *int) sql.NullInt64 {
 		return sql.NullInt64{Int64: 0, Valid: false}
 	}
 	return sql.NullInt64{Int64: int64(*val), Valid: true}
-} 
+}
