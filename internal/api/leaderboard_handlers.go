@@ -2,6 +2,7 @@ package api
 
 import (
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,7 +40,7 @@ func (h *LeaderboardHandler) GetLeaderboardHandler(w http.ResponseWriter, r *htt
 	limitStr := r.URL.Query().Get("limit")
 	limit := int32(10) // default
 	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 && parsedLimit <= math.MaxInt32 {
 			limit = int32(parsedLimit)
 		}
 	}
@@ -98,7 +99,7 @@ func (h *LeaderboardHandler) GetStreakLeaderboardHandler(w http.ResponseWriter, 
 	limitStr := r.URL.Query().Get("limit")
 	limit := int32(10) // default
 	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 && parsedLimit <= math.MaxInt32 {
 			limit = int32(parsedLimit)
 		}
 	}
@@ -360,7 +361,7 @@ func (h *LeaderboardHandler) GetActivityFeedHandler(w http.ResponseWriter, r *ht
 	limitStr := r.URL.Query().Get("limit")
 	limit := int32(20) // default
 	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 && parsedLimit <= math.MaxInt32 {
 			limit = int32(parsedLimit)
 		}
 	}
