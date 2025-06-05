@@ -306,7 +306,7 @@ func TestPointsIntegration_LeaderboardUpdates(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test leaderboard API endpoint
-	rr := app.makeRequest(t, "GET", "/api/leaderboard", nil, token1)
+	rr := app.makeRequest(t, "GET", "/leaderboard", nil, token1)
 	require.Equal(t, http.StatusOK, rr.Code, "Leaderboard request failed: %s", rr.Body.String())
 
 	var leaderboard []map[string]interface{}
@@ -335,7 +335,7 @@ func TestPointsIntegration_LeaderboardUpdates(t *testing.T) {
 	}
 
 	// Test user stats endpoint
-	rr = app.makeRequest(t, "GET", "/api/user/stats", nil, token1)
+	rr = app.makeRequest(t, "GET", "/user/stats", nil, token1)
 	require.Equal(t, http.StatusOK, rr.Code, "User stats request failed: %s", rr.Body.String())
 
 	var userStats map[string]interface{}

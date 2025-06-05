@@ -153,3 +153,6 @@ export {
 	SidebarSeparator,
 	SidebarTrigger
 } from './sidebar';
+
+// === HELP ===
+export { HelpDialog } from './help';

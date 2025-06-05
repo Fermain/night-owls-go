@@ -145,6 +145,7 @@ func newTestApp(t *testing.T) *testApp {
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
+	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
 
 	router.Post("/auth/register", authAPIHandler.RegisterHandler)
 	router.Post("/auth/verify", authAPIHandler.VerifyHandler)
@@ -155,6 +156,14 @@ func newTestApp(t *testing.T) *testApp {
 		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
 		r.Post("/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
 		r.Post("/bookings/{id}/report", reportAPIHandler.CreateReportHandler)
+		// Leaderboard routes
+		r.Get("/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
+		r.Get("/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
+		r.Get("/leaderboard/activity", leaderboardAPIHandler.GetActivityFeedHandler)
+		r.Get("/user/stats", leaderboardAPIHandler.GetUserStatsHandler)
+		r.Get("/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)
+		r.Get("/user/achievements", leaderboardAPIHandler.GetUserAchievementsHandler)
+		r.Get("/user/achievements/available", leaderboardAPIHandler.GetAvailableAchievementsHandler)
 	})
 
 	return &testApp{
