@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import GPSCapture from '$lib/components/ui/gps-capture/GPSCapture.svelte';
+	import { PhotoUploadArea } from '$lib/components/ui/photo-upload';
 	import { createMutation } from '@tanstack/svelte-query';
 	import { UserApiService } from '$lib/services/api/user';
 	import { toast } from 'svelte-sonner';
@@ -18,6 +19,13 @@
 		timestamp: string;
 	}
 
+	// Define photo file type
+	interface PhotoFile {
+		file: File;
+		preview: string;
+		id: string;
+	}
+
 	// Define the report data interface
 	interface ReportData {
 		severity: number;
@@ -25,6 +33,7 @@
 		latitude: number | null;
 		longitude: number | null;
 		accuracy: number | null;
+		photos?: File[];
 	}
 
 	// Props
@@ -42,6 +51,7 @@
 	let selectedSeverity = $state<string>('0');
 	let message = $state('');
 	let locationData = $state<GeolocationData | null>(null);
+	let photos = $state<PhotoFile[]>([]);
 
 	// Severity options matching the original backup
 	const severityOptions = [
@@ -95,6 +105,9 @@
 		selectedSeverity = '0';
 		message = '';
 		locationData = null;
+		// Clean up photo previews
+		photos.forEach((photo) => URL.revokeObjectURL(photo.preview));
+		photos = [];
 	}
 
 	function handleSubmit() {
@@ -103,15 +116,20 @@
 			return;
 		}
 
-		const reportData = {
+		const reportData: ReportData = {
 			severity: parseInt(selectedSeverity),
 			message: message.trim(),
 			latitude: locationData?.latitude || null,
 			longitude: locationData?.longitude || null,
-			accuracy: locationData?.accuracy || null
+			accuracy: locationData?.accuracy || null,
+			photos: photos.map((p) => p.file)
 		};
 
 		$reportMutation.mutate(reportData);
+	}
+
+	function handlePhotosChange(newPhotos: PhotoFile[]) {
+		photos = newPhotos;
 	}
 
 	function handleLocationCaptured(location: GeolocationData) {
@@ -136,6 +154,17 @@
 		<div class="space-y-4">
 			<!-- Location Capture -->
 			<GPSCapture onLocationCaptured={handleLocationCaptured} onError={handleLocationError} />
+
+			<!-- Photo Upload -->
+			<div class="space-y-2">
+				<div class="text-sm font-medium">Photo Evidence (Optional)</div>
+				<PhotoUploadArea
+					bind:photos
+					onPhotosChange={handlePhotosChange}
+					disabled={$reportMutation.isPending}
+					maxPhotos={5}
+				/>
+			</div>
 
 			<!-- Severity Selection -->
 

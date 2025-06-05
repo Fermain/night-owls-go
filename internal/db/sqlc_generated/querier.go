@@ -30,12 +30,15 @@ type Querier interface {
 	CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
+	// Photo operations
+	CreateReportPhoto(ctx context.Context, arg CreateReportPhotoParams) (ReportPhoto, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteBooking(ctx context.Context, bookingID int64) error
 	DeleteBroadcast(ctx context.Context, broadcastID int64) error
 	DeleteEmergencyContact(ctx context.Context, contactID int64) error
 	DeleteReport(ctx context.Context, reportID int64) error
+	DeleteReportPhoto(ctx context.Context, arg DeleteReportPhotoParams) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -65,6 +68,8 @@ type Querier interface {
 	// Limit to prevent processing too many at once
 	GetRecentOutboxItemsByRecipient(ctx context.Context, arg GetRecentOutboxItemsByRecipientParams) ([]Outbox, error)
 	GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error)
+	GetReportPhoto(ctx context.Context, arg GetReportPhotoParams) (ReportPhoto, error)
+	GetReportPhotos(ctx context.Context, reportID int64) ([]ReportPhoto, error)
 	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
@@ -105,6 +110,7 @@ type Querier interface {
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateEmergencyContact(ctx context.Context, arg UpdateEmergencyContactParams) (EmergencyContact, error)
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
+	UpdateReportPhotoCount(ctx context.Context, reportID int64) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 	// Update user's shift count and last activity

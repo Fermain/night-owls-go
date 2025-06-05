@@ -13,6 +13,7 @@ export interface OnboardingState {
 	hasCompletedPWAPrompt: boolean;
 	locationPermission: 'granted' | 'denied' | 'prompt' | 'unknown';
 	notificationPermission: 'granted' | 'denied' | 'default' | 'unknown';
+	cameraPermission: 'granted' | 'denied' | 'prompt' | 'unknown';
 	pwaInstalled: boolean;
 	pwaInstallPromptShown: boolean;
 	lastOnboardingVersion: string;
@@ -24,6 +25,7 @@ const initialOnboardingState: OnboardingState = {
 	hasCompletedPWAPrompt: false,
 	locationPermission: 'unknown',
 	notificationPermission: 'unknown',
+	cameraPermission: 'unknown',
 	pwaInstalled: false,
 	pwaInstallPromptShown: false,
 	lastOnboardingVersion: '1.0.0'
@@ -80,6 +82,14 @@ export const onboardingActions = {
 		onboardingState.update((state) => ({
 			...state,
 			notificationPermission: permission
+		}));
+	},
+
+	// Update camera permission status
+	updateCameraPermission(permission: OnboardingState['cameraPermission']) {
+		onboardingState.update((state) => ({
+			...state,
+			cameraPermission: permission
 		}));
 	},
 
@@ -179,6 +189,29 @@ export const permissionUtils = {
 			console.warn('Could not request notification permission:', error);
 			return 'unknown';
 		}
+	},
+
+	// Check current camera permission status
+	async checkCameraPermission(): Promise<OnboardingState['cameraPermission']> {
+		if (typeof navigator === 'undefined' || !navigator.permissions) {
+			return 'unknown';
+		}
+
+		try {
+			const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+			return result.state as OnboardingState['cameraPermission'];
+		} catch (error) {
+			// Camera permission is not available in all browsers via Permissions API
+			return 'unknown';
+		}
+	},
+
+	// Request camera permission (informational - actual permission happens on first use)
+	async requestCameraPermission(): Promise<OnboardingState['cameraPermission']> {
+		// Note: Camera permission is granted on first use of camera input or getUserMedia
+		// We can't request it upfront, so this is informational
+		onboardingActions.updateCameraPermission('prompt');
+		return 'prompt';
 	}
 };
 

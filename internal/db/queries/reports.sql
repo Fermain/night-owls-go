@@ -161,4 +161,43 @@ WHERE report_id IN (sqlc.slice('report_ids')) AND archived_at IS NULL;
 
 -- name: DeleteReport :exec
 DELETE FROM reports 
-WHERE report_id = ?; 
+WHERE report_id = ?;
+
+-- name: UpdateReportPhotoCount :exec
+UPDATE reports 
+SET photo_count = (
+    SELECT COUNT(*) FROM report_photos WHERE report_photos.report_id = reports.report_id
+)
+WHERE reports.report_id = ?;
+
+-- Photo operations
+-- name: CreateReportPhoto :one
+INSERT INTO report_photos (
+    report_id,
+    filename,
+    original_filename,
+    file_size_bytes,
+    mime_type,
+    width_pixels,
+    height_pixels,
+    storage_path,
+    thumbnail_path,
+    checksum_sha256,
+    is_processed
+) VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: GetReportPhotos :many
+SELECT * FROM report_photos 
+WHERE report_id = ? 
+ORDER BY upload_timestamp ASC;
+
+-- name: GetReportPhoto :one
+SELECT * FROM report_photos 
+WHERE photo_id = ? AND report_id = ?;
+
+-- name: DeleteReportPhoto :exec
+DELETE FROM report_photos 
+WHERE photo_id = ? AND report_id = ?; 

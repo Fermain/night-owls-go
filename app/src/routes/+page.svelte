@@ -394,11 +394,6 @@
 				onShiftSelect={handleBookShift}
 			/>
 
-			<!-- My Reports Widget -->
-			{#if $userSession.isAuthenticated}
-				<MyReportsWidget className="mb-4" />
-			{/if}
-
 			<!-- Available Shifts (broken out of card layout) -->
 			{#if !availableShiftsQuery}
 				<!-- Loading state while queries are being initialized -->
@@ -521,6 +516,11 @@
 						</div>
 					{/if}
 				</div>
+			{/if}
+
+			<!-- My Reports Widget -->
+			{#if $userSession.isAuthenticated}
+				<MyReportsWidget className="mb-4" />
 			{/if}
 		</div>
 	{:else}

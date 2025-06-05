@@ -119,6 +119,23 @@ type Report struct {
 	GpsAccuracy  sql.NullFloat64 `json:"gps_accuracy"`
 	GpsTimestamp sql.NullTime    `json:"gps_timestamp"`
 	ArchivedAt   sql.NullTime    `json:"archived_at"`
+	PhotoCount   sql.NullInt64   `json:"photo_count"`
+}
+
+type ReportPhoto struct {
+	PhotoID          int64          `json:"photo_id"`
+	ReportID         int64          `json:"report_id"`
+	Filename         string         `json:"filename"`
+	OriginalFilename sql.NullString `json:"original_filename"`
+	FileSizeBytes    int64          `json:"file_size_bytes"`
+	MimeType         string         `json:"mime_type"`
+	WidthPixels      sql.NullInt64  `json:"width_pixels"`
+	HeightPixels     sql.NullInt64  `json:"height_pixels"`
+	UploadTimestamp  sql.NullTime   `json:"upload_timestamp"`
+	StoragePath      string         `json:"storage_path"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ChecksumSha256   string         `json:"checksum_sha256"`
+	IsProcessed      sql.NullBool   `json:"is_processed"`
 }
 
 type Schedule struct {

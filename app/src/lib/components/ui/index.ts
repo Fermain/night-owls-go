@@ -90,7 +90,9 @@ export {
 
 // === APP-SPECIFIC COMPONENTS ===
 export { PhoneInput } from './phone-input';
+export { PhotoUploadArea } from './photo-upload';
 export { UserMultiSelect } from './user-multiselect';
+export { HelpDialog } from './help';
 
 // === UTILITY COMPONENTS ===
 export { Skeleton } from './skeleton';
@@ -153,6 +155,3 @@ export {
 	SidebarSeparator,
 	SidebarTrigger
 } from './sidebar';
-
-// === HELP ===
-export { HelpDialog } from './help';
