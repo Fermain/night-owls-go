@@ -25,15 +25,17 @@ var (
 
 // ReportService handles logic related to incident reports.
 type ReportService struct {
-	querier db.Querier
-	logger  *slog.Logger
+	querier       db.Querier
+	logger        *slog.Logger
+	pointsService *PointsService
 }
 
 // NewReportService creates a new ReportService.
-func NewReportService(querier db.Querier, logger *slog.Logger) *ReportService {
+func NewReportService(querier db.Querier, logger *slog.Logger, pointsService *PointsService) *ReportService {
 	return &ReportService{
-		querier: querier,
-		logger:  logger.With("service", "ReportService"),
+		querier:       querier,
+		logger:        logger.With("service", "ReportService"),
+		pointsService: pointsService,
 	}
 }
 
@@ -97,6 +99,16 @@ func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, 
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create report in DB", "params", reportParams, "error", err)
 		return db.Report{}, ErrInternalServer
+	}
+
+	// Award shift completion points to the user
+	if s.pointsService != nil {
+		if err := s.pointsService.AwardShiftCompletionPoints(ctx, userIDFromAuth, bookingID, int(createdReport.Severity)); err != nil {
+			s.logger.WarnContext(ctx, "Failed to award completion points", "report_id", createdReport.ReportID, "booking_id", bookingID, "user_id", userIDFromAuth, "error", err)
+			// Non-fatal - don't fail the report creation if points can't be awarded
+		} else {
+			s.logger.InfoContext(ctx, "Shift completion points awarded", "report_id", createdReport.ReportID, "booking_id", bookingID, "user_id", userIDFromAuth)
+		}
 	}
 
 	s.logger.InfoContext(ctx, "Report created successfully", "report_id", createdReport.ReportID, "booking_id", bookingID)

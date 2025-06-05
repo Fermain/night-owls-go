@@ -126,13 +126,13 @@ func main() {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 	reportArchivingService := service.NewReportArchivingService(querier, logger)
 	adminDashboardService := service.NewAdminDashboardService(querier, scheduleService, logger)
 	broadcastService := service.NewBroadcastService(querier, logger, cfg)
 	emergencyContactService := service.NewEmergencyContactService(querier, logger)
-	pointsService := service.NewPointsService(querier, logger)
 
 	// Instantiate PushSender service
 	pushSenderService := service.NewPushSender(querier, cfg, logger)
@@ -324,7 +324,7 @@ func main() {
 
 	// Leaderboard routes (require auth)
 	fuego.GetStd(protected, "/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
-	fuego.GetStd(protected, "/leaderboard/streaks", leaderboardAPIHandler.GetStreakLeaderboardHandler)
+	fuego.GetStd(protected, "/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
 	fuego.GetStd(protected, "/leaderboard/activity", leaderboardAPIHandler.GetActivityFeedHandler)
 	fuego.GetStd(protected, "/user/stats", leaderboardAPIHandler.GetUserStatsHandler)
 	fuego.GetStd(protected, "/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)

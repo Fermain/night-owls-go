@@ -94,7 +94,7 @@ func (s *AuditService) LogEvent(ctx context.Context, event AuditEvent) error {
 	})
 
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create audit event", 
+		s.logger.ErrorContext(ctx, "Failed to create audit event",
 			"error", err,
 			"event_type", event.EventType,
 			"action", event.Action,
@@ -542,4 +542,4 @@ func (s *AuditService) LogSessionExpired(ctx context.Context, userID int64, reas
 		IPAddress: ipAddress,
 		UserAgent: userAgent,
 	})
-} 
+}

@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const awardAchievement = `-- name: AwardAchievement :exec
@@ -59,17 +60,14 @@ SELECT
     a.name,
     a.description,
     a.icon,
-    a.points_threshold,
-    a.streak_threshold
+    a.shifts_threshold
 FROM achievements a
 WHERE a.achievement_id NOT IN (
     SELECT ua.achievement_id 
     FROM user_achievements ua 
     WHERE ua.user_id = ?
 )
-ORDER BY 
-    CASE WHEN a.points_threshold IS NOT NULL THEN a.points_threshold ELSE 9999 END,
-    CASE WHEN a.streak_threshold IS NOT NULL THEN a.streak_threshold ELSE 9999 END
+ORDER BY a.shifts_threshold
 `
 
 type GetAvailableAchievementsRow struct {
@@ -77,8 +75,7 @@ type GetAvailableAchievementsRow struct {
 	Name            string         `json:"name"`
 	Description     string         `json:"description"`
 	Icon            sql.NullString `json:"icon"`
-	PointsThreshold sql.NullInt64  `json:"points_threshold"`
-	StreakThreshold sql.NullInt64  `json:"streak_threshold"`
+	ShiftsThreshold sql.NullInt64  `json:"shifts_threshold"`
 }
 
 // Get achievements a user hasn't earned yet
@@ -96,8 +93,7 @@ func (q *Queries) GetAvailableAchievements(ctx context.Context, userID int64) ([
 			&i.Name,
 			&i.Description,
 			&i.Icon,
-			&i.PointsThreshold,
-			&i.StreakThreshold,
+			&i.ShiftsThreshold,
 		); err != nil {
 			return nil, err
 		}
@@ -170,66 +166,12 @@ func (q *Queries) GetRecentActivity(ctx context.Context, limit int64) ([]GetRece
 	return items, nil
 }
 
-const getStreakLeaderboard = `-- name: GetStreakLeaderboard :many
-SELECT 
-    u.user_id,
-    u.name,
-    u.current_streak,
-    u.total_points,
-    COUNT(DISTINCT ua.achievement_id) as achievement_count
-FROM users u
-LEFT JOIN user_achievements ua ON u.user_id = ua.user_id
-WHERE u.role IN ('admin', 'owl') AND u.current_streak > 0
-GROUP BY u.user_id, u.name, u.current_streak, u.total_points
-ORDER BY u.current_streak DESC, u.total_points DESC
-LIMIT ?
-`
-
-type GetStreakLeaderboardRow struct {
-	UserID           int64          `json:"user_id"`
-	Name             sql.NullString `json:"name"`
-	CurrentStreak    sql.NullInt64  `json:"current_streak"`
-	TotalPoints      sql.NullInt64  `json:"total_points"`
-	AchievementCount int64          `json:"achievement_count"`
-}
-
-// Get leaderboard by current streak
-func (q *Queries) GetStreakLeaderboard(ctx context.Context, limit int64) ([]GetStreakLeaderboardRow, error) {
-	rows, err := q.db.QueryContext(ctx, getStreakLeaderboard, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetStreakLeaderboardRow{}
-	for rows.Next() {
-		var i GetStreakLeaderboardRow
-		if err := rows.Scan(
-			&i.UserID,
-			&i.Name,
-			&i.CurrentStreak,
-			&i.TotalPoints,
-			&i.AchievementCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getTopUsers = `-- name: GetTopUsers :many
 SELECT 
     u.user_id,
     u.name,
     u.total_points,
-    u.current_streak,
-    u.longest_streak,
+    u.shift_count,
     COUNT(DISTINCT ua.achievement_id) as achievement_count,
     -- Recent activity indicator
     CASE 
@@ -240,8 +182,8 @@ SELECT
 FROM users u
 LEFT JOIN user_achievements ua ON u.user_id = ua.user_id
 WHERE u.role IN ('admin', 'owl') AND u.total_points > 0
-GROUP BY u.user_id, u.name, u.total_points, u.current_streak, u.longest_streak, u.last_activity_date
-ORDER BY u.total_points DESC, u.current_streak DESC
+GROUP BY u.user_id, u.name, u.total_points, u.shift_count, u.last_activity_date
+ORDER BY u.total_points DESC, u.shift_count DESC
 LIMIT ?
 `
 
@@ -249,8 +191,7 @@ type GetTopUsersRow struct {
 	UserID           int64          `json:"user_id"`
 	Name             sql.NullString `json:"name"`
 	TotalPoints      sql.NullInt64  `json:"total_points"`
-	CurrentStreak    sql.NullInt64  `json:"current_streak"`
-	LongestStreak    sql.NullInt64  `json:"longest_streak"`
+	ShiftCount       sql.NullInt64  `json:"shift_count"`
 	AchievementCount int64          `json:"achievement_count"`
 	ActivityStatus   string         `json:"activity_status"`
 }
@@ -269,8 +210,68 @@ func (q *Queries) GetTopUsers(ctx context.Context, limit int64) ([]GetTopUsersRo
 			&i.UserID,
 			&i.Name,
 			&i.TotalPoints,
-			&i.CurrentStreak,
-			&i.LongestStreak,
+			&i.ShiftCount,
+			&i.AchievementCount,
+			&i.ActivityStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTopUsersByShifts = `-- name: GetTopUsersByShifts :many
+SELECT 
+    u.user_id,
+    u.name,
+    u.total_points,
+    u.shift_count,
+    COUNT(DISTINCT ua.achievement_id) as achievement_count,
+    -- Recent activity indicator
+    CASE 
+        WHEN u.last_activity_date >= DATE('now', '-7 days') THEN 'active'
+        WHEN u.last_activity_date >= DATE('now', '-30 days') THEN 'moderate' 
+        ELSE 'inactive'
+    END as activity_status
+FROM users u
+LEFT JOIN user_achievements ua ON u.user_id = ua.user_id
+WHERE u.role IN ('admin', 'owl') AND u.shift_count > 0
+GROUP BY u.user_id, u.name, u.total_points, u.shift_count, u.last_activity_date
+ORDER BY u.shift_count DESC, u.total_points DESC
+LIMIT ?
+`
+
+type GetTopUsersByShiftsRow struct {
+	UserID           int64          `json:"user_id"`
+	Name             sql.NullString `json:"name"`
+	TotalPoints      sql.NullInt64  `json:"total_points"`
+	ShiftCount       sql.NullInt64  `json:"shift_count"`
+	AchievementCount int64          `json:"achievement_count"`
+	ActivityStatus   string         `json:"activity_status"`
+}
+
+// Get leaderboard of top users by shift count
+func (q *Queries) GetTopUsersByShifts(ctx context.Context, limit int64) ([]GetTopUsersByShiftsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTopUsersByShifts, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTopUsersByShiftsRow{}
+	for rows.Next() {
+		var i GetTopUsersByShiftsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Name,
+			&i.TotalPoints,
+			&i.ShiftCount,
 			&i.AchievementCount,
 			&i.ActivityStatus,
 		); err != nil {
@@ -343,8 +344,7 @@ SELECT
     user_id,
     name,
     total_points,
-    current_streak,
-    longest_streak,
+    shift_count,
     last_activity_date
 FROM users 
 WHERE user_id = ?
@@ -354,12 +354,11 @@ type GetUserPointsRow struct {
 	UserID           int64          `json:"user_id"`
 	Name             sql.NullString `json:"name"`
 	TotalPoints      sql.NullInt64  `json:"total_points"`
-	CurrentStreak    sql.NullInt64  `json:"current_streak"`
-	LongestStreak    sql.NullInt64  `json:"longest_streak"`
+	ShiftCount       sql.NullInt64  `json:"shift_count"`
 	LastActivityDate sql.NullTime   `json:"last_activity_date"`
 }
 
-// Get a user's current points and streak information
+// Get a user's current points and shift information
 func (q *Queries) GetUserPoints(ctx context.Context, userID int64) (GetUserPointsRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserPoints, userID)
 	var i GetUserPointsRow
@@ -367,8 +366,7 @@ func (q *Queries) GetUserPoints(ctx context.Context, userID int64) (GetUserPoint
 		&i.UserID,
 		&i.Name,
 		&i.TotalPoints,
-		&i.CurrentStreak,
-		&i.LongestStreak,
+		&i.ShiftCount,
 		&i.LastActivityDate,
 	)
 	return i, err
@@ -440,7 +438,7 @@ WHERE role IN ('admin', 'owl')
     AND total_points > 0
 `
 
-// Get a specific user's rank
+// Get a specific user's rank by points
 func (q *Queries) GetUserRank(ctx context.Context, userID int64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, getUserRank, userID)
 	var user_rank int64
@@ -448,29 +446,38 @@ func (q *Queries) GetUserRank(ctx context.Context, userID int64) (int64, error) 
 	return user_rank, err
 }
 
-const updateUserStreak = `-- name: UpdateUserStreak :exec
+const getUserShiftCountForMonth = `-- name: GetUserShiftCountForMonth :one
+SELECT 
+    COUNT(*) as shift_count
+FROM bookings b
+WHERE b.user_id = ?
+    AND b.checked_in_at IS NOT NULL
+    AND strftime('%Y-%m', b.shift_start) = ?
+`
+
+type GetUserShiftCountForMonthParams struct {
+	UserID     int64     `json:"user_id"`
+	ShiftStart time.Time `json:"shift_start"`
+}
+
+// Get the number of shifts a user has completed in a specific month
+func (q *Queries) GetUserShiftCountForMonth(ctx context.Context, arg GetUserShiftCountForMonthParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getUserShiftCountForMonth, arg.UserID, arg.ShiftStart)
+	var shift_count int64
+	err := row.Scan(&shift_count)
+	return shift_count, err
+}
+
+const updateUserShiftCount = `-- name: UpdateUserShiftCount :exec
 UPDATE users 
-SET current_streak = ?, 
-    longest_streak = CASE WHEN ? > longest_streak THEN ? ELSE longest_streak END,
+SET shift_count = shift_count + 1,
     last_activity_date = DATE('now')
 WHERE user_id = ?
 `
 
-type UpdateUserStreakParams struct {
-	CurrentStreak   sql.NullInt64 `json:"current_streak"`
-	LongestStreak   sql.NullInt64 `json:"longest_streak"`
-	LongestStreak_2 sql.NullInt64 `json:"longest_streak_2"`
-	UserID          int64         `json:"user_id"`
-}
-
-// Update user's current and longest streak
-func (q *Queries) UpdateUserStreak(ctx context.Context, arg UpdateUserStreakParams) error {
-	_, err := q.db.ExecContext(ctx, updateUserStreak,
-		arg.CurrentStreak,
-		arg.LongestStreak,
-		arg.LongestStreak_2,
-		arg.UserID,
-	)
+// Update user's shift count and last activity
+func (q *Queries) UpdateUserShiftCount(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, updateUserShiftCount, userID)
 	return err
 }
 

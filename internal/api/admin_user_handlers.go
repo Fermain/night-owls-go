@@ -233,7 +233,7 @@ func (h *AdminUserHandler) AdminCreateUser(w http.ResponseWriter, r *http.Reques
 		if targetRole == "" {
 			targetRole = "guest" // Default role
 		}
-		
+
 		if err := h.auditService.LogUserCreated(
 			r.Context(),
 			actorUserID,
@@ -388,10 +388,10 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 	// Log audit events for user update
 	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
 		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
-		
+
 		// Track what changed
 		changes := make(map[string]interface{})
-		
+
 		// Check phone change
 		if originalUser.Phone != updatedDbUser.Phone {
 			changes["phone"] = map[string]interface{}{
@@ -399,7 +399,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 				"new": updatedDbUser.Phone,
 			}
 		}
-		
+
 		// Check name change
 		originalName := ""
 		if originalUser.Name.Valid {
@@ -415,7 +415,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 				"new": updatedName,
 			}
 		}
-		
+
 		// Check role change
 		oldRole := originalUser.Role
 		newRole := updatedDbUser.Role
@@ -426,7 +426,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 				"new": newRole,
 			}
 		}
-		
+
 		// Log general user update event if anything changed
 		if len(changes) > 0 {
 			if err := h.auditService.LogUserUpdated(
@@ -440,7 +440,7 @@ func (h *AdminUserHandler) AdminUpdateUser(w http.ResponseWriter, r *http.Reques
 				h.logger.ErrorContext(r.Context(), "Failed to log user update audit event", "error", err, "target_user_id", updatedDbUser.UserID)
 			}
 		}
-		
+
 		// Log specific role change event if role changed
 		if roleChanged {
 			if err := h.auditService.LogUserRoleChanged(
@@ -537,7 +537,7 @@ func (h *AdminUserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Reques
 		if userToDelete.Name.Valid {
 			targetUserName = userToDelete.Name.String
 		}
-		
+
 		if err := h.auditService.LogUserDeleted(
 			r.Context(),
 			actorUserID,
@@ -597,7 +597,7 @@ func (h *AdminUserHandler) AdminBulkDeleteUsers(w http.ResponseWriter, r *http.R
 	// Log audit event for bulk user deletion
 	if actorUserID, ok := r.Context().Value(UserIDKey).(int64); ok {
 		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
-		
+
 		if err := h.auditService.LogUserBulkDeleted(
 			r.Context(),
 			actorUserID,

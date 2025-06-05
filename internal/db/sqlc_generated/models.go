@@ -14,8 +14,7 @@ type Achievement struct {
 	Name             string         `json:"name"`
 	Description      string         `json:"description"`
 	Icon             sql.NullString `json:"icon"`
-	PointsThreshold  sql.NullInt64  `json:"points_threshold"`
-	StreakThreshold  sql.NullInt64  `json:"streak_threshold"`
+	ShiftsThreshold  sql.NullInt64  `json:"shifts_threshold"`
 	SpecialCondition sql.NullString `json:"special_condition"`
 	CreatedAt        sql.NullTime   `json:"created_at"`
 }
@@ -139,8 +138,7 @@ type User struct {
 	CreatedAt        sql.NullTime   `json:"created_at"`
 	Role             string         `json:"role"`
 	TotalPoints      sql.NullInt64  `json:"total_points"`
-	CurrentStreak    sql.NullInt64  `json:"current_streak"`
-	LongestStreak    sql.NullInt64  `json:"longest_streak"`
+	ShiftCount       sql.NullInt64  `json:"shift_count"`
 	LastActivityDate sql.NullTime   `json:"last_activity_date"`
 }
 

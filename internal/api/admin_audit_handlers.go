@@ -73,13 +73,13 @@ func parseUserIDs(userIDStr string) ([]int64, error) {
 
 	parts := strings.Split(userIDStr, ",")
 	userIDs := make([]int64, 0, len(parts))
-	
+
 	for _, part := range parts {
 		trimmed := strings.TrimSpace(part)
 		if trimmed == "" {
 			continue
 		}
-		
+
 		// Try to parse as number first
 		if userID, err := strconv.ParseInt(trimmed, 10, 64); err == nil {
 			userIDs = append(userIDs, userID)
@@ -89,7 +89,7 @@ func parseUserIDs(userIDStr string) ([]int64, error) {
 			continue
 		}
 	}
-	
+
 	return userIDs, nil
 }
 
@@ -104,7 +104,7 @@ func (h *AdminAuditHandler) queryAuditEventsWithFilters(ctx context.Context, eve
 func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventType string, actorUserIDs, targetUserIDs []int64, limit, offset int64) ([]db.ListAuditEventsRow, error) {
 	// For now, use the first user ID from each list and fall back to regular queries
 	// This is a simplified implementation that works with the existing SQLC queries
-	
+
 	if eventType != "" && len(actorUserIDs) == 0 && len(targetUserIDs) == 0 {
 		// Event type only
 		dbEvents, err := h.querier.ListAuditEventsByType(ctx, db.ListAuditEventsByTypeParams{
@@ -115,7 +115,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Convert to ListAuditEventsRow format
 		var result []db.ListAuditEventsRow
 		for _, event := range dbEvents {
@@ -123,7 +123,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		}
 		return result, nil
 	}
-	
+
 	if len(actorUserIDs) == 1 && len(targetUserIDs) == 0 && eventType == "" {
 		// Single actor only
 		dbEvents, err := h.querier.ListAuditEventsByActor(ctx, db.ListAuditEventsByActorParams{
@@ -134,7 +134,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Convert to ListAuditEventsRow format
 		var result []db.ListAuditEventsRow
 		for _, event := range dbEvents {
@@ -142,7 +142,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		}
 		return result, nil
 	}
-	
+
 	if len(targetUserIDs) == 1 && len(actorUserIDs) == 0 && eventType == "" {
 		// Single target only
 		dbEvents, err := h.querier.ListAuditEventsByTarget(ctx, db.ListAuditEventsByTargetParams{
@@ -153,7 +153,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Convert to ListAuditEventsRow format
 		var result []db.ListAuditEventsRow
 		for _, event := range dbEvents {
@@ -161,8 +161,8 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		}
 		return result, nil
 	}
-	
-	// For complex cases with multiple user IDs, fall back to all events 
+
+	// For complex cases with multiple user IDs, fall back to all events
 	// and filter in Go (not ideal for performance but works for now)
 	dbEvents, err := h.querier.ListAuditEvents(ctx, db.ListAuditEventsParams{
 		Limit:  limit * 2, // Get more events to account for filtering
@@ -171,7 +171,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Filter the results in Go
 	var filteredEvents []db.ListAuditEventsRow
 	for _, event := range dbEvents {
@@ -179,7 +179,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 		if eventType != "" && event.EventType != eventType {
 			continue
 		}
-		
+
 		// Check actor user ID filter
 		if len(actorUserIDs) > 0 {
 			found := false
@@ -195,7 +195,7 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 				continue
 			}
 		}
-		
+
 		// Check target user ID filter
 		if len(targetUserIDs) > 0 {
 			found := false
@@ -211,15 +211,15 @@ func (h *AdminAuditHandler) queryWithMultipleFilters(ctx context.Context, eventT
 				continue
 			}
 		}
-		
+
 		filteredEvents = append(filteredEvents, event)
-		
+
 		// Limit results
 		if int64(len(filteredEvents)) >= limit {
 			break
 		}
 	}
-	
+
 	return filteredEvents, nil
 }
 
@@ -283,7 +283,7 @@ func (h *AdminAuditHandler) AdminListAuditEvents(w http.ResponseWriter, r *http.
 	var apiEvents []AuditEventResponse
 
 	// Check if we need to use the flexible query or simple queries
-	needsFlexibleQuery := len(actorUserIDs) > 1 || len(targetUserIDs) > 1 || 
+	needsFlexibleQuery := len(actorUserIDs) > 1 || len(targetUserIDs) > 1 ||
 		(eventType != "" && (len(actorUserIDs) > 0 || len(targetUserIDs) > 0))
 
 	if needsFlexibleQuery {
@@ -512,7 +512,7 @@ func (h *AdminAuditHandler) AdminGetAuditEventTypeStats(w http.ResponseWriter, r
 			EventType:  stat.EventType,
 			EventCount: stat.EventCount,
 		}
-		
+
 		// Handle interface{} timestamp field
 		if stat.LatestEvent != nil {
 			if latestStr, ok := stat.LatestEvent.(string); ok {
@@ -521,9 +521,9 @@ func (h *AdminAuditHandler) AdminGetAuditEventTypeStats(w http.ResponseWriter, r
 				}
 			}
 		}
-		
+
 		apiTypeStats = append(apiTypeStats, apiTypeStat)
 	}
 
 	RespondWithJSON(w, http.StatusOK, apiTypeStats, h.logger)
-} 
+}

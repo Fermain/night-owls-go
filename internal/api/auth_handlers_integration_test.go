@@ -129,8 +129,9 @@ func newTestApp(t *testing.T) *testApp {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	bookingService := service.NewBookingService(querier, cfg, logger)
-	reportService := service.NewReportService(querier, logger)
+	pointsService := service.NewPointsService(querier, logger)
+	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
+	reportService := service.NewReportService(querier, logger, pointsService)
 	auditService := service.NewAuditService(querier, logger)
 	pushService := service.NewPushSender(querier, cfg, logger)
 	outboxService := outbox.NewDispatcherService(querier, mockSender, pushService, logger, cfg)

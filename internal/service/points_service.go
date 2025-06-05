@@ -26,14 +26,14 @@ func NewPointsService(querier db.Querier, logger *slog.Logger) *PointsService {
 
 // Points awarded for different actions
 const (
-	PointsShiftCheckin      = 10  // Checking in to a shift on time
-	PointsShiftCompletion   = 15  // Completing a shift with check-in
-	PointsReportFiled       = 5   // Filing a report during shift
-	PointsStreakBonus       = 5   // Bonus points for each shift in a streak (multiplied by streak length)
-	PointsEarlyCheckin      = 3   // Bonus for checking in early
-	PointsLevel2Report      = 10  // Extra points for serious incident reports
-	PointsWeekendShift      = 5   // Weekend shift bonus
-	PointsLateNightShift    = 3   // Late night shift bonus (after 22:00)
+	PointsShiftCheckin    = 10 // Checking in to a shift on time
+	PointsShiftCompletion = 15 // Completing a shift with check-in
+	PointsReportFiled     = 5  // Filing a report during shift
+	PointsEarlyCheckin    = 3  // Bonus for checking in early
+	PointsLevel2Report    = 10 // Extra points for serious incident reports
+	PointsWeekendShift    = 5  // Weekend shift bonus
+	PointsLateNightShift  = 3  // Late night shift bonus (after 22:00)
+	PointsFrequencyBonus  = 10 // Bonus for doing multiple shifts per month
 )
 
 // PointReason defines reasons for awarding points
@@ -43,24 +43,24 @@ const (
 	ReasonShiftCheckin    PointReason = "shift_checkin"
 	ReasonShiftCompletion PointReason = "shift_completion"
 	ReasonReportFiled     PointReason = "report_filed"
-	ReasonStreakBonus     PointReason = "streak_bonus"
 	ReasonEarlyCheckin    PointReason = "early_checkin"
 	ReasonLevel2Report    PointReason = "level2_report"
 	ReasonWeekendBonus    PointReason = "weekend_bonus"
 	ReasonLateNightBonus  PointReason = "late_night_bonus"
+	ReasonFrequencyBonus  PointReason = "frequency_bonus"
 )
 
 // AwardShiftCheckinPoints awards points when a user checks in to a shift
 func (ps *PointsService) AwardShiftCheckinPoints(ctx context.Context, userID int64, booking db.Booking) error {
 	basePoints := PointsShiftCheckin
 	multiplier := 1.0
-	
+
 	// Calculate bonus points
 	bonusReasons := []struct {
-		reason PointReason
-		points int
+		reason  PointReason
+		points  int
 		applies bool
-		desc string
+		desc    string
 	}{
 		{ReasonEarlyCheckin, PointsEarlyCheckin, ps.isEarlyCheckin(booking), "early check-in"},
 		{ReasonWeekendBonus, PointsWeekendShift, ps.isWeekendShift(booking), "weekend shift"},
@@ -76,10 +76,10 @@ func (ps *PointsService) AwardShiftCheckinPoints(ctx context.Context, userID int
 	for _, bonus := range bonusReasons {
 		if bonus.applies {
 			if err := ps.awardPointsWithHistory(ctx, userID, &booking.BookingID, bonus.points, bonus.reason, multiplier); err != nil {
-				ps.logger.WarnContext(ctx, "Failed to award bonus points", 
+				ps.logger.WarnContext(ctx, "Failed to award bonus points",
 					"user_id", userID, "reason", bonus.reason, "error", err)
 			} else {
-				ps.logger.InfoContext(ctx, "Awarded bonus points", 
+				ps.logger.InfoContext(ctx, "Awarded bonus points",
 					"user_id", userID, "points", bonus.points, "reason", bonus.desc)
 			}
 		}
@@ -90,12 +90,7 @@ func (ps *PointsService) AwardShiftCheckinPoints(ctx context.Context, userID int
 		return fmt.Errorf("failed to update total points: %w", err)
 	}
 
-	// Update streak and check for streak bonuses
-	if err := ps.updateStreakAndAwardBonuses(ctx, userID); err != nil {
-		ps.logger.WarnContext(ctx, "Failed to update streak", "user_id", userID, "error", err)
-	}
-
-	ps.logger.InfoContext(ctx, "Awarded shift check-in points", 
+	ps.logger.InfoContext(ctx, "Awarded shift check-in points",
 		"user_id", userID, "booking_id", booking.BookingID, "base_points", basePoints)
 
 	return nil
@@ -116,15 +111,20 @@ func (ps *PointsService) AwardShiftCompletionPoints(ctx context.Context, userID 
 	if reportSeverity >= 2 { // Level 2 serious incidents
 		reportPoints += PointsLevel2Report
 	}
-	
+
 	reason := ReasonReportFiled
 	if reportSeverity >= 2 {
 		reason = ReasonLevel2Report
 	}
 
 	if err := ps.awardPointsWithHistory(ctx, userID, &bookingID, reportPoints, reason, multiplier); err != nil {
-		ps.logger.WarnContext(ctx, "Failed to award report points", 
+		ps.logger.WarnContext(ctx, "Failed to award report points",
 			"user_id", userID, "error", err)
+	}
+
+	// Update shift count and check for frequency bonus
+	if err := ps.updateShiftCountAndCheckFrequency(ctx, userID); err != nil {
+		ps.logger.WarnContext(ctx, "Failed to update shift count", "user_id", userID, "error", err)
 	}
 
 	// Update total points
@@ -132,8 +132,14 @@ func (ps *PointsService) AwardShiftCompletionPoints(ctx context.Context, userID 
 		return fmt.Errorf("failed to update total points: %w", err)
 	}
 
-	ps.logger.InfoContext(ctx, "Awarded shift completion points", 
-		"user_id", userID, "booking_id", bookingID, "points", basePoints + reportPoints)
+	// Check for achievements
+	if err := ps.checkAndAwardAchievements(ctx, userID); err != nil {
+		ps.logger.WarnContext(ctx, "Failed to check achievements",
+			"user_id", userID, "error", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Awarded shift completion points",
+		"user_id", userID, "booking_id", bookingID, "points", basePoints+reportPoints)
 
 	return nil
 }
@@ -157,52 +163,38 @@ func (ps *PointsService) updateUserTotalPoints(ctx context.Context, userID int64
 	})
 }
 
-func (ps *PointsService) updateStreakAndAwardBonuses(ctx context.Context, userID int64) error {
-	// Calculate current streak based on recent activity
-	currentStreak := ps.calculateUserStreak(ctx, userID)
-	
-	// Update streak in database
-	if err := ps.querier.UpdateUserStreak(ctx, db.UpdateUserStreakParams{
-		CurrentStreak:   sql.NullInt64{Int64: int64(currentStreak), Valid: true},
-		LongestStreak:   sql.NullInt64{Int64: int64(currentStreak), Valid: true},
-		LongestStreak_2: sql.NullInt64{Int64: int64(currentStreak), Valid: true},
-		UserID:          userID,
-	}); err != nil {
-		return fmt.Errorf("failed to update streak: %w", err)
+func (ps *PointsService) updateShiftCountAndCheckFrequency(ctx context.Context, userID int64) error {
+	// Update shift count
+	if err := ps.querier.UpdateUserShiftCount(ctx, userID); err != nil {
+		return fmt.Errorf("failed to update shift count: %w", err)
 	}
 
-	// Award streak bonus if applicable
-	if currentStreak >= 3 {
-		streakBonus := PointsStreakBonus * currentStreak
-		if err := ps.awardPointsWithHistory(ctx, userID, nil, streakBonus, ReasonStreakBonus, 1.0); err != nil {
-			ps.logger.WarnContext(ctx, "Failed to award streak bonus", 
-				"user_id", userID, "streak", currentStreak, "error", err)
+	// Check for frequency bonus (more than one shift this month)
+	currentMonth := time.Now().Format("2006-01")
+	monthlyShifts, err := ps.getMonthlyShiftCount(ctx, userID, currentMonth)
+	if err != nil {
+		ps.logger.WarnContext(ctx, "Failed to get monthly shift count", "user_id", userID, "error", err)
+		return nil // Non-fatal
+	}
+
+	// Award frequency bonus for 2nd, 3rd, etc. shifts in the month
+	if monthlyShifts > 1 {
+		if err := ps.awardPointsWithHistory(ctx, userID, nil, PointsFrequencyBonus, ReasonFrequencyBonus, 1.0); err != nil {
+			ps.logger.WarnContext(ctx, "Failed to award frequency bonus",
+				"user_id", userID, "monthly_shifts", monthlyShifts, "error", err)
 		} else {
-			ps.logger.InfoContext(ctx, "Awarded streak bonus", 
-				"user_id", userID, "streak", currentStreak, "bonus_points", streakBonus)
+			ps.logger.InfoContext(ctx, "Awarded frequency bonus",
+				"user_id", userID, "monthly_shifts", monthlyShifts, "bonus_points", PointsFrequencyBonus)
 		}
-
-		// Update total points again after streak bonus
-		if err := ps.updateUserTotalPoints(ctx, userID); err != nil {
-			ps.logger.WarnContext(ctx, "Failed to update total points after streak bonus", 
-				"user_id", userID, "error", err)
-		}
-	}
-
-	// Check and award achievements
-	if err := ps.checkAndAwardAchievements(ctx, userID); err != nil {
-		ps.logger.WarnContext(ctx, "Failed to check achievements", 
-			"user_id", userID, "error", err)
 	}
 
 	return nil
 }
 
-func (ps *PointsService) calculateUserStreak(ctx context.Context, userID int64) int {
-	// This is a simplified streak calculation
-	// In a real implementation, you'd query recent bookings and count consecutive completions
-	// For now, we'll return 1 as a placeholder
-	return 1
+func (ps *PointsService) getMonthlyShiftCount(ctx context.Context, userID int64, monthStr string) (int, error) {
+	// This is a simplified count - in production you'd want a proper query
+	// For now, we'll estimate based on recent activity
+	return 1, nil // Placeholder - would need a proper query to count completed shifts this month
 }
 
 func (ps *PointsService) checkAndAwardAchievements(ctx context.Context, userID int64) error {
@@ -221,16 +213,10 @@ func (ps *PointsService) checkAndAwardAchievements(ctx context.Context, userID i
 	// Check each achievement
 	for _, achievement := range available {
 		shouldAward := false
-		
-		// Points-based achievements
-		if achievement.PointsThreshold.Valid && userStats.TotalPoints.Valid && 
-		   userStats.TotalPoints.Int64 >= achievement.PointsThreshold.Int64 {
-			shouldAward = true
-		}
-		
-		// Streak-based achievements  
-		if achievement.StreakThreshold.Valid && userStats.CurrentStreak.Valid && 
-		   userStats.CurrentStreak.Int64 >= achievement.StreakThreshold.Int64 {
+
+		// Shift-based achievements
+		if achievement.ShiftsThreshold.Valid && userStats.ShiftCount.Valid &&
+			userStats.ShiftCount.Int64 >= achievement.ShiftsThreshold.Int64 {
 			shouldAward = true
 		}
 
@@ -239,10 +225,10 @@ func (ps *PointsService) checkAndAwardAchievements(ctx context.Context, userID i
 				UserID:        userID,
 				AchievementID: achievement.AchievementID,
 			}); err != nil {
-				ps.logger.WarnContext(ctx, "Failed to award achievement", 
+				ps.logger.WarnContext(ctx, "Failed to award achievement",
 					"user_id", userID, "achievement", achievement.Name, "error", err)
 			} else {
-				ps.logger.InfoContext(ctx, "Achievement earned!", 
+				ps.logger.InfoContext(ctx, "Achievement earned!",
 					"user_id", userID, "achievement", achievement.Name)
 			}
 		}
@@ -256,10 +242,10 @@ func (ps *PointsService) isEarlyCheckin(booking db.Booking) bool {
 	if !booking.CheckedInAt.Valid {
 		return false
 	}
-	
+
 	checkinTime := booking.CheckedInAt.Time
 	shiftStart := booking.ShiftStart
-	
+
 	// If checked in more than 15 minutes early
 	return shiftStart.Sub(checkinTime) > 15*time.Minute
 }
@@ -280,6 +266,10 @@ func (ps *PointsService) GetLeaderboard(ctx context.Context, limit int32) ([]db.
 	return ps.querier.GetTopUsers(ctx, int64(limit))
 }
 
+func (ps *PointsService) GetShiftLeaderboard(ctx context.Context, limit int32) ([]db.GetTopUsersByShiftsRow, error) {
+	return ps.querier.GetTopUsersByShifts(ctx, int64(limit))
+}
+
 func (ps *PointsService) GetUserRank(ctx context.Context, userID int64) (int64, error) {
 	return ps.querier.GetUserRank(ctx, userID)
 }
@@ -296,10 +286,6 @@ func (ps *PointsService) GetRecentActivity(ctx context.Context, limit int32) ([]
 	return ps.querier.GetRecentActivity(ctx, int64(limit))
 }
 
-func (ps *PointsService) GetStreakLeaderboard(ctx context.Context, limit int32) ([]db.GetStreakLeaderboardRow, error) {
-	return ps.querier.GetStreakLeaderboard(ctx, int64(limit))
-}
-
 func (ps *PointsService) GetUserPointsHistory(ctx context.Context, userID int64, limit int64) ([]db.GetUserPointsHistoryRow, error) {
 	return ps.querier.GetUserPointsHistory(ctx, db.GetUserPointsHistoryParams{
 		UserID: userID,
@@ -309,4 +295,4 @@ func (ps *PointsService) GetUserPointsHistory(ctx context.Context, userID int64,
 
 func (ps *PointsService) GetAvailableAchievements(ctx context.Context, userID int64) ([]db.GetAvailableAchievementsRow, error) {
 	return ps.querier.GetAvailableAchievements(ctx, userID)
-} 
+}

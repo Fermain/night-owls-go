@@ -58,28 +58,22 @@ func (h *LeaderboardHandler) GetLeaderboardHandler(w http.ResponseWriter, r *htt
 		if entry.Name.Valid {
 			name = entry.Name.String
 		}
-		
+
 		totalPoints := int64(0)
 		if entry.TotalPoints.Valid {
 			totalPoints = entry.TotalPoints.Int64
 		}
-		
-		currentStreak := int64(0)
-		if entry.CurrentStreak.Valid {
-			currentStreak = entry.CurrentStreak.Int64
+
+		shiftCount := int64(0)
+		if entry.ShiftCount.Valid {
+			shiftCount = entry.ShiftCount.Int64
 		}
-		
-		longestStreak := int64(0)
-		if entry.LongestStreak.Valid {
-			longestStreak = entry.LongestStreak.Int64
-		}
-		
+
 		response[i] = LeaderboardEntry{
 			UserID:           entry.UserID,
 			Name:             name,
 			TotalPoints:      totalPoints,
-			CurrentStreak:    currentStreak,
-			LongestStreak:    longestStreak,
+			ShiftCount:       shiftCount,
 			AchievementCount: entry.AchievementCount,
 			ActivityStatus:   entry.ActivityStatus,
 		}
@@ -88,17 +82,17 @@ func (h *LeaderboardHandler) GetLeaderboardHandler(w http.ResponseWriter, r *htt
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
 
-// GetStreakLeaderboardHandler handles GET /api/leaderboard/streaks
-// @Summary Get streak leaderboard
-// @Description Returns the top users ranked by current streak
+// GetStreakLeaderboardHandler handles GET /api/leaderboard/shifts
+// @Summary Get shift leaderboard
+// @Description Returns the top users ranked by shift count
 // @Tags leaderboard
 // @Produce json
 // @Param limit query int false "Number of users to return" default(10)
-// @Success 200 {array} LeaderboardEntry "Streak leaderboard entries"
+// @Success 200 {array} LeaderboardEntry "Shift leaderboard entries"
 // @Failure 400 {object} ErrorResponse "Bad request"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /api/leaderboard/streaks [get]
+// @Router /api/leaderboard/shifts [get]
 func (h *LeaderboardHandler) GetStreakLeaderboardHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse limit parameter
 	limitStr := r.URL.Query().Get("limit")
@@ -109,10 +103,10 @@ func (h *LeaderboardHandler) GetStreakLeaderboardHandler(w http.ResponseWriter, 
 		}
 	}
 
-	entries, err := h.pointsService.GetStreakLeaderboard(r.Context(), limit)
+	entries, err := h.pointsService.GetShiftLeaderboard(r.Context(), limit)
 	if err != nil {
-		h.logger.ErrorContext(r.Context(), "Failed to get streak leaderboard", "error", err)
-		RespondWithError(w, http.StatusInternalServerError, "Failed to get streak leaderboard", h.logger, "error", err.Error())
+		h.logger.ErrorContext(r.Context(), "Failed to get shift leaderboard", "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to get shift leaderboard", h.logger, "error", err.Error())
 		return
 	}
 
@@ -123,25 +117,24 @@ func (h *LeaderboardHandler) GetStreakLeaderboardHandler(w http.ResponseWriter, 
 		if entry.Name.Valid {
 			name = entry.Name.String
 		}
-		
+
 		totalPoints := int64(0)
 		if entry.TotalPoints.Valid {
 			totalPoints = entry.TotalPoints.Int64
 		}
-		
-		currentStreak := int64(0)
-		if entry.CurrentStreak.Valid {
-			currentStreak = entry.CurrentStreak.Int64
+
+		shiftCount := int64(0)
+		if entry.ShiftCount.Valid {
+			shiftCount = entry.ShiftCount.Int64
 		}
-		
+
 		response[i] = LeaderboardEntry{
 			UserID:           entry.UserID,
 			Name:             name,
 			TotalPoints:      totalPoints,
-			CurrentStreak:    currentStreak,
-			LongestStreak:    0, // Not included in streak leaderboard query
+			ShiftCount:       shiftCount,
 			AchievementCount: entry.AchievementCount,
-			ActivityStatus:   "active", // Users with streaks are active
+			ActivityStatus:   entry.ActivityStatus,
 		}
 	}
 
@@ -194,13 +187,12 @@ func (h *LeaderboardHandler) GetUserStatsHandler(w http.ResponseWriter, r *http.
 	}
 
 	response := UserStatsResponse{
-		UserID:          stats.UserID,
-		Name:            name,
-		TotalPoints:     stats.TotalPoints.Int64,
-		CurrentStreak:   stats.CurrentStreak.Int64,
-		LongestStreak:   stats.LongestStreak.Int64,
+		UserID:           stats.UserID,
+		Name:             name,
+		TotalPoints:      stats.TotalPoints.Int64,
+		ShiftCount:       stats.ShiftCount.Int64,
 		LastActivityDate: lastActivityDate,
-		Rank:            rank,
+		Rank:             rank,
 	}
 
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
@@ -336,12 +328,9 @@ func (h *LeaderboardHandler) GetAvailableAchievementsHandler(w http.ResponseWrit
 	// Convert to API response format
 	response := make([]AchievementResponse, len(achievements))
 	for i, achievement := range achievements {
-		var pointsThreshold, streakThreshold *int64
-		if achievement.PointsThreshold.Valid {
-			pointsThreshold = &achievement.PointsThreshold.Int64
-		}
-		if achievement.StreakThreshold.Valid {
-			streakThreshold = &achievement.StreakThreshold.Int64
+		var shiftsThreshold *int64
+		if achievement.ShiftsThreshold.Valid {
+			shiftsThreshold = &achievement.ShiftsThreshold.Int64
 		}
 
 		response[i] = AchievementResponse{
@@ -349,8 +338,7 @@ func (h *LeaderboardHandler) GetAvailableAchievementsHandler(w http.ResponseWrit
 			Name:            achievement.Name,
 			Description:     achievement.Description,
 			Icon:            achievement.Icon.String,
-			PointsThreshold: pointsThreshold,
-			StreakThreshold: streakThreshold,
+			ShiftsThreshold: shiftsThreshold,
 		}
 	}
 
@@ -391,12 +379,12 @@ func (h *LeaderboardHandler) GetActivityFeedHandler(w http.ResponseWriter, r *ht
 		if activity.Name.Valid {
 			name = activity.Name.String
 		}
-		
+
 		createdAt := time.Time{}
 		if activity.CreatedAt.Valid {
 			createdAt = activity.CreatedAt.Time
 		}
-		
+
 		response[i] = ActivityFeedEntry{
 			UserName:      name,
 			PointsAwarded: activity.PointsAwarded,
@@ -407,4 +395,4 @@ func (h *LeaderboardHandler) GetActivityFeedHandler(w http.ResponseWriter, r *ht
 	}
 
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
-} 
+}

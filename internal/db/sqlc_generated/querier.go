@@ -67,21 +67,23 @@ type Querier interface {
 	GetReportByBookingID(ctx context.Context, bookingID sql.NullInt64) (Report, error)
 	GetReportsForAutoArchiving(ctx context.Context) ([]GetReportsForAutoArchivingRow, error)
 	GetScheduleByID(ctx context.Context, scheduleID int64) (Schedule, error)
-	// Get leaderboard by current streak
-	GetStreakLeaderboard(ctx context.Context, limit int64) ([]GetStreakLeaderboardRow, error)
 	GetSubscriptionsByUser(ctx context.Context, userID int64) ([]GetSubscriptionsByUserRow, error)
 	// Get leaderboard of top users by points
 	GetTopUsers(ctx context.Context, limit int64) ([]GetTopUsersRow, error)
+	// Get leaderboard of top users by shift count
+	GetTopUsersByShifts(ctx context.Context, limit int64) ([]GetTopUsersByShiftsRow, error)
 	// Get all achievements earned by a user
 	GetUserAchievements(ctx context.Context, userID int64) ([]GetUserAchievementsRow, error)
 	GetUserByID(ctx context.Context, userID int64) (GetUserByIDRow, error)
 	GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error)
-	// Get a user's current points and streak information
+	// Get a user's current points and shift information
 	GetUserPoints(ctx context.Context, userID int64) (GetUserPointsRow, error)
 	// Get recent points history for a user
 	GetUserPointsHistory(ctx context.Context, arg GetUserPointsHistoryParams) ([]GetUserPointsHistoryRow, error)
-	// Get a specific user's rank
+	// Get a specific user's rank by points
 	GetUserRank(ctx context.Context, userID int64) (int64, error)
+	// Get the number of shifts a user has completed in a specific month
+	GetUserShiftCountForMonth(ctx context.Context, arg GetUserShiftCountForMonthParams) (int64, error)
 	ListActiveSchedules(ctx context.Context, arg ListActiveSchedulesParams) ([]Schedule, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAuditEvents(ctx context.Context, arg ListAuditEventsParams) ([]ListAuditEventsRow, error)
@@ -105,8 +107,8 @@ type Querier interface {
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
-	// Update user's current and longest streak
-	UpdateUserStreak(ctx context.Context, arg UpdateUserStreakParams) error
+	// Update user's shift count and last activity
+	UpdateUserShiftCount(ctx context.Context, userID int64) error
 	// Update user's total points (should be called after AwardPoints)
 	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error

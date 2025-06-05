@@ -16,6 +16,7 @@ export { Textarea } from './textarea';
 export { Select, SelectContent, SelectItem, SelectTrigger } from './select';
 export { Checkbox } from './checkbox';
 export { Switch } from './switch';
+export { Progress } from './progress';
 
 // === LAYOUT COMPONENTS ===
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';

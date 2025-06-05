@@ -20,7 +20,7 @@ func AuditContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract IP address with support for proxies
 		ipAddress := getClientIPAddress(r)
-		
+
 		// Extract User-Agent
 		userAgent := r.Header.Get("User-Agent")
 		if userAgent == "" {
@@ -95,9 +95,10 @@ func GetAuditInfoFromContext(ctx context.Context) (ipAddress, userAgent string) 
 // executes the provided audit function, and handles any errors.
 //
 // Usage example:
-//   WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
-//       return h.auditService.LogScheduleCreated(ctx, userID, schedule.ScheduleID, ...)
-//   })
+//
+//	WithAuditLogging(r.Context(), h.logger, func(userID int64, ipAddress, userAgent string) error {
+//	    return h.auditService.LogScheduleCreated(ctx, userID, schedule.ScheduleID, ...)
+//	})
 func WithAuditLogging(ctx context.Context, logger *slog.Logger, auditFunc func(userID int64, ipAddress, userAgent string) error) {
 	userIDFromAuth, ok := ctx.Value(UserIDKey).(int64)
 	if !ok {
@@ -106,8 +107,8 @@ func WithAuditLogging(ctx context.Context, logger *slog.Logger, auditFunc func(u
 	}
 
 	ipAddress, userAgent := GetAuditInfoFromContext(ctx)
-	
+
 	if err := auditFunc(userIDFromAuth, ipAddress, userAgent); err != nil {
 		logger.WarnContext(ctx, "Failed to log audit event", "error", err)
 	}
-} 
+}

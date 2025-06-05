@@ -110,7 +110,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 				s.logger.ErrorContext(ctx, "Failed to create user", "phone", phone, "error", err)
 				return ErrInternalServer
 			}
-			
+
 			// Convert CreateUserRow to GetUserByPhoneRow since they have the same structure
 			user = db.GetUserByPhoneRow{
 				UserID:    createResult.UserID,
@@ -119,7 +119,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 				CreatedAt: createResult.CreatedAt,
 				Role:      createResult.Role,
 			}
-			
+
 			s.logger.InfoContext(ctx, "New user created during registration", "phone", phone, "user_id", user.UserID, "role", defaultRole, "name", name.String)
 		} else {
 			s.logger.ErrorContext(ctx, "Failed to get user by phone", "phone", phone, "error", err)

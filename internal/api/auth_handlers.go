@@ -233,7 +233,7 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		if user.Name.Valid {
 			userName = user.Name.String
 		}
-		
+
 		ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 		if err := h.auditService.LogUserLogin(r.Context(), user.UserID, userName, user.Phone, ipAddress, userAgent); err != nil {
 			h.logger.ErrorContext(r.Context(), "Failed to log user login audit event", "error", err, "user_id", user.UserID)
