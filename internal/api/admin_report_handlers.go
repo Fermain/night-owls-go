@@ -499,8 +499,6 @@ func (h *AdminReportHandler) AdminDeleteReportHandler(w http.ResponseWriter, r *
 		}
 	}
 
-
-
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to parse report ID", "id_param", idStr, "error", err)

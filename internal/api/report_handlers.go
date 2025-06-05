@@ -102,8 +102,6 @@ func (h *ReportHandler) CreateReportHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-
-
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil || bookingID <= 0 {
 		h.logger.ErrorContext(r.Context(), "Failed to parse booking ID", "id_param", bookingIDStr, "error", err)

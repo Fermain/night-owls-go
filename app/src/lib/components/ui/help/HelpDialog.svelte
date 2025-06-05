@@ -9,6 +9,8 @@
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+	import StarIcon from '@lucide/svelte/icons/star';
+	import RocketIcon from '@lucide/svelte/icons/rocket';
 
 	interface Props {
 		open: boolean;
@@ -21,7 +23,7 @@
 	<Dialog.Content class="max-w-2xl max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
-				<SmartphoneIcon class="h-5 w-5 text-blue-600" />
+				<SmartphoneIcon class="h-5 w-5 text-primary" />
 				Welcome to the Night Owls App!
 			</Dialog.Title>
 			<Dialog.Description>
@@ -29,152 +31,147 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="space-y-6 py-4">
-			<!-- Introduction -->
-			<div class="space-y-3">
-				<h3 class="text-lg font-semibold text-primary">🦉 No More WhatsApp Chaos!</h3>
-				<p class="text-muted-foreground">
-					Gone are the days of missed messages, paper rosters, and confusion about who's on shift.
-					This app keeps everything organized and makes community watch coordination seamless.
-				</p>
-			</div>
-
-			<Separator />
-
+		<div class="space-y-4 py-4">
 			<!-- How to use sections -->
 			<div class="space-y-6">
 				<!-- Booking shifts -->
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<CalendarIcon class="h-5 w-5 text-green-600" />
-						<h4 class="font-semibold">📅 Booking Your Shifts</h4>
-					</div>
-					<div class="ml-7 space-y-2 text-sm text-muted-foreground">
-						<p>• <strong>Browse available shifts</strong> on the main dashboard</p>
-						<p>• <strong>Book instantly</strong> - no waiting for WhatsApp confirmations</p>
-						<p>• <strong>View your schedule</strong> - all your upcoming shifts in one place</p>
-					</div>
-				</div>
+				<section class="space-y-3">
+					<h4 class="font-semibold flex items-center gap-2">
+						<CalendarIcon class="h-5 w-5 text-primary" />
+						Booking Your Shifts
+					</h4>
+					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+						<li><strong>Browse available shifts</strong> on the main dashboard</li>
+						<li><strong>Book instantly</strong> - no waiting for WhatsApp confirmations</li>
+						<li><strong>View your schedule</strong> - all your upcoming shifts in one place</li>
+					</ul>
+				</section>
 
 				<!-- Check-in process -->
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<CheckCircleIcon class="h-5 w-5 text-blue-600" />
-						<h4 class="font-semibold">✅ Starting Your Shift</h4>
-					</div>
-					<div class="ml-7 space-y-2 text-sm text-muted-foreground">
-						<p>• <strong>Check in</strong> when you arrive - just tap the check-in button</p>
-						<p>• <strong>Get GPS verification</strong> - confirms you're actually on location</p>
-						<p>• <strong>Early bird bonus</strong> - arrive 15+ minutes early for extra points!</p>
-						<p>• <strong>No more paper sign-ins</strong> - everything's digital and secure</p>
-					</div>
-				</div>
+				<section class="space-y-3">
+					<h4 class="font-semibold flex items-center gap-2">
+						<CheckCircleIcon class="h-5 w-5 text-primary" />
+						Starting Your Shift
+					</h4>
+					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+						<li><strong>Check in</strong> when you arrive - just tap the check-in button</li>
+						<li><strong>Get GPS verification</strong> - confirms you're actually on location</li>
+						<li><strong>Early bird bonus</strong> - arrive 15+ minutes early for extra points!</li>
+						<li><strong>No more paper sign-ins</strong> - everything's digital and secure</li>
+					</ul>
+				</section>
 
 				<!-- Reporting -->
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<AlertTriangleIcon class="h-5 w-5 text-orange-600" />
-						<h4 class="font-semibold">📝 Incident Reporting</h4>
-					</div>
-					<div class="ml-7 space-y-2 text-sm text-muted-foreground">
-						<p>• <strong>Quick reports</strong> - tap the Report button in the header</p>
-						<p>
-							• <strong>Three severity levels</strong> - from routine observations to serious incidents
-						</p>
-						<p>• <strong>Photo evidence</strong> - attach images directly to reports</p>
-						<p>
-							• <strong>Instant alerts</strong> - serious incidents notify coordinators immediately
-						</p>
-					</div>
-				</div>
+				<section class="space-y-3">
+					<h4 class="font-semibold flex items-center gap-2">
+						<AlertTriangleIcon class="h-5 w-5 text-primary" />
+						Incident Reporting
+					</h4>
+					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+						<li><strong>Quick reports</strong> - tap the Report button in the header</li>
+						<li>
+							<strong>Three severity levels</strong> - from routine observations to serious incidents
+						</li>
+						<li>
+							<strong>GPS location capture</strong> - automatically record where incidents occur
+						</li>
+						<li>
+							<strong>Detailed documentation</strong> - comprehensive incident logging for coordinators
+						</li>
+					</ul>
+				</section>
 
 				<!-- Points and achievements -->
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<TrophyIcon class="h-5 w-5 text-yellow-600" />
-						<h4 class="font-semibold">🏆 Points & Recognition</h4>
-					</div>
-					<div class="ml-7 space-y-2 text-sm text-muted-foreground">
-						<p>• <strong>Earn points</strong> for every check-in and shift completion</p>
-						<p>
-							• <strong>Bonus points</strong> for weekend shifts, early check-ins, and detailed reports
-						</p>
-						<p>
-							• <strong>Achievement badges</strong> - unlock Owlet, Solid Owl, Wise Owl, and Super Owl!
-						</p>
-						<p>• <strong>Leaderboard</strong> - see how you rank among fellow community members</p>
-						<div class="flex gap-2 mt-2">
-							<Badge variant="secondary">🦜 Owlet (1 shift)</Badge>
-							<Badge variant="secondary">🦉 Solid Owl (20 shifts)</Badge>
-							<Badge variant="secondary">🦅 Wise Owl (50 shifts)</Badge>
-							<Badge variant="secondary">🔥 Super Owl (100 shifts)</Badge>
+				<section class="space-y-3">
+					<h4 class="font-semibold flex items-center gap-2">
+						<TrophyIcon class="h-5 w-5 text-primary" />
+						Points & Recognition
+					</h4>
+					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+						<li><strong>Earn points</strong> for every check-in and shift completion</li>
+						<li>
+							<strong>Bonus points</strong> for weekend shifts, early check-ins, and detailed reports
+						</li>
+						<li>
+							<strong>Achievement badges</strong> - unlock Owlet, Solid Owl, Wise Owl, and Super Owl!
+						</li>
+						<li><strong>Leaderboard</strong> - see how you rank among fellow community members</li>
+					</ul>
+					<div class="ml-7 mt-3">
+						<p class="text-sm font-bold text-foreground mb-2">Achievement Badges:</p>
+						<div class="flex gap-2 flex-wrap">
+							<Badge class="text-lg" variant="secondary">🐣 Owlet (25 pts)</Badge>
+							<Badge class="text-lg" variant="secondary">🦉 Solid Owl (500 pts)</Badge>
+							<Badge class="text-lg" variant="secondary">🦅 Wise Owl (1,250 pts)</Badge>
+							<Badge class="text-lg" variant="secondary">🐉 Super Owl (2,500 pts)</Badge>
 						</div>
 					</div>
-				</div>
+				</section>
 
 				<!-- Emergency features -->
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<PhoneIcon class="h-5 w-5 text-red-600" />
-						<h4 class="font-semibold">🚨 Emergency Support</h4>
-					</div>
-					<div class="ml-7 space-y-2 text-sm text-muted-foreground">
-						<p>• <strong>Emergency button</strong> always visible in the header</p>
-						<p>• <strong>Direct contact</strong> to current emergency coordinators</p>
-						<p>• <strong>GPS location sharing</strong> - help arrives faster when needed</p>
-						<p>• <strong>Backup contacts</strong> - multiple people notified for reliability</p>
-					</div>
-				</div>
+				<section class="space-y-3">
+					<h4 class="font-semibold flex items-center gap-2">
+						<PhoneIcon class="h-5 w-5 text-primary" />
+						Emergency Support
+					</h4>
+					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+						<li><strong>Emergency button</strong> always visible in the header</li>
+						<li><strong>Direct contact</strong> to current emergency coordinators</li>
+						<li><strong>GPS location sharing</strong> - help arrives faster when needed</li>
+					</ul>
+				</section>
 			</div>
 
 			<Separator />
 
 			<!-- Why it's better -->
-			<div class="space-y-3">
-				<h3 class="text-lg font-semibold text-primary">🌟 Why This Beats WhatsApp</h3>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+			<section class="space-y-3">
+				<h3 class="text-lg font-semibold text-primary flex items-center gap-2">
+					<StarIcon class="h-5 w-5" />
+					Why This Beats WhatsApp
+				</h3>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
 					<div class="space-y-2">
-						<p class="font-medium text-green-700">✅ What you get:</p>
-						<ul class="space-y-1 text-muted-foreground ml-4">
-							<li>• No missed messages</li>
-							<li>• Clear shift schedules</li>
-							<li>• Automatic record keeping</li>
-							<li>• Instant emergency alerts</li>
-							<li>• Recognition for your service</li>
+						<p class="font-medium text-green-700 dark:text-green-400">✅ What you get:</p>
+						<ul class="space-y-1 text-muted-foreground ml-4 list-disc list-inside">
+							<li>No missed messages</li>
+							<li>Clear shift schedules</li>
+							<li>Automatic record keeping</li>
+							<li>Instant emergency alerts</li>
+							<li>Recognition for your service</li>
 						</ul>
 					</div>
 					<div class="space-y-2">
-						<p class="font-medium text-red-700">❌ What you avoid:</p>
-						<ul class="space-y-1 text-muted-foreground ml-4">
-							<li>• WhatsApp message chaos</li>
-							<li>• Lost paper rosters</li>
-							<li>• Forgotten shift times</li>
-							<li>• Unclear who's on duty</li>
-							<li>• Manual coordination stress</li>
+						<p class="font-medium text-red-700 dark:text-red-400">❌ What you avoid:</p>
+						<ul class="space-y-1 text-muted-foreground ml-4 list-disc list-inside">
+							<li>WhatsApp message chaos</li>
+							<li>Lost paper rosters</li>
+							<li>Forgotten shift times</li>
+							<li>Unclear who's on duty</li>
+							<li>Manual coordination stress</li>
 						</ul>
 					</div>
 				</div>
-			</div>
+			</section>
 
 			<Separator />
 
 			<!-- Getting started -->
-			<div class="space-y-3">
-				<h3 class="text-lg font-semibold text-primary">🚀 Ready to Start?</h3>
-				<div class="space-y-2 text-sm text-muted-foreground">
-					<p><strong>1.</strong> Browse available shifts on your dashboard</p>
-					<p><strong>2.</strong> Book a shift that works for your schedule</p>
-					<p><strong>3.</strong> Show up and check in when your shift starts</p>
-					<p><strong>4.</strong> Submit a report when you finish</p>
-					<p><strong>5.</strong> Watch your points grow and badges unlock!</p>
-				</div>
-				<div class="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-					<p class="text-sm text-blue-800">
-						<strong>Need help?</strong> Contact your community coordinator or use the emergency button
-						if you have any questions during your shift.
-					</p>
-				</div>
-			</div>
+			<section class="space-y-3">
+				<h3 class="text-lg font-semibold text-primary flex items-center gap-2">
+					<RocketIcon class="h-5 w-5" />
+					Ready to Start?
+				</h3>
+				<ol class="ml-7 space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+					<li><strong>Browse available shifts</strong> on your dashboard</li>
+					<li><strong>Book a shift</strong> that works for you</li>
+					<li><strong>Show up and check in</strong> when your shift starts</li>
+					<li><strong>Submit a report</strong> when you finish</li>
+					<li>
+						<strong>Become a <strong>legendary owl</strong> protecting your community</strong>
+					</li>
+				</ol>
+			</section>
 		</div>
 
 		<Dialog.Footer>

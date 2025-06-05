@@ -38,10 +38,10 @@ CREATE TABLE user_achievements (
 
 -- Insert achievements based on shift count
 INSERT INTO achievements (name, description, icon, shifts_threshold) VALUES
-('Owlet', 'Complete your first shift', '🦉', 1),
+('Owlet', 'Complete your first shift', '🐣', 1),
 ('Solid Owl', 'Complete 20 shifts', '🦉', 20),
-('Wise Owl', 'Complete 50 shifts', '🦜', 50),
-('Super Owl', 'Complete 100 shifts', '🦅', 100);
+('Wise Owl', 'Complete 50 shifts', '🦅', 50),
+('Super Owl', 'Complete 100 shifts', '🐉', 100);
 
 -- Create indexes for performance
 CREATE INDEX idx_points_history_user_id ON points_history(user_id);
