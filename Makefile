@@ -28,6 +28,10 @@ help:
 	@echo "  test-api      Run API integration tests"
 	@echo "  test-service  Run service layer tests"
 	@echo ""
+	@echo "Validation:"
+	@echo "  validate-api  Validate frontend API calls against backend endpoints"
+	@echo "  check         Run all checks (format, vet, lint, test, validate-api)"
+	@echo ""
 	@echo "Development:"
 	@echo "  clean         Clean build artifacts and test databases"
 	@echo "  format        Format Go code"
@@ -103,6 +107,17 @@ test-with-coverage:
 	go test ./... -v -coverprofile=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+# API validation
+validate-api:
+	@echo "Validating API endpoint consistency..."
+	@chmod +x scripts/validate-api-endpoints.sh
+	@./scripts/validate-api-endpoints.sh
+
+# Comprehensive checks (ideal for CI)
+check: format vet lint test validate-api
+	@echo ""
+	@echo "✅ All checks passed! Ready for deployment."
 
 # Development tools
 format:

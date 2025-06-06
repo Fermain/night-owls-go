@@ -413,6 +413,63 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	return createdBooking, nil
 }
 
+// AdminUnassignUserFromShift handles the logic for an admin unassigning/cancelling a booking for a specific shift slot.
+func (s *BookingService) AdminUnassignUserFromShift(ctx context.Context, scheduleID int64, shiftStartTime time.Time) error {
+	// 1. Validate schedule
+	_, err := s.querier.GetScheduleByID(ctx, scheduleID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "Schedule not found for admin unassignment", "schedule_id", scheduleID)
+			return ErrScheduleNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get schedule by ID for admin unassignment", "schedule_id", scheduleID, "error", err)
+		return ErrInternalServer
+	}
+
+	// Ensure shiftStartTime is UTC
+	utcShiftStartTime := shiftStartTime.UTC()
+
+	// 2. Find the existing booking
+	booking, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
+		ScheduleID: scheduleID,
+		ShiftStart: utcShiftStartTime,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.WarnContext(ctx, "No booking found for admin unassignment", "schedule_id", scheduleID, "start_time", utcShiftStartTime)
+			return ErrBookingNotFound
+		}
+		s.logger.ErrorContext(ctx, "Failed to get booking by schedule and start time for admin unassignment", "schedule_id", scheduleID, "start_time", utcShiftStartTime, "error", err)
+		return ErrInternalServer
+	}
+
+	// 3. Delete the booking
+	err = s.querier.DeleteBooking(ctx, booking.BookingID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete booking from DB during admin unassignment", "booking_id", booking.BookingID, "error", err)
+		return ErrInternalServer
+	}
+
+	s.logger.InfoContext(ctx, "Booking unassigned successfully by admin", "booking_id", booking.BookingID, "user_id", booking.UserID, "schedule_id", scheduleID)
+
+	// 4. (Optional) Queue notification message to outbox for the unassigned user
+	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "unassigned_by": "admin", "unassigned_at": "%s"}`,
+		booking.BookingID, booking.UserID, booking.ShiftStart.Format(time.RFC3339), time.Now().UTC().Format(time.RFC3339))
+	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
+		MessageType: "ADMIN_SHIFT_UNASSIGNMENT",
+		Recipient:   fmt.Sprintf("%d", booking.UserID),
+		Payload:     sql.NullString{String: outboxPayload, Valid: true},
+		UserID:      sql.NullInt64{Int64: booking.UserID, Valid: true},
+		SendAt:      time.Now().Add(-1 * time.Second),
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create outbox item for admin unassignment notification", "booking_id", booking.BookingID, "error", err)
+		// Non-fatal for unassignment itself, but log it.
+	}
+
+	return nil
+}
+
 // GetUserBookings retrieves all bookings for a specific user.
 func (s *BookingService) GetUserBookings(ctx context.Context, userID int64) ([]db.ListBookingsByUserIDWithScheduleRow, error) {
 	// Validate that user exists
