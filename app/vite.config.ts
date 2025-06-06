@@ -16,9 +16,29 @@ export default defineConfig(({ mode: _mode }) => {
 				scope: '/',
 				base: '/',
 				selfDestroying: process.env.NODE_ENV === 'development',
-				strategies: 'injectManifest',
-				filename: 'service-worker.js',
+				strategies: 'generateSW',
 				injectRegister: 'script-defer',
+				workbox: {
+					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
+					runtimeCaching: [
+						{
+							urlPattern: /^\/api\//,
+							handler: 'NetworkFirst',
+							options: {
+								cacheName: 'api-cache',
+								networkTimeoutSeconds: 3,
+								cacheableResponse: {
+									statuses: [200]
+								}
+							}
+						}
+					],
+					// Add push notification support to generated service worker
+					additionalManifestEntries: [
+						{ url: '/icons/icon-192x192.png', revision: null },
+						{ url: '/icons/icon-512x512.png', revision: null }
+					]
+				},
 				manifest: {
 					name: 'Mount Moreland Night Owls',
 					short_name: 'Night Owls',
