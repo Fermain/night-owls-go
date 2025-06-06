@@ -17,13 +17,6 @@
 		subscribed: false
 	});
 
-	let serviceWorkerState = $state({
-		registered: false,
-		active: false,
-		installing: false,
-		waiting: false
-	});
-
 	let debugInfo = $state<string[]>([]);
 
 	onMount(async () => {
@@ -34,29 +27,11 @@
 	async function checkStatus() {
 		try {
 			status = await pushNotificationService.getStatus();
-			await checkServiceWorkerState();
 			addDebugInfo(
 				`Status check - Supported: ${status.supported}, Permission: ${status.permission}, Subscribed: ${status.subscribed}`
 			);
 		} catch (error) {
 			addDebugInfo(`Status check error: ${error}`);
-		}
-	}
-
-	async function checkServiceWorkerState() {
-		if (!('serviceWorker' in navigator)) return;
-
-		try {
-			const registration = await navigator.serviceWorker.getRegistration();
-			serviceWorkerState.registered = !!registration;
-
-			if (registration) {
-				serviceWorkerState.active = !!registration.active;
-				serviceWorkerState.installing = !!registration.installing;
-				serviceWorkerState.waiting = !!registration.waiting;
-			}
-		} catch (error) {
-			addDebugInfo(`Service worker state check error: ${error}`);
 		}
 	}
 
@@ -134,52 +109,35 @@
 		}
 		return value === 'granted' ? 'default' : 'destructive';
 	}
-
-	function getBooleanText(value: boolean | string): string {
-		if (typeof value === 'boolean') {
-			return value ? 'Yes' : 'No';
-		}
-		return value;
-	}
 </script>
 
-<svelte:head>
-	<title>Push Notification Testing</title>
-</svelte:head>
-
-<div class="space-y-6 p-4">
-	<div>
-		<h1 class="text-2xl font-bold tracking-tight">Push Notification Testing</h1>
-		<p class="text-muted-foreground">
-			Debug and test push notification functionality with the live backend
-		</p>
-	</div>
-
+<div class="container mx-auto p-6">
 	<Card>
 		<CardHeader>
-			<CardTitle>Push Notification Debug</CardTitle>
-			<CardDescription>Test and troubleshoot push notification functionality</CardDescription>
+			<CardTitle>🔔 Push Notification Testing</CardTitle>
+			<CardDescription>Rock-solid push notification testing for community security</CardDescription>
 		</CardHeader>
-		<CardContent class="space-y-4">
-			<!-- Status Grid -->
-			<div class="grid grid-cols-2 gap-4">
+
+		<CardContent class="space-y-6">
+			<!-- Status Overview -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<div>
 					<p class="text-sm font-medium mb-1">Browser Support</p>
-					<Badge variant={getVariant(status.supported)}>{getBooleanText(status.supported)}</Badge>
+					<Badge variant={getVariant(status.supported)}>
+						{status.supported ? 'Supported' : 'Not Supported'}
+					</Badge>
 				</div>
 				<div>
-					<p class="text-sm font-medium mb-1">Permission</p>
-					<Badge variant={getVariant(status.permission)}>{getBooleanText(status.permission)}</Badge>
+					<p class="text-sm font-medium mb-1">Permission Status</p>
+					<Badge variant={getVariant(status.permission)}>
+						{status.permission}
+					</Badge>
 				</div>
 				<div>
-					<p class="text-sm font-medium mb-1">Subscribed</p>
-					<Badge variant={getVariant(status.subscribed)}>{getBooleanText(status.subscribed)}</Badge>
-				</div>
-				<div>
-					<p class="text-sm font-medium mb-1">Service Worker Active</p>
-					<Badge variant={getVariant(serviceWorkerState.active)}
-						>{getBooleanText(serviceWorkerState.active)}</Badge
-					>
+					<p class="text-sm font-medium mb-1">Subscription Status</p>
+					<Badge variant={getVariant(status.subscribed)}>
+						{status.subscribed ? 'Subscribed' : 'Not Subscribed'}
+					</Badge>
 				</div>
 			</div>
 
@@ -216,14 +174,28 @@
 
 			<!-- Instructions -->
 			<div class="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
-				<h4 class="text-sm font-medium mb-2">Testing Instructions:</h4>
+				<h4 class="text-sm font-medium mb-2">Rock-Solid Testing Instructions:</h4>
 				<ol class="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-					<li>First, check that all status indicators are green</li>
-					<li>Test the VAPID endpoint to ensure server connectivity</li>
-					<li>Subscribe to push notifications if not already subscribed</li>
-					<li>Test a notification to verify the system works</li>
-					<li>Try sending a broadcast with push notifications enabled</li>
+					<li>Verify all status indicators show green/success states</li>
+					<li>Test VAPID endpoint connectivity to ensure server communication</li>
+					<li>Subscribe to push notifications (this enables community security alerts)</li>
+					<li>Test notification display to verify the system works correctly</li>
+					<li>For production: Test emergency broadcasts to ensure critical alerts work</li>
 				</ol>
+			</div>
+
+			<!-- Security Notice -->
+			<div
+				class="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md border border-amber-200 dark:border-amber-800"
+			>
+				<h4 class="text-sm font-medium mb-2 text-amber-800 dark:text-amber-200">
+					⚠️ Community Security Notice
+				</h4>
+				<p class="text-sm text-amber-700 dark:text-amber-300">
+					Push notifications are critical for community safety. Emergency alerts, incident reports,
+					and shift reminders depend on this system working reliably. Always test thoroughly before
+					deployment.
+				</p>
 			</div>
 		</CardContent>
 	</Card>
