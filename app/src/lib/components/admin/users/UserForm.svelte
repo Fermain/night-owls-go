@@ -100,7 +100,7 @@
 		const apiResponse = await apiPost<
 			typeof requestData,
 			components['schemas']['api.UserAPIResponse']
-		>('api/admin/users', requestData);
+		>('/api/admin/users', requestData);
 		return mapAPIUserToDomain(apiResponse);
 	}
 

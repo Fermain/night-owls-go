@@ -1,6 +1,6 @@
 <script lang="ts">
 	import UserForm from '$lib/components/admin/users/UserForm.svelte';
-	import IntelligentDashboard from '$lib/components/admin/IntelligentDashboard.svelte';
+	import MobileUsersDashboard from '$lib/components/admin/users/MobileUsersDashboard.svelte';
 	import { selectedUserForForm } from '$lib/stores/userEditingStore';
 	import type { User } from '$lib/types/domain';
 	import UsersIcon from '@lucide/svelte/icons/users';
@@ -38,14 +38,14 @@
 		<div class="border-b pb-4">
 			<div class="flex items-center gap-3 mb-2">
 				<UsersIcon class="h-8 w-8 text-primary" />
-				<h1 class="text-2xl md:text-3xl font-bold tracking-tight">User Intelligence Center</h1>
+				<h1 class="text-2xl md:text-3xl font-bold tracking-tight">User Management</h1>
 			</div>
 			<p class="text-base md:text-lg text-muted-foreground">
-				Smart insights and quick actions for managing Night Owls community members
+				Approve users, search members, and manage Night Owls community
 			</p>
 		</div>
 
-		<!-- Intelligent Dashboard for Users -->
-		<IntelligentDashboard />
+		<!-- Mobile-First User Dashboard -->
+		<MobileUsersDashboard />
 	</div>
 {/if}
