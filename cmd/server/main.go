@@ -356,6 +356,7 @@ func main() {
 
 	// Admin Bookings
 	fuego.PostStd(admin, "/bookings/assign", adminBookingAPIHandler.AssignUserToShiftHandler)
+	fuego.PostStd(admin, "/bookings/unassign", adminBookingAPIHandler.UnassignUserFromShiftHandler)
 
 	// Admin Reports
 	fuego.GetStd(admin, "/reports", adminReportAPIHandler.AdminListReportsHandler)

@@ -144,11 +144,7 @@
 		<div class="grid grid-cols-3 gap-2">
 			{#each photos as photo (photo.id)}
 				<div class="relative group">
-					<img
-						src={photo.preview}
-						alt="Selected photo"
-						class="w-full h-20 object-cover rounded-lg border"
-					/>
+					<img src={photo.preview} alt="" class="w-full h-20 object-cover rounded-lg border" />
 					<button
 						type="button"
 						onclick={() => removePhoto(photo.id)}

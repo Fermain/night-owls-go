@@ -33,6 +33,12 @@ type AssignUserToShiftRequest struct {
 	UserID     int64     `json:"user_id"`
 }
 
+// UnassignUserFromShiftRequest is the expected JSON for POST /api/admin/bookings/unassign.
+type UnassignUserFromShiftRequest struct {
+	ScheduleID int64     `json:"schedule_id"`
+	StartTime  time.Time `json:"start_time"`
+}
+
 // AssignUserToShiftHandler handles POST /api/admin/bookings/assign
 // @Summary Assign a user to a specific shift slot (Admin)
 // @Description Allows an admin to book a specific user for a given schedule ID and start time.
@@ -145,4 +151,61 @@ func (h *AdminBookingHandler) GetUserBookingsHandler(w http.ResponseWriter, r *h
 	}
 
 	RespondWithJSON(w, http.StatusOK, bookingResponses, h.logger)
+}
+
+// UnassignUserFromShiftHandler handles POST /api/admin/bookings/unassign
+// @Summary Unassign a user from a specific shift slot (Admin)
+// @Description Allows an admin to unassign/cancel a user's booking for a given schedule ID and start time.
+// @Tags admin-bookings
+// @Accept json
+// @Produce json
+// @Param request body UnassignUserFromShiftRequest true "Unassignment details (schedule_id, start_time)"
+// @Success 200 {object} map[string]interface{} "Unassignment successful"
+// @Failure 400 {object} ErrorResponse "Invalid request format or data"
+// @Failure 401 {object} ErrorResponse "Unauthorized - admin authentication required"
+// @Failure 403 {object} ErrorResponse "Forbidden - user does not have admin privileges"
+// @Failure 404 {object} ErrorResponse "Booking not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/admin/bookings/unassign [post]
+func (h *AdminBookingHandler) UnassignUserFromShiftHandler(w http.ResponseWriter, r *http.Request) {
+	var req UnassignUserFromShiftRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", h.logger, "error", err.Error())
+		return
+	}
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to close request body", "error", closeErr)
+		}
+	}()
+
+	if req.ScheduleID <= 0 || req.StartTime.IsZero() {
+		RespondWithError(w, http.StatusBadRequest, "Missing or invalid schedule_id or start_time", h.logger)
+		return
+	}
+
+	// Ensure StartTime is in UTC
+	utcStartTime := req.StartTime.UTC()
+
+	err := h.bookingService.AdminUnassignUserFromShift(r.Context(), req.ScheduleID, utcStartTime)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrBookingNotFound):
+			RespondWithError(w, http.StatusNotFound, "No booking found for the specified shift", h.logger, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "error", err.Error())
+		case errors.Is(err, service.ErrScheduleNotFound):
+			RespondWithError(w, http.StatusNotFound, "Schedule not found", h.logger, "schedule_id", req.ScheduleID, "error", err.Error())
+		case errors.Is(err, service.ErrInternalServer):
+			RespondWithError(w, http.StatusInternalServerError, "Internal server error processing unassignment", h.logger, "error", err.Error())
+		default:
+			RespondWithError(w, http.StatusInternalServerError, "An unexpected error occurred", h.logger, "error", err.Error())
+		}
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "User successfully unassigned from shift",
+	}
+	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
