@@ -3,7 +3,7 @@
  * Provides type-safe, error-handled API requests with authentication
  */
 
-import { userSession } from '../stores/authStore';
+import { userSession, logout } from '../stores/authStore';
 import { get } from 'svelte/store';
 import {
 	classifyError,
@@ -73,6 +73,11 @@ export async function authenticatedFetch(
 		clearTimeout(timeoutId);
 
 		if (!response.ok && !skipErrorClassification) {
+			// Check for 401 Unauthorized responses and automatically logout
+			if (response.status === 401) {
+				console.log('Token expired or invalid, logging out user');
+				logout(); // This will clear session and redirect to login
+			}
 			throw classifyError(response);
 		}
 
