@@ -1,0 +1,166 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  GO_VERSION: '1.24.2'
+  NODE_VERSION: '20'
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      docker: ${{ steps.changes.outputs.docker }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'internal/**'
+              - 'cmd/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '*.go'
+            frontend:
+              - 'app/**'
+            docker:
+              - 'Dockerfile'
+              - 'docker-compose*.yml'
+
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          check-latest: true
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_PATH: ./test.db
+          JWT_SECRET: test-secret
+        run: |
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          go tool cover -func=coverage.out
+
+      - name: Security scan
+        uses: securego/gosec@v2.22.4
+        with:
+          args: ./...
+
+      - name: Build check
+        run: go build -ldflags="-s -w" -o night-owls-server ./cmd/server
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            app/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('app/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: ./app
+        run: pnpm run lint
+
+      - name: Type check
+        working-directory: ./app
+        run: pnpm run check
+
+      - name: Unit tests
+        working-directory: ./app
+        run: pnpm run test:unit -- --run
+
+      - name: Build check
+        working-directory: ./app
+        run: pnpm run build
+
+  docker-check:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (verification only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: night-owls-go:pr-${{ github.event.number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+
+  pr-status:
+    name: PR Status Check
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, docker-check, security]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.backend-tests.result }}" == "failure" || "${{ needs.frontend-tests.result }}" == "failure" || "${{ needs.docker-check.result }}" == "failure" || "${{ needs.security.result }}" == "failure" ]]; then
+            echo "❌ One or more checks failed"
+            exit 1
+          elif [[ "${{ needs.backend-tests.result }}" == "skipped" && "${{ needs.frontend-tests.result }}" == "skipped" && "${{ needs.docker-check.result }}" == "skipped" ]]; then
+            echo "⚠️ No relevant changes detected - skipping checks"
+          else
+            echo "✅ All checks passed"
+          fi 
