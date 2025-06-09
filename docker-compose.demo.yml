@@ -1,0 +1,56 @@
+services:
+  night-owls-demo:
+    image: ghcr.io/fermain/night-owls-go:latest
+    container_name: night-owls-demo
+    restart: unless-stopped
+    ports:
+      - "5889:5888"  # Different port to avoid conflicts
+    environment:
+      - SERVER_PORT=5888
+      - DATABASE_PATH=./data/demo.db
+      - DEV_MODE=true  # Enable dev features for demo
+      - JWT_SECRET=${JWT_SECRET:-demo-secret-key}
+      - JWT_EXPIRATION_HOURS=168  # 1 week for demo convenience
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
+      - OTP_LOG_PATH=./data/logs/demo_sms_outbox.log
+      # Demo doesn't need real Twilio - use mock OTP
+      - TWILIO_ACCOUNT_SID=
+      - TWILIO_AUTH_TOKEN=
+      - TWILIO_VERIFY_SID=
+      - TWILIO_FROM_NUMBER=
+    volumes:
+      - night_owls_demo_data:/app/data
+    networks:
+      - night_owls_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Seed service - runs once to populate demo data
+  night-owls-demo-seed:
+    image: ghcr.io/fermain/night-owls-go:latest
+    container_name: night-owls-demo-seed
+    depends_on:
+      night-owls-demo:
+        condition: service_healthy
+    environment:
+      - DATABASE_PATH=./data/demo.db
+    volumes:
+      - night_owls_demo_data:/app/data
+    networks:
+      - night_owls_network
+    command: ["./seed", "--reset", "--users", "50", "--future-bookings", "--verbose"]
+    restart: "no"  # Run once only
+
+volumes:
+  night_owls_demo_data:
+    driver: local
+
+networks:
+  night_owls_network:
+    external: true  # Use existing network 
