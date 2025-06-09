@@ -32,7 +32,7 @@ jobs:
     - name: Deploy demo to server
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: mm.nightowls.app
+        host: demo.nightowls.app
         username: deploy
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |

@@ -65,6 +65,28 @@
 			themeActions.applyTheme(theme);
 		});
 
+		// Service Worker Navigation Handling (SvelteKit native approach)
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('message', (event) => {
+				if (event.data?.type === 'NAVIGATE') {
+					// Use SvelteKit's programmatic navigation
+					import('$app/navigation').then(({ goto }) => {
+						goto(event.data.url);
+					});
+				} else if (event.data?.type === 'PUSH_RECEIVED') {
+					// Handle push notifications received while app is open
+					notificationStore.addNotification({
+						type: event.data.notificationType || 'broadcast',
+						title: event.data.title || 'New Message',
+						message: event.data.body || 'You have a new message',
+						timestamp: new Date().toISOString(),
+						read: false,
+						data: event.data.data || {}
+					});
+				}
+			});
+		}
+
 		// Listen for PWA install prompt
 		window.addEventListener('beforeinstallprompt', (event) => {
 			// Prevent the default prompt
