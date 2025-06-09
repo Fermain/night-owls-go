@@ -165,12 +165,12 @@
 			if (isEditing && contact?.id) {
 				// Update existing contact
 				const requestData = mapUpdateEmergencyContactToAPIRequest(formValues);
-				await apiPut(`/emergency-contacts/${contact.id}`, requestData);
+				await apiPut(`emergency-contacts/${contact.id}`, requestData);
 				toast.success('Contact updated successfully');
 			} else {
 				// Create new contact
 				const requestData = mapCreateEmergencyContactToAPIRequest(formValues);
-				await apiPost('/emergency-contacts', requestData);
+				await apiPost('emergency-contacts', requestData);
 				toast.success('Contact created successfully');
 
 				// Reset form for new contact creation
@@ -211,7 +211,7 @@
 		deleteState.error = null;
 
 		try {
-			await apiDelete(`/emergency-contacts/${contact.id}`);
+			await apiDelete(`emergency-contacts/${contact.id}`);
 			toast.success('Contact deleted successfully');
 
 			// Refresh the contacts list
@@ -235,7 +235,7 @@
 		setDefaultState.error = null;
 
 		try {
-			await apiPut(`/emergency-contacts/${contact.id}/default`);
+			await apiPut(`emergency-contacts/${contact.id}/default`);
 			toast.success(`${contact.name ?? 'Contact'} set as default emergency contact`);
 
 			// Refresh the contacts list

@@ -112,7 +112,7 @@
 			const results = [];
 			for (const assignment of assignments) {
 				try {
-					const booking = await apiPost('/api/admin/bookings/assign', {
+					const booking = await apiPost('admin/bookings/assign', {
 						user_id: parseInt(selectedUserId),
 						schedule_id: assignment.scheduleId,
 						start_time: assignment.startTime
