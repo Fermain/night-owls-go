@@ -1,6 +1,6 @@
 # Night Owls Go - Development Makefile
 
-.PHONY: help build test seed seed-dev seed-reset seed-preview clean
+.PHONY: help build test seed seed-dev seed-reset seed-preview clean demo-start demo-stop demo-reset demo-logs demo-status
 
 # Default target
 help:
@@ -31,6 +31,13 @@ help:
 	@echo "Validation:"
 	@echo "  validate-api  Validate frontend API calls against backend endpoints"
 	@echo "  check         Run all checks (format, vet, lint, test, validate-api)"
+	@echo ""
+	@echo "Demo Instance:"
+	@echo "  demo-start    Start demo instance (50 users, future bookings)"
+	@echo "  demo-stop     Stop demo instance"
+	@echo "  demo-reset    Reset demo instance with fresh data"
+	@echo "  demo-logs     Show demo instance logs"
+	@echo "  demo-status   Show demo instance status and health"
 	@echo ""
 	@echo "Development:"
 	@echo "  clean         Clean build artifacts and test databases"
@@ -157,4 +164,30 @@ dev-setup: build-seed seed-reset
 seed-custom:
 	@echo "Usage: make seed-custom DB=path/to/db.db"
 	@if [ -z "$(DB)" ]; then echo "Error: DB parameter required"; exit 1; fi
-	./cmd/seed/seed --db "$(DB)" --reset 
+	./cmd/seed/seed --db "$(DB)" --reset
+
+# Demo instance management
+demo-start:
+	@echo "Starting demo instance..."
+	@chmod +x scripts/deploy-demo.sh
+	./scripts/deploy-demo.sh start
+
+demo-stop:
+	@echo "Stopping demo instance..."
+	@chmod +x scripts/deploy-demo.sh
+	./scripts/deploy-demo.sh stop
+
+demo-reset:
+	@echo "Resetting demo instance..."
+	@chmod +x scripts/deploy-demo.sh
+	./scripts/deploy-demo.sh reset
+
+demo-logs:
+	@echo "Showing demo logs..."
+	@chmod +x scripts/deploy-demo.sh
+	./scripts/deploy-demo.sh logs
+
+demo-status:
+	@echo "Checking demo status..."
+	@chmod +x scripts/deploy-demo.sh
+	./scripts/deploy-demo.sh status 
