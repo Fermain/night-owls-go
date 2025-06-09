@@ -158,7 +158,7 @@ export async function fetchEmergencyContacts(): Promise<EmergencyContact[]> {
 		emergencyContactsLoading.set(true);
 		emergencyContactsError.set(null);
 
-		const response = await apiGet('/api/emergency-contacts');
+		const response = await apiGet('emergency-contacts');
 		const contacts = response as EmergencyContact[];
 
 		// Sort using existing utility function

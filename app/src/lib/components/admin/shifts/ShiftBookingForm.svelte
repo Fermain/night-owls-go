@@ -55,7 +55,7 @@
 		queryFn: async () => {
 			try {
 				const apiUsers =
-					await apiGet<components['schemas']['api.UserAPIResponse'][]>('/api/admin/users');
+					await apiGet<components['schemas']['api.UserAPIResponse'][]>('admin/users');
 				return mapAPIUserArrayToDomain(apiUsers);
 			} catch (error) {
 				throw classifyError(error);
@@ -78,7 +78,7 @@
 			try {
 				// Note: Admin assignment may need to be extended to support buddy
 				// For now, we'll send the basic assignment and buddy separately if needed
-				return await apiPost('/api/admin/bookings/assign', {
+				return await apiPost('admin/bookings/assign', {
 					schedule_id: assignmentData.schedule_id,
 					start_time: assignmentData.start_time,
 					user_id: assignmentData.user_id
@@ -110,7 +110,7 @@
 		mutationFn: async () => {
 			try {
 				// Note: This endpoint may need to be implemented in the backend
-				return await apiPost('/api/admin/bookings/unassign', {
+				return await apiPost('admin/bookings/unassign', {
 					schedule_id: selectedShift.schedule_id,
 					start_time: selectedShift.start_time
 				});
