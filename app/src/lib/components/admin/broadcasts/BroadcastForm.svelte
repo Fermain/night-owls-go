@@ -62,7 +62,7 @@
 			queryKey: ['allUsersForBroadcast'],
 			queryFn: async () => {
 				const apiUsers =
-					await apiGet<components['schemas']['api.UserAPIResponse'][]>('/admin/users');
+					await apiGet<components['schemas']['api.UserAPIResponse'][]>('admin/users');
 				return mapAPIUserArrayToDomain(apiUsers);
 			},
 			staleTime: 1000 * 60 * 5, // 5 minutes
@@ -116,7 +116,7 @@
 				created_at: string;
 			};
 			const apiResponse = await apiPost<typeof requestData, BroadcastAPIResponse>(
-				'/admin/broadcasts',
+				'admin/broadcasts',
 				requestData
 			);
 			return mapAPIBroadcastToDomain(apiResponse);
