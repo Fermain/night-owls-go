@@ -66,5 +66,6 @@
 	"orientation": "portrait-primary",
 	"categories": ["security", "utilities", "lifestyle"],
 	"lang": "en",
-	"dir": "ltr"
+	"dir": "ltr",
+	"gcm_sender_id": "103953800507"
 }

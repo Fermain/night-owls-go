@@ -36,8 +36,8 @@ class PushNotificationService {
 				return false;
 			}
 
-			// Wait for service worker to be ready (PWA plugin handles registration)
-			this.registration = await navigator.serviceWorker.ready;
+			// Wait for service worker to be ready with timeout
+			this.registration = await this.waitForServiceWorker();
 
 			if (!this.registration) {
 				console.error('[PushService] No service worker registration available');
@@ -67,6 +67,46 @@ class PushNotificationService {
 	 */
 	private isSupported(): boolean {
 		return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+	}
+
+	/**
+	 * Wait for service worker to be ready with timeout
+	 */
+	private async waitForServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+		if (!('serviceWorker' in navigator)) {
+			return null;
+		}
+
+		try {
+			// Wait for service worker to be ready with 10 second timeout
+			const timeoutPromise = new Promise<never>((_, reject) => {
+				setTimeout(() => reject(new Error('Service worker ready timeout')), 10000);
+			});
+
+			const registration = await Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
+
+			// Ensure the service worker is active
+			if (registration.active) {
+				return registration;
+			}
+
+			// If installing, wait for it to activate
+			if (registration.installing) {
+				await new Promise<void>((resolve) => {
+					registration.installing!.addEventListener('statechange', () => {
+						if (registration.installing!.state === 'activated') {
+							resolve();
+						}
+					});
+				});
+				return registration;
+			}
+
+			return registration;
+		} catch (error) {
+			console.error('[PushService] Service worker ready failed:', error);
+			return null;
+		}
 	}
 
 	/**
@@ -149,7 +189,10 @@ class PushNotificationService {
 			return true;
 		} catch (error) {
 			console.error('[PushService] Subscription failed:', error);
-			toast.error('Failed to enable push notifications');
+
+			// Handle specific FCM/GCM errors
+			const errorMessage = this.getErrorMessage(error);
+			toast.error(errorMessage);
 			return false;
 		}
 	}
@@ -265,6 +308,43 @@ class PushNotificationService {
 			binary += String.fromCharCode(bytes[i]);
 		}
 		return window.btoa(binary);
+	}
+
+	/**
+	 * Get user-friendly error message for push notification errors
+	 */
+	private getErrorMessage(error: unknown): string {
+		if (error instanceof Error) {
+			const message = error.message.toLowerCase();
+
+			// FCM/GCM specific errors
+			if (message.includes('registration failed')) {
+				return 'Push service registration failed. Please check your internet connection.';
+			}
+			if (message.includes('vapid key')) {
+				return 'Server configuration error. Please contact support.';
+			}
+			if (message.includes('not supported')) {
+				return 'Push notifications are not supported on this device or browser.';
+			}
+			if (message.includes('permission')) {
+				return 'Permission denied. Please enable notifications in browser settings.';
+			}
+			if (message.includes('quota exceeded')) {
+				return 'Too many active subscriptions. Please try again later.';
+			}
+			if (message.includes('invalid vapid key') || message.includes('unauthorized')) {
+				return 'Server authentication failed. Please contact support.';
+			}
+			if (message.includes('network') || message.includes('fetch')) {
+				return 'Network error. Please check your connection and try again.';
+			}
+
+			// Generic error with specific message
+			return `Push notification error: ${error.message}`;
+		}
+
+		return 'An unknown error occurred while setting up push notifications.';
 	}
 
 	/**

@@ -12,6 +12,7 @@
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
+	import { pushNotificationService } from '$lib/services/pushNotificationService';
 
 	// Initialize background sync for offline forms
 	import '$lib/utils/backgroundSync';
@@ -51,12 +52,24 @@
 		notificationStore.init();
 
 		// Subscribe to user session changes
-		const userSessionUnsubscribe = userSession.subscribe((session) => {
+		const userSessionUnsubscribe = userSession.subscribe(async (session) => {
 			_currentUserSession = session;
 
 			// Only fetch notifications if user is authenticated
 			if (session.isAuthenticated) {
 				notificationStore.fetchNotifications();
+
+				// Initialize push notification service for authenticated users
+				try {
+					const initialized = await pushNotificationService.initialize();
+					if (initialized) {
+						console.log('[App] Push notification service initialized successfully');
+					} else {
+						console.warn('[App] Push notification service failed to initialize');
+					}
+				} catch (error) {
+					console.error('[App] Error initializing push notification service:', error);
+				}
 			}
 		});
 
