@@ -259,46 +259,9 @@ jobs:
           # Stop demo containers if running
           docker compose -f docker-compose.demo.yml down 2>/dev/null || true
           
-          # Create demo-specific compose if it doesn't exist
-          if [ ! -f docker-compose.demo.yml ]; then
-            echo "📝 Creating demo compose configuration..."
-            cat > docker-compose.demo.yml << 'EOF'
-          services:
-            night-owls-demo:
-              image: ${{ needs.build-and-push.outputs.image }}
-              container_name: night-owls-demo
-              restart: unless-stopped
-              ports:
-                - "5889:5888"
-              environment:
-                - SERVER_PORT=5888
-                - DATABASE_PATH=./data/demo.db
-                - DEV_MODE=true
-                - JWT_SECRET=${JWT_SECRET:-demo-secret-key}
-                - JWT_EXPIRATION_HOURS=168  # 1 week for demo
-                - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
-                - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
-                - VAPID_SUBJECT=${VAPID_SUBJECT:-}
-                - OTP_LOG_PATH=./data/logs/demo_sms_outbox.log
-                # Demo doesn't need real Twilio
-                - TWILIO_ACCOUNT_SID=
-                - TWILIO_AUTH_TOKEN=
-                - TWILIO_VERIFY_SID=
-                - TWILIO_FROM_NUMBER=
-              volumes:
-                - night_owls_demo_data:/app/data
-                - ./frontend-build:/app/frontend:ro
-              networks:
-                - night_owls_demo_network
-
-          volumes:
-            night_owls_demo_data:
-
-          networks:
-            night_owls_demo_network:
-              driver: bridge
-          EOF
-          fi
+          # Download latest demo compose configuration
+          echo "📥 Downloading demo configuration..."
+          curl -s https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.demo.yml > docker-compose.demo.yml
           
           echo "🔐 Logging in to registry..."
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -323,7 +286,7 @@ jobs:
           cd ~/night-owls-go
           
           echo "🌱 Seeding demo database with fresh data..."
-          docker exec night-owls-demo ./seed --db ./data/demo.db --reset --users 50 --future-bookings --verbose
+          docker compose -f docker-compose.demo.yml run --rm night-owls-demo-seed
           
           echo "✅ Demo data seeded successfully"
 
@@ -356,4 +319,5 @@ jobs:
           fi
           
           echo "🎉 Demo deployment completed successfully!"
-          echo "🌐 Demo accessible at: demo.nightowls.app (configure DNS and reverse proxy)"
+          echo "🌐 Demo backend: http://localhost:5889"
+          echo "🌐 Demo frontend: https://demo.nightowls.app (requires Caddy multi-domain config)"

@@ -2,27 +2,12 @@
 	"name": "Mount Moreland Night Owls",
 	"short_name": "Night Owls",
 	"description": "Community watch scheduling and incident reporting for Mount Moreland",
-	"start_url": "/",
-	"scope": "/",
-	"display": "standalone",
-	"orientation": "portrait-primary",
 	"theme_color": "#1f2937",
 	"background_color": "#ffffff",
-	"categories": ["safety", "community", "productivity", "social"],
-	"lang": "en-US",
+	"display": "standalone",
+	"scope": "/",
+	"start_url": "/",
 	"icons": [
-		{
-			"src": "/favicon-16x16.png",
-			"sizes": "16x16",
-			"type": "image/png",
-			"purpose": "any"
-		},
-		{
-			"src": "/favicon-32x32.png",
-			"sizes": "32x32",
-			"type": "image/png",
-			"purpose": "any"
-		},
 		{
 			"src": "/icons/icon-48x48.png",
 			"sizes": "48x48",
@@ -78,81 +63,9 @@
 			"purpose": "any maskable"
 		}
 	],
-	"shortcuts": [
-		{
-			"name": "Report Incident",
-			"short_name": "Report",
-			"description": "Quick access to incident reporting",
-			"url": "/report",
-			"icons": [
-				{
-					"src": "/icons/icon-96x96.png",
-					"sizes": "96x96",
-					"type": "image/png"
-				}
-			]
-		},
-		{
-			"name": "My Shifts",
-			"short_name": "Shifts",
-			"description": "View and manage your patrol shifts",
-			"url": "/bookings",
-			"icons": [
-				{
-					"src": "/icons/icon-96x96.png",
-					"sizes": "96x96",
-					"type": "image/png"
-				}
-			]
-		},
-		{
-			"name": "Messages",
-			"short_name": "Messages",
-			"description": "Community broadcasts and alerts",
-			"url": "/broadcasts",
-			"icons": [
-				{
-					"src": "/icons/icon-96x96.png",
-					"sizes": "96x96",
-					"type": "image/png"
-				}
-			]
-		}
-	],
-	"screenshots": [
-		{
-			"src": "/icons/icon-512x512.png",
-			"sizes": "512x512",
-			"type": "image/png",
-			"form_factor": "wide",
-			"label": "Night Owls Dashboard"
-		}
-	],
-	"edge_side_panel": {
-		"preferred_width": 400
-	},
-	"launch_handler": {
-		"client_mode": "navigate-existing"
-	},
-	"protocol_handlers": [
-		{
-			"protocol": "tel",
-			"url": "/?phone=%s"
-		}
-	],
-	"file_handlers": [],
-	"share_target": {
-		"action": "/report",
-		"method": "GET",
-		"enctype": "application/x-www-form-urlencoded",
-		"params": {
-			"title": "title",
-			"text": "description",
-			"url": "url"
-		}
-	},
-	"prefer_related_applications": false,
-	"related_applications": [],
-	"iarc_rating_id": "",
-	"dir": "ltr"
+	"orientation": "portrait-primary",
+	"categories": ["security", "utilities", "lifestyle"],
+	"lang": "en",
+	"dir": "ltr",
+	"gcm_sender_id": "103953800507"
 }

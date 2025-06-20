@@ -1,3 +1,4 @@
+# Production Instance
 mm.nightowls.app {
     # 1. Static assets
     root * /srv
@@ -39,7 +40,7 @@ mm.nightowls.app {
 
     # Logging
     log {
-        output file /var/log/caddy/mm.nightowls.app.log {
+        output file /var/log/caddy/production.log {
             roll_size 100mb
             roll_keep 5
             roll_keep_for 720h
@@ -48,3 +49,99 @@ mm.nightowls.app {
         level INFO
     }
 }
+
+# Demo Instance  
+demo.nightowls.app {
+    # Demo banner styling
+    header {
+        # Add demo banner via CSS injection
+        Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'"
+    }
+
+    # Static assets
+    root * /srv
+    encode gzip zstd
+
+    # Handle API routes - proxy to demo container on port 5889
+    handle /api/* {
+        reverse_proxy night-owls-demo:5888
+    }
+    
+    handle /health {
+        reverse_proxy night-owls-demo:5888
+    }
+    
+    handle /swagger/* {
+        reverse_proxy night-owls-demo:5888
+    }
+
+    # Handle static files and SPA fallback
+    handle {
+        # Static files with shorter cache for demo
+        @immutable path /_app/immutable/*
+        header @immutable Cache-Control "public, max-age=3600"  # 1 hour instead of 1 year
+        
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Security headers (same as production)
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+        -Server
+    }
+
+    # Demo logging
+    log {
+        output file /var/log/caddy/demo.log {
+            roll_size 50mb
+            roll_keep 3
+            roll_keep_for 168h  # 1 week
+        }
+        format json
+        level INFO
+    }
+}
+
+# Placeholder Marketing Site - Simple redirects for now
+nightowls.app {
+    # Redirect to demo for now
+    handle /demo {
+        redir https://demo.nightowls.app{uri} permanent
+    }
+    
+    handle /app {
+        redir https://mm.nightowls.app{uri} permanent
+    }
+    
+    # Default redirect to demo instance
+    handle {
+        redir https://demo.nightowls.app permanent
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Logging
+    log {
+        output file /var/log/caddy/redirects.log {
+            roll_size 10mb
+            roll_keep 2
+            roll_keep_for 720h
+        }
+        format json
+        level INFO
+    }
+} 

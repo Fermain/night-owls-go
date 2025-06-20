@@ -12,6 +12,7 @@
 	import { notificationStore } from '$lib/services/notificationService';
 	import { userSession } from '$lib/stores/authStore';
 	import { pwaInstallPrompt } from '$lib/stores/onboardingStore';
+	import { pushNotificationService } from '$lib/services/pushNotificationService';
 
 	// Initialize background sync for offline forms
 	import '$lib/utils/backgroundSync';
@@ -51,12 +52,24 @@
 		notificationStore.init();
 
 		// Subscribe to user session changes
-		const userSessionUnsubscribe = userSession.subscribe((session) => {
+		const userSessionUnsubscribe = userSession.subscribe(async (session) => {
 			_currentUserSession = session;
 
 			// Only fetch notifications if user is authenticated
 			if (session.isAuthenticated) {
 				notificationStore.fetchNotifications();
+
+				// Initialize push notification service for authenticated users
+				try {
+					const initialized = await pushNotificationService.initialize();
+					if (initialized) {
+						console.log('[App] Push notification service initialized successfully');
+					} else {
+						console.warn('[App] Push notification service failed to initialize');
+					}
+				} catch (error) {
+					console.error('[App] Error initializing push notification service:', error);
+				}
 			}
 		});
 
@@ -64,6 +77,28 @@
 		const themeUnsubscribe = actualTheme.subscribe((theme) => {
 			themeActions.applyTheme(theme);
 		});
+
+		// Service Worker Navigation Handling (SvelteKit native approach)
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('message', (event) => {
+				if (event.data?.type === 'NAVIGATE') {
+					// Use SvelteKit's programmatic navigation
+					import('$app/navigation').then(({ goto }) => {
+						goto(event.data.url);
+					});
+				} else if (event.data?.type === 'PUSH_RECEIVED') {
+					// Handle push notifications received while app is open
+					notificationStore.addNotification({
+						type: event.data.notificationType || 'broadcast',
+						title: event.data.title || 'New Message',
+						message: event.data.body || 'You have a new message',
+						timestamp: new Date().toISOString(),
+						read: false,
+						data: event.data.data || {}
+					});
+				}
+			});
+		}
 
 		// Listen for PWA install prompt
 		window.addEventListener('beforeinstallprompt', (event) => {
