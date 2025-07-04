@@ -455,7 +455,7 @@
 					<!-- Header with bulk assign -->
 					<div>
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-							<h2 class="text-base font-semibold">Available shifts</h2>
+							<h2 class="text-base font-semibold">Shift Roster</h2>
 						</div>
 
 						<!-- Results summary -->
@@ -464,20 +464,20 @@
 						>
 							<span class="min-w-0 truncate">
 								{#if $availableShiftsQuery?.isFetching}
-									Loading shifts...
+									Loading roster...
 								{:else if availableShifts.length === 0}
-									No shifts found
+									No shifts scheduled
 								{:else if displayedShifts.length < availableShifts.length}
 									Showing {displayedShifts.length} of {availableShifts.length} shifts
 								{:else}
-									{availableShifts.length} shift{availableShifts.length === 1 ? '' : 's'} available
+									{availableShifts.length} shift{availableShifts.length === 1 ? '' : 's'} scheduled
 								{/if}
 							</span>
 						</div>
 					</div>
 
 					{#if displayedShifts.length > 0}
-						<div class="space-y-2">
+						<div class="space-y-3">
 							{#each displayedShifts as shift (`${shift.schedule_id}-${shift.start_time}`)}
 								<CompactShiftCard
 									{shift}

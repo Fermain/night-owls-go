@@ -91,28 +91,56 @@
 </script>
 
 {#if type === 'available'}
-	<!-- Available Shift - Compact List Item -->
-	<div class="flex items-center justify-between py-3 border-b last:border-b-0">
-		<div class="flex-1 min-w-0">
+	<!-- Available Shift - Roster Style -->
+	<div class="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+		<!-- Date & Time Header -->
+		<div class="flex items-center justify-between mb-2">
 			<div class="flex items-center gap-2 text-sm">
 				<span class="font-medium">{formatDate(shift.start_time)}</span>
 				<span class="text-muted-foreground">
 					{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
 				</span>
 			</div>
-			<div class="text-xs text-orange-600 dark:text-orange-400 mt-1">
-				{getTimeUntil(shift.start_time)} away
+			<div class="text-xs text-orange-600 dark:text-orange-400">
+				{getTimeUntil(shift.start_time)}
 			</div>
 		</div>
-		<Button
-			size="sm"
-			onclick={() => onBook?.(shift as AvailableShiftSlot)}
-			disabled={isLoading}
-			class="ml-4 shrink-0"
-		>
-			<PlusIcon class="h-3 w-3 mr-1" />
-			{isLoading ? 'Booking...' : 'Commit'}
-		</Button>
+
+		<!-- Roster Information & Action -->
+		<div class="flex items-center justify-between">
+			<div class="flex-1 min-w-0">
+				{#if shift.is_booked}
+					<!-- Show who's working -->
+					<div class="text-sm text-green-700 dark:text-green-400">
+						<span class="font-medium">{shift.user_name || 'Someone'}</span>
+						{#if shift.buddy_name}
+							<span class="text-muted-foreground"> + {shift.buddy_name}</span>
+						{/if}
+					</div>
+				{:else}
+					<!-- Open shift -->
+					<div class="text-sm text-muted-foreground">
+						<span class="italic">Open shift</span>
+					</div>
+				{/if}
+			</div>
+
+			{#if !shift.is_booked}
+				<!-- Available for booking -->
+				<Button
+					size="sm"
+					onclick={() => onBook?.(shift as AvailableShiftSlot)}
+					disabled={isLoading}
+					class="ml-3 shrink-0"
+				>
+					<PlusIcon class="h-3 w-3 mr-1" />
+					{isLoading ? 'Booking...' : 'Commit'}
+				</Button>
+			{:else}
+				<!-- Already booked -->
+				<div class="text-xs text-muted-foreground ml-3">Assigned</div>
+			{/if}
+		</div>
 	</div>
 {:else if type === 'next'}
 	<!-- Next Shift - Compact Card -->
