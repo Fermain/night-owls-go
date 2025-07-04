@@ -21,6 +21,13 @@
 					// Check service worker state
 					if (registration.active) {
 						registrationStatus += ` (State: ${registration.active.state})`;
+						registrationStatus += ` | Script: ${registration.active.scriptURL}`;
+					}
+					if (registration.waiting) {
+						registrationStatus += ` | Waiting worker available`;
+					}
+					if (registration.installing) {
+						registrationStatus += ` | Installing worker`;
 					}
 				} else {
 					registrationStatus = '❌ No service worker registered';
@@ -43,7 +50,9 @@
 
 	async function testServiceWorkerManually() {
 		try {
-			const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+			const registration = await navigator.serviceWorker.register('/service-worker.js', {
+				scope: '/'
+			});
 			registrationStatus = `✅ Manual registration successful: ${registration.scope}`;
 			swRegistration = registration;
 		} catch (error) {

@@ -11,10 +11,11 @@ export default defineConfig(({ mode: _mode }) => {
 		plugins: [
 			sveltekit(),
 			SvelteKitPWA({
+				strategies: 'generateSW',
 				srcDir: './src',
-				mode: 'development',
 				scope: '/',
 				base: '/',
+				mode: 'development',
 				selfDestroying: process.env.NODE_ENV === 'development',
 				manifest: {
 					name: 'Mount Moreland Night Owls',
@@ -40,17 +41,32 @@ export default defineConfig(({ mode: _mode }) => {
 						}
 					]
 				},
-				injectManifest: {
-					globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}']
-				},
 				workbox: {
-					globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}']
+					globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+					importScripts: ['/sw-push-handlers.js'],
+					runtimeCaching: [
+						{
+							urlPattern: /^https:\/\/api\//,
+							handler: 'NetworkFirst',
+							options: {
+								cacheName: 'api-cache',
+								expiration: {
+									maxEntries: 100,
+									maxAgeSeconds: 60 * 60 * 24 // 24 hours
+								}
+							}
+						}
+					],
+					additionalManifestEntries: [],
+					skipWaiting: true,
+					clientsClaim: true
 				},
 				devOptions: {
 					enabled: true,
 					suppressWarnings: process.env.SUPPRESS_WARNING === 'true',
 					type: 'module',
-					navigateFallback: '/'
+					navigateFallback: '/',
+					webManifestUrl: '/manifest.webmanifest'
 				}
 			})
 		],
