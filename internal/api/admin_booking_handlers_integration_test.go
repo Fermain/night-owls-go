@@ -344,6 +344,8 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 	outboxItems, err := app.Querier.GetPendingOutboxItems(ctx, 5)
 	require.NoError(t, err)
 
+
+
 	foundOutboxMsg := false
 	for _, item := range outboxItems {
 		if item.MessageType == "ADMIN_SHIFT_ASSIGNMENT" && item.UserID.Valid && item.UserID.Int64 == targetUser.UserID {
