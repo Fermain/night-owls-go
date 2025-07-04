@@ -313,6 +313,9 @@ func main() {
 		}
 	})
 
+	// Logout endpoint (requires auth to log out properly, but could also be public)
+	fuego.PostStd(publicAPI, "/auth/logout", authAPIHandler.LogoutHandler)
+
 	// Protected routes (require auth)
 	protected := fuego.Group(s, apiPrefix)
 	fuego.Use(protected, api.AuthMiddleware(cfg, logger))

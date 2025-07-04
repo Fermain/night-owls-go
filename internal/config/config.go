@@ -101,7 +101,7 @@ func LoadConfig() (*Config, error) {
 		LogLevel:             "info", // Default log level
 		LogFormat:            "json", // Default log format
 
-		JWTExpirationHours: 24, // Default 24 hours
+		JWTExpirationHours: 336, // Default 2 weeks (336 hours) - configurable via JWT_EXPIRATION_HOURS env var
 		OTPValidityMinutes: 5,  // Default 5 minutes
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
 		OutboxBatchSize:  10, // Default 10 messages per batch

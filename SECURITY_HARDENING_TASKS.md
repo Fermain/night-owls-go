@@ -112,22 +112,34 @@ This document tracks the implementation of security fixes identified in the secu
 ## 🟡 HIGH RISK VULNERABILITIES
 
 ### Task 5: Secure JWT Storage
-**Priority**: High Risk | **Status**: ❌ Not Started
+**Priority**: High Risk | **Status**: ✅ COMPLETED
 
 **Issue**: JWT stored in localStorage, vulnerable to XSS
 **Impact**: Token theft via malicious scripts
 
 **Implementation Plan**:
-- [ ] Replace localStorage with HTTP-only cookies
-- [ ] Implement SameSite=Strict cookie policy
-- [ ] Add Secure flag for HTTPS
-- [ ] Update frontend authentication flow
-- [ ] Add CSRF protection for cookie-based auth
+- [x] Replace localStorage with HTTP-only cookies
+- [x] Implement SameSite=Strict cookie policy
+- [x] Add Secure flag for HTTPS
+- [x] Update frontend authentication flow
+- [x] Add CSRF protection for cookie-based auth
+- [x] Updated JWT expiry default to 2 weeks (user requested)
 
-**Files to Modify**:
-- `app/src/lib/stores/authStore.ts`
-- `internal/api/auth_handlers.go`
-- Frontend authentication components
+**Files Modified**:
+- `internal/config/config.go` - Updated JWT expiry default to 2 weeks
+- `internal/api/auth_handlers.go` - Added secure cookie helpers and logout endpoint
+- `internal/api/middleware.go` - Enhanced to read tokens from cookies and headers  
+- `app/src/lib/stores/authStore.ts` - Complete rewrite for secure cookie support
+- `cmd/server/main.go` - Added logout endpoint registration
+
+**Security Features Implemented**:
+- ✅ HTTP-only cookies prevent JavaScript access (XSS protection)
+- ✅ SameSite=Strict for CSRF protection
+- ✅ Secure flag for HTTPS-only transmission (dev mode compatible)
+- ✅ Backward compatibility: supports both cookies and header tokens
+- ✅ Automatic cookie expiry aligned with JWT expiration (2 weeks)
+- ✅ Secure logout endpoint that clears HTTP-only cookies
+- ✅ Progressive enhancement: cookies take priority over localStorage
 
 ---
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -18,6 +19,12 @@ import (
 )
 
 var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
+
+// Cookie configuration constants
+const (
+	JWTCookieName = "auth_token"
+	CSRFCookieName = "csrf_token"
+)
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
@@ -78,6 +85,46 @@ type DevLoginResponse struct {
 		Name  string `json:"name"`
 		Role  string `json:"role"`
 	} `json:"user"`
+}
+
+// setJWTCookie sets a secure HTTP-only cookie with the JWT token
+func setJWTCookie(w http.ResponseWriter, token string, expirationHours int) {
+	cookie := &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   expirationHours * 3600, // Convert hours to seconds
+		HttpOnly: true,                   // Prevent JavaScript access (XSS protection)
+		Secure:   true,                   // Only send over HTTPS (set to false in dev if needed)
+		SameSite: http.SameSiteStrictMode, // CSRF protection
+	}
+	
+	// In development, allow non-HTTPS cookies
+	if strings.Contains(os.Getenv("ENVIRONMENT"), "dev") || os.Getenv("DEV_MODE") == "true" {
+		cookie.Secure = false
+	}
+	
+	http.SetCookie(w, cookie)
+}
+
+// clearJWTCookie clears the JWT cookie by setting it to expire immediately
+func clearJWTCookie(w http.ResponseWriter) {
+	cookie := &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Immediate expiry
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	
+	// In development, allow non-HTTPS cookies
+	if strings.Contains(os.Getenv("ENVIRONMENT"), "dev") || os.Getenv("DEV_MODE") == "true" {
+		cookie.Secure = false
+	}
+	
+	http.SetCookie(w, cookie)
 }
 
 // RegisterHandler handles POST /auth/register
@@ -243,6 +290,11 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Set secure HTTP-only cookie for the JWT token
+	setJWTCookie(w, token, h.config.JWTExpirationHours)
+	
+	// For now, also return token in response for backward compatibility
+	// TODO: Remove token from JSON response in future version once all clients use cookies
 	RespondWithJSON(w, http.StatusOK, VerifyResponse{Token: token}, h.logger)
 }
 
@@ -352,8 +404,11 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 		h.logger.ErrorContext(r.Context(), "Failed to log dev login audit event", "error", err, "user_id", user.UserID)
 	}
 
+	// Set secure HTTP-only cookie for the JWT token
+	setJWTCookie(w, token, h.config.JWTExpirationHours)
+
 	response := DevLoginResponse{
-		Token: token,
+		Token: token, // Keep for backward compatibility
 		User: struct {
 			ID    int64  `json:"id"`
 			Phone string `json:"phone"`
@@ -369,6 +424,32 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.InfoContext(r.Context(), "Dev login successful", "phone", phoneE164, "user_id", user.UserID, "role", user.Role)
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
+}
+
+// LogoutHandler handles POST /auth/logout
+// @Summary Logout and clear authentication cookies
+// @Description Clears the JWT authentication cookie and logs out the user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Successfully logged out"
+// @Router /auth/logout [post]
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Clear the JWT cookie
+	clearJWTCookie(w)
+	
+	// Log logout event if user context is available
+	if userIDVal := r.Context().Value("userID"); userIDVal != nil {
+		if userID, ok := userIDVal.(int64); ok {
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+			if err := h.auditService.LogUserLogout(r.Context(), userID, ipAddress, userAgent); err != nil {
+				h.logger.ErrorContext(r.Context(), "Failed to log user logout audit event", "error", err, "user_id", userID)
+			}
+		}
+	}
+	
+	h.logger.InfoContext(r.Context(), "User logged out successfully")
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully logged out"}, h.logger)
 }
 
 // extractClientInfo extracts client IP and user agent from HTTP request
