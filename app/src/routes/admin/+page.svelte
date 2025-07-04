@@ -1,16 +1,22 @@
 <script lang="ts">
-	import MobileAdminDashboard from '$lib/components/admin/MobileAdminDashboard.svelte';
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import UpcomingShifts from '$lib/components/admin/shifts/UpcomingShifts.svelte';
-	import { createAdminDashboardQuery } from '$lib/queries/admin/dashboard';
+	import AdminShiftCalendar from '$lib/components/admin/calendar/AdminShiftCalendar.svelte';
+	import { createAdminShiftsQuery } from '$lib/queries/admin/shifts/adminShiftsQuery';
+	import { LoadingState, ErrorState } from '$lib/components/ui';
 
-	// Create the comprehensive dashboard query
-	const dashboardQuery = $derived(createAdminDashboardQuery());
+	// Create the admin shifts query for the calendar
+	const adminShiftsQuery = $derived(createAdminShiftsQuery('14')); // 2 weeks default
 
-	const isLoading = $derived($dashboardQuery.isLoading);
-	const isError = $derived($dashboardQuery.isError);
-	const error = $derived($dashboardQuery.error || undefined);
-	const dashboardData = $derived($dashboardQuery.data);
+	const isLoading = $derived($adminShiftsQuery.isLoading);
+	const isError = $derived($adminShiftsQuery.isError);
+	const error = $derived($adminShiftsQuery.error || undefined);
+	const shiftsData = $derived($adminShiftsQuery.data || []);
+
+	// Handle shift updates (refresh calendar after assignment changes)
+	function handleShiftUpdate() {
+		$adminShiftsQuery.refetch();
+	}
 </script>
 
 <svelte:head>
@@ -23,15 +29,23 @@
 	{/snippet}
 
 	<div class="p-6 space-y-6">
-		<!-- Page Header with proper admin styling -->
-		<div class="border-b pb-4">
-			<h1 class="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-			<p class="text-lg text-muted-foreground mt-2">
-				Quick insights and actions for community watch operations
-			</p>
-		</div>
-
-		<!-- Mobile-First Dashboard Content with consistent padding -->
-		<MobileAdminDashboard {isLoading} {isError} {error} data={dashboardData} />
+		<!-- Admin Calendar Content -->
+		{#if isLoading}
+			<LoadingState isLoading={true} loadingText="Loading shifts calendar..." className="py-16" />
+		{:else if isError}
+			<ErrorState
+				error={error || null}
+				title="Failed to load shifts"
+				showRetry={true}
+				onRetry={() => $adminShiftsQuery.refetch()}
+				className="py-16"
+			/>
+		{:else}
+			<AdminShiftCalendar
+				shifts={shiftsData}
+				selectedDayRange="14"
+				onShiftUpdate={handleShiftUpdate}
+			/>
+		{/if}
 	</div>
 </SidebarPage>
