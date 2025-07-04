@@ -28,7 +28,7 @@ var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 // Session configuration constants
 const (
 	SessionName = "night-owls-session"
-	SessionMaxAge = 336 * 3600 // 2 weeks in seconds (matching JWT expiry)
+	// SessionMaxAge removed - now calculated from JWT expiration config
 )
 
 // Standardized error messages to prevent user enumeration
@@ -142,7 +142,7 @@ func (h *AuthHandler) setUserSession(w http.ResponseWriter, r *http.Request, use
 	// Configure session options
 	session.Options = &sessions.Options{
 		Path:     "/",
-		MaxAge:   SessionMaxAge,
+		MaxAge:   h.config.JWTExpirationHours * 3600, // Convert hours to seconds, sync with JWT expiry
 		HttpOnly: true,
 		Secure:   !isDevelopmentMode(), // Secure in production, allow HTTP in dev
 		SameSite: http.SameSiteStrictMode,

@@ -134,7 +134,7 @@ func main() {
 	sessionStore := sessions.NewCookieStore([]byte(cfg.JWTSecret))
 	sessionStore.Options = &sessions.Options{
 		Path:     "/",
-		MaxAge:   336 * 3600, // 2 weeks (matching JWT expiry)
+		MaxAge:   cfg.JWTExpirationHours * 3600, // Convert hours to seconds, sync with JWT expiry
 		HttpOnly: true,
 		Secure:   !cfg.DevMode, // Use secure cookies in production
 		SameSite: http.SameSiteStrictMode,
