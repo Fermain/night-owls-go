@@ -237,8 +237,8 @@ This document tracks the implementation of security fixes identified in the secu
 
 ### Phase 2: High Risk Mitigations
 5. **Security Headers** (Task 7) - Quick frontend hardening
-6. **Error Message Standardization** (Task 6 & 8) - Prevents enumeration
-7. **Secure JWT Storage** (Task 5) - Frontend security improvement
+6. **Error Message Standardization** (Task 6 & 8) - Prevents enumeration ✅ **COMPLETED**
+7. **Secure JWT Storage** (Task 5) - Frontend security improvement ✅ **COMPLETED**
 
 ### Phase 3: Additional Hardening
 8. **Constant-Time Comparison** (Task 9) - Timing attack prevention
