@@ -2,13 +2,16 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
+	"math/big"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config"
@@ -24,6 +27,18 @@ var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 const (
 	JWTCookieName = "auth_token"
 	CSRFCookieName = "csrf_token"
+)
+
+// Standardized error messages to prevent user enumeration
+const (
+	// Generic authentication error - used for all auth failures
+	AuthenticationFailedMessage = "Authentication failed"
+	
+	// Generic validation error - used for all validation failures  
+	ValidationFailedMessage = "Invalid request"
+	
+	// Generic internal error - used for all server errors
+	InternalErrorMessage = "Service temporarily unavailable"
 )
 
 // AuthHandler handles authentication-related HTTP requests.
@@ -127,6 +142,19 @@ func clearJWTCookie(w http.ResponseWriter) {
 	http.SetCookie(w, cookie)
 }
 
+// addTimingRandomization adds a small random delay to prevent timing attacks
+func addTimingRandomization() {
+	// Add 50-150ms random delay to normalize response times
+	randomMs, err := rand.Int(rand.Reader, big.NewInt(100))
+	if err != nil {
+		// Fallback to fixed delay if randomization fails
+		time.Sleep(100 * time.Millisecond)
+		return
+	}
+	delay := time.Duration(50+randomMs.Int64()) * time.Millisecond
+	time.Sleep(delay)
+}
+
 // RegisterHandler handles POST /auth/register
 // @Summary Register a new user or request OTP for existing user
 // @Description Registers a new user with phone number or starts login flow for existing user
@@ -178,15 +206,18 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName, clientIP, userAgent)
 	if err != nil {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
+		
+		// Add timing randomization to prevent enumeration via timing attacks
+		addTimingRandomization()
 
-		// Check for specific user not found error
-		if err.Error() == "user not found - please register first" {
-			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())
-		} else if strings.Contains(err.Error(), "failed to send SMS") {
-			// Twilio-specific error
-			RespondWithError(w, http.StatusInternalServerError, "Failed to send SMS verification code", h.logger, "error", err.Error())
+		// Always return the same generic error regardless of the specific issue
+		// This prevents attackers from determining if a phone number is registered
+		if strings.Contains(err.Error(), "rate limit") {
+			// Rate limiting errors should be more specific to help legitimate users
+			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+			// All other errors (user not found, SMS failures, etc.) get generic message
+			RespondWithError(w, http.StatusBadRequest, ValidationFailedMessage, h.logger, "error", err.Error())
 		}
 		return
 	}
@@ -264,11 +295,18 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code))
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err == service.ErrOTPValidationFailed || err == service.ErrUserNotFound {
-			statusCode = http.StatusUnauthorized
+		// Add timing randomization to prevent enumeration via timing attacks
+		addTimingRandomization()
+		
+		// Always return the same generic error regardless of the specific issue
+		// This prevents attackers from determining if a phone number is registered
+		if strings.Contains(err.Error(), "rate limit") {
+			// Rate limiting errors should be more specific to help legitimate users
+			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
+		} else {
+			// All other errors (invalid OTP, user not found, etc.) get generic message
+			RespondWithError(w, http.StatusUnauthorized, AuthenticationFailedMessage, h.logger, "error", err.Error())
 		}
-		RespondWithError(w, statusCode, "OTP verification failed", h.logger, "error", err.Error())
 		return
 	}
 
@@ -379,11 +417,16 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user details from database
 	user, err := h.querier.GetUserByPhone(r.Context(), phoneE164)
 	if err != nil {
+		// Add timing randomization to prevent enumeration via timing attacks
+		addTimingRandomization()
+		
+		// Always return the same generic error regardless of the specific issue
+		// This prevents attackers from determining if a phone number is registered
 		if err == sql.ErrNoRows {
-			RespondWithError(w, http.StatusNotFound, "User not found", h.logger, "phone", phoneE164)
-			return
+			RespondWithError(w, http.StatusUnauthorized, AuthenticationFailedMessage, h.logger, "phone", phoneE164)
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Failed to get user", h.logger, "error", err.Error())
 		return
 	}
 
