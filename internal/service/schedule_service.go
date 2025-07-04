@@ -103,9 +103,9 @@ func calculateScheduleBoundaryTimesInLocation(schedule db.Schedule, defaultLoc *
 	return startDate, endDate, loc, err // err will be nil if location loaded successfully or no timezone string
 }
 
-// GetUpcomingAvailableSlots finds all shift slots (both available and booked)
+// GetUpcomingAvailableSlots finds only available (unbooked) shift slots
 // across schedules that are active within the given time window.
-// Enhanced to include assignment details for community roster experience.
+// This method filters out already booked slots to show only available opportunities.
 func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFrom *time.Time, queryTo *time.Time, limit *int) ([]AvailableShiftSlot, error) {
 	now := time.Now().UTC() // Use UTC for baseline "now"
 	defaultFrom := now
@@ -181,7 +181,7 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		}
 	}
 
-	// Populate assignment details for all slots (both available and booked)
+	// Check booking status for all generated slots and filter to only available ones
 	var populatedSlots []AvailableShiftSlot
 	for _, slot := range allSlots {
 		populatedSlot := slot
@@ -219,7 +219,10 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 			populatedSlot.IsBooked = false
 		}
 
-		populatedSlots = append(populatedSlots, populatedSlot)
+		// Only include unbooked (available) slots in the result
+		if !populatedSlot.IsBooked {
+			populatedSlots = append(populatedSlots, populatedSlot)
+		}
 	}
 
 	sort.Slice(populatedSlots, func(i, j int) bool {
