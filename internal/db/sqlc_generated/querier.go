@@ -49,6 +49,7 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
+	GetAllOTPAttemptsInWindow(ctx context.Context, attemptedAt time.Time) ([]GetAllOTPAttemptsInWindowRow, error)
 	GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error)
 	GetAuditEventStats(ctx context.Context) (GetAuditEventStatsRow, error)
 	GetAuditEventsByTypeStats(ctx context.Context) ([]GetAuditEventsByTypeStatsRow, error)
@@ -64,6 +65,7 @@ type Querier interface {
 	// Get all bookings in date range with check-in and report status
 	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
 	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	GetCurrentlyLockedAccounts(ctx context.Context) ([]GetCurrentlyLockedAccountsRow, error)
 	GetDefaultEmergencyContact(ctx context.Context) (EmergencyContact, error)
 	GetEmergencyContactByID(ctx context.Context, contactID int64) (EmergencyContact, error)
 	GetEmergencyContacts(ctx context.Context) ([]EmergencyContact, error)

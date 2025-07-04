@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"fmt"
 	"math/big"
 	"sync"
@@ -88,7 +89,9 @@ func (s *InMemoryOTPStore) ValidateOTP(identifier string, otpToValidate string) 
 		return false
 	}
 
-	valid := entry.OTP == otpToValidate
+	// Use constant-time comparison to prevent timing attacks
+	// subtle.ConstantTimeCompare returns 1 if equal, 0 if not
+	valid := subtle.ConstantTimeCompare([]byte(entry.OTP), []byte(otpToValidate)) == 1
 	if valid {
 		s.mu.Lock()
 		delete(s.store, identifier)

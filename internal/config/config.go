@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"os"
 	"strconv"
@@ -47,8 +48,8 @@ const (
 
 // ValidateSecurityConfig validates critical security configurations
 func (c *Config) ValidateSecurityConfig() error {
-	// Check for default JWT secret
-	if c.JWTSecret == DefaultJWTSecret {
+	// Check for default JWT secret - use constant-time comparison to prevent timing attacks
+	if subtle.ConstantTimeCompare([]byte(c.JWTSecret), []byte(DefaultJWTSecret)) == 1 {
 		if isProductionEnvironment() {
 			return fmt.Errorf("CRITICAL SECURITY ERROR: Default JWT secret detected in production environment. Set JWT_SECRET environment variable")
 		}

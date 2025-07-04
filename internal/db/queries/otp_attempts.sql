@@ -57,4 +57,16 @@ WHERE locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP;
 -- name: CleanupExpiredLocks :exec
 UPDATE otp_rate_limits 
 SET failed_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP
-WHERE locked_until IS NOT NULL AND locked_until <= CURRENT_TIMESTAMP; 
+WHERE locked_until IS NOT NULL AND locked_until <= CURRENT_TIMESTAMP;
+
+-- name: GetCurrentlyLockedAccounts :many
+SELECT phone, failed_attempts, first_attempt_at, last_attempt_at, locked_until
+FROM otp_rate_limits 
+WHERE locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP
+ORDER BY locked_until DESC;
+
+-- name: GetAllOTPAttemptsInWindow :many
+SELECT phone, attempted_at, success, client_ip, user_agent
+FROM otp_attempts 
+WHERE attempted_at >= ?
+ORDER BY attempted_at DESC; 

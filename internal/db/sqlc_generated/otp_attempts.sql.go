@@ -112,6 +112,94 @@ func (q *Queries) DeleteOTPRateLimit(ctx context.Context, phone string) error {
 	return err
 }
 
+const getAllOTPAttemptsInWindow = `-- name: GetAllOTPAttemptsInWindow :many
+SELECT phone, attempted_at, success, client_ip, user_agent
+FROM otp_attempts 
+WHERE attempted_at >= ?
+ORDER BY attempted_at DESC
+`
+
+type GetAllOTPAttemptsInWindowRow struct {
+	Phone       string         `json:"phone"`
+	AttemptedAt time.Time      `json:"attempted_at"`
+	Success     int64          `json:"success"`
+	ClientIp    sql.NullString `json:"client_ip"`
+	UserAgent   sql.NullString `json:"user_agent"`
+}
+
+func (q *Queries) GetAllOTPAttemptsInWindow(ctx context.Context, attemptedAt time.Time) ([]GetAllOTPAttemptsInWindowRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllOTPAttemptsInWindow, attemptedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAllOTPAttemptsInWindowRow{}
+	for rows.Next() {
+		var i GetAllOTPAttemptsInWindowRow
+		if err := rows.Scan(
+			&i.Phone,
+			&i.AttemptedAt,
+			&i.Success,
+			&i.ClientIp,
+			&i.UserAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCurrentlyLockedAccounts = `-- name: GetCurrentlyLockedAccounts :many
+SELECT phone, failed_attempts, first_attempt_at, last_attempt_at, locked_until
+FROM otp_rate_limits 
+WHERE locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP
+ORDER BY locked_until DESC
+`
+
+type GetCurrentlyLockedAccountsRow struct {
+	Phone          string       `json:"phone"`
+	FailedAttempts int64        `json:"failed_attempts"`
+	FirstAttemptAt time.Time    `json:"first_attempt_at"`
+	LastAttemptAt  time.Time    `json:"last_attempt_at"`
+	LockedUntil    sql.NullTime `json:"locked_until"`
+}
+
+func (q *Queries) GetCurrentlyLockedAccounts(ctx context.Context) ([]GetCurrentlyLockedAccountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCurrentlyLockedAccounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetCurrentlyLockedAccountsRow{}
+	for rows.Next() {
+		var i GetCurrentlyLockedAccountsRow
+		if err := rows.Scan(
+			&i.Phone,
+			&i.FailedAttempts,
+			&i.FirstAttemptAt,
+			&i.LastAttemptAt,
+			&i.LockedUntil,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFailedOTPAttemptsInWindow = `-- name: GetFailedOTPAttemptsInWindow :one
 SELECT COUNT(*) as failed_count
 FROM otp_attempts 
