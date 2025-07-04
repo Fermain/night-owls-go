@@ -236,7 +236,7 @@ SELECT
     u.phone as user_phone,
     s.name as schedule_name,
     CASE WHEN r.report_id IS NOT NULL THEN 1 ELSE 0 END as has_report,
-    COALESCE(CAST((julianday(b.shift_start) - julianday('now')) AS INTEGER), 0) as days_from_now,
+    CAST(julianday(b.shift_start) - julianday('now') AS INTEGER) as days_from_now,
     CASE 
         WHEN datetime(b.shift_start) <= datetime('now', '+1 day') THEN 'urgent'
         WHEN datetime(b.shift_start) <= datetime('now', '+3 days') THEN 'critical'
@@ -267,7 +267,7 @@ type GetBookingsInDateRangeRow struct {
 	UserPhone    string         `json:"user_phone"`
 	ScheduleName string         `json:"schedule_name"`
 	HasReport    int64          `json:"has_report"`
-	DaysFromNow  interface{}    `json:"days_from_now"`
+	DaysFromNow  int64          `json:"days_from_now"`
 	UrgencyLevel string         `json:"urgency_level"`
 }
 
