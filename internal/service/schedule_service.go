@@ -181,41 +181,69 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		}
 	}
 
-	// Check booking status for all generated slots and filter to only available ones
+	// Batch retrieve bookings for the entire time range to avoid N+1 queries
 	var populatedSlots []AvailableShiftSlot
+	if len(allSlots) == 0 {
+		return populatedSlots, nil
+	}
+
+	// Find the overall time range for batch booking query
+	minTime := allSlots[0].StartTime
+	maxTime := allSlots[0].EndTime
+	for _, slot := range allSlots {
+		if slot.StartTime.Before(minTime) {
+			minTime = slot.StartTime
+		}
+		if slot.EndTime.After(maxTime) {
+			maxTime = slot.EndTime
+		}
+	}
+
+	// Batch retrieve all bookings in the time range
+	allBookings, err := s.querier.GetBookingsInDateRange(ctx, db.GetBookingsInDateRangeParams{
+		ShiftStart:   minTime.UTC(),
+		ShiftStart_2: maxTime.UTC(),
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to batch retrieve bookings", "error", err)
+		// Continue with unbooked slots if booking query fails
+		for _, slot := range allSlots {
+			populatedSlots = append(populatedSlots, slot)
+		}
+		return populatedSlots, nil
+	}
+
+	// Create lookup map: schedule_id + start_time -> booking details
+	bookingMap := make(map[string]db.GetBookingsInDateRangeRow)
+	for _, booking := range allBookings {
+		key := fmt.Sprintf("%d_%s", booking.ScheduleID, booking.ShiftStart.UTC().Format(time.RFC3339))
+		bookingMap[key] = booking
+	}
+
+	// Process each slot using the booking lookup map
 	for _, slot := range allSlots {
 		populatedSlot := slot
-
-		// Check for actual bookings and populate assignment details
-		booking, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
-			ScheduleID: slot.ScheduleID,
-			ShiftStart: slot.StartTime.UTC(),
-		})
-
-		if err == nil {
+		slotKey := fmt.Sprintf("%d_%s", slot.ScheduleID, slot.StartTime.UTC().Format(time.RFC3339))
+		
+		if booking, exists := bookingMap[slotKey]; exists {
 			// Booking exists - populate assignment details
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-
-			user, userErr := s.querier.GetUserByID(ctx, booking.UserID)
-			if userErr == nil {
-				if user.Name.Valid {
-					populatedSlot.UserName = &user.Name.String
-				}
-				if user.Phone != "" {
-					populatedSlot.UserPhone = &user.Phone
-				}
+			
+			// User details are already included in the joined query
+			if booking.UserName != "" {
+				populatedSlot.UserName = &booking.UserName
 			}
-
-			if booking.BuddyName.Valid {
+			if booking.UserPhone != "" {
+				populatedSlot.UserPhone = &booking.UserPhone
+			}
+			
+			// Handle buddy information from the joined query
+			if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 				populatedSlot.BuddyName = &booking.BuddyName.String
 			}
-		} else if errors.Is(err, sql.ErrNoRows) {
-			// No booking exists - keep as available slot
-			populatedSlot.IsBooked = false
 		} else {
-			// Database error - log but include slot as available
-			s.logger.ErrorContext(ctx, "Error checking booking for slot", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
+			// No booking exists - keep as available slot
 			populatedSlot.IsBooked = false
 		}
 
@@ -314,40 +342,69 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		}
 	}
 
+	// Batch retrieve bookings for the entire time range to avoid N+1 queries
 	var populatedSlots []AdminAvailableShiftSlot
+	if len(allSlots) == 0 {
+		return populatedSlots, nil
+	}
+
+	// Find the overall time range for batch booking query
+	minTime := allSlots[0].StartTime
+	maxTime := allSlots[0].EndTime
 	for _, slot := range allSlots {
-		populatedSlot := slot
+		if slot.StartTime.Before(minTime) {
+			minTime = slot.StartTime
+		}
+		if slot.EndTime.After(maxTime) {
+			maxTime = slot.EndTime
+		}
+	}
 
-		// First check for actual bookings
-		booking, err := s.querier.GetBookingByScheduleAndStartTime(ctx, db.GetBookingByScheduleAndStartTimeParams{
-			ScheduleID: slot.ScheduleID,
-			ShiftStart: slot.StartTime.UTC(),
-		})
+	// Batch retrieve all bookings in the time range
+	allBookings, err := s.querier.GetBookingsInDateRange(ctx, db.GetBookingsInDateRangeParams{
+		ShiftStart:   minTime.UTC(),
+		ShiftStart_2: maxTime.UTC(),
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to batch retrieve bookings for admin", "error", err)
+		// Continue with unbooked slots if booking query fails
+		for _, slot := range allSlots {
+			populatedSlots = append(populatedSlots, AdminAvailableShiftSlot(slot))
+		}
+		return populatedSlots, nil
+	}
 
-		if err == nil {
-			// Actual booking exists
+	// Create lookup map: schedule_id + start_time -> booking details
+	bookingMap := make(map[string]db.GetBookingsInDateRangeRow)
+	for _, booking := range allBookings {
+		key := fmt.Sprintf("%d_%s", booking.ScheduleID, booking.ShiftStart.UTC().Format(time.RFC3339))
+		bookingMap[key] = booking
+	}
+
+	// Process each slot using the booking lookup map
+	for _, slot := range allSlots {
+		populatedSlot := AdminAvailableShiftSlot(slot)
+		slotKey := fmt.Sprintf("%d_%s", slot.ScheduleID, slot.StartTime.UTC().Format(time.RFC3339))
+		
+		if booking, exists := bookingMap[slotKey]; exists {
+			// Booking exists - populate assignment details
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-
-			user, userErr := s.querier.GetUserByID(ctx, booking.UserID)
-			if userErr == nil {
-				if user.Name.Valid {
-					populatedSlot.UserName = &user.Name.String
-				}
-				if user.Phone != "" {
-					populatedSlot.UserPhone = &user.Phone
-				}
+			
+			// User details are already included in the joined query
+			if booking.UserName != "" {
+				populatedSlot.UserName = &booking.UserName
 			}
-
-			if booking.BuddyName.Valid {
+			if booking.UserPhone != "" {
+				populatedSlot.UserPhone = &booking.UserPhone
+			}
+			
+			// Handle buddy information from the joined query
+			if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 				populatedSlot.BuddyName = &booking.BuddyName.String
 			}
-		} else if errors.Is(err, sql.ErrNoRows) {
-			// No booking exists
-			populatedSlot.IsBooked = false
 		} else {
-			// Database error
-			s.logger.ErrorContext(ctx, "Error checking booking for admin slot", "schedule_id", slot.ScheduleID, "slot_start_time_loc", slot.StartTime, "slot_start_time_utc", slot.StartTime.UTC(), "error", err)
+			// No booking exists
 			populatedSlot.IsBooked = false
 		}
 
