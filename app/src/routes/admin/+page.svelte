@@ -4,6 +4,10 @@
 	import AdminShiftCalendar from '$lib/components/admin/calendar/AdminShiftCalendar.svelte';
 	import { createAdminShiftsQuery } from '$lib/queries/admin/shifts/adminShiftsQuery';
 	import { LoadingState, ErrorState } from '$lib/components/ui';
+	import { getPageOpenGraph } from '$lib/utils/opengraph';
+
+	// OpenGraph tags for admin dashboard
+	const ogTags = getPageOpenGraph('admin');
 
 	// Import centralized default to avoid divergence with calendar component
 	import { DEFAULT_DAY_RANGE } from '$lib/utils/adminCalendar';
@@ -33,7 +37,31 @@
 </script>
 
 <svelte:head>
-	<title>Admin Dashboard - Mount Moreland Night Owls</title>
+	<title>{ogTags.title}</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.description}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImageAlt}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogType}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogSiteName}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterCard}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImageAlt}
 </svelte:head>
 
 <SidebarPage title="Upcoming Shifts">

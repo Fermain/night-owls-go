@@ -9,6 +9,10 @@
 	import { isAuthenticated, currentUser } from '$lib/services/userService';
 	import { formStore, saveUserData, clearUserData } from '$lib/stores/formStore';
 	import type { E164Number } from 'svelte-tel-input/types';
+	import { getPageOpenGraph } from '$lib/utils/opengraph';
+
+	// OpenGraph tags for this page
+	const ogTags = getPageOpenGraph('register');
 
 	$effect(() => {
 		if ($isAuthenticated) {
@@ -70,7 +74,31 @@
 </script>
 
 <svelte:head>
-	<title>Join Night Owls Control</title>
+	<title>{ogTags.title}</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.description}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImageAlt}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogType}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogSiteName}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterCard}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImageAlt}
 </svelte:head>
 
 {#if !$isAuthenticated}
