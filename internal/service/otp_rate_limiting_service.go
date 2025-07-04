@@ -263,13 +263,19 @@ func boolToInt(b bool) int64 {
 }
 
 // CheckRegistrationRateLimit verifies if registration attempts are allowed from IP and for phone
+// 
+// DESIGN NOTE: This function reuses the existing otp_attempts table for both phone and IP rate limiting
+// by storing IP addresses in the phone column for IP-based records. This avoids creating separate tables
+// while maintaining the same rate limiting logic. IP records are distinguishable by context and the 
+// client_ip field always contains the actual IP address for audit purposes.
 func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context, phone, clientIP string) error {
 	windowStart := time.Now().UTC().Add(-RegistrationWindow)
 
 	// Check IP-based rate limiting (prevent spam from single source)
+	// NOTE: Storing IP in phone field for rate limiting - this reuses existing schema
 	if clientIP != "" {
 		ipAttempts, err := s.querier.GetOTPAttemptsInWindow(ctx, db.GetOTPAttemptsInWindowParams{
-			Phone:       clientIP, // Use phone field to store IP for IP-based limiting
+			Phone:       clientIP, // INTENTIONAL: IP stored in phone field for IP-based rate limiting
 			AttemptedAt: windowStart,
 		})
 		if err != nil {
@@ -306,6 +312,10 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 }
 
 // RecordRegistrationAttempt records a registration attempt for both IP and phone rate limiting
+// 
+// DESIGN NOTE: This creates two records - one for the phone number and one for the IP address.
+// The IP record stores the IP address in the phone field to reuse the existing schema.
+// Both records maintain the actual IP address in the client_ip field for proper audit trails.
 func (s *OTPRateLimitingService) RecordRegistrationAttempt(ctx context.Context, phone, clientIP, userAgent string, success bool) error {
 	now := time.Now().UTC()
 
@@ -324,7 +334,7 @@ func (s *OTPRateLimitingService) RecordRegistrationAttempt(ctx context.Context, 
 	// Record IP-based attempt (if IP is available)
 	if clientIP != "" {
 		_, err = s.querier.CreateOTPAttempt(ctx, db.CreateOTPAttemptParams{
-			Phone:       clientIP, // Store IP in phone field for IP-based rate limiting
+			Phone:       clientIP, // INTENTIONAL: IP stored in phone field for IP-based rate limiting
 			AttemptedAt: now,
 			Success:     boolToInt(success),
 			ClientIp:    sql.NullString{String: clientIP, Valid: true},
