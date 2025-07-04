@@ -43,14 +43,15 @@ export function formatLocalDate(date: Date): string {
  * Ensures at least 2 months for proper admin overview
  */
 export function calculateMonthsToShow(dayRange: string): number {
-	const days = parseInt(dayRange);
-
-	// Validate input
-	if (isNaN(days) || days <= 0) {
-		console.warn('Invalid day range provided:', dayRange);
-		return MIN_MONTHS_TO_SHOW;
-	}
-
+	// Parse and validate dayRange once
+	const days = (() => {
+		const parsedDays = parseInt(dayRange);
+		if (isNaN(parsedDays) || parsedDays <= 0) {
+			console.warn('Invalid day range provided:', dayRange);
+			return MIN_MONTHS_TO_SHOW;
+		}
+		return parsedDays;
+	})();
 	// Performance cap
 	if (days > MAX_DAY_RANGE) {
 		console.warn('Day range too large, capping at maximum:', MAX_DAY_RANGE);
