@@ -51,7 +51,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	ctx := context.Background()
 
 	err := app.UserService.RegisterOrLoginUser(ctx, userPhone,
-		sql.NullString{String: userName, Valid: true})
+		sql.NullString{String: userName, Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err)
 
 	outboxItems, err := app.Querier.GetPendingOutboxItems(ctx, 10)

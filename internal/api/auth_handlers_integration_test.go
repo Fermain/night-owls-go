@@ -278,7 +278,7 @@ func TestAuthEndpoints_Verify_InvalidOTP(t *testing.T) {
 	defer app.DB.Close()
 	phone := "+14155550102"
 	// Register first to store an OTP
-	err := app.UserService.RegisterOrLoginUser(context.Background(), phone, sql.NullString{String: "TestUser", Valid: true})
+	err := app.UserService.RegisterOrLoginUser(context.Background(), phone, sql.NullString{String: "TestUser", Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err)
 
 	verifyPayload := api.VerifyRequest{Phone: phone, Code: "000000"}

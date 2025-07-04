@@ -133,7 +133,7 @@ func TestBookingEndpoints_CreateAndMarkAttendance(t *testing.T) {
 	// --- Test PATCH /bookings/{id}/attendance (by another user - Forbidden) ---
 	// Register and login another user
 	otherUserPhone := "+14155550104"
-	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Other User", Valid: true})
+	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Other User", Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err, "Failed to register other user")
 
 	// Retrieve OTP for other user (directly from outbox table)

@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -23,6 +24,11 @@ const (
 	InitialLockoutDuration  = 30 * time.Minute // First lockout duration
 	MaxLockoutDuration      = 24 * time.Hour   // Maximum lockout duration
 	LockoutMultiplier       = 2                // Exponential backoff multiplier
+	
+	// Registration rate limiting
+	MaxRegistrationAttemptsPerIP    = 10       // Max registration attempts per IP per hour
+	MaxRegistrationAttemptsPerPhone = 3        // Max registration attempts per phone per hour  
+	RegistrationWindow              = 1 * time.Hour // Time window for registration attempts
 )
 
 type OTPRateLimitingService struct {
@@ -254,4 +260,86 @@ func boolToInt(b bool) int64 {
 		return 1
 	}
 	return 0
+}
+
+// CheckRegistrationRateLimit verifies if registration attempts are allowed from IP and for phone
+func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context, phone, clientIP string) error {
+	windowStart := time.Now().UTC().Add(-RegistrationWindow)
+
+	// Check IP-based rate limiting (prevent spam from single source)
+	if clientIP != "" {
+		ipAttempts, err := s.querier.GetOTPAttemptsInWindow(ctx, db.GetOTPAttemptsInWindowParams{
+			Phone:       clientIP, // Use phone field to store IP for IP-based limiting
+			AttemptedAt: windowStart,
+		})
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to get IP registration attempts", "ip", clientIP, "error", err)
+			// Allow on database error to avoid false lockouts
+		} else if len(ipAttempts) >= MaxRegistrationAttemptsPerIP {
+			s.logger.WarnContext(ctx, "Registration rate limit exceeded for IP", 
+				"ip", clientIP, 
+				"attempts", len(ipAttempts),
+				"max_attempts", MaxRegistrationAttemptsPerIP,
+			)
+			return fmt.Errorf("too many registration attempts from this IP address, try again later")
+		}
+	}
+
+	// Check phone-based rate limiting (prevent targeting specific numbers)  
+	phoneAttempts, err := s.querier.GetOTPAttemptsInWindow(ctx, db.GetOTPAttemptsInWindowParams{
+		Phone:       phone,
+		AttemptedAt: windowStart,
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get phone registration attempts", "phone", phone, "error", err)
+		// Allow on database error
+	} else if len(phoneAttempts) >= MaxRegistrationAttemptsPerPhone {
+		s.logger.WarnContext(ctx, "Registration rate limit exceeded for phone", 
+			"phone", phone, 
+			"attempts", len(phoneAttempts),
+			"max_attempts", MaxRegistrationAttemptsPerPhone,
+		)
+		return fmt.Errorf("too many registration attempts for this phone number, try again later")
+	}
+
+	return nil
+}
+
+// RecordRegistrationAttempt records a registration attempt for both IP and phone rate limiting
+func (s *OTPRateLimitingService) RecordRegistrationAttempt(ctx context.Context, phone, clientIP, userAgent string, success bool) error {
+	now := time.Now().UTC()
+
+	// Record phone-based attempt
+	_, err := s.querier.CreateOTPAttempt(ctx, db.CreateOTPAttemptParams{
+		Phone:       phone,
+		AttemptedAt: now,
+		Success:     boolToInt(success),
+		ClientIp:    sql.NullString{String: clientIP, Valid: clientIP != ""},
+		UserAgent:   sql.NullString{String: userAgent, Valid: userAgent != ""},
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to record phone registration attempt", "phone", phone, "error", err)
+	}
+
+	// Record IP-based attempt (if IP is available)
+	if clientIP != "" {
+		_, err = s.querier.CreateOTPAttempt(ctx, db.CreateOTPAttemptParams{
+			Phone:       clientIP, // Store IP in phone field for IP-based rate limiting
+			AttemptedAt: now,
+			Success:     boolToInt(success),
+			ClientIp:    sql.NullString{String: clientIP, Valid: true},
+			UserAgent:   sql.NullString{String: userAgent, Valid: userAgent != ""},
+		})
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to record IP registration attempt", "ip", clientIP, "error", err)
+		}
+	}
+
+	s.logger.InfoContext(ctx, "Registration attempt recorded", 
+		"phone", phone, 
+		"ip", clientIP, 
+		"success", success,
+	)
+
+	return nil
 } 

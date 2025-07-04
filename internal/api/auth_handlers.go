@@ -125,7 +125,10 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		sqlName.Valid = true
 	}
 
-	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName)
+	// Extract client information for rate limiting
+	clientIP, userAgent := extractClientInfo(r)
+
+	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName, clientIP, userAgent)
 	if err != nil {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
 
@@ -366,4 +369,28 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.InfoContext(r.Context(), "Dev login successful", "phone", phoneE164, "user_id", user.UserID, "role", user.Role)
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
+}
+
+// extractClientInfo extracts client IP and user agent from HTTP request
+func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
+	// Extract IP address (handle proxy headers)
+	clientIP = r.Header.Get("X-Forwarded-For")
+	if clientIP == "" {
+		clientIP = r.Header.Get("X-Real-IP")
+	}
+	if clientIP == "" {
+		clientIP = r.RemoteAddr
+	}
+	// Clean up IP (remove port if present)
+	if idx := strings.LastIndex(clientIP, ":"); idx != -1 {
+		clientIP = clientIP[:idx]
+	}
+	
+	// Extract user agent
+	userAgent = r.UserAgent()
+	if userAgent == "" {
+		userAgent = "unknown"
+	}
+	
+	return clientIP, userAgent
 }
