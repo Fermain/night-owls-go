@@ -270,6 +270,7 @@ func main() {
 	publicAPI := fuego.Group(s, apiPrefix)
 	fuego.PostStd(publicAPI, "/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(publicAPI, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.GetStd(publicAPI, "/auth/validate", authAPIHandler.ValidateHandler)
 
 	// Development-only auth endpoints
 	if cfg.DevMode {

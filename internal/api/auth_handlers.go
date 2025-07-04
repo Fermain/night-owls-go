@@ -505,6 +505,58 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
 
+// ValidateHandler handles GET /auth/validate
+// @Summary Validate JWT token and return user info
+// @Description Validates the JWT token and returns user information for server-side route protection
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "User info if token is valid"
+// @Failure 401 {object} ErrorResponse "Invalid or expired token"
+// @Router /auth/validate [get]
+func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract token from Authorization header or session
+	var token string
+	
+	// First try session (from cookie)
+	if session, err := h.sessionStore.Get(r, SessionName); err == nil {
+		if sessionToken, ok := session.Values["token"].(string); ok {
+			token = sessionToken
+		}
+	}
+	
+	// Fall back to Authorization header
+	if token == "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	
+	if token == "" {
+		RespondWithError(w, http.StatusUnauthorized, "No token provided", h.logger)
+		return
+	}
+	
+	// Validate JWT token
+	claims, err := auth.ValidateJWT(token, h.config.JWTSecret)
+	if err != nil {
+		h.logger.WarnContext(r.Context(), "Invalid JWT token in validate endpoint", "error", err.Error())
+		RespondWithError(w, http.StatusUnauthorized, "Invalid token", h.logger)
+		return
+	}
+	
+	// Return user information
+	userInfo := map[string]interface{}{
+		"id":    claims.UserID,
+		"phone": claims.Phone,
+		"name":  claims.Name,
+		"role":  claims.Role,
+	}
+	
+	RespondWithJSON(w, http.StatusOK, userInfo, h.logger)
+}
+
 // LogoutHandler handles POST /auth/logout
 // @Summary Logout and clear authentication cookies
 // @Description Clears the JWT authentication cookie and logs out the user
