@@ -2,3 +2,4 @@
 export * from './schedules/index';
 export * from './shifts/index';
 export * from './users/index';
+export * from './leaderboardQuery';
