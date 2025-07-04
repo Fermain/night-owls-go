@@ -235,13 +235,15 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		// Add timing randomization to prevent enumeration via timing attacks
 		addTimingRandomization()
 
-		// Always return the same generic error regardless of the specific issue
-		// This prevents attackers from determining if a phone number is registered
+		// Differentiate between client-side and server-side errors
 		if strings.Contains(err.Error(), "rate limit") {
 			// Rate limiting errors should be more specific to help legitimate users
 			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
+		} else if strings.Contains(err.Error(), "internal server error") || strings.Contains(err.Error(), "failed to send SMS") || strings.Contains(err.Error(), "database") || strings.Contains(err.Error(), "Twilio") {
+			// Server-side errors (e.g., database, SMS/Twilio issues) should return 500
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
 		} else {
-			// All other errors (user not found, SMS failures, etc.) get generic message
+			// Client-side errors (user not found, validation failures, etc.) get generic message
 			RespondWithError(w, http.StatusBadRequest, ValidationFailedMessage, h.logger, "error", err.Error())
 		}
 		return
@@ -326,13 +328,15 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		// Add timing randomization to prevent enumeration via timing attacks
 		addTimingRandomization()
 		
-		// Always return the same generic error regardless of the specific issue
-		// This prevents attackers from determining if a phone number is registered
+		// Differentiate between client-side and server-side errors
 		if strings.Contains(err.Error(), "rate limit") {
 			// Rate limiting errors should be more specific to help legitimate users
 			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
+		} else if strings.Contains(err.Error(), "internal server error") || strings.Contains(err.Error(), "database") || strings.Contains(err.Error(), "Twilio") {
+			// Server-side errors (e.g., database or Twilio issues) should return 500
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
 		} else {
-			// All other errors (invalid OTP, user not found, etc.) get generic message
+			// Client-side errors (invalid OTP, user not found, etc.) get generic message
 			RespondWithError(w, http.StatusUnauthorized, AuthenticationFailedMessage, h.logger, "error", err.Error())
 		}
 		return
@@ -591,7 +595,10 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
 	// Extract IP address (handle proxy headers)
 	clientIP = r.Header.Get("X-Forwarded-For")
-	if clientIP == "" {
+	if clientIP != "" {
+		// Extract the first IP from the comma-separated list
+		clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
+	} else {
 		clientIP = r.Header.Get("X-Real-IP")
 	}
 	if clientIP == "" {

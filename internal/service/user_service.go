@@ -81,6 +81,12 @@ func (s *UserService) SetJWTGenerator(generator JWTGenerator) {
 // If name is provided, this is a registration attempt and will create a new user.
 // If name is empty, this is a login attempt and will fail if user doesn't exist.
 // Now includes registration rate limiting to prevent abuse.
+// Parameters:
+//   - ctx: Request context
+//   - phone: User's phone number in E.164 format
+//   - name: User's name (for registration) or empty (for login)
+//   - clientIP: Client IP address for rate limiting and audit logging
+//   - userAgent: Client user agent for audit logging
 func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, name sql.NullString, clientIP, userAgent string) error {
 	// Use provided client info, fallback to unknown if not provided
 	if clientIP == "" {
