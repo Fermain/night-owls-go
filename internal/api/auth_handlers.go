@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -518,7 +519,7 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Log logout event if user context is available
-	if userIDVal := r.Context().Value("userID"); userIDVal != nil {
+	if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
 		if userID, ok := userIDVal.(int64); ok {
 			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
 			if err := h.auditService.LogUserLogout(r.Context(), userID, ipAddress, userAgent); err != nil {
@@ -541,9 +542,10 @@ func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
 	if clientIP == "" {
 		clientIP = r.RemoteAddr
 	}
-	// Clean up IP (remove port if present)
-	if idx := strings.LastIndex(clientIP, ":"); idx != -1 {
-		clientIP = clientIP[:idx]
+	// Clean up IP (remove port if present) - IPv6 safe
+	host, _, err := net.SplitHostPort(clientIP)
+	if err == nil {
+		clientIP = host
 	}
 	
 	// Extract user agent
