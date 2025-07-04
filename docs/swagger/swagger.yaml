@@ -1,4 +1,126 @@
 basePath: /
+definitions:
+  api.BookingResponse:
+    properties:
+      attended:
+        type: boolean
+      booking_id:
+        type: integer
+      buddy_name:
+        type: string
+      buddy_user_id:
+        type: integer
+      created_at:
+        type: string
+      schedule_id:
+        type: integer
+      shift_end:
+        type: string
+      shift_start:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  api.CreateBookingRequest:
+    properties:
+      buddy_name:
+        type: string
+      buddy_phone:
+        type: string
+      schedule_id:
+        type: integer
+      start_time:
+        description: Expected in RFC3339 format e.g. "2025-05-10T18:00:00Z"
+        type: string
+    type: object
+  api.CreateReportRequest:
+    properties:
+      message:
+        type: string
+      severity:
+        description: 0, 1, or 2
+        type: integer
+    type: object
+  api.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  api.MarkAttendanceRequest:
+    properties:
+      attended:
+        type: boolean
+    type: object
+  api.RegisterRequest:
+    properties:
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+  api.RegisterResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  api.ReportResponse:
+    properties:
+      booking_id:
+        type: integer
+      created_at:
+        type: string
+      message:
+        type: string
+      report_id:
+        type: integer
+      severity:
+        type: integer
+    type: object
+  api.ScheduleResponse:
+    properties:
+      cron_expr:
+        type: string
+      duration_minutes:
+        type: integer
+      end_date:
+        type: string
+      name:
+        type: string
+      schedule_id:
+        type: integer
+      start_date:
+        type: string
+      timezone:
+        type: string
+    type: object
+  api.VerifyRequest:
+    properties:
+      code:
+        type: string
+      phone:
+        type: string
+    type: object
+  api.VerifyResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  service.AvailableShiftSlot:
+    properties:
+      end_time:
+        type: string
+      is_booked:
+        description: Should always be false when returned by GetUpcomingAvailableSlots
+        type: boolean
+      schedule_id:
+        type: integer
+      schedule_name:
+        type: string
+      start_time:
+        type: string
+      timezone:
+        type: string
+    type: object
 host: localhost:5888
 info:
   contact:
@@ -11,7 +133,275 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Night Owls Control Shift Scheduler API
   version: "1.0"
-paths: {}
+paths:
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with phone number or starts login flow for
+        existing user
+      parameters:
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            $ref: '#/definitions/api.RegisterResponse'
+        "400":
+          description: Invalid phone number or request format
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Register a new user or request OTP for existing user
+      tags:
+      - auth
+  /auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the one-time password (OTP) and returns a JWT token on
+        success
+      parameters:
+      - description: Verification details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verified successfully, returns JWT token
+          schema:
+            $ref: '#/definitions/api.VerifyResponse'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Invalid OTP or verification failed
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Verify OTP and get authentication token
+      tags:
+      - auth
+  /bookings:
+    post:
+      consumes:
+      - application/json
+      description: Books a shift slot for a user
+      parameters:
+      - description: Booking details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Booking created successfully
+          schema:
+            $ref: '#/definitions/api.BookingResponse'
+        "400":
+          description: Invalid request format or data
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Schedule not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Slot already booked (conflict)
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new booking
+      tags:
+      - bookings
+  /bookings/{id}/attendance:
+    patch:
+      consumes:
+      - application/json
+      description: Updates a booking to record whether the volunteer attended
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Attendance status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.MarkAttendanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Attendance marked successfully
+          schema:
+            $ref: '#/definitions/api.BookingResponse'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - not authorized to mark this booking
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark attendance for a booking
+      tags:
+      - bookings
+  /bookings/{id}/report:
+    post:
+      consumes:
+      - application/json
+      description: Submits an incident report for a specific booking
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Report details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateReportRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Report created successfully
+          schema:
+            $ref: '#/definitions/api.ReportResponse'
+        "400":
+          description: Invalid request format or severity out of range
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden - not authorized to report on this booking
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a report for a booking
+      tags:
+      - reports
+  /schedules:
+    get:
+      description: Returns a list of all defined schedules
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of schedules
+          schema:
+            items:
+              $ref: '#/definitions/api.ScheduleResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: List all schedules
+      tags:
+      - schedules
+  /shifts/available:
+    get:
+      description: Returns a list of available shift slots based on schedule definitions
+      parameters:
+      - description: Start date for shift window (RFC3339 format)
+        in: query
+        name: from
+        type: string
+      - description: End date for shift window (RFC3339 format)
+        in: query
+        name: to
+        type: string
+      - description: Maximum number of shifts to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of available shift slots
+          schema:
+            items:
+              $ref: '#/definitions/service.AvailableShiftSlot'
+            type: array
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: List available shift slots
+      tags:
+      - shifts
 schemes:
 - http
 swagger: "2.0"
+securityDefinitions:
+  BearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
