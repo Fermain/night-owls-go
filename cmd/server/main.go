@@ -219,6 +219,7 @@ func main() {
 	)
 
 	// Global middlewares
+	fuego.Use(s, api.SecurityHeadersMiddleware()) // Add security headers first
 	fuego.Use(s, api.AuditContextMiddleware) // Add audit context middleware first
 	fuego.Use(s, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

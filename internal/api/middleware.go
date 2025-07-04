@@ -101,3 +101,74 @@ func AdminMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
 		})
 	}
 }
+
+// SecurityHeadersMiddleware adds comprehensive security headers to all responses
+func SecurityHeadersMiddleware() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Content Security Policy - comprehensive policy for Svelte app
+			csp := strings.Join([]string{
+				"default-src 'self'",
+				"script-src 'self' 'unsafe-inline'", // Svelte needs unsafe-inline for now
+				"style-src 'self' 'unsafe-inline'",  // Svelte/Tailwind needs unsafe-inline
+				"img-src 'self' data: https:",       // Allow images from self, data URLs, and HTTPS
+				"font-src 'self' https:",            // Allow fonts from self and HTTPS
+				"connect-src 'self'",                // API calls only to same origin
+				"frame-ancestors 'none'",            // Prevent embedding in frames
+				"base-uri 'self'",                   // Restrict base tag to same origin
+				"form-action 'self'",                // Forms only to same origin
+				"object-src 'none'",                 // Disable plugins
+				"upgrade-insecure-requests",         // Upgrade HTTP to HTTPS
+			}, "; ")
+			w.Header().Set("Content-Security-Policy", csp)
+			
+			// Prevent clickjacking attacks
+			w.Header().Set("X-Frame-Options", "DENY")
+			
+			// Prevent MIME type sniffing
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			
+			// Enable XSS protection in browsers
+			w.Header().Set("X-XSS-Protection", "1; mode=block")
+			
+			// Strict Transport Security (HSTS) - 1 year with subdomains
+			// Only set in production or when HTTPS is detected
+			if isHTTPS(r) {
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+			}
+			
+			// Referrer Policy - only send referrer to same origin
+			w.Header().Set("Referrer-Policy", "same-origin")
+			
+			// Prevent Adobe Flash and PDF from loading
+			w.Header().Set("X-Permitted-Cross-Domain-Policies", "none")
+			
+			// Additional security headers
+			w.Header().Set("X-Download-Options", "noopen")           // IE download protection
+			w.Header().Set("X-DNS-Prefetch-Control", "off")         // Disable DNS prefetching
+			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()") // Disable sensitive permissions
+			
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// isHTTPS checks if the request was made over HTTPS
+func isHTTPS(r *http.Request) bool {
+	// Check the request scheme
+	if r.TLS != nil {
+		return true
+	}
+	
+	// Check X-Forwarded-Proto header (for proxies/load balancers)
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "https" {
+		return true
+	}
+	
+	// Check X-Forwarded-SSL header
+	if ssl := r.Header.Get("X-Forwarded-SSL"); ssl == "on" {
+		return true
+	}
+	
+	return false
+}
