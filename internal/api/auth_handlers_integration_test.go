@@ -140,7 +140,7 @@ func newTestApp(t *testing.T) *testApp {
 	// Create fuego server like in production
 	server := fuego.NewServer()
 
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, createTestSessionStore())
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
@@ -154,7 +154,7 @@ func newTestApp(t *testing.T) *testApp {
 
 	// Protected routes (require auth) - creating a group like in production
 	protected := fuego.Group(server, "")
-	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)

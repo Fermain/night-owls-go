@@ -24,6 +24,7 @@ import (
 	"night-owls-go/internal/service"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -128,6 +129,16 @@ func main() {
 
 	// Initialize audit service for security logging
 	auditService := service.NewAuditService(querier, logger)
+
+	// Initialize session store for secure session management
+	sessionStore := sessions.NewCookieStore([]byte(cfg.JWTSecret))
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   336 * 3600, // 2 weeks (matching JWT expiry)
+		HttpOnly: true,
+		Secure:   !cfg.DevMode, // Use secure cookies in production
+		SameSite: http.SameSiteStrictMode,
+	}
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
@@ -237,7 +248,7 @@ func main() {
 	})
 
 	// Initialize handlers
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, sessionStore)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
@@ -319,7 +330,7 @@ func main() {
 
 	// Protected routes (require auth)
 	protected := fuego.Group(s, apiPrefix)
-	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger, sessionStore))
 	fuego.Post(protected, "/bookings", bookingAPIHandler.CreateBookingFuego)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.Post(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInFuego)
@@ -342,7 +353,7 @@ func main() {
 
 	// Admin routes
 	admin := fuego.Group(s, apiPrefix+"/admin")
-	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
+	fuego.Use(admin, api.AuthMiddleware(cfg, logger, sessionStore))
 	fuego.Use(admin, api.AdminMiddleware(logger))
 
 	// Admin Schedules

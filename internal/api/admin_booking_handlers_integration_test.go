@@ -156,7 +156,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register all relevant handlers, including admin
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, createTestSessionStore())
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	adminScheduleAPIHandler := api.NewAdminScheduleHandlers(logger, scheduleService, auditService)
 	adminUserAPIHandler := api.NewAdminUserHandler(querier, auditService, logger)
@@ -174,7 +174,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 
 	// Admin routes
 	router.Route("/api/admin", func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger)) // Apply AuthMiddleware to all admin routes
+		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore())) // Apply AuthMiddleware to all admin routes
 		r.Use(api.AdminMiddleware(logger))     // Apply AdminMiddleware to require admin role
 
 		// Admin Schedules
@@ -220,7 +220,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 
 	// Also register protected user routes if admin might interact with them or if setup requires it
 	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
+		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
 		// ... other protected routes
 	})
@@ -343,8 +343,6 @@ func TestAdminAssignUserToShift_Success(t *testing.T) {
 
 	outboxItems, err := app.Querier.GetPendingOutboxItems(ctx, 5)
 	require.NoError(t, err)
-
-
 
 	foundOutboxMsg := false
 	for _, item := range outboxItems {

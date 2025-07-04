@@ -8,6 +8,8 @@ import (
 
 	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config" // For JWT secret
+
+	"github.com/gorilla/sessions"
 )
 
 // ContextKey is a type used for context keys to avoid collisions.
@@ -22,59 +24,76 @@ const (
 	UserRoleKey ContextKey = "userRole"
 )
 
-// AuthMiddleware creates a middleware handler for JWT authentication.
-// Now supports both Authorization header and secure HTTP-only cookies for JWT tokens.
-func AuthMiddleware(cfg *config.Config, logger *slog.Logger) func(next http.Handler) http.Handler {
+// AuthMiddleware validates JWT tokens from headers or sessions
+func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessions.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var tokenString string
-			var tokenSource string
-
-			// Try to get token from Authorization header first (backward compatibility)
-			authHeader := r.Header.Get("Authorization")
-			if authHeader != "" {
-				parts := strings.Split(authHeader, " ")
-				if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
-					tokenString = parts[1]
-					tokenSource = "header"
+			var token string
+			var userID int64
+			var phone, role, userName string
+			
+			// First try to get user info from session (preferred)
+			if session, err := sessionStore.Get(r, "night-owls-session"); err == nil {
+				if sessionUserID, ok := session.Values["user_id"].(int64); ok {
+					userID = sessionUserID
+				}
+				if sessionPhone, ok := session.Values["phone"].(string); ok {
+					phone = sessionPhone
+				}
+				if sessionRole, ok := session.Values["role"].(string); ok {
+					role = sessionRole
+				}
+				if sessionName, ok := session.Values["name"].(string); ok {
+					userName = sessionName
+				}
+				if sessionToken, ok := session.Values["token"].(string); ok {
+					token = sessionToken
 				}
 			}
-
-			// If no token in header, try to get from secure cookie
-			if tokenString == "" {
-				if cookie, err := r.Cookie("auth_token"); err == nil {
-					tokenString = cookie.Value
-					tokenSource = "cookie"
+			
+			// If no session info, fall back to JWT header (backward compatibility)
+			if userID == 0 || phone == "" || role == "" {
+				authHeader := r.Header.Get("Authorization")
+				if authHeader == "" {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
 				}
+
+				// Check if it's a Bearer token
+				if !strings.HasPrefix(authHeader, "Bearer ") {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+
+				token = strings.TrimPrefix(authHeader, "Bearer ")
+				
+				// Parse and validate JWT token
+				claims, err := auth.ValidateJWT(token, cfg.JWTSecret)
+				if err != nil {
+					logger.WarnContext(r.Context(), "Invalid JWT token", "error", err.Error())
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+
+				// Extract user information from JWT claims
+				userID = claims.UserID
+				phone = claims.Phone
+				role = claims.Role
+				userName = claims.Name
 			}
 
-			// If still no token found, return unauthorized
-			if tokenString == "" {
-				RespondWithError(w, http.StatusUnauthorized, "Authentication required", logger)
-				return
-			}
+			// Add user context to request
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, UserPhoneKey, phone)
+			ctx = context.WithValue(ctx, UserRoleKey, role)
+			ctx = context.WithValue(ctx, "name", userName)
 
-			// Validate the JWT token
-			claims, err := auth.ValidateJWT(tokenString, cfg.JWTSecret)
-			if err != nil {
-				// All JWT validation errors should be treated as 401 Unauthorized
-				// This includes malformed tokens, expired tokens, wrong signatures, etc.
-				logger.DebugContext(r.Context(), "JWT validation failed", "error", err, "token_source", tokenSource)
-				RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", logger)
-				return
-			}
-
-			// Log successful authentication for monitoring
-			logger.DebugContext(r.Context(), "JWT authentication successful", 
-				"user_id", claims.UserID, 
-				"token_source", tokenSource,
-				"role", claims.Role,
-			)
-
-			// Store user ID, phone, and role in context for downstream handlers
-			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-			ctx = context.WithValue(ctx, UserPhoneKey, claims.Phone)
-			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
+			// For debugging
+			logger.DebugContext(r.Context(), "User authenticated", 
+				"user_id", userID, 
+				"phone", phone, 
+				"role", role,
+				"auth_method", map[bool]string{true: "session", false: "jwt_header"}[userID != 0])
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

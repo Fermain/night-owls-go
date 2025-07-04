@@ -133,7 +133,7 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register handlers
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, createTestSessionStore())
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	adminBookingAPIHandler := api.NewAdminBookingHandler(bookingService, logger)
 
@@ -143,7 +143,7 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 
 	// Protected user routes
 	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
+		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 		r.Post("/bookings", bookingAPIHandler.CreateBookingHandler)
 		r.Get("/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 		r.Post("/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
@@ -151,7 +151,7 @@ func newBookingTestApp(t *testing.T) *bookingTestApp {
 
 	// Admin routes
 	router.Route("/api/admin", func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
+		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 		r.Use(api.AdminMiddleware(logger))
 		r.Route("/bookings", func(br chi.Router) {
 			br.Post("/assign", adminBookingAPIHandler.AssignUserToShiftHandler)

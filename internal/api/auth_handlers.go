@@ -18,15 +18,16 @@ import (
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
 
+	"github.com/gorilla/sessions"
 	"github.com/nyaruka/phonenumbers"
 )
 
 var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
-// Cookie configuration constants
+// Session configuration constants
 const (
-	JWTCookieName = "auth_token"
-	CSRFCookieName = "csrf_token"
+	SessionName = "night-owls-session"
+	SessionMaxAge = 336 * 3600 // 2 weeks in seconds (matching JWT expiry)
 )
 
 // Standardized error messages to prevent user enumeration
@@ -48,10 +49,11 @@ type AuthHandler struct {
 	logger       *slog.Logger
 	config       *config.Config
 	querier      db.Querier
+	sessionStore sessions.Store
 }
 
 // NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(userService *service.UserService, auditService *service.AuditService, logger *slog.Logger, cfg *config.Config, querier db.Querier) *AuthHandler {
+func NewAuthHandler(userService *service.UserService, auditService *service.AuditService, logger *slog.Logger, cfg *config.Config, querier db.Querier, sessionStore sessions.Store) *AuthHandler {
 	logger.Info("AuthHandler created with config", "dev_mode", cfg.DevMode, "server_port", cfg.ServerPort)
 	return &AuthHandler{
 		userService:  userService,
@@ -59,6 +61,7 @@ func NewAuthHandler(userService *service.UserService, auditService *service.Audi
 		logger:       logger.With("handler", "AuthHandler"),
 		config:       cfg,
 		querier:      querier,
+		sessionStore: sessionStore,
 	}
 }
 
@@ -102,46 +105,6 @@ type DevLoginResponse struct {
 	} `json:"user"`
 }
 
-// setJWTCookie sets a secure HTTP-only cookie with the JWT token
-func setJWTCookie(w http.ResponseWriter, token string, expirationHours int) {
-	cookie := &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    token,
-		Path:     "/",
-		MaxAge:   expirationHours * 3600, // Convert hours to seconds
-		HttpOnly: true,                   // Prevent JavaScript access (XSS protection)
-		Secure:   true,                   // Only send over HTTPS (set to false in dev if needed)
-		SameSite: http.SameSiteStrictMode, // CSRF protection
-	}
-	
-	// In development, allow non-HTTPS cookies
-	if strings.Contains(os.Getenv("ENVIRONMENT"), "dev") || os.Getenv("DEV_MODE") == "true" {
-		cookie.Secure = false
-	}
-	
-	http.SetCookie(w, cookie)
-}
-
-// clearJWTCookie clears the JWT cookie by setting it to expire immediately
-func clearJWTCookie(w http.ResponseWriter) {
-	cookie := &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1, // Immediate expiry
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	}
-	
-	// In development, allow non-HTTPS cookies
-	if strings.Contains(os.Getenv("ENVIRONMENT"), "dev") || os.Getenv("DEV_MODE") == "true" {
-		cookie.Secure = false
-	}
-	
-	http.SetCookie(w, cookie)
-}
-
 // addTimingRandomization adds a small random delay to prevent timing attacks
 func addTimingRandomization() {
 	// Add 50-150ms random delay to normalize response times
@@ -153,6 +116,67 @@ func addTimingRandomization() {
 	}
 	delay := time.Duration(50+randomMs.Int64()) * time.Millisecond
 	time.Sleep(delay)
+}
+
+// setUserSession creates a secure session for the authenticated user
+func (h *AuthHandler) setUserSession(w http.ResponseWriter, r *http.Request, user db.GetUserByPhoneRow, token string) error {
+	session, err := h.sessionStore.Get(r, SessionName)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to get session", "error", err)
+		return err
+	}
+
+	// Set session values
+	session.Values["user_id"] = user.UserID
+	session.Values["phone"] = user.Phone
+	session.Values["role"] = user.Role
+	session.Values["token"] = token // Keep token for backward compatibility
+	
+	userName := ""
+	if user.Name.Valid {
+		userName = user.Name.String
+	}
+	session.Values["name"] = userName
+
+	// Configure session options
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   SessionMaxAge,
+		HttpOnly: true,
+		Secure:   !isDevelopmentMode(), // Secure in production, allow HTTP in dev
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	// Save session
+	return session.Save(r, w)
+}
+
+// clearUserSession removes the user session (logout)
+func (h *AuthHandler) clearUserSession(w http.ResponseWriter, r *http.Request) error {
+	session, err := h.sessionStore.Get(r, SessionName)
+	if err != nil {
+		h.logger.WarnContext(r.Context(), "Failed to get session for clearing", "error", err)
+		// Continue with clearing anyway
+	}
+
+	// Clear session values
+	session.Values = make(map[interface{}]interface{})
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   -1, // Expire immediately
+		HttpOnly: true,
+		Secure:   !isDevelopmentMode(),
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	return session.Save(r, w)
+}
+
+// isDevelopmentMode checks if we're in development mode
+func isDevelopmentMode() bool {
+	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
+	devMode := os.Getenv("DEV_MODE") == "true"
+	return env == "development" || env == "dev" || devMode
 }
 
 // RegisterHandler handles POST /auth/register
@@ -329,7 +353,11 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set secure HTTP-only cookie for the JWT token
-	setJWTCookie(w, token, h.config.JWTExpirationHours)
+	err = h.setUserSession(w, r, user, token)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to set session", h.logger, "error", err.Error())
+		return
+	}
 	
 	// For now, also return token in response for backward compatibility
 	// TODO: Remove token from JSON response in future version once all clients use cookies
@@ -448,7 +476,11 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set secure HTTP-only cookie for the JWT token
-	setJWTCookie(w, token, h.config.JWTExpirationHours)
+	err = h.setUserSession(w, r, user, token)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to set session", h.logger, "error", err.Error())
+		return
+	}
 
 	response := DevLoginResponse{
 		Token: token, // Keep for backward compatibility
@@ -479,7 +511,11 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /auth/logout [post]
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Clear the JWT cookie
-	clearJWTCookie(w)
+	err := h.clearUserSession(w, r)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to clear session", h.logger, "error", err.Error())
+		return
+	}
 	
 	// Log logout event if user context is available
 	if userIDVal := r.Context().Value("userID"); userIDVal != nil {
