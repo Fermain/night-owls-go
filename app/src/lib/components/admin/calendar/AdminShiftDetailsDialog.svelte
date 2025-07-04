@@ -1,12 +1,17 @@
 <script lang="ts">
-	import { formatTimeSlot } from '$lib/utils/dateFormatting';
-	import { getRelativeTime } from '$lib/utils/shifts';
-	import type { AdminShiftSlot } from '$lib/types';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { UserIcon, ClockIcon, CalendarIcon, PhoneIcon } from 'lucide-svelte';
+	import {
+		generateDialogDateInfo,
+		isShiftFilled,
+		getStatusBadgeInfo,
+		validateShiftForDialog,
+		getShiftValidationError
+	} from '$lib/utils/adminDialogs';
+	import type { AdminShiftSlot } from '$lib/types';
 
 	let {
 		shift,
@@ -18,31 +23,29 @@
 		onReassignClick?: (shift: AdminShiftSlot) => void;
 	} = $props();
 
-	const isShiftFilled = $derived(shift?.is_booked && shift?.user_name);
-
-	// Comprehensive date/time formatting
-	const shiftDate = $derived.by(() => {
-		if (!shift) return null;
-		const date = new Date(shift.start_time);
-		return {
-			// Full date: "Wednesday, January 15, 2025"
-			fullDate: date.toLocaleDateString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			}),
-			// Time range: "18:00 - 06:00"
-			timeRange: formatTimeSlot(shift.start_time, shift.end_time),
-			// Relative: "in 2 days", "tomorrow", "in 3 hours"
-			relative: getRelativeTime(shift.start_time)
-		};
-	});
+	// Use utility functions for derived values
+	const shiftDate = $derived(shift ? generateDialogDateInfo(shift) : null);
+	const isValid = $derived(validateShiftForDialog(shift));
+	const validationError = $derived(getShiftValidationError(shift));
+	const shiftFilled = $derived(shift ? isShiftFilled(shift) : false);
+	const statusBadge = $derived(shift ? getStatusBadgeInfo(shift) : null);
 </script>
 
 <Dialog bind:open>
 	<DialogContent class="max-w-md">
-		{#if shift && shiftDate}
+		{#if !isValid}
+			<!-- Error State -->
+			<DialogHeader>
+				<DialogTitle class="flex items-center gap-2 text-destructive">
+					<CalendarIcon class="h-5 w-5" />
+					Invalid Shift Data
+				</DialogTitle>
+			</DialogHeader>
+			<div class="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+				<p class="text-sm text-destructive">{validationError}</p>
+			</div>
+		{:else if shift && shiftDate}
+			<!-- Valid Shift Display -->
 			<DialogHeader>
 				<DialogTitle class="flex items-center gap-2">
 					<CalendarIcon class="h-5 w-5" />
@@ -71,14 +74,11 @@
 								<span>{shift.schedule_name}</span>
 							</div>
 							<div class="flex items-center gap-2">
-								<Badge
-									variant={isShiftFilled ? 'default' : 'secondary'}
-									class={isShiftFilled
-										? 'bg-green-100 text-green-700 border-green-200'
-										: 'bg-orange-100 text-orange-700 border-orange-200'}
-								>
-									{isShiftFilled ? 'Assigned' : 'Available'}
-								</Badge>
+								{#if statusBadge}
+									<Badge variant={statusBadge.variant} class={statusBadge.className}>
+										{statusBadge.text}
+									</Badge>
+								{/if}
 								{#if shift.is_recurring_reservation}
 									<Badge variant="outline" class="text-xs">Recurring</Badge>
 								{/if}
@@ -88,7 +88,7 @@
 				</Card>
 
 				<!-- Assignment Info (if filled) -->
-				{#if isShiftFilled}
+				{#if shiftFilled}
 					<Card>
 						<CardHeader class="pb-3">
 							<CardTitle class="text-sm flex items-center gap-2">

@@ -5,12 +5,8 @@
 	import AdminCalendarLegend from './AdminCalendarLegend.svelte';
 	import AdminShiftDetailsDialog from './AdminShiftDetailsDialog.svelte';
 	import AdminShiftAssignDialog from './AdminShiftAssignDialog.svelte';
+	import { generateAdminCalendarData, sanitizeDayRange } from '$lib/utils/adminCalendar';
 	import type { AdminShiftSlot } from '$lib/types';
-	import type {
-		AdminCalendarDay,
-		AdminCalendarCell,
-		AdminMonthGrid
-	} from './admin-calendar-types.js';
 
 	let {
 		shifts = [],
@@ -22,12 +18,17 @@
 		onShiftUpdate?: () => void;
 	} = $props();
 
-	// Dialog state management
+	// Sanitize input and generate calendar data using utilities
+	const sanitizedDayRange = $derived(sanitizeDayRange(selectedDayRange));
+	const calendarData = $derived(generateAdminCalendarData(shifts, sanitizedDayRange));
+	const shouldShowCalendar = $derived(shifts.length > 0);
+
+	// Simple dialog state management
 	let detailsDialogOpen = $state(false);
 	let assignDialogOpen = $state(false);
 	let selectedShift = $state<AdminShiftSlot | null>(null);
 
-	// Dialog handlers
+	// Dialog event handlers
 	function handleFilledShiftClick(shift: AdminShiftSlot) {
 		selectedShift = shift;
 		detailsDialogOpen = true;
@@ -45,136 +46,11 @@
 	}
 
 	function handleAssignSuccess() {
-		// Refresh the shift data
+		assignDialogOpen = false;
+		detailsDialogOpen = false;
+		selectedShift = null;
 		onShiftUpdate?.();
 	}
-
-	// Helper function to format date as YYYY-MM-DD in local timezone
-	function formatLocalDate(date: Date): string {
-		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-	}
-
-	// Show calendar if there are shifts
-	const shouldShowCalendar = $derived(shifts.length > 0);
-
-	// Calculate how many months to show based on selected day range
-	const monthsToShow = $derived.by(() => {
-		const days = parseInt(selectedDayRange);
-		if (days <= 7) return 1;
-		if (days <= 31) return 2;
-		if (days <= 62) return 3;
-		return 3; // Max 3 months
-	});
-
-	// Calculate the date range we should show based on selectedDayRange
-	const dateRange = $derived.by(() => {
-		const days = parseInt(selectedDayRange);
-		const startDate = new Date();
-		const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-		return { startDate, endDate };
-	});
-
-	// Get current date for calendar
-	const today = new Date();
-
-	// Generate separate month grids with month names in empty cells
-	const calendarData = $derived.by(() => {
-		const { startDate, endDate } = dateRange;
-		const monthGrids: AdminMonthGrid[] = [];
-
-		// Get month names for the first grid
-		const firstMonthName = startDate.toLocaleDateString('en-US', {
-			month: 'long',
-			year: 'numeric'
-		});
-
-		// Calculate which months we need to show
-		for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
-			const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthOffset, 1);
-			const year = monthDate.getFullYear();
-			const month = monthDate.getMonth();
-			const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-			// Build cells for each day in the month
-			const daysInMonth = new Date(year, month + 1, 0).getDate();
-			const monthCells: AdminCalendarCell[] = [];
-
-			// Add month name in the first cell
-			if (monthOffset === 0) {
-				monthCells.push({
-					type: 'month-title',
-					monthName: firstMonthName
-				});
-			} else {
-				monthCells.push({
-					type: 'month-title',
-					monthName: monthName
-				});
-			}
-
-			// Add empty cells to align with calendar grid
-			const firstDayOfWeek = new Date(year, month, 1).getDay();
-			for (let i = 1; i < firstDayOfWeek; i++) {
-				monthCells.push({ type: 'empty' });
-			}
-
-			// Add actual day cells
-			for (let day = 1; day <= daysInMonth; day++) {
-				const date = new Date(year, month, day);
-				const dateString = formatLocalDate(date);
-
-				// Always create calendar cells to maintain grid structure
-				// but only include shift data for days within our selected date range
-				const isWithinRange = date >= startDate && date <= endDate;
-
-				let dayShifts: AdminShiftSlot[] = [];
-
-				if (isWithinRange) {
-					// Find all shifts for this date using local date comparison
-					dayShifts = shifts.filter((shift) => {
-						const shiftDate = new Date(shift.start_time);
-						return formatLocalDate(shiftDate) === dateString;
-					});
-				}
-
-				const dayData: AdminCalendarDay = {
-					day,
-					date,
-					dateString,
-					shifts: dayShifts,
-					isToday: date.toDateString() === today.toDateString(),
-					isPast: date < today && date.toDateString() !== today.toDateString(),
-					monthOffset,
-					isWithinRange
-				};
-
-				monthCells.push({
-					type: 'day',
-					dayData
-				});
-			}
-
-			// Group cells into weeks - show complete months to maintain grid alignment
-			const weeks: AdminCalendarCell[][] = [];
-			for (let i = 0; i < monthCells.length; i += 7) {
-				const week = monthCells.slice(i, i + 7);
-				// Pad the last week if necessary
-				while (week.length < 7) {
-					week.push({ type: 'empty' });
-				}
-				weeks.push(week);
-			}
-
-			// Always add the month grid to maintain proper calendar structure
-			monthGrids.push({
-				monthName,
-				monthOffset,
-				weeks
-			});
-		}
-
-		return { monthGrids, firstMonthName };
-	});
 </script>
 
 <!-- Only render if there are shifts -->
