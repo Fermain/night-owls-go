@@ -11,7 +11,6 @@
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
-	import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2';
 
 	import { createAdminDashboardQuery } from '$lib/queries/admin/dashboard';
 	import { createUsersQuery } from '$lib/queries/admin/users/usersQuery';
@@ -113,99 +112,32 @@
 			</div>
 		</Card.Root>
 	{:else if insights && statusCounts}
-		<!-- Status Overview Cards -->
-		<div class="grid grid-cols-2 gap-3">
-			<!-- Critical Issues Count -->
-			<Card.Root
-				class="p-4 {statusCounts.criticalIssues > 0 ? 'border-destructive bg-destructive/5' : ''}"
-			>
-				<div class="flex items-center gap-3">
-					<div
-						class="p-2 rounded-lg {statusCounts.criticalIssues > 0
-							? 'bg-red-100 dark:bg-red-900/20'
-							: 'bg-green-100 dark:bg-green-900/20'}"
-					>
-						{#if statusCounts.criticalIssues > 0}
-							<AlertTriangleIcon class="h-5 w-5 text-red-600 dark:text-red-400" />
-						{:else}
-							<CheckCircle2Icon class="h-5 w-5 text-green-600 dark:text-green-400" />
-						{/if}
-					</div>
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">Critical Issues</p>
-						<p
-							class="text-2xl font-bold {statusCounts.criticalIssues > 0
-								? 'text-red-600 dark:text-red-400'
-								: ''}"
-						>
-							{statusCounts.criticalIssues}
-						</p>
-						<p class="text-xs text-muted-foreground">
-							{statusCounts.criticalIssues === 0 ? 'All clear' : 'Need attention'}
-						</p>
-					</div>
-				</div>
-			</Card.Root>
-
-			<!-- Pending Guests -->
-			<Card.Root
-				class="p-4 {statusCounts.pendingGuests > 5
-					? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
-					: ''}"
-			>
-				<div class="flex items-center gap-3">
-					<div class="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
-						<UsersIcon class="h-5 w-5 text-amber-600 dark:text-amber-400" />
-					</div>
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">Pending Guests</p>
-						<p class="text-2xl font-bold">
-							{statusCounts.pendingGuests}
-						</p>
-						<p class="text-xs text-muted-foreground">Awaiting approval</p>
-					</div>
-				</div>
-			</Card.Root>
-
-			<!-- Champions Count -->
-			<Card.Root class="p-4">
-				<div class="flex items-center gap-3">
-					<div class="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-						<StarIcon class="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-					</div>
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">Champions</p>
-						<p class="text-2xl font-bold">
-							{statusCounts.champions}
-						</p>
-						<p class="text-xs text-muted-foreground">Reliable volunteers</p>
-					</div>
-				</div>
-			</Card.Root>
-
-			<!-- Free Loaders Count -->
-			<Card.Root
-				class="p-4 {statusCounts.freeLoaders > 0
-					? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
-					: ''}"
-			>
-				<div class="flex items-center gap-3">
-					<div class="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-						<UserXIcon class="h-5 w-5 text-orange-600 dark:text-orange-400" />
-					</div>
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">Need Follow-up</p>
-						<p
-							class="text-2xl font-bold {statusCounts.freeLoaders > 0
-								? 'text-orange-600 dark:text-orange-400'
-								: ''}"
-						>
-							{statusCounts.freeLoaders}
-						</p>
-						<p class="text-xs text-muted-foreground">Poor attendance</p>
-					</div>
-				</div>
-			</Card.Root>
+		<!-- Compact Status Overview -->
+		<div class="flex gap-4 text-center">
+			<div class="flex-1">
+				<p
+					class="text-lg font-bold {statusCounts.criticalIssues > 0
+						? 'text-red-600'
+						: 'text-green-600'}"
+				>
+					{statusCounts.criticalIssues}
+				</p>
+				<p class="text-xs text-muted-foreground">Critical</p>
+			</div>
+			<div class="flex-1">
+				<p class="text-lg font-bold text-amber-600">{statusCounts.pendingGuests}</p>
+				<p class="text-xs text-muted-foreground">Pending</p>
+			</div>
+			<div class="flex-1">
+				<p class="text-lg font-bold text-green-600">{statusCounts.champions}</p>
+				<p class="text-xs text-muted-foreground">Champions</p>
+			</div>
+			<div class="flex-1">
+				<p class="text-lg font-bold {statusCounts.freeLoaders > 0 ? 'text-orange-600' : ''}">
+					{statusCounts.freeLoaders}
+				</p>
+				<p class="text-xs text-muted-foreground">Follow-up</p>
+			</div>
 		</div>
 
 		<!-- Critical Issues (Always Show First) -->
@@ -242,24 +174,24 @@
 
 		<!-- Pending Guest Approvals -->
 		{#if insights.pendingGuests.length > 0}
-			<Card.Root>
+			<Card.Root class="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
 				<Card.Header class="pb-3">
-					<Card.Title class="flex items-center gap-2">
-						<UsersIcon class="h-5 w-5 text-amber-600" />
+					<Card.Title class="text-base flex items-center gap-2">
+						<UsersIcon class="h-4 w-4 text-amber-600" />
 						Guest Approvals
-						<Badge variant="secondary">{insights.pendingGuests.length}</Badge>
+						<Badge class="bg-amber-600 text-white">{insights.pendingGuests.length}</Badge>
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-3">
 					{#each insights.pendingGuests.slice(0, 4) as guest (guest.id)}
 						<div
-							class="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors border border-amber-200 dark:border-amber-800"
+							class="flex items-center justify-between p-3 bg-white dark:bg-amber-900/10 rounded border"
 						>
 							<div class="flex items-center gap-3">
 								<div
-									class="h-8 w-8 bg-amber-200 dark:bg-amber-800 rounded-full flex items-center justify-center"
+									class="h-8 w-8 bg-amber-100 dark:bg-amber-800 rounded-full flex items-center justify-center"
 								>
-									<UsersIcon class="h-4 w-4 text-amber-700 dark:text-amber-300" />
+									<UsersIcon class="h-4 w-4 text-amber-600" />
 								</div>
 								<div>
 									<p class="font-medium text-sm">{guest.name ?? 'Unnamed User'}</p>
@@ -270,17 +202,17 @@
 								<Button
 									size="sm"
 									onclick={() => handleApproveGuest(guest.id, guest.name ?? undefined)}
-									class="h-8"
+									class="h-8 bg-green-600 hover:bg-green-700 text-white"
 								>
-									Approve
+									✓
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
 									onclick={() => handleViewUser(guest.id)}
-									class="h-8"
+									class="h-8 text-xs"
 								>
-									View
+									Edit
 								</Button>
 							</div>
 						</div>
@@ -288,10 +220,10 @@
 					{#if insights.pendingGuests.length > 4}
 						<Button
 							variant="outline"
-							class="w-full"
+							class="w-full text-xs"
 							onclick={() => goto('/admin/users?role=guest')}
 						>
-							View All {insights.pendingGuests.length} Pending Guests
+							View All {insights.pendingGuests.length} Pending
 						</Button>
 					{/if}
 				</Card.Content>
@@ -302,21 +234,19 @@
 		{#if insights.champions.length > 0}
 			<Card.Root>
 				<Card.Header class="pb-3">
-					<Card.Title class="flex items-center gap-2">
-						<StarIcon class="h-5 w-5 text-yellow-500" />
+					<Card.Title class="text-base flex items-center gap-2">
+						<StarIcon class="h-4 w-4 text-green-600" />
 						Community Champions
 					</Card.Title>
 				</Card.Header>
-				<Card.Content class="space-y-3">
+				<Card.Content class="space-y-2">
 					{#each insights.champions as champion (champion.user_id)}
-						<div
-							class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/30 transition-colors border border-green-200 dark:border-green-800"
-						>
+						<div class="flex items-center justify-between p-3 rounded border">
 							<div class="flex items-center gap-3">
 								<div
-									class="h-8 w-8 bg-yellow-200 dark:bg-yellow-800 rounded-full flex items-center justify-center"
+									class="h-8 w-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center"
 								>
-									<StarIcon class="h-4 w-4 text-yellow-600 dark:text-yellow-300" />
+									<StarIcon class="h-4 w-4 text-green-600" />
 								</div>
 								<div>
 									<p class="font-medium text-sm">{champion.name}</p>
@@ -326,12 +256,11 @@
 									</p>
 								</div>
 							</div>
-							<Badge
-								variant="default"
-								class="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
-							>
-								{champion.completion_rate.toFixed(0)}% complete
-							</Badge>
+							<div class="text-right">
+								<p class="text-sm font-medium text-green-600">
+									{champion.completion_rate.toFixed(0)}%
+								</p>
+							</div>
 						</div>
 					{/each}
 				</Card.Content>
@@ -340,24 +269,24 @@
 
 		<!-- Free Loaders (Needs Attention) -->
 		{#if insights.freeLoaders.length > 0}
-			<Card.Root class="border-orange-200">
+			<Card.Root class="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
 				<Card.Header class="pb-3">
-					<Card.Title class="flex items-center gap-2">
-						<UserXIcon class="h-5 w-5 text-orange-600" />
+					<Card.Title class="text-base flex items-center gap-2">
+						<UserXIcon class="h-4 w-4 text-orange-600" />
 						Needs Follow-Up
-						<Badge variant="destructive">{insights.freeLoaders.length}</Badge>
+						<Badge class="bg-orange-600 text-white">{insights.freeLoaders.length}</Badge>
 					</Card.Title>
 				</Card.Header>
-				<Card.Content class="space-y-3">
+				<Card.Content class="space-y-2">
 					{#each insights.freeLoaders as freeLoader (freeLoader.user_id)}
 						<div
-							class="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors border border-orange-200 dark:border-orange-800"
+							class="flex items-center justify-between p-3 bg-white dark:bg-orange-900/10 rounded border"
 						>
 							<div class="flex items-center gap-3">
 								<div
-									class="h-8 w-8 bg-orange-200 dark:bg-orange-800 rounded-full flex items-center justify-center"
+									class="h-8 w-8 bg-orange-100 dark:bg-orange-800 rounded-full flex items-center justify-center"
 								>
-									<UserXIcon class="h-4 w-4 text-orange-600 dark:text-orange-300" />
+									<UserXIcon class="h-4 w-4 text-orange-600" />
 								</div>
 								<div>
 									<p class="font-medium text-sm">{freeLoader.name}</p>
@@ -373,7 +302,7 @@
 									variant="outline"
 									onclick={() =>
 										handleContactUser(freeLoader.user_id, 'poor_attendance', freeLoader.name)}
-									class="h-8"
+									class="h-8 text-xs"
 								>
 									Contact
 								</Button>
@@ -381,9 +310,9 @@
 									size="sm"
 									variant="outline"
 									onclick={() => handleViewUser(freeLoader.user_id)}
-									class="h-8"
+									class="h-8 text-xs"
 								>
-									View
+									Edit
 								</Button>
 							</div>
 						</div>
