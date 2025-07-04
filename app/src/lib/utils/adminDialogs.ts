@@ -7,6 +7,7 @@
 
 import { formatTimeSlot } from '$lib/utils/dateFormatting';
 import { getRelativeTime } from '$lib/utils/shifts';
+import { getTimeUntil, isToday, isTomorrow, safeParseDate } from '$lib/utils/datetime';
 import type { AdminShiftSlot } from '$lib/types';
 
 // === DIALOG DATE FORMATTING ===
@@ -39,6 +40,75 @@ export function generateDialogDateInfo(shift: AdminShiftSlot): DialogDateInfo {
 		timeRange: formatTimeSlot(shift.start_time, shift.end_time),
 		// Relative: "in 2 days", "tomorrow", "in 3 hours"
 		relative: getRelativeTime(shift.start_time)
+	};
+}
+
+// === THUMBNAIL DATE FORMATTING ===
+
+/**
+ * Format date in dd/mm/yy format for admin thumbnails
+ */
+export function formatDateDdMmYy(dateString: string): string {
+	const date = safeParseDate(dateString);
+	if (!date) return 'Invalid';
+
+	const day = date.getDate().toString().padStart(2, '0');
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const year = date.getFullYear().toString().slice(-2);
+
+	return `${day}/${month}/${year}`;
+}
+
+/**
+ * Get fine-grained relative time for admin thumbnails
+ * Shows hours/minutes if today, days if soon, or fallback to date format
+ */
+export function getFinegrainedRelativeTime(dateString: string): string {
+	const date = safeParseDate(dateString);
+	if (!date) return 'Invalid';
+
+	// If it's today, show precise time until
+	if (isToday(dateString)) {
+		const timeUntil = getTimeUntil(dateString);
+		if (timeUntil === 'Started') {
+			return 'Now';
+		}
+		return timeUntil;
+	}
+
+	// If it's tomorrow, be specific
+	if (isTomorrow(dateString)) {
+		return 'Tomorrow';
+	}
+
+	// For other dates, use the standard relative time
+	return getRelativeTime(dateString);
+}
+
+/**
+ * Thumbnail formatting info for admin shift components
+ */
+export interface ThumbnailDateInfo {
+	shortDate: string; // "15/01/25"
+	relativeTime: string; // "3h 15m" | "Tomorrow" | "In 3 days"
+	isToday: boolean;
+	isSoon: boolean; // Today or tomorrow
+}
+
+/**
+ * Generate optimized date info for admin thumbnails
+ */
+export function generateThumbnailDateInfo(shift: AdminShiftSlot): ThumbnailDateInfo {
+	const shortDate = formatDateDdMmYy(shift.start_time);
+	const relativeTime = getFinegrainedRelativeTime(shift.start_time);
+	const todayCheck = isToday(shift.start_time);
+	const tomorrowCheck = isTomorrow(shift.start_time);
+
+	return {
+		shortDate,
+		relativeTime,
+		isToday: todayCheck,
+		isSoon: todayCheck || tomorrowCheck
 	};
 }
 
