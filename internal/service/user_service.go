@@ -32,14 +32,15 @@ type JWTGenerator func(userID int64, phone string, name string, role string, sec
 
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
-	querier      db.Querier // From sqlc
-	otpStore     auth.OTPStore
-	twilioOTP    *otp.Client // Twilio OTP client for real SMS
-	jwtSecret    string
-	otpLogPath   string
-	logger       *slog.Logger
-	cfg          *config.Config
-	jwtGenerator JWTGenerator // Function for JWT generation, allows mocking in tests
+	querier           db.Querier // From sqlc
+	otpStore          auth.OTPStore
+	twilioOTP         *otp.Client // Twilio OTP client for real SMS
+	jwtSecret         string
+	otpLogPath        string
+	logger            *slog.Logger
+	cfg               *config.Config
+	jwtGenerator      JWTGenerator // Function for JWT generation, allows mocking in tests
+	otpRateLimitSvc   *OTPRateLimitingService // Rate limiting service
 }
 
 // NewUserService creates a new UserService.
@@ -54,15 +55,19 @@ func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Conf
 		logger.Info("Twilio credentials not configured, using mock OTP flow")
 	}
 
+	// Initialize OTP rate limiting service
+	otpRateLimitSvc := NewOTPRateLimitingService(querier, logger)
+
 	return &UserService{
-		querier:      querier,
-		otpStore:     otpStore,
-		twilioOTP:    twilioOTP,
-		jwtSecret:    cfg.JWTSecret,
-		otpLogPath:   cfg.OTPLogPath,
-		logger:       logger.With("service", "UserService"),
-		cfg:          cfg,
-		jwtGenerator: auth.GenerateJWT, // Use the real implementation by default
+		querier:           querier,
+		otpStore:          otpStore,
+		twilioOTP:         twilioOTP,
+		jwtSecret:         cfg.JWTSecret,
+		otpLogPath:        cfg.OTPLogPath,
+		logger:            logger.With("service", "UserService"),
+		cfg:               cfg,
+		jwtGenerator:      auth.GenerateJWT, // Use the real implementation by default
+		otpRateLimitSvc:   otpRateLimitSvc,
 	}
 }
 

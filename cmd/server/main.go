@@ -88,6 +88,11 @@ func main() {
 		log.Fatalf("Critical: Error loading configuration: %v", err)
 	}
 
+	// SECURITY: Validate critical security configurations before starting
+	if err := cfg.ValidateSecurityConfig(); err != nil {
+		log.Fatalf("Critical: %v", err)
+	}
+
 	logger := logging.NewLogger(cfg) // Initialize logger with config
 	slog.SetDefault(logger)          // Set as global default
 

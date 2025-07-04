@@ -73,6 +73,26 @@ type EmergencyContact struct {
 	UpdatedAt    sql.NullTime   `json:"updated_at"`
 }
 
+type OtpAttempt struct {
+	AttemptID   int64          `json:"attempt_id"`
+	Phone       string         `json:"phone"`
+	AttemptedAt time.Time      `json:"attempted_at"`
+	Success     int64          `json:"success"`
+	ClientIp    sql.NullString `json:"client_ip"`
+	UserAgent   sql.NullString `json:"user_agent"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type OtpRateLimit struct {
+	Phone          string       `json:"phone"`
+	FailedAttempts int64        `json:"failed_attempts"`
+	LockedUntil    sql.NullTime `json:"locked_until"`
+	FirstAttemptAt time.Time    `json:"first_attempt_at"`
+	LastAttemptAt  time.Time    `json:"last_attempt_at"`
+	CreatedAt      time.Time    `json:"created_at"`
+	UpdatedAt      time.Time    `json:"updated_at"`
+}
+
 type Outbox struct {
 	OutboxID    int64          `json:"outbox_id"`
 	MessageType string         `json:"message_type"`
