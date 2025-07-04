@@ -16,6 +16,8 @@ import type {
 export const MIN_MONTHS_TO_SHOW = 2; // Always show at least 2 months for admin view
 export const MAX_MONTHS_TO_SHOW = 3; // Cap at 3 months for performance
 export const MAX_DAY_RANGE = 365; // Maximum 1 year for performance
+// Default: 60 days ensures we always show at least 2 full months
+// This constant is used by admin calendar components to maintain consistency
 export const DEFAULT_DAY_RANGE = '60'; // 2 months default
 
 // === DATE UTILITIES ===

@@ -5,8 +5,8 @@
 	import { createAdminShiftsQuery } from '$lib/queries/admin/shifts/adminShiftsQuery';
 	import { LoadingState, ErrorState } from '$lib/components/ui';
 
-	// Use 60 days default to ensure we always show at least 2 full months
-	const DEFAULT_DAY_RANGE = '60';
+	// Import centralized default to avoid divergence with calendar component
+	import { DEFAULT_DAY_RANGE } from '$lib/utils/adminCalendar';
 
 	// Create the admin shifts query for the calendar with longer range
 	const adminShiftsQuery = $derived(createAdminShiftsQuery(DEFAULT_DAY_RANGE));
