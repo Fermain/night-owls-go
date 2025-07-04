@@ -225,10 +225,14 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 
 // VerifyOTP validates the OTP for a given phone number and if valid, generates a JWT.
 // Now includes rate limiting and brute force protection.
-func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string) (string, error) {
-	// Extract client info for audit logging (basic implementation)
-	clientIP := "unknown"
-	userAgent := "unknown"
+func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string, clientIP, userAgent string) (string, error) {
+	// Use provided client info, fallback to unknown if not provided
+	if clientIP == "" {
+		clientIP = "unknown"
+	}
+	if userAgent == "" {
+		userAgent = "unknown"
+	}
 	
 	var otpValid bool
 

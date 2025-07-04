@@ -210,6 +210,15 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		for _, slot := range allSlots {
 			populatedSlots = append(populatedSlots, slot)
 		}
+		// Apply same sorting and limiting as successful path
+		sort.Slice(populatedSlots, func(i, j int) bool {
+			return populatedSlots[i].StartTime.Before(populatedSlots[j].StartTime)
+		})
+		
+		if limit != nil && len(populatedSlots) > *limit {
+			populatedSlots = populatedSlots[:*limit]
+		}
+		
 		return populatedSlots, nil
 	}
 
@@ -371,6 +380,15 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		for _, slot := range allSlots {
 			populatedSlots = append(populatedSlots, AdminAvailableShiftSlot(slot))
 		}
+		// Apply same sorting and limiting as successful path
+		sort.Slice(populatedSlots, func(i, j int) bool {
+			return populatedSlots[i].StartTime.Before(populatedSlots[j].StartTime)
+		})
+		
+		if limit != nil && len(populatedSlots) > *limit {
+			populatedSlots = populatedSlots[:*limit]
+		}
+		
 		return populatedSlots, nil
 	}
 

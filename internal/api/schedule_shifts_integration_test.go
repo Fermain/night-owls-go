@@ -144,7 +144,7 @@ func TestScheduleEndpoints_GetAvailableShifts_WithBooking(t *testing.T) {
 	require.NotEmpty(t, otpValue)
 
 	// Verify OTP to get token
-	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue)
+	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue, "test-ip", "test-agent")
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 

@@ -318,7 +318,10 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	phoneE164 := phonenumbers.Format(parsedNum, phonenumbers.E164)
 
-	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code))
+	// Extract client information for rate limiting and audit logging
+	clientIP, userAgent := extractClientInfo(r)
+
+	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code), clientIP, userAgent)
 	if err != nil {
 		// Add timing randomization to prevent enumeration via timing attacks
 		addTimingRandomization()

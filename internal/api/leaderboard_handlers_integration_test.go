@@ -196,7 +196,7 @@ func (app *leaderboardTestApp) createTestUserAndLogin(t *testing.T, phone, name,
 	require.NoError(t, errOtp)
 	app.OTPStore.StoreOTP(phone, otp, 5*time.Minute)
 
-	token, err := app.UserService.VerifyOTP(ctx, phone, otp)
+	token, err := app.UserService.VerifyOTP(ctx, phone, otp, "test-ip", "test-agent")
 	require.NoError(t, err, "Failed to verify OTP and get token for test user %s", phone)
 	require.NotEmpty(t, token)
 	return user, token

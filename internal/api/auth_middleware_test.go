@@ -73,7 +73,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	}
 	require.NotEmpty(t, otpValue)
 
-	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue)
+	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue, "test-ip", "test-agent")
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
