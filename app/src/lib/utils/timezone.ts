@@ -148,8 +148,8 @@ export function getTimeUntil(timeString: string): string {
 		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
-		return `${diffMins}m`;
+		if (diffHours > 0) return `in ${diffHours}h ${diffMins}m`;
+		return `in ${diffMins}m`;
 	} catch {
 		return 'Invalid Date';
 	}

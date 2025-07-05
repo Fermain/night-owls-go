@@ -28,6 +28,7 @@
 	import { onMount } from 'svelte';
 	import MyReportsWidget from '$lib/components/user/dashboard/MyReportsWidget.svelte';
 	import { getPageOpenGraph } from '$lib/utils/opengraph';
+	import { formatDayNight } from '$lib/utils/shiftFormatting';
 
 	// OpenGraph tags for this page
 	const ogTags = getPageOpenGraph('home');
@@ -266,11 +267,7 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', {
-				weekday: 'short',
-				month: 'short',
-				day: 'numeric'
-			});
+			dateLabel = formatDayNight(shift.start_time);
 		}
 
 		const timeRange = `${start.toLocaleTimeString('en-GB', {
@@ -299,12 +296,9 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else if (start.toDateString() === dayAfterTomorrow.toDateString()) {
-			dateLabel = start.toLocaleDateString('en-GB', { weekday: 'short' });
+			dateLabel = formatDayNight(booking.shift_start);
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', {
-				month: 'short',
-				day: 'numeric'
-			});
+			dateLabel = formatDayNight(booking.shift_start);
 		}
 
 		const timeRange = `${start.toLocaleTimeString('en-GB', {
