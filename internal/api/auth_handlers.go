@@ -2,22 +2,20 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
-	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"night-owls-go/internal/auth"
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
+	"night-owls-go/internal/utils"
 
 	"github.com/gorilla/sessions"
 	"github.com/nyaruka/phonenumbers"
@@ -104,19 +102,6 @@ type DevLoginResponse struct {
 		Name  string `json:"name"`
 		Role  string `json:"role"`
 	} `json:"user"`
-}
-
-// addTimingRandomization adds a small random delay to prevent timing attacks
-func addTimingRandomization() {
-	// Add 50-150ms random delay to normalize response times
-	randomMs, err := rand.Int(rand.Reader, big.NewInt(100))
-	if err != nil {
-		// Fallback to fixed delay if randomization fails
-		time.Sleep(100 * time.Millisecond)
-		return
-	}
-	delay := time.Duration(50+randomMs.Int64()) * time.Millisecond
-	time.Sleep(delay)
 }
 
 // setUserSession creates a secure session for the authenticated user
@@ -233,7 +218,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
 		
 		// Add timing randomization to prevent enumeration via timing attacks
-		addTimingRandomization()
+		utils.AddTimingRandomization()
 
 		// Differentiate between client-side and server-side errors
 		if strings.Contains(err.Error(), "rate limit") {
@@ -326,7 +311,7 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code), clientIP, userAgent)
 	if err != nil {
 		// Add timing randomization to prevent enumeration via timing attacks
-		addTimingRandomization()
+		utils.AddTimingRandomization()
 		
 		// Differentiate between client-side and server-side errors
 		if strings.Contains(err.Error(), "rate limit") {
@@ -454,7 +439,7 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := h.querier.GetUserByPhone(r.Context(), phoneE164)
 	if err != nil {
 		// Add timing randomization to prevent enumeration via timing attacks
-		addTimingRandomization()
+		utils.AddTimingRandomization()
 		
 		// Always return the same generic error regardless of the specific issue
 		// This prevents attackers from determining if a phone number is registered

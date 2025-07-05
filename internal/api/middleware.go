@@ -22,6 +22,8 @@ const (
 	UserPhoneKey ContextKey = "userPhone"
 	// UserRoleKey is the key used to store the user role in the request context.
 	UserRoleKey ContextKey = "userRole"
+	// UserNameKey is the key used to store the user name in the request context.
+	UserNameKey ContextKey = "userName"
 )
 
 // AuthMiddleware validates JWT tokens from headers or sessions
@@ -86,7 +88,7 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessio
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, UserPhoneKey, phone)
 			ctx = context.WithValue(ctx, UserRoleKey, role)
-			ctx = context.WithValue(ctx, "name", userName)
+			ctx = context.WithValue(ctx, UserNameKey, userName)
 
 			// For debugging
 			logger.DebugContext(r.Context(), "User authenticated", 

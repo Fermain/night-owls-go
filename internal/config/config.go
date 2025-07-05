@@ -1,8 +1,10 @@
 package config
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings" // For ToLower on log level/format
@@ -48,13 +50,16 @@ const (
 
 // ValidateSecurityConfig validates critical security configurations
 func (c *Config) ValidateSecurityConfig() error {
+	// Create a simple logger for security warnings during startup
+	logger := slog.Default()
+	
 	// Check for default JWT secret - use constant-time comparison to prevent timing attacks
 	if subtle.ConstantTimeCompare([]byte(c.JWTSecret), []byte(DefaultJWTSecret)) == 1 {
 		if isProductionEnvironment() {
 			return fmt.Errorf("CRITICAL SECURITY ERROR: Default JWT secret detected in production environment. Set JWT_SECRET environment variable")
 		}
 		// Warn in development but don't fail
-		fmt.Printf("WARNING: Using default JWT secret. Set JWT_SECRET environment variable for production\n")
+		logger.WarnContext(context.Background(), "Using default JWT secret. Set JWT_SECRET environment variable for production")
 	}
 
 	// Check for weak JWT secrets (too short)
@@ -62,7 +67,7 @@ func (c *Config) ValidateSecurityConfig() error {
 		if isProductionEnvironment() {
 			return fmt.Errorf("CRITICAL SECURITY ERROR: JWT secret too short (%d chars). Use at least 32 characters", len(c.JWTSecret))
 		}
-		fmt.Printf("WARNING: JWT secret is short (%d chars). Use at least 32 characters for production\n", len(c.JWTSecret))
+		logger.WarnContext(context.Background(), "JWT secret is short. Use at least 32 characters for production", "length", len(c.JWTSecret))
 	}
 
 	// Validate dev mode in production

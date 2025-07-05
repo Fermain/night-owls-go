@@ -267,7 +267,7 @@ type GetBookingsInDateRangeRow struct {
 	UserPhone    string         `json:"user_phone"`
 	ScheduleName string         `json:"schedule_name"`
 	HasReport    int64          `json:"has_report"`
-	DaysFromNow  interface{}    `json:"days_from_now"`
+	DaysFromNow  int64          `json:"days_from_now"`
 	UrgencyLevel string         `json:"urgency_level"`
 }
 
