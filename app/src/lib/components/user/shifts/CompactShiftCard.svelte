@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { canCancelBooking } from '$lib/utils/bookings';
-	import { formatTime } from '$lib/utils/shiftFormatting';
+	import { formatTime, formatDayNight } from '$lib/utils/shiftFormatting';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -83,10 +83,10 @@
 		if (diffMs < 0) return 'Started';
 		if (diffHours > 24) {
 			const days = Math.floor(diffHours / 24);
-			return `${days}d`;
+			return `in ${days}d`;
 		}
-		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
-		return `${diffMins}m`;
+		if (diffHours > 0) return `in ${diffHours}h ${diffMins}m`;
+		return `in ${diffMins}m`;
 	}
 </script>
 
@@ -96,7 +96,7 @@
 		<!-- Date & Time Header -->
 		<div class="flex items-center justify-between mb-2">
 			<div class="flex items-center gap-2 text-sm">
-				<span class="font-medium">{formatDate(shift.start_time)}</span>
+				<span class="font-medium">{formatDayNight(shift.start_time)}</span>
 				<span class="text-muted-foreground">
 					{formatTime(shift.start_time)} - {formatTime(shift.end_time)}
 				</span>
@@ -170,7 +170,7 @@
 			<div class="flex items-center gap-2 text-sm">
 				<ClockIcon class="h-3 w-3 text-muted-foreground" />
 				<span
-					>{formatDate(shift.start_time)} • {formatTime(shift.start_time)} - {formatTime(
+					>{formatDayNight(shift.start_time)} • {formatTime(shift.start_time)} - {formatTime(
 						shift.end_time
 					)}</span
 				>

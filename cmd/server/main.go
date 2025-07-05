@@ -451,6 +451,47 @@ func main() {
 		}
 	})
 
+	// Debug endpoint to test push notifications
+	fuego.PostStd(admin, "/debug/test-push", func(w http.ResponseWriter, r *http.Request) {
+		userIDVal := r.Context().Value(api.UserIDKey)
+		userID, ok := userIDVal.(int64)
+		if !ok {
+			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+			return
+		}
+
+		// Create test push notification payload
+		testPayload := map[string]interface{}{
+			"type":  "test",
+			"title": "Test Push Notification",
+			"body":  "This is a test push notification from the admin panel",
+			"data": map[string]interface{}{
+				"test": true,
+			},
+		}
+
+		payloadBytes, err := json.Marshal(testPayload)
+		if err != nil {
+			logger.Error("Failed to marshal test push payload", "error", err)
+			http.Error(w, "Failed to create test payload: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Send test push notification
+		pushSenderService.Send(r.Context(), userID, payloadBytes, 300) // 5 minutes TTL
+
+		response := map[string]interface{}{
+			"message": "Test push notification sent",
+			"user_id": userID,
+			"payload": testPayload,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			logger.Error("Failed to encode test push response", "error", err)
+		}
+	})
+
 	// Simple test handler - mimicking working admin handlers
 	fuego.GetStd(admin, "/simple-test", func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Simple test handler called")

@@ -1,8 +1,11 @@
 // Push notification handlers for Night Owls PWA
 
+// Debug flag - environment-based, defaults to false for production
+const DEBUG = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+
 // Push event handler
 self.addEventListener('push', (event) => {
-	console.log('[SW] Push event received:', event);
+	if (DEBUG) console.log('[SW] Push event received:', event);
 
 	let data = {};
 
@@ -10,7 +13,7 @@ self.addEventListener('push', (event) => {
 	if (event.data) {
 		try {
 			data = event.data.json();
-			console.log('[SW] Push data:', data);
+			if (DEBUG) console.log('[SW] Push data parsed:', data);
 		} catch (error) {
 			console.warn('[SW] Failed to parse push data as JSON:', error);
 			data = {
@@ -34,17 +37,30 @@ self.addEventListener('push', (event) => {
 		tag: data.tag || 'night-owls-notification',
 		data: data.data || {},
 		requireInteraction: data.requireInteraction || false,
-		silent: false
+		silent: false,
+		vibrate: [200, 100, 200] // Add vibration pattern
 	};
 
-	// Show notification
-	const notificationPromise = self.registration.showNotification(
-		data.title || 'Night Owls',
-		options
-	);
+	if (DEBUG) {
+		console.log('[SW] Attempting to show notification with options:', {
+			title: data.title || 'Night Owls',
+			options: options
+		});
+	}
+
+	// Show notification with error handling
+	const notificationPromise = self.registration
+		.showNotification(data.title || 'Night Owls', options)
+		.then(() => {
+			if (DEBUG) console.log('[SW] Notification shown successfully');
+		})
+		.catch((error) => {
+			console.error('[SW] Failed to show notification:', error);
+		});
 
 	// Send message to all clients about the push
 	const messagePromise = self.clients.matchAll({ type: 'window' }).then((clients) => {
+		if (DEBUG) console.log('[SW] Sending push message to', clients.length, 'clients');
 		clients.forEach((client) => {
 			client.postMessage({
 				type: 'PUSH_RECEIVED',

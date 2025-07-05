@@ -1,5 +1,4 @@
 import { authenticatedFetch } from '$lib/utils/api';
-import { toast } from 'svelte-sonner';
 import { notificationStore } from './notificationService';
 
 interface VAPIDKeyResponse {
@@ -171,7 +170,6 @@ class PushNotificationService {
 			// Request permission
 			const permission = await Notification.requestPermission();
 			if (permission !== 'granted') {
-				toast.error('Push notifications permission denied');
 				return false;
 			}
 
@@ -184,15 +182,10 @@ class PushNotificationService {
 			// Send subscription to server
 			await this.sendSubscriptionToServer();
 
-			toast.success('Push notifications enabled successfully!');
 			console.log('[PushService] Subscription successful');
 			return true;
 		} catch (error) {
 			console.error('[PushService] Subscription failed:', error);
-
-			// Handle specific FCM/GCM errors
-			const errorMessage = this.getErrorMessage(error);
-			toast.error(errorMessage);
 			return false;
 		}
 	}
@@ -211,12 +204,10 @@ class PushNotificationService {
 			await this.subscription.unsubscribe();
 			this.subscription = null;
 
-			toast.success('Push notifications disabled');
 			console.log('[PushService] Unsubscribed successfully');
 			return true;
 		} catch (error) {
 			console.error('[PushService] Unsubscription failed:', error);
-			toast.error('Failed to disable push notifications');
 			return false;
 		}
 	}
@@ -371,24 +362,39 @@ class PushNotificationService {
 	/**
 	 * Test notification (for development/testing)
 	 */
-	async testNotification(): Promise<void> {
+	async testNotification(): Promise<boolean> {
 		if (!this.registration) {
-			toast.error('Service worker not ready');
-			return;
+			console.error('[PushService] Service worker not ready');
+			return false;
 		}
 
 		try {
+			console.log('[PushService] Attempting to show test notification');
+
+			// Check permission first
+			if (Notification.permission !== 'granted') {
+				console.warn('[PushService] Notification permission not granted:', Notification.permission);
+				return false;
+			}
+
+			// Show notification directly from service worker
 			await this.registration.showNotification('Night Owls Test', {
-				body: 'Push notifications are working correctly!',
+				body: 'Push notifications are working correctly! This is a test from the browser.',
 				icon: '/icons/icon-192x192.png',
-				badge: '/icons/icon-192x192.png',
-				tag: 'test',
-				requireInteraction: false
+				badge: '/icons/icon-96x96.png',
+				tag: 'test-notification',
+				requireInteraction: false,
+				data: {
+					type: 'test',
+					timestamp: Date.now()
+				}
 			});
-			console.log('[PushService] Test notification shown');
+
+			console.log('[PushService] Test notification shown successfully');
+			return true;
 		} catch (error) {
 			console.error('[PushService] Test notification failed:', error);
-			toast.error('Failed to show test notification');
+			return false;
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	db "night-owls-go/internal/db/sqlc_generated"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 )
 
 // setupTestDB creates an in-memory SQLite database with required schema
@@ -441,4 +442,13 @@ func TestOTPRateLimitingService_SecurityEdgeCases(t *testing.T) {
 	if valid {
 		t.Error("Different length OTPs should not be valid")
 	}
+}
+
+func TestOTPRateLimitingConstants(t *testing.T) {
+	// Test that the constants are set to the expected values
+	assert.Equal(t, 5, MaxOTPAttemptsPerWindow, "MaxOTPAttemptsPerWindow should be 5")
+	assert.Equal(t, 15*time.Minute, InitialLockoutDuration, "InitialLockoutDuration should be 15 minutes")
+	assert.Equal(t, 10, MaxRegistrationAttemptsPerPhone, "MaxRegistrationAttemptsPerPhone should be 10")
+	assert.Equal(t, 20, MaxRegistrationAttemptsPerIP, "MaxRegistrationAttemptsPerIP should be 20")
+	assert.Equal(t, time.Hour, RegistrationWindow, "RegistrationWindow should be 1 hour")
 } 

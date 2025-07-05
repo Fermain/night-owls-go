@@ -1,12 +1,14 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Card from '$lib/components/ui/card';
+	import { formatTime } from '$lib/utils/timezone';
+	import { getTimeUntil } from '$lib/utils/datetime';
+	import { formatDayNight } from '$lib/utils/shiftFormatting';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import { formatTime, getTimeUntil } from '$lib/utils/bookings';
 
 	interface NextShift {
 		start_time: string;
@@ -45,7 +47,11 @@
 
 		<div class="flex items-center text-sm">
 			<ClockIcon class="h-4 w-4 mr-2 text-muted-foreground" />
-			<span>{formatTime(nextShift.start_time)} - {formatTime(nextShift.end_time)}</span>
+			<span
+				>{formatDayNight(nextShift.start_time)} • {formatTime(nextShift.start_time)} - {formatTime(
+					nextShift.end_time
+				)}</span
+			>
 		</div>
 
 		<div class="flex gap-2">

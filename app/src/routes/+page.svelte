@@ -19,6 +19,8 @@
 		type CreateBookingRequest,
 		type UserBooking
 	} from '$lib/services/api/user';
+	import { SchedulesApiService } from '$lib/services/api/schedules';
+	import type { AdminShiftSlot } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 	import CompactShiftCard from '$lib/components/user/shifts/CompactShiftCard.svelte';
 	import BookingConfirmationDialog from '$lib/components/user/bookings/BookingConfirmationDialog.svelte';
@@ -28,6 +30,7 @@
 	import { onMount } from 'svelte';
 	import MyReportsWidget from '$lib/components/user/dashboard/MyReportsWidget.svelte';
 	import { getPageOpenGraph } from '$lib/utils/opengraph';
+	import { formatDayNight } from '$lib/utils/shiftFormatting';
 
 	// OpenGraph tags for this page
 	const ogTags = getPageOpenGraph('home');
@@ -53,7 +56,7 @@
 	let displayShiftLimit = $state(10);
 
 	// Query states - will be initialized in onMount with proper types
-	let availableShiftsQuery = $state<CreateQueryResult<AvailableShiftSlot[], Error> | null>(null);
+	let availableShiftsQuery = $state<CreateQueryResult<AdminShiftSlot[], Error> | null>(null);
 	let userBookingsQuery = $state<CreateQueryResult<UserBooking[], Error> | null>(null);
 	let bookingMutation = $state<CreateMutationResult<
 		UserBooking,
@@ -70,12 +73,12 @@
 
 	// Initialize queries after component is mounted to avoid lifecycle errors
 	onMount(() => {
-		// Query for available shifts - reactive to dateRange changes
+		// Query for all shifts (both filled and unfilled) - reactive to dateRange changes
 		availableShiftsQuery = createQuery({
-			queryKey: ['available-shifts', dayRange],
+			queryKey: ['all-shifts', dayRange],
 			queryFn: async () => {
 				const { from, to } = getShiftDateRange(dayRange);
-				const result = await UserApiService.getAvailableShifts({ from, to });
+				const result = await SchedulesApiService.getAllSlots({ from, to });
 				return result;
 			}
 		});
@@ -130,8 +133,26 @@
 		mounted = true;
 	});
 
+	// Transform AdminShiftSlot to AvailableShiftSlot for compatibility
+	function transformToAvailableShift(shift: AdminShiftSlot): AvailableShiftSlot {
+		return {
+			schedule_id: shift.schedule_id,
+			schedule_name: shift.schedule_name,
+			start_time: shift.start_time,
+			end_time: shift.end_time,
+			timezone: shift.timezone || undefined,
+			is_booked: shift.is_booked,
+			booking_id: shift.booking_id || undefined,
+			user_name: shift.user_name || undefined,
+			user_phone: shift.user_phone || undefined,
+			buddy_name: shift.buddy_name || undefined
+		};
+	}
+
 	// Derived data - with null checks since queries are initialized in onMount
-	const availableShifts = $derived(($availableShiftsQuery?.data as AvailableShiftSlot[]) ?? []);
+	const availableShifts = $derived(
+		($availableShiftsQuery?.data?.map(transformToAvailableShift) as AvailableShiftSlot[]) ?? []
+	);
 	const userBookings = $derived(($userBookingsQuery?.data as UserBooking[]) ?? []);
 
 	// Calculate how many shifts to display based on shiftLimit, but always show at least 5
@@ -266,11 +287,7 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', {
-				weekday: 'short',
-				month: 'short',
-				day: 'numeric'
-			});
+			dateLabel = formatDayNight(shift.start_time);
 		}
 
 		const timeRange = `${start.toLocaleTimeString('en-GB', {
@@ -299,12 +316,9 @@
 		} else if (start.toDateString() === tomorrow.toDateString()) {
 			dateLabel = 'Tomorrow';
 		} else if (start.toDateString() === dayAfterTomorrow.toDateString()) {
-			dateLabel = start.toLocaleDateString('en-GB', { weekday: 'short' });
+			dateLabel = formatDayNight(booking.shift_start);
 		} else {
-			dateLabel = start.toLocaleDateString('en-GB', {
-				month: 'short',
-				day: 'numeric'
-			});
+			dateLabel = formatDayNight(booking.shift_start);
 		}
 
 		const timeRange = `${start.toLocaleTimeString('en-GB', {
@@ -439,7 +453,7 @@
 						<div
 							class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
 						></div>
-						<p class="text-sm text-muted-foreground">Loading available shifts...</p>
+						<p class="text-sm text-muted-foreground">Loading shift roster...</p>
 					</div>
 				</div>
 			{:else if $availableShiftsQuery?.isError}
@@ -538,8 +552,10 @@
 						<div class="px-4">
 							<div class="text-center py-8">
 								<CalendarIcon class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-								<h3 class="text-sm font-medium mb-1">No shifts available</h3>
-								<p class="text-xs text-muted-foreground">Check back later for new opportunities</p>
+								<h3 class="text-sm font-medium mb-1">No shifts scheduled</h3>
+								<p class="text-xs text-muted-foreground">
+									Check back later for new shift schedules
+								</p>
 							</div>
 						</div>
 					{/if}

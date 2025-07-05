@@ -19,15 +19,15 @@ var (
 
 // OTP Rate Limiting Configuration
 const (
-	MaxOTPAttemptsPerWindow = 3        // Max attempts before lockout
+	MaxOTPAttemptsPerWindow = 5        // Max attempts before lockout (increased from 3)
 	OTPAttemptWindow        = 15 * time.Minute // Time window for counting attempts
-	InitialLockoutDuration  = 30 * time.Minute // First lockout duration
+	InitialLockoutDuration  = 15 * time.Minute // First lockout duration (reduced from 30min)
 	MaxLockoutDuration      = 24 * time.Hour   // Maximum lockout duration
 	LockoutMultiplier       = 2                // Exponential backoff multiplier
 	
 	// Registration rate limiting
-	MaxRegistrationAttemptsPerIP    = 10       // Max registration attempts per IP per hour
-	MaxRegistrationAttemptsPerPhone = 3        // Max registration attempts per phone per hour  
+	MaxRegistrationAttemptsPerIP    = 20       // Max registration attempts per IP per hour (increased from 10)
+	MaxRegistrationAttemptsPerPhone = 10       // Max registration attempts per phone per hour (increased from 3) 
 	RegistrationWindow              = 1 * time.Hour // Time window for registration attempts
 )
 

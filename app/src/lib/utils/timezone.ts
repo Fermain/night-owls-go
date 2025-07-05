@@ -133,29 +133,6 @@ export function getCurrentSASTTime(): Date {
 }
 
 /**
- * Get time until a specific date/time (considering SAST)
- */
-export function getTimeUntil(timeString: string): string {
-	try {
-		const date = new Date(timeString);
-		if (isNaN(date.getTime())) return 'Invalid Date';
-
-		const now = getCurrentSASTTime();
-		const diffMs = date.getTime() - now.getTime();
-
-		if (diffMs < 0) return 'Started';
-
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-		if (diffHours > 0) return `${diffHours}h ${diffMins}m`;
-		return `${diffMins}m`;
-	} catch {
-		return 'Invalid Date';
-	}
-}
-
-/**
  * Check if time operations should use SAST (for future server-side timezone logic)
  */
 export function shouldUseSAST(): boolean {

@@ -94,6 +94,65 @@
 		}
 	}
 
+	async function testBackendPush() {
+		addDebugInfo('Testing backend push notification...');
+		try {
+			const response = await fetch('/api/admin/debug/test-push', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				addDebugInfo(`Backend push test: SUCCESS - ${data.message}`);
+			} else {
+				const errorText = await response.text();
+				addDebugInfo(`Backend push test: FAILED - ${response.status} ${errorText}`);
+			}
+		} catch (error) {
+			addDebugInfo(`Backend push test error: ${error}`);
+		}
+	}
+
+	function testDirectNotification() {
+		addDebugInfo('Testing direct browser notification...');
+		try {
+			if (Notification.permission !== 'granted') {
+				addDebugInfo('Direct notification: Permission not granted');
+				return;
+			}
+
+			const notification = new Notification('Direct Test Notification', {
+				body: 'This notification was created directly by the browser (not service worker)',
+				icon: '/icons/icon-192x192.png',
+				tag: 'direct-test'
+			});
+
+			notification.onclick = () => {
+				addDebugInfo('Direct notification clicked');
+				notification.close();
+			};
+
+			notification.onshow = () => {
+				addDebugInfo('Direct notification shown successfully');
+			};
+
+			notification.onerror = (error) => {
+				addDebugInfo(`Direct notification error: ${error}`);
+			};
+
+			// Auto-close after 5 seconds
+			setTimeout(() => {
+				notification.close();
+				addDebugInfo('Direct notification auto-closed');
+			}, 5000);
+		} catch (error) {
+			addDebugInfo(`Direct notification failed: ${error}`);
+		}
+	}
+
 	function addDebugInfo(message: string) {
 		const timestamp = new Date().toLocaleTimeString();
 		debugInfo = [`[${timestamp}] ${message}`, ...debugInfo.slice(0, 19)];
@@ -150,6 +209,10 @@
 				{/if}
 				{#if status.subscribed}
 					<Button size="sm" onclick={testNotification} variant="secondary">Test Notification</Button
+					>
+					<Button size="sm" onclick={testBackendPush} variant="outline">Test Backend Push</Button>
+					<Button size="sm" onclick={testDirectNotification} variant="outline"
+						>Test Direct Notification</Button
 					>
 					<Button size="sm" onclick={unsubscribe} variant="destructive">Unsubscribe</Button>
 				{/if}
