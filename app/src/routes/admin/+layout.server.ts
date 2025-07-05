@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
 	// Check for JWT token in cookies (secure, HTTP-only)
-	const token = cookies.get('auth-token');
+	const token = cookies.get('night-owls-session');
 
 	if (!token) {
 		// No token - redirect to login
@@ -15,14 +15,13 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
 		const response = await fetch('/api/auth/validate', {
 			method: 'GET',
 			headers: {
-				Authorization: `Bearer ${token}`,
 				Cookie: cookies.toString()
 			}
 		});
 
 		if (!response.ok) {
 			// Invalid token - clear cookie and redirect
-			cookies.delete('auth-token', { path: '/' });
+			cookies.delete('night-owls-session', { path: '/' });
 			throw redirect(302, '/login');
 		}
 
@@ -45,7 +44,7 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
 		};
 	} catch (error) {
 		// Network error or invalid response - redirect to login
-		cookies.delete('auth-token', { path: '/' });
+		cookies.delete('night-owls-session', { path: '/' });
 		throw redirect(302, '/login');
 	}
 };

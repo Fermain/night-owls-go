@@ -94,8 +94,12 @@
 			const errorMessage =
 				error instanceof Error ? error.message : 'Failed to send verification code';
 
-			// Handle user not found case with helpful messaging
-			if (
+			// Handle specific error cases with better messaging
+			if (errorMessage.includes('Too many requests') || errorMessage.includes('rate limit')) {
+				toast.error('Too many login attempts. Please wait a few minutes before trying again.', {
+					duration: 5000
+				});
+			} else if (
 				errorMessage.includes('user not found') ||
 				errorMessage.includes('please register first')
 			) {
@@ -106,7 +110,7 @@
 					}
 				});
 			} else {
-				toast.error(errorMessage);
+				toast.error(errorMessage, { duration: 5000 });
 			}
 			console.error('Login request error:', error);
 		} finally {
@@ -165,24 +169,37 @@
 
 			// Navigate based on onboarding status and user role
 			const needsOnboarding = onboardingActions.needsOnboarding($onboardingState);
+			const userRole = $currentUser?.role;
+
 			if (needsOnboarding) {
 				goto('/onboarding', { replaceState: true });
 			} else {
 				// Role-based redirect: admin to admin area, others to main dashboard
-				const userRole = $currentUser?.role;
 				if (userRole === 'admin') {
 					goto('/admin', { replaceState: true });
 				} else {
 					goto('/', { replaceState: true });
 				}
 			}
-		} catch (_error) {
+		} catch (error) {
+			console.error('🚨 Login verification failed:', error);
+
 			// Clean up loading toast
 			if (toastId) {
 				toast.dismiss(toastId);
 			}
 
-			toast.error('Invalid verification code. Please try again.');
+			const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+			if (errorMessage.includes('Too many requests') || errorMessage.includes('rate limit')) {
+				toast.error(
+					'Too many verification attempts. Please wait a few minutes before trying again.',
+					{
+						duration: 5000
+					}
+				);
+			} else {
+				toast.error('Invalid verification code. Please try again.');
+			}
 
 			// Clear OTP for retry
 			otpValue = '';
