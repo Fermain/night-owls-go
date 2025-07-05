@@ -14,11 +14,10 @@
 	} from '$lib/components/ui';
 	import * as Select from '$lib/components/ui/select';
 	import SendIcon from '@lucide/svelte/icons/send';
+	import { NotificationService } from '$lib/utils/errorHandling';
 
 	// Utilities with new patterns
 	import { apiGet, apiPost } from '$lib/utils/api';
-	import { classifyError, getErrorMessage } from '$lib/utils/errors';
-	import { toast } from 'svelte-sonner';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 	// Types using our new domain types and API mappings
@@ -122,7 +121,7 @@
 			return mapAPIBroadcastToDomain(apiResponse);
 		},
 		onSuccess: (result) => {
-			toast.success(`Broadcast sent successfully to ${result.recipientCount} users!`);
+			NotificationService.success(`Broadcast sent successfully to ${result.recipientCount} users!`);
 			// Reset form
 			formValues = {
 				title: '',
@@ -138,24 +137,23 @@
 			onSuccess?.(result);
 		},
 		onError: (error: Error) => {
-			const appError = classifyError(error);
-			toast.error(getErrorMessage(appError));
+			NotificationService.error(error);
 		}
 	});
 
 	function handleSendBroadcast() {
 		if (!formValues.title.trim()) {
-			toast.error('Please enter a title');
+			NotificationService.error('Please enter a title');
 			return;
 		}
 
 		if (!formValues.message.trim()) {
-			toast.error('Please enter a message');
+			NotificationService.error('Please enter a message');
 			return;
 		}
 
 		if (isScheduled && !scheduledDateTime) {
-			toast.error('Please select a scheduled time');
+			NotificationService.error('Please select a scheduled time');
 			return;
 		}
 

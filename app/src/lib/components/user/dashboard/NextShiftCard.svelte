@@ -2,8 +2,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
-	import { formatTime, formatDayNight } from '$lib/utils/shiftFormatting';
-	import { getTimeUntil } from '$lib/utils/timezone';
+	import { formatTime } from '$lib/utils/timezone';
+	import { getTimeUntil } from '$lib/utils/datetime';
+	import { formatDayNight } from '$lib/utils/shiftFormatting';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';

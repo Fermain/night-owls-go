@@ -1,5 +1,4 @@
 import { authenticatedFetch } from '$lib/utils/api';
-import { toast } from 'svelte-sonner';
 import { notificationStore } from './notificationService';
 
 interface VAPIDKeyResponse {
@@ -171,7 +170,6 @@ class PushNotificationService {
 			// Request permission
 			const permission = await Notification.requestPermission();
 			if (permission !== 'granted') {
-				toast.error('Push notifications permission denied');
 				return false;
 			}
 
@@ -184,15 +182,10 @@ class PushNotificationService {
 			// Send subscription to server
 			await this.sendSubscriptionToServer();
 
-			toast.success('Push notifications enabled successfully!');
 			console.log('[PushService] Subscription successful');
 			return true;
 		} catch (error) {
 			console.error('[PushService] Subscription failed:', error);
-
-			// Handle specific FCM/GCM errors
-			const errorMessage = this.getErrorMessage(error);
-			toast.error(errorMessage);
 			return false;
 		}
 	}
@@ -211,12 +204,10 @@ class PushNotificationService {
 			await this.subscription.unsubscribe();
 			this.subscription = null;
 
-			toast.success('Push notifications disabled');
 			console.log('[PushService] Unsubscribed successfully');
 			return true;
 		} catch (error) {
 			console.error('[PushService] Unsubscription failed:', error);
-			toast.error('Failed to disable push notifications');
 			return false;
 		}
 	}
@@ -371,10 +362,10 @@ class PushNotificationService {
 	/**
 	 * Test notification (for development/testing)
 	 */
-	async testNotification(): Promise<void> {
+	async testNotification(): Promise<boolean> {
 		if (!this.registration) {
-			toast.error('Service worker not ready');
-			return;
+			console.error('[PushService] Service worker not ready');
+			return false;
 		}
 
 		try {
@@ -383,8 +374,7 @@ class PushNotificationService {
 			// Check permission first
 			if (Notification.permission !== 'granted') {
 				console.warn('[PushService] Notification permission not granted:', Notification.permission);
-				toast.error('Notification permission not granted');
-				return;
+				return false;
 			}
 
 			// Show notification directly from service worker
@@ -401,10 +391,10 @@ class PushNotificationService {
 			});
 
 			console.log('[PushService] Test notification shown successfully');
-			toast.success('Test notification sent! Check your notifications.');
+			return true;
 		} catch (error) {
 			console.error('[PushService] Test notification failed:', error);
-			toast.error('Failed to show test notification: ' + (error as Error).message);
+			return false;
 		}
 	}
 }

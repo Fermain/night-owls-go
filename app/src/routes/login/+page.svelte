@@ -12,6 +12,7 @@
 	import { onboardingActions, onboardingState } from '$lib/stores/onboardingStore';
 	import type { E164Number } from 'svelte-tel-input/types';
 	import { getPageOpenGraph } from '$lib/utils/opengraph';
+	import { handleRateLimitError, getErrorMessage } from '$lib/utils/errorHandling';
 
 	// OpenGraph tags for this page
 	const ogTags = getPageOpenGraph('login');
@@ -91,14 +92,11 @@
 			toast.success('Verification code sent to your phone');
 			step = 'verify';
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : 'Failed to send verification code';
+			const errorMessage = getErrorMessage(error) || 'Failed to send verification code';
 
 			// Handle specific error cases with better messaging
-			if (errorMessage.includes('Too many requests') || errorMessage.includes('rate limit')) {
-				toast.error('Too many login attempts. Please wait a few minutes before trying again.', {
-					duration: 5000
-				});
+			if (handleRateLimitError(errorMessage)) {
+				// Rate limit error handled by helper
 			} else if (
 				errorMessage.includes('user not found') ||
 				errorMessage.includes('please register first')
