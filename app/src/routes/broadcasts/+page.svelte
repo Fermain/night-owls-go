@@ -155,7 +155,28 @@
 </script>
 
 <svelte:head>
-	<title>Alerts - Night Owls</title>
+	<title>Community Alerts - Mount Moreland Night Owls</title>
+	<meta
+		name="description"
+		content="Stay informed with the latest community alerts, announcements, and safety updates from Mount Moreland Night Owls."
+	/>
+	<meta property="og:title" content="Community Alerts - Mount Moreland Night Owls" />
+	<meta
+		property="og:description"
+		content="Stay informed with the latest community alerts, announcements, and safety updates from Mount Moreland Night Owls."
+	/>
+	<meta property="og:image" content="/logo.png" />
+	<meta property="og:image:alt" content="Mount Moreland Night Owls Logo" />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="Mount Moreland Night Owls" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Community Alerts - Mount Moreland Night Owls" />
+	<meta
+		name="twitter:description"
+		content="Stay informed with the latest community alerts, announcements, and safety updates from Mount Moreland Night Owls."
+	/>
+	<meta name="twitter:image" content="/logo.png" />
+	<meta name="twitter:image:alt" content="Mount Moreland Night Owls Logo" />
 </svelte:head>
 
 <div class="min-h-screen bg-background flex-1">

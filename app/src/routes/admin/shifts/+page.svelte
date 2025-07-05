@@ -2,7 +2,7 @@
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import type { AdminShiftSlot } from '$lib/types';
-	import EnhancedShiftsDashboard from '$lib/components/dashboard/EnhancedShiftsDashboard.svelte';
+	import SimplifiedShiftsDashboard from '$lib/components/dashboard/SimplifiedShiftsDashboard.svelte';
 	import ShiftBookingForm from '$lib/components/admin/shifts/ShiftBookingForm.svelte';
 	import { createShiftDetailsQuery } from '$lib/queries/admin/shifts/shiftDetailsQuery';
 	import { createShiftsAnalyticsQuery } from '$lib/queries/admin/shifts/shiftsAnalyticsQuery';
@@ -13,7 +13,7 @@
 
 	const queryClient = useQueryClient();
 
-	// Queries using new analytics query for dashboard
+	// Queries using analytics query for simplified dashboard
 	const shiftDetailsQuery = $derived(createShiftDetailsQuery(shiftStartTimeFromUrl));
 	const shiftsAnalyticsQuery = $derived(createShiftsAnalyticsQuery(30)); // 30 days of analytics
 
@@ -68,8 +68,8 @@
 		</div>
 	</div>
 {:else}
-	<!-- Enhanced Dashboard View with Analytics -->
-	<EnhancedShiftsDashboard
+	<!-- Simplified Dashboard View -->
+	<SimplifiedShiftsDashboard
 		isLoading={$shiftsAnalyticsQuery.isLoading}
 		isError={$shiftsAnalyticsQuery.isError}
 		error={$shiftsAnalyticsQuery.error || undefined}

@@ -106,11 +106,12 @@ SELECT
     b.shift_start,
     b.shift_end,
     b.checked_in_at,
+    b.buddy_name,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     s.name as schedule_name,
     CASE WHEN r.report_id IS NOT NULL THEN 1 ELSE 0 END as has_report,
-    CAST((julianday(b.shift_start) - julianday('now')) AS INTEGER) as days_from_now,
+    COALESCE(CAST(julianday(b.shift_start) - julianday('now') AS INTEGER), 0) as days_from_now,
     CASE 
         WHEN datetime(b.shift_start) <= datetime('now', '+1 day') THEN 'urgent'
         WHEN datetime(b.shift_start) <= datetime('now', '+3 days') THEN 'critical'

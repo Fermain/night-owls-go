@@ -106,7 +106,7 @@ func TestReportCreationAndValidation(t *testing.T) { // Renamed to fix redeclara
 
 	// --- Test POST /bookings/{id}/report (For a booking not owned by user) ---
 	otherUserPhone := "+14155550999" // Using US format that passes validation
-	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Another Reporter", Valid: true})
+	err = app.UserService.RegisterOrLoginUser(context.Background(), otherUserPhone, sql.NullString{String: "Another Reporter", Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err, "Failed to register other user")
 
 	// Get a fresh look at outbox items for the other user

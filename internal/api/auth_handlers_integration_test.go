@@ -140,7 +140,7 @@ func newTestApp(t *testing.T) *testApp {
 	// Create fuego server like in production
 	server := fuego.NewServer()
 
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, createTestSessionStore())
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
@@ -149,12 +149,13 @@ func newTestApp(t *testing.T) *testApp {
 	// Public API routes (no auth required)
 	fuego.PostStd(server, "/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(server, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.GetStd(server, "/auth/validate", authAPIHandler.ValidateHandler)
 	fuego.GetStd(server, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(server, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
 
 	// Protected routes (require auth) - creating a group like in production
 	protected := fuego.Group(server, "")
-	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 	fuego.PostStd(protected, "/bookings", bookingAPIHandler.CreateBookingHandler)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.PostStd(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInHandler)
@@ -278,12 +279,74 @@ func TestAuthEndpoints_Verify_InvalidOTP(t *testing.T) {
 	defer app.DB.Close()
 	phone := "+14155550102"
 	// Register first to store an OTP
-	err := app.UserService.RegisterOrLoginUser(context.Background(), phone, sql.NullString{String: "TestUser", Valid: true})
+	err := app.UserService.RegisterOrLoginUser(context.Background(), phone, sql.NullString{String: "TestUser", Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err)
 
 	verifyPayload := api.VerifyRequest{Phone: phone, Code: "000000"}
 	payloadBytes, _ := json.Marshal(verifyPayload)
 	rr := app.makeRequest(t, "POST", "/auth/verify", bytes.NewBuffer(payloadBytes), "")
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestAuthEndpoints_ValidateToken_Success(t *testing.T) {
+	app := newTestApp(t)
+	defer app.DB.Close()
+	phone := "+14155550105"
+	userName := "Validate Test User"
+	ctx := context.Background()
+
+	// Register and verify user to get a valid token
+	err := app.UserService.RegisterOrLoginUser(ctx, phone,
+		sql.NullString{String: userName, Valid: true}, "test-ip", "test-agent")
+	require.NoError(t, err)
+
+	outboxItems, err := app.Querier.GetPendingOutboxItems(ctx, 10)
+	require.NoError(t, err)
+	var otpValue string
+	for _, item := range outboxItems {
+		if item.Recipient == phone && item.MessageType == "OTP_VERIFICATION" {
+			var otpPayload struct {
+				OTP string `json:"otp"`
+			}
+			err = json.Unmarshal([]byte(item.Payload.String), &otpPayload)
+			require.NoError(t, err)
+			otpValue = otpPayload.OTP
+			break
+		}
+	}
+	require.NotEmpty(t, otpValue)
+
+	token, err := app.UserService.VerifyOTP(ctx, phone, otpValue, "test-ip", "test-agent")
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// Test the validate endpoint with valid token
+	rr := app.makeRequest(t, "GET", "/auth/validate", nil, token)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var validateResp map[string]interface{}
+	err = json.Unmarshal(rr.Body.Bytes(), &validateResp)
+	require.NoError(t, err)
+	
+	assert.NotEmpty(t, validateResp["id"])
+	assert.Equal(t, phone, validateResp["phone"])
+	assert.Equal(t, userName, validateResp["name"])
+	assert.Equal(t, "admin", validateResp["role"]) // First user gets admin role
+}
+
+func TestAuthEndpoints_ValidateToken_NoToken(t *testing.T) {
+	app := newTestApp(t)
+	defer app.DB.Close()
+
+	rr := app.makeRequest(t, "GET", "/auth/validate", nil, "")
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestAuthEndpoints_ValidateToken_InvalidToken(t *testing.T) {
+	app := newTestApp(t)
+	defer app.DB.Close()
+
+	rr := app.makeRequest(t, "GET", "/auth/validate", nil, "invalid-token")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 

@@ -1,20 +1,67 @@
 <script lang="ts">
-	import MobileAdminDashboard from '$lib/components/admin/MobileAdminDashboard.svelte';
 	import SidebarPage from '$lib/components/sidebar-page.svelte';
 	import UpcomingShifts from '$lib/components/admin/shifts/UpcomingShifts.svelte';
-	import { createAdminDashboardQuery } from '$lib/queries/admin/dashboard';
+	import AdminShiftCalendar from '$lib/components/admin/calendar/AdminShiftCalendar.svelte';
+	import { createAdminShiftsQuery } from '$lib/queries/admin/shifts/adminShiftsQuery';
+	import { LoadingState, ErrorState } from '$lib/components/ui';
+	import { getPageOpenGraph } from '$lib/utils/opengraph';
 
-	// Create the comprehensive dashboard query
-	const dashboardQuery = $derived(createAdminDashboardQuery());
+	// OpenGraph tags for admin dashboard
+	const ogTags = getPageOpenGraph('admin');
 
-	const isLoading = $derived($dashboardQuery.isLoading);
-	const isError = $derived($dashboardQuery.isError);
-	const error = $derived($dashboardQuery.error || undefined);
-	const dashboardData = $derived($dashboardQuery.data);
+	// Import centralized default to avoid divergence with calendar component
+	import { DEFAULT_DAY_RANGE } from '$lib/utils/adminCalendar';
+
+	// Create the admin shifts query for the calendar with longer range
+	const adminShiftsQuery = $derived(createAdminShiftsQuery(DEFAULT_DAY_RANGE));
+
+	const isLoading = $derived($adminShiftsQuery.isLoading);
+	const isError = $derived($adminShiftsQuery.isError);
+	const error = $derived($adminShiftsQuery.error || undefined);
+	const shiftsData = $derived($adminShiftsQuery.data || []);
+
+	// Handle shift updates (refresh calendar after assignment changes)
+	function handleShiftUpdate() {
+		$adminShiftsQuery.refetch();
+	}
+
+	// Performance optimization: Memoize shift count for header
+	const shiftsSummary = $derived.by(() => {
+		const total = shiftsData.length;
+		const filled = shiftsData.filter((shift) => shift.is_booked && shift.user_name).length;
+		const unfilled = total - filled;
+		const fillRate = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+		return { total, filled, unfilled, fillRate };
+	});
 </script>
 
 <svelte:head>
-	<title>Admin Dashboard - Mount Moreland Night Owls</title>
+	<title>{ogTags.title}</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.description}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogImageAlt}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogType}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.ogSiteName}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterCard}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterTitle}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterDescription}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImage}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html ogTags.twitterImageAlt}
 </svelte:head>
 
 <SidebarPage title="Upcoming Shifts">
@@ -23,15 +70,41 @@
 	{/snippet}
 
 	<div class="p-6 space-y-6">
-		<!-- Page Header with proper admin styling -->
+		<!-- Page Header with Performance Summary -->
 		<div class="border-b pb-4">
 			<h1 class="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-			<p class="text-lg text-muted-foreground mt-2">
-				Quick insights and actions for community watch operations
-			</p>
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
+				<p class="text-lg text-muted-foreground">
+					Complete view of all shifts - filled and unfilled
+				</p>
+				{#if shiftsSummary.total > 0}
+					<div class="text-sm text-muted-foreground">
+						<span class="font-medium">{shiftsSummary.total}</span> shifts ·
+						<span class="text-green-600 font-medium">{shiftsSummary.filled}</span> filled ·
+						<span class="text-red-600 font-medium">{shiftsSummary.unfilled}</span> unfilled ({shiftsSummary.fillRate}%
+						filled)
+					</div>
+				{/if}
+			</div>
 		</div>
 
-		<!-- Mobile-First Dashboard Content with consistent padding -->
-		<MobileAdminDashboard {isLoading} {isError} {error} data={dashboardData} />
+		<!-- Admin Calendar Content -->
+		{#if isLoading}
+			<LoadingState isLoading={true} loadingText="Loading shifts calendar..." className="py-16" />
+		{:else if isError}
+			<ErrorState
+				error={error || null}
+				title="Failed to load shifts"
+				showRetry={true}
+				onRetry={() => $adminShiftsQuery.refetch()}
+				className="py-16"
+			/>
+		{:else}
+			<AdminShiftCalendar
+				shifts={shiftsData}
+				selectedDayRange={DEFAULT_DAY_RANGE}
+				onShiftUpdate={handleShiftUpdate}
+			/>
+		{/if}
 	</div>
 </SidebarPage>

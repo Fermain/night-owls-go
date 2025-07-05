@@ -7,6 +7,10 @@ export interface AvailableShiftSlot {
 	end_time: string;
 	timezone?: string;
 	is_booked: boolean;
+	booking_id?: number;
+	user_name?: string;
+	user_phone?: string;
+	buddy_name?: string;
 }
 
 export interface UserBooking {

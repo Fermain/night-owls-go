@@ -7,6 +7,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 type Querier interface {
@@ -22,11 +23,16 @@ type Querier interface {
 	// Award points to a user for a specific reason
 	AwardPoints(ctx context.Context, arg AwardPointsParams) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
+	CleanupExpiredLocks(ctx context.Context) error
+	CleanupOldOTPAttempts(ctx context.Context, createdAt time.Time) error
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAuditEvent(ctx context.Context, arg CreateAuditEventParams) (AuditEvent, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
 	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
+	// OTP Attempts Queries
+	CreateOTPAttempt(ctx context.Context, arg CreateOTPAttemptParams) (OtpAttempt, error)
+	CreateOTPRateLimit(ctx context.Context, arg CreateOTPRateLimitParams) (OtpRateLimit, error)
 	CreateOffShiftReport(ctx context.Context, arg CreateOffShiftReportParams) (Report, error)
 	CreateOutboxItem(ctx context.Context, arg CreateOutboxItemParams) (Outbox, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
@@ -37,11 +43,13 @@ type Querier interface {
 	DeleteBooking(ctx context.Context, bookingID int64) error
 	DeleteBroadcast(ctx context.Context, broadcastID int64) error
 	DeleteEmergencyContact(ctx context.Context, contactID int64) error
+	DeleteOTPRateLimit(ctx context.Context, phone string) error
 	DeleteReport(ctx context.Context, reportID int64) error
 	DeleteReportPhoto(ctx context.Context, arg DeleteReportPhotoParams) error
 	DeleteSchedule(ctx context.Context, scheduleID int64) error
 	DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error
 	DeleteUser(ctx context.Context, userID int64) error
+	GetAllOTPAttemptsInWindow(ctx context.Context, attemptedAt time.Time) ([]GetAllOTPAttemptsInWindowRow, error)
 	GetAllSubscriptions(ctx context.Context) ([]GetAllSubscriptionsRow, error)
 	GetAuditEventStats(ctx context.Context) (GetAuditEventStatsRow, error)
 	GetAuditEventsByTypeStats(ctx context.Context) ([]GetAuditEventsByTypeStatsRow, error)
@@ -57,11 +65,17 @@ type Querier interface {
 	// Get all bookings in date range with check-in and report status
 	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
 	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	GetCurrentlyLockedAccounts(ctx context.Context) ([]GetCurrentlyLockedAccountsRow, error)
 	GetDefaultEmergencyContact(ctx context.Context) (EmergencyContact, error)
 	GetEmergencyContactByID(ctx context.Context, contactID int64) (EmergencyContact, error)
 	GetEmergencyContacts(ctx context.Context) ([]EmergencyContact, error)
+	GetFailedOTPAttemptsInWindow(ctx context.Context, arg GetFailedOTPAttemptsInWindowParams) (int64, error)
+	GetLockedPhones(ctx context.Context) ([]GetLockedPhonesRow, error)
 	// Get member contribution analysis for the past month
 	GetMemberContributions(ctx context.Context) ([]GetMemberContributionsRow, error)
+	GetOTPAttemptsInWindow(ctx context.Context, arg GetOTPAttemptsInWindowParams) ([]OtpAttempt, error)
+	// OTP Rate Limits Queries
+	GetOTPRateLimit(ctx context.Context, phone string) (OtpRateLimit, error)
 	GetPendingOutboxItems(ctx context.Context, limit int64) ([]Outbox, error)
 	// Get recent point-earning activities across all users for activity feed
 	GetRecentActivity(ctx context.Context, limit int64) ([]GetRecentActivityRow, error)
@@ -104,11 +118,13 @@ type Querier interface {
 	ListPendingBroadcasts(ctx context.Context) ([]Broadcast, error)
 	ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]ListUsersRow, error)
+	ResetOTPRateLimit(ctx context.Context, phone string) error
 	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
 	UnarchiveReport(ctx context.Context, reportID int64) error
 	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
 	UpdateBroadcastStatus(ctx context.Context, arg UpdateBroadcastStatusParams) (Broadcast, error)
 	UpdateEmergencyContact(ctx context.Context, arg UpdateEmergencyContactParams) (EmergencyContact, error)
+	UpdateOTPRateLimit(ctx context.Context, arg UpdateOTPRateLimitParams) error
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateReportPhotoCount(ctx context.Context, reportID int64) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)

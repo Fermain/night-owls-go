@@ -74,6 +74,7 @@ func (h *LeaderboardHandler) GetLeaderboardHandler(w http.ResponseWriter, r *htt
 			Name:             name,
 			TotalPoints:      totalPoints,
 			ShiftCount:       shiftCount,
+			Rank:             int64(i + 1), // Add rank based on position
 			AchievementCount: entry.AchievementCount,
 			ActivityStatus:   entry.ActivityStatus,
 		}
@@ -133,6 +134,7 @@ func (h *LeaderboardHandler) GetStreakLeaderboardHandler(w http.ResponseWriter, 
 			Name:             name,
 			TotalPoints:      totalPoints,
 			ShiftCount:       shiftCount,
+			Rank:             int64(i + 1), // Add rank based on position
 			AchievementCount: entry.AchievementCount,
 			ActivityStatus:   entry.ActivityStatus,
 		}

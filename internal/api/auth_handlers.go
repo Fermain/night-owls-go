@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -13,11 +15,31 @@ import (
 	"night-owls-go/internal/config"
 	db "night-owls-go/internal/db/sqlc_generated"
 	"night-owls-go/internal/service"
+	"night-owls-go/internal/utils"
 
+	"github.com/gorilla/sessions"
 	"github.com/nyaruka/phonenumbers"
 )
 
 var phoneRegex = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
+
+// Session configuration constants
+const (
+	SessionName = "night-owls-session"
+	// SessionMaxAge removed - now calculated from JWT expiration config
+)
+
+// Standardized error messages to prevent user enumeration
+const (
+	// Generic authentication error - used for all auth failures
+	AuthenticationFailedMessage = "Authentication failed"
+	
+	// Generic validation error - used for all validation failures  
+	ValidationFailedMessage = "Invalid request"
+	
+	// Generic internal error - used for all server errors
+	InternalErrorMessage = "Service temporarily unavailable"
+)
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
@@ -26,10 +48,11 @@ type AuthHandler struct {
 	logger       *slog.Logger
 	config       *config.Config
 	querier      db.Querier
+	sessionStore sessions.Store
 }
 
 // NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(userService *service.UserService, auditService *service.AuditService, logger *slog.Logger, cfg *config.Config, querier db.Querier) *AuthHandler {
+func NewAuthHandler(userService *service.UserService, auditService *service.AuditService, logger *slog.Logger, cfg *config.Config, querier db.Querier, sessionStore sessions.Store) *AuthHandler {
 	logger.Info("AuthHandler created with config", "dev_mode", cfg.DevMode, "server_port", cfg.ServerPort)
 	return &AuthHandler{
 		userService:  userService,
@@ -37,6 +60,7 @@ func NewAuthHandler(userService *service.UserService, auditService *service.Audi
 		logger:       logger.With("handler", "AuthHandler"),
 		config:       cfg,
 		querier:      querier,
+		sessionStore: sessionStore,
 	}
 }
 
@@ -78,6 +102,67 @@ type DevLoginResponse struct {
 		Name  string `json:"name"`
 		Role  string `json:"role"`
 	} `json:"user"`
+}
+
+// setUserSession creates a secure session for the authenticated user
+func (h *AuthHandler) setUserSession(w http.ResponseWriter, r *http.Request, user db.GetUserByPhoneRow, token string) error {
+	session, err := h.sessionStore.Get(r, SessionName)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to get session", "error", err)
+		return err
+	}
+
+	// Set session values
+	session.Values["user_id"] = user.UserID
+	session.Values["phone"] = user.Phone
+	session.Values["role"] = user.Role
+	session.Values["token"] = token // Keep token for backward compatibility
+	
+	userName := ""
+	if user.Name.Valid {
+		userName = user.Name.String
+	}
+	session.Values["name"] = userName
+
+	// Configure session options
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   h.config.JWTExpirationHours * 3600, // Convert hours to seconds, sync with JWT expiry
+		HttpOnly: true,
+		Secure:   !h.config.DevMode, // Secure in production, allow HTTP in dev
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	// Save session
+	return session.Save(r, w)
+}
+
+// clearUserSession removes the user session (logout)
+func (h *AuthHandler) clearUserSession(w http.ResponseWriter, r *http.Request) error {
+	session, err := h.sessionStore.Get(r, SessionName)
+	if err != nil {
+		h.logger.WarnContext(r.Context(), "Failed to get session for clearing", "error", err)
+		// Continue with clearing anyway
+	}
+
+	// Clear session values
+	session.Values = make(map[interface{}]interface{})
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   -1, // Expire immediately
+		HttpOnly: true,
+		Secure:   !h.config.DevMode,
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	return session.Save(r, w)
+}
+
+// isDevelopmentMode checks if we're in development mode
+func isDevelopmentMode() bool {
+	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
+	devMode := os.Getenv("DEV_MODE") == "true"
+	return env == "development" || env == "dev" || devMode
 }
 
 // RegisterHandler handles POST /auth/register
@@ -125,18 +210,26 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		sqlName.Valid = true
 	}
 
-	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName)
+	// Extract client information for rate limiting
+	clientIP, userAgent := extractClientInfo(r)
+
+	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName, clientIP, userAgent)
 	if err != nil {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
+		
+		// Add timing randomization to prevent enumeration via timing attacks
+		utils.AddTimingRandomization()
 
-		// Check for specific user not found error
-		if err.Error() == "user not found - please register first" {
-			RespondWithError(w, http.StatusBadRequest, "user not found - please register first", h.logger, "error", err.Error())
-		} else if strings.Contains(err.Error(), "failed to send SMS") {
-			// Twilio-specific error
-			RespondWithError(w, http.StatusInternalServerError, "Failed to send SMS verification code", h.logger, "error", err.Error())
+		// Differentiate between client-side and server-side errors
+		if strings.Contains(err.Error(), "rate limit") {
+			// Rate limiting errors should be more specific to help legitimate users
+			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
+		} else if strings.Contains(err.Error(), "internal server error") || strings.Contains(err.Error(), "failed to send SMS") || strings.Contains(err.Error(), "database") || strings.Contains(err.Error(), "Twilio") {
+			// Server-side errors (e.g., database, SMS/Twilio issues) should return 500
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
 		} else {
-			RespondWithError(w, http.StatusInternalServerError, "Failed to register/login user", h.logger, "error", err.Error())
+			// Client-side errors (user not found, validation failures, etc.) get generic message
+			RespondWithError(w, http.StatusBadRequest, ValidationFailedMessage, h.logger, "error", err.Error())
 		}
 		return
 	}
@@ -212,13 +305,25 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	phoneE164 := phonenumbers.Format(parsedNum, phonenumbers.E164)
 
-	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code))
+	// Extract client information for rate limiting and audit logging
+	clientIP, userAgent := extractClientInfo(r)
+
+	token, err := h.userService.VerifyOTP(r.Context(), phoneE164, strings.TrimSpace(req.Code), clientIP, userAgent)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err == service.ErrOTPValidationFailed || err == service.ErrUserNotFound {
-			statusCode = http.StatusUnauthorized
+		// Add timing randomization to prevent enumeration via timing attacks
+		utils.AddTimingRandomization()
+		
+		// Differentiate between client-side and server-side errors
+		if strings.Contains(err.Error(), "rate limit") {
+			// Rate limiting errors should be more specific to help legitimate users
+			RespondWithError(w, http.StatusTooManyRequests, "Too many requests. Please try again later.", h.logger, "error", err.Error())
+		} else if strings.Contains(err.Error(), "internal server error") || strings.Contains(err.Error(), "database") || strings.Contains(err.Error(), "Twilio") {
+			// Server-side errors (e.g., database or Twilio issues) should return 500
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
+		} else {
+			// Client-side errors (invalid OTP, user not found, etc.) get generic message
+			RespondWithError(w, http.StatusUnauthorized, AuthenticationFailedMessage, h.logger, "error", err.Error())
 		}
-		RespondWithError(w, statusCode, "OTP verification failed", h.logger, "error", err.Error())
 		return
 	}
 
@@ -240,6 +345,15 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Set secure HTTP-only cookie for the JWT token
+	err = h.setUserSession(w, r, user, token)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to set session", h.logger, "error", err.Error())
+		return
+	}
+	
+	// For now, also return token in response for backward compatibility
+	// TODO: Remove token from JSON response in future version once all clients use cookies
 	RespondWithJSON(w, http.StatusOK, VerifyResponse{Token: token}, h.logger)
 }
 
@@ -324,11 +438,16 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user details from database
 	user, err := h.querier.GetUserByPhone(r.Context(), phoneE164)
 	if err != nil {
+		// Add timing randomization to prevent enumeration via timing attacks
+		utils.AddTimingRandomization()
+		
+		// Always return the same generic error regardless of the specific issue
+		// This prevents attackers from determining if a phone number is registered
 		if err == sql.ErrNoRows {
-			RespondWithError(w, http.StatusNotFound, "User not found", h.logger, "phone", phoneE164)
-			return
+			RespondWithError(w, http.StatusUnauthorized, AuthenticationFailedMessage, h.logger, "phone", phoneE164)
+		} else {
+			RespondWithError(w, http.StatusInternalServerError, InternalErrorMessage, h.logger, "error", err.Error())
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Failed to get user", h.logger, "error", err.Error())
 		return
 	}
 
@@ -349,8 +468,15 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 		h.logger.ErrorContext(r.Context(), "Failed to log dev login audit event", "error", err, "user_id", user.UserID)
 	}
 
+	// Set secure HTTP-only cookie for the JWT token
+	err = h.setUserSession(w, r, user, token)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to set session", h.logger, "error", err.Error())
+		return
+	}
+
 	response := DevLoginResponse{
-		Token: token,
+		Token: token, // Keep for backward compatibility
 		User: struct {
 			ID    int64  `json:"id"`
 			Phone string `json:"phone"`
@@ -366,4 +492,123 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.InfoContext(r.Context(), "Dev login successful", "phone", phoneE164, "user_id", user.UserID, "role", user.Role)
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
+}
+
+// ValidateHandler handles GET /auth/validate
+// @Summary Validate JWT token and return user info
+// @Description Validates the JWT token and returns user information for server-side route protection
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "User info if token is valid"
+// @Failure 401 {object} ErrorResponse "Invalid or expired token"
+// @Router /auth/validate [get]
+func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract token from Authorization header or session
+	var token string
+	
+	// First try session (from cookie)
+	if session, err := h.sessionStore.Get(r, SessionName); err == nil {
+		if sessionToken, ok := session.Values["token"].(string); ok {
+			token = sessionToken
+		}
+	}
+	
+	// Fall back to Authorization header
+	if token == "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	
+	if token == "" {
+		RespondWithError(w, http.StatusUnauthorized, "No token provided", h.logger)
+		return
+	}
+	
+	// Validate JWT token
+	claims, err := auth.ValidateJWT(token, h.config.JWTSecret)
+	if err != nil {
+		h.logger.WarnContext(r.Context(), "Invalid JWT token in validate endpoint", "error", err.Error())
+		RespondWithError(w, http.StatusUnauthorized, "Invalid token", h.logger)
+		return
+	}
+	
+	// Return user information
+	userInfo := map[string]interface{}{
+		"id":    claims.UserID,
+		"phone": claims.Phone,
+		"name":  claims.Name,
+		"role":  claims.Role,
+	}
+	
+	RespondWithJSON(w, http.StatusOK, userInfo, h.logger)
+}
+
+// LogoutHandler handles POST /auth/logout
+// @Summary Logout and clear authentication cookies
+// @Description Clears the JWT authentication cookie and logs out the user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Successfully logged out"
+// @Router /auth/logout [post]
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Clear the JWT cookie
+	err := h.clearUserSession(w, r)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to clear session", h.logger, "error", err.Error())
+		return
+	}
+	
+	// Log logout event if user context is available
+	if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
+		if userID, ok := userIDVal.(int64); ok {
+			ipAddress, userAgent := GetAuditInfoFromContext(r.Context())
+			if err := h.auditService.LogUserLogout(r.Context(), userID, ipAddress, userAgent); err != nil {
+				h.logger.ErrorContext(r.Context(), "Failed to log user logout audit event", "error", err, "user_id", userID)
+			}
+		}
+	}
+	
+	h.logger.InfoContext(r.Context(), "User logged out successfully")
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully logged out"}, h.logger)
+}
+
+// extractClientInfo extracts client IP and user agent from HTTP request
+func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
+	// Extract IP address (handle proxy headers)
+	clientIP = r.Header.Get("X-Forwarded-For")
+	if clientIP != "" {
+		// Extract the first IP from the comma-separated list
+		clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
+	} else {
+		clientIP = r.Header.Get("X-Real-IP")
+	}
+	if clientIP == "" {
+		clientIP = r.RemoteAddr
+	}
+	// Clean up IP (remove port if present) - IPv6 safe
+	host, _, err := net.SplitHostPort(clientIP)
+	if err == nil {
+		clientIP = host
+	} else {
+		// Fallback: sanitize clientIP by removing port manually if possible
+		if strings.Contains(clientIP, ":") {
+			clientIP = strings.Split(clientIP, ":")[0]
+		}
+		// If still problematic, use a safe default
+		if clientIP == "" || strings.Contains(clientIP, " ") {
+			clientIP = "unknown"
+		}
+	}
+	
+	// Extract user agent
+	userAgent = r.UserAgent()
+	if userAgent == "" {
+		userAgent = "unknown"
+	}
+	
+	return clientIP, userAgent
 }

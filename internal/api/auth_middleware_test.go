@@ -18,7 +18,10 @@ import (
 
 	"log/slog"
 
+	"night-owls-go/internal/logging"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +54,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	ctx := context.Background()
 
 	err := app.UserService.RegisterOrLoginUser(ctx, userPhone,
-		sql.NullString{String: userName, Valid: true})
+		sql.NullString{String: userName, Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err)
 
 	outboxItems, err := app.Querier.GetPendingOutboxItems(ctx, 10)
@@ -70,7 +73,7 @@ func TestAuthMiddleware_ProtectedRoutes(t *testing.T) {
 	}
 	require.NotEmpty(t, otpValue)
 
-	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue)
+	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue, "test-ip", "test-agent")
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -118,7 +121,7 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 
 	// Create test handler that requires auth
 	router := chi.NewRouter()
-	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 		contextUserID := r.Context().Value(api.UserIDKey).(int64)
 		assert.Equal(t, userID, contextUserID)
@@ -156,7 +159,7 @@ func TestAuthMiddleware_ExpiredToken(t *testing.T) {
 	require.NoError(t, err)
 
 	router := chi.NewRouter()
-	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Handler should not be called with expired token")
 	})
@@ -203,7 +206,7 @@ func TestAuthMiddleware_MalformedToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			router := chi.NewRouter()
-			router.Use(api.AuthMiddleware(cfg, testLogger()))
+			router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 			router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 				t.Errorf("Handler should not be called with malformed token: %s", tt.name)
 			})
@@ -223,7 +226,7 @@ func TestAuthMiddleware_MissingAuthHeader(t *testing.T) {
 	cfg := &config.Config{JWTSecret: "test-secret"}
 
 	router := chi.NewRouter()
-	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Handler should not be called without auth header")
 	})
@@ -250,7 +253,7 @@ func TestAuthMiddleware_ContextValues(t *testing.T) {
 	require.NoError(t, err)
 
 	router := chi.NewRouter()
-	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 		// Verify context values are set correctly
 		userID, ok := r.Context().Value(api.UserIDKey).(int64)
@@ -291,7 +294,7 @@ func TestAuthMiddleware_ConcurrentRequests(t *testing.T) {
 	}
 
 	router := chi.NewRouter()
-	router.Use(api.AuthMiddleware(cfg, testLogger()))
+	router.Use(api.AuthMiddleware(cfg, testLogger(), createTestSessionStore()))
 	router.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(api.UserIDKey).(int64)
 		w.Write([]byte(fmt.Sprintf("user-%d", userID)))
@@ -328,4 +331,65 @@ func TestAuthMiddleware_ConcurrentRequests(t *testing.T) {
 // Helper function to create a test logger
 func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
+
+// Helper function to create a session store for tests
+func createTestSessionStore() sessions.Store {
+	store := sessions.NewCookieStore([]byte("test-secret-key-for-testing-only"))
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   3600, // 1 hour for tests
+		HttpOnly: true,
+		Secure:   false, // Allow HTTP in tests
+		SameSite: http.SameSiteStrictMode,
+	}
+	return store
+}
+
+func TestAuthMiddleware_ValidTokenFromHeader(t *testing.T) {
+	// Create a test config
+	cfg := &config.Config{
+		JWTSecret: "test-secret-key-for-testing-only",
+	}
+	
+	// Create a logger
+	logger := logging.NewLogger(cfg)
+	
+	// Create session store
+	sessionStore := createTestSessionStore()
+
+	// Create a valid JWT token
+	token, err := auth.GenerateJWT(1, "+1234567890", "Test User", "user", cfg.JWTSecret, 1)
+	require.NoError(t, err)
+
+	// Create test handler
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(api.UserIDKey).(int64)
+		phone := r.Context().Value(api.UserPhoneKey).(string)
+		role := r.Context().Value(api.UserRoleKey).(string)
+		
+		assert.Equal(t, int64(1), userID)
+		assert.Equal(t, "+1234567890", phone)
+		assert.Equal(t, "user", role)
+		
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Create request with valid token
+	req, err := http.NewRequest("GET", "/test", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	// Create response recorder
+	rr := httptest.NewRecorder()
+
+	// Create middleware
+	middleware := api.AuthMiddleware(cfg, logger, sessionStore)
+	handler := middleware(testHandler)
+
+	// Execute request
+	handler.ServeHTTP(rr, req)
+
+	// Check response
+	assert.Equal(t, http.StatusOK, rr.Code)
 }

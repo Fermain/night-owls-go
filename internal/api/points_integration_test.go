@@ -39,7 +39,7 @@ func (app *testApp) createTestUserAndLogin(t *testing.T, phone, name, role strin
 	// Create a temporary user service with our OTP store
 	tempUserService := service.NewUserService(app.Querier, otpStore, app.Config, app.Logger)
 
-	token, err := tempUserService.VerifyOTP(ctx, phone, otp)
+	token, err := tempUserService.VerifyOTP(ctx, phone, otp, "test-ip", "test-agent")
 	require.NoError(t, err, "Failed to verify OTP and get token for test user %s", phone)
 	require.NotEmpty(t, token)
 	return user, token

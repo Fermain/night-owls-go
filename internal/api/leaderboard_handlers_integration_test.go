@@ -130,7 +130,7 @@ func newLeaderboardTestApp(t *testing.T) *leaderboardTestApp {
 	router.Use(chiMiddleware.Recoverer)
 
 	// Register handlers
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, createTestSessionStore())
 	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
 
 	// Public routes
@@ -139,7 +139,7 @@ func newLeaderboardTestApp(t *testing.T) *leaderboardTestApp {
 
 	// Protected leaderboard routes
 	router.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(cfg, logger))
+		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore()))
 		r.Get("/api/leaderboard", leaderboardAPIHandler.GetLeaderboardHandler)
 		r.Get("/api/leaderboard/shifts", leaderboardAPIHandler.GetStreakLeaderboardHandler)
 		r.Get("/api/leaderboard/activity", leaderboardAPIHandler.GetActivityFeedHandler)
@@ -196,7 +196,7 @@ func (app *leaderboardTestApp) createTestUserAndLogin(t *testing.T, phone, name,
 	require.NoError(t, errOtp)
 	app.OTPStore.StoreOTP(phone, otp, 5*time.Minute)
 
-	token, err := app.UserService.VerifyOTP(ctx, phone, otp)
+	token, err := app.UserService.VerifyOTP(ctx, phone, otp, "test-ip", "test-agent")
 	require.NoError(t, err, "Failed to verify OTP and get token for test user %s", phone)
 	require.NotEmpty(t, token)
 	return user, token

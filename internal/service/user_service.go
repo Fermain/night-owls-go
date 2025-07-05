@@ -32,14 +32,15 @@ type JWTGenerator func(userID int64, phone string, name string, role string, sec
 
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
-	querier      db.Querier // From sqlc
-	otpStore     auth.OTPStore
-	twilioOTP    *otp.Client // Twilio OTP client for real SMS
-	jwtSecret    string
-	otpLogPath   string
-	logger       *slog.Logger
-	cfg          *config.Config
-	jwtGenerator JWTGenerator // Function for JWT generation, allows mocking in tests
+	querier           db.Querier // From sqlc
+	otpStore          auth.OTPStore
+	twilioOTP         *otp.Client // Twilio OTP client for real SMS
+	jwtSecret         string
+	otpLogPath        string
+	logger            *slog.Logger
+	cfg               *config.Config
+	jwtGenerator      JWTGenerator // Function for JWT generation, allows mocking in tests
+	otpRateLimitSvc   *OTPRateLimitingService // Rate limiting service
 }
 
 // NewUserService creates a new UserService.
@@ -54,15 +55,19 @@ func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Conf
 		logger.Info("Twilio credentials not configured, using mock OTP flow")
 	}
 
+	// Initialize OTP rate limiting service
+	otpRateLimitSvc := NewOTPRateLimitingService(querier, logger)
+
 	return &UserService{
-		querier:      querier,
-		otpStore:     otpStore,
-		twilioOTP:    twilioOTP,
-		jwtSecret:    cfg.JWTSecret,
-		otpLogPath:   cfg.OTPLogPath,
-		logger:       logger.With("service", "UserService"),
-		cfg:          cfg,
-		jwtGenerator: auth.GenerateJWT, // Use the real implementation by default
+		querier:           querier,
+		otpStore:          otpStore,
+		twilioOTP:         twilioOTP,
+		jwtSecret:         cfg.JWTSecret,
+		otpLogPath:        cfg.OTPLogPath,
+		logger:            logger.With("service", "UserService"),
+		cfg:               cfg,
+		jwtGenerator:      auth.GenerateJWT, // Use the real implementation by default
+		otpRateLimitSvc:   otpRateLimitSvc,
 	}
 }
 
@@ -75,11 +80,36 @@ func (s *UserService) SetJWTGenerator(generator JWTGenerator) {
 // and queuing an OTP message to the (mocked) outbox.
 // If name is provided, this is a registration attempt and will create a new user.
 // If name is empty, this is a login attempt and will fail if user doesn't exist.
-func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, name sql.NullString) error {
+// Now includes registration rate limiting to prevent abuse.
+// Parameters:
+//   - ctx: Request context
+//   - phone: User's phone number in E.164 format
+//   - name: User's name (for registration) or empty (for login)
+//   - clientIP: Client IP address for rate limiting and audit logging
+//   - userAgent: Client user agent for audit logging
+func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, name sql.NullString, clientIP, userAgent string) error {
+	// Use provided client info, fallback to unknown if not provided
+	if clientIP == "" {
+		clientIP = "unknown"
+	}
+	if userAgent == "" {
+		userAgent = "unknown"
+	}
+	
+	// Check registration rate limits first
+	if err := s.otpRateLimitSvc.CheckRegistrationRateLimit(ctx, phone, clientIP); err != nil {
+		s.logger.WarnContext(ctx, "Registration attempt blocked by rate limiting", "phone", phone, "error", err)
+		// Record failed attempt for audit
+		_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
+		return errors.New("registration rate limit exceeded")
+	}
+
 	// Debug logging to understand the name parameter
 	s.logger.InfoContext(ctx, "RegisterOrLoginUser called", "phone", phone, "name_valid", name.Valid, "name_string", name.String)
 
 	user, err := s.querier.GetUserByPhone(ctx, phone)
+	registrationSuccess := false // Track if registration/login was successful
+	
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// User does not exist
@@ -88,6 +118,8 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			if !name.Valid || name.String == "" {
 				// This is a login attempt (no name provided) but user doesn't exist
 				s.logger.WarnContext(ctx, "Login attempt for non-existent user", "phone", phone)
+				// Record failed registration attempt
+				_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 				return errors.New("user not found - please register first")
 			}
 
@@ -98,6 +130,8 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			defaultRole, err := s.determineRoleForNewUser(ctx)
 			if err != nil {
 				s.logger.ErrorContext(ctx, "Failed to determine role for new user", "phone", phone, "error", err)
+				// Record failed registration attempt
+				_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 				return ErrInternalServer
 			}
 
@@ -109,6 +143,8 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			createResult, err := s.querier.CreateUser(ctx, createUserParams)
 			if err != nil {
 				s.logger.ErrorContext(ctx, "Failed to create user", "phone", phone, "error", err)
+				// Record failed registration attempt
+				_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 				return ErrInternalServer
 			}
 
@@ -122,8 +158,11 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			}
 
 			s.logger.InfoContext(ctx, "New user created during registration", "phone", phone, "user_id", user.UserID, "role", defaultRole, "name", name.String)
+			registrationSuccess = true
 		} else {
 			s.logger.ErrorContext(ctx, "Failed to get user by phone", "phone", phone, "error", err)
+			// Record failed registration attempt
+			_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 			return ErrInternalServer
 		}
 	} else {
@@ -133,27 +172,33 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 		} else {
 			s.logger.InfoContext(ctx, "Login attempt for existing user", "phone", phone, "user_id", user.UserID)
 		}
+		registrationSuccess = true // User exists, so registration/login is valid
 	}
 
 	// Send OTP - use Twilio if configured, otherwise fall back to mock flow
+	otpSendSuccess := false
 	if s.twilioOTP != nil {
 		// Use Twilio Verify to send real SMS OTP
 		s.logger.InfoContext(ctx, "Attempting to send OTP via Twilio", "phone", phone)
 		err = s.twilioOTP.StartSMS(ctx, phone)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to send Twilio OTP", "phone", phone, "error", err)
+			// Record failed registration attempt (OTP send failed)
+			_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 			return fmt.Errorf("failed to send SMS: %w", err)
 		}
 		s.logger.InfoContext(ctx, "Twilio OTP sent successfully", "phone", phone)
+		otpSendSuccess = true
 
 		// For Twilio, we don't store OTP locally or use outbox since Twilio manages it
-		return nil
 	} else {
 		// Fall back to mock OTP flow for development/testing
 		s.logger.InfoContext(ctx, "Using mock OTP flow (Twilio not configured)", "phone", phone)
 		otp, err := auth.GenerateOTP()
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to generate OTP", "phone", phone, "error", err)
+			// Record failed registration attempt (OTP generation failed)
+			_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
 			return ErrInternalServer
 		}
 
@@ -173,34 +218,74 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 			s.logger.ErrorContext(ctx, "Failed to create outbox item for mock OTP", "phone", phone, "error", err)
 			// Non-fatal for OTP sending itself, but log it
 		}
-
-		return nil
+		otpSendSuccess = true
 	}
+
+	// Record successful registration attempt (both user creation/validation and OTP send succeeded)
+	if registrationSuccess && otpSendSuccess {
+		_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, true)
+	}
+
+	return nil
 }
 
 // VerifyOTP validates the OTP for a given phone number and if valid, generates a JWT.
-func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string) (string, error) {
+// Now includes rate limiting and brute force protection.
+func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate string, clientIP, userAgent string) (string, error) {
+	// Use provided client info, fallback to unknown if not provided
+	if clientIP == "" {
+		clientIP = "unknown"
+	}
+	if userAgent == "" {
+		userAgent = "unknown"
+	}
+	
 	var otpValid bool
 
-	// Verify OTP - use Twilio if configured, otherwise use local store
+	// Verify OTP - use Twilio if configured, otherwise use local store with rate limiting
 	if s.twilioOTP != nil {
+		// For Twilio, check rate limit first
+		if err := s.otpRateLimitSvc.CheckRateLimit(ctx, phone); err != nil {
+			s.logger.WarnContext(ctx, "OTP verification blocked by rate limiting", "phone", phone, "error", err)
+			return "", err
+		}
+
 		// Use Twilio Verify to check the OTP
 		valid, err := s.twilioOTP.Check(ctx, phone, otpToValidate)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Twilio OTP verification failed", "phone", phone, "error", err)
+			// Record failed attempt
+			_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, false, clientIP, userAgent)
 			return "", ErrOTPValidationFailed
 		}
+		
 		otpValid = valid
+		// Record the attempt (success or failure)
+		_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, otpValid, clientIP, userAgent)
+		
 		if otpValid {
 			s.logger.InfoContext(ctx, "Twilio OTP verified successfully", "phone", phone)
 		} else {
 			s.logger.WarnContext(ctx, "Twilio OTP validation failed - invalid code", "phone", phone)
 		}
 	} else {
-		// Fall back to local OTP store for development/testing
+		// Fall back to local OTP store for development/testing with rate limiting
+		
+		// Check rate limit first
+		if err := s.otpRateLimitSvc.CheckRateLimit(ctx, phone); err != nil {
+			s.logger.WarnContext(ctx, "Mock OTP verification blocked by rate limiting", "phone", phone, "error", err)
+			return "", err
+		}
+
+		// Use existing ValidateOTP method (which already does constant-time comparison internally)
 		otpValid = s.otpStore.ValidateOTP(phone, otpToValidate)
+		
+		// Record the attempt (success or failure)
+		_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, otpValid, clientIP, userAgent)
+		
 		if otpValid {
 			s.logger.InfoContext(ctx, "Mock OTP verified successfully", "phone", phone)
+			// Note: ValidateOTP already clears the OTP on success
 		} else {
 			s.logger.WarnContext(ctx, "Mock OTP validation failed", "phone", phone)
 		}

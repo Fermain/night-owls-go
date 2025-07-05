@@ -194,10 +194,10 @@
 			<div class="mb-4 sm:mb-6">
 				<AdminPageHeader
 					icon={FileTextIcon}
-					heading="{showArchived ? 'Archived' : 'Active'} Incident Reports"
+					heading="Reports"
 					subheading={showArchived
-						? 'View and manage archived incident reports'
-						: 'Monitor and analyze incident reports submitted by volunteers during shifts'}
+						? 'Archived reports are read-only for historical reference'
+						: 'Active reports require admin review and action'}
 				/>
 				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
 					<div class="flex flex-col sm:flex-row gap-2">

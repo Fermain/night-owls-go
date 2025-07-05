@@ -231,11 +231,12 @@ SELECT
     b.shift_start,
     b.shift_end,
     b.checked_in_at,
+    b.buddy_name,
     COALESCE(u.name, '') as user_name,
     u.phone as user_phone,
     s.name as schedule_name,
     CASE WHEN r.report_id IS NOT NULL THEN 1 ELSE 0 END as has_report,
-    CAST((julianday(b.shift_start) - julianday('now')) AS INTEGER) as days_from_now,
+    COALESCE(CAST(julianday(b.shift_start) - julianday('now') AS INTEGER), 0) as days_from_now,
     CASE 
         WHEN datetime(b.shift_start) <= datetime('now', '+1 day') THEN 'urgent'
         WHEN datetime(b.shift_start) <= datetime('now', '+3 days') THEN 'critical'
@@ -255,18 +256,19 @@ type GetBookingsInDateRangeParams struct {
 }
 
 type GetBookingsInDateRangeRow struct {
-	BookingID    int64        `json:"booking_id"`
-	UserID       int64        `json:"user_id"`
-	ScheduleID   int64        `json:"schedule_id"`
-	ShiftStart   time.Time    `json:"shift_start"`
-	ShiftEnd     time.Time    `json:"shift_end"`
-	CheckedInAt  sql.NullTime `json:"checked_in_at"`
-	UserName     string       `json:"user_name"`
-	UserPhone    string       `json:"user_phone"`
-	ScheduleName string       `json:"schedule_name"`
-	HasReport    int64        `json:"has_report"`
-	DaysFromNow  int64        `json:"days_from_now"`
-	UrgencyLevel string       `json:"urgency_level"`
+	BookingID    int64          `json:"booking_id"`
+	UserID       int64          `json:"user_id"`
+	ScheduleID   int64          `json:"schedule_id"`
+	ShiftStart   time.Time      `json:"shift_start"`
+	ShiftEnd     time.Time      `json:"shift_end"`
+	CheckedInAt  sql.NullTime   `json:"checked_in_at"`
+	BuddyName    sql.NullString `json:"buddy_name"`
+	UserName     string         `json:"user_name"`
+	UserPhone    string         `json:"user_phone"`
+	ScheduleName string         `json:"schedule_name"`
+	HasReport    int64          `json:"has_report"`
+	DaysFromNow  int64          `json:"days_from_now"`
+	UrgencyLevel string         `json:"urgency_level"`
 }
 
 // Get all bookings in date range with check-in and report status
@@ -286,6 +288,7 @@ func (q *Queries) GetBookingsInDateRange(ctx context.Context, arg GetBookingsInD
 			&i.ShiftStart,
 			&i.ShiftEnd,
 			&i.CheckedInAt,
+			&i.BuddyName,
 			&i.UserName,
 			&i.UserPhone,
 			&i.ScheduleName,

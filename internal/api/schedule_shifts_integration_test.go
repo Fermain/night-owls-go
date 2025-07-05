@@ -123,7 +123,7 @@ func TestScheduleEndpoints_GetAvailableShifts_WithBooking(t *testing.T) {
 	userName := "Shift Test User"
 
 	err := app.UserService.RegisterOrLoginUser(ctx, userPhone,
-		sql.NullString{String: userName, Valid: true})
+		sql.NullString{String: userName, Valid: true}, "test-ip", "test-agent")
 	require.NoError(t, err)
 
 	// Get OTP from outbox
@@ -144,7 +144,7 @@ func TestScheduleEndpoints_GetAvailableShifts_WithBooking(t *testing.T) {
 	require.NotEmpty(t, otpValue)
 
 	// Verify OTP to get token
-	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue)
+	token, err := app.UserService.VerifyOTP(ctx, userPhone, otpValue, "test-ip", "test-agent")
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 

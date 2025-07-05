@@ -24,6 +24,7 @@ import (
 	"night-owls-go/internal/service"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -88,6 +89,11 @@ func main() {
 		log.Fatalf("Critical: Error loading configuration: %v", err)
 	}
 
+	// SECURITY: Validate critical security configurations before starting
+	if err := cfg.ValidateSecurityConfig(); err != nil {
+		log.Fatalf("Critical: %v", err)
+	}
+
 	logger := logging.NewLogger(cfg) // Initialize logger with config
 	slog.SetDefault(logger)          // Set as global default
 
@@ -123,6 +129,16 @@ func main() {
 
 	// Initialize audit service for security logging
 	auditService := service.NewAuditService(querier, logger)
+
+	// Initialize session store for secure session management
+	sessionStore := sessions.NewCookieStore([]byte(cfg.JWTSecret))
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   cfg.JWTExpirationHours * 3600, // Convert hours to seconds, sync with JWT expiry
+		HttpOnly: true,
+		Secure:   !cfg.DevMode, // Use secure cookies in production
+		SameSite: http.SameSiteStrictMode,
+	}
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
@@ -214,6 +230,7 @@ func main() {
 	)
 
 	// Global middlewares
+	fuego.Use(s, api.SecurityHeadersMiddleware()) // Add security headers first
 	fuego.Use(s, api.AuditContextMiddleware) // Add audit context middleware first
 	fuego.Use(s, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -231,7 +248,7 @@ func main() {
 	})
 
 	// Initialize handlers
-	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier)
+	authAPIHandler := api.NewAuthHandler(userService, auditService, logger, cfg, querier, sessionStore)
 	scheduleAPIHandler := api.NewScheduleHandler(scheduleService, logger)
 	bookingAPIHandler := api.NewBookingHandler(bookingService, auditService, querier, logger)
 	reportAPIHandler := api.NewReportHandler(reportService, auditService, logger)
@@ -253,6 +270,7 @@ func main() {
 	publicAPI := fuego.Group(s, apiPrefix)
 	fuego.PostStd(publicAPI, "/auth/register", authAPIHandler.RegisterHandler)
 	fuego.PostStd(publicAPI, "/auth/verify", authAPIHandler.VerifyHandler)
+	fuego.GetStd(publicAPI, "/auth/validate", authAPIHandler.ValidateHandler)
 
 	// Development-only auth endpoints
 	if cfg.DevMode {
@@ -308,9 +326,12 @@ func main() {
 		}
 	})
 
+	// Logout endpoint (requires auth to log out properly, but could also be public)
+	fuego.PostStd(publicAPI, "/auth/logout", authAPIHandler.LogoutHandler)
+
 	// Protected routes (require auth)
 	protected := fuego.Group(s, apiPrefix)
-	fuego.Use(protected, api.AuthMiddleware(cfg, logger))
+	fuego.Use(protected, api.AuthMiddleware(cfg, logger, sessionStore))
 	fuego.Post(protected, "/bookings", bookingAPIHandler.CreateBookingFuego)
 	fuego.GetStd(protected, "/bookings/my", bookingAPIHandler.GetMyBookingsHandler)
 	fuego.Post(protected, "/bookings/{id}/checkin", bookingAPIHandler.MarkCheckInFuego)
@@ -333,7 +354,7 @@ func main() {
 
 	// Admin routes
 	admin := fuego.Group(s, apiPrefix+"/admin")
-	fuego.Use(admin, api.AuthMiddleware(cfg, logger))
+	fuego.Use(admin, api.AuthMiddleware(cfg, logger, sessionStore))
 	fuego.Use(admin, api.AdminMiddleware(logger))
 
 	// Admin Schedules

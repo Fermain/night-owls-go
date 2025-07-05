@@ -1,6 +1,10 @@
 package config
 
 import (
+	"context"
+	"crypto/subtle"
+	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings" // For ToLower on log level/format
@@ -39,6 +43,57 @@ type Config struct {
 	TwilioFromNumber string
 }
 
+// Security validation constants
+const (
+	DefaultJWTSecret = "super-secret-jwt-key-please-change-in-prod"
+)
+
+// ValidateSecurityConfig validates critical security configurations
+func (c *Config) ValidateSecurityConfig() error {
+	// Create a simple logger for security warnings during startup
+	logger := slog.Default()
+	
+	// Check for default JWT secret - use constant-time comparison to prevent timing attacks
+	if subtle.ConstantTimeCompare([]byte(c.JWTSecret), []byte(DefaultJWTSecret)) == 1 {
+		if isProductionEnvironment() {
+			return fmt.Errorf("CRITICAL SECURITY ERROR: Default JWT secret detected in production environment. Set JWT_SECRET environment variable")
+		}
+		// Warn in development but don't fail
+		logger.WarnContext(context.Background(), "Using default JWT secret. Set JWT_SECRET environment variable for production")
+	}
+
+	// Check for weak JWT secrets (too short)
+	if len(c.JWTSecret) < 32 {
+		if isProductionEnvironment() {
+			return fmt.Errorf("CRITICAL SECURITY ERROR: JWT secret too short (%d chars). Use at least 32 characters", len(c.JWTSecret))
+		}
+		logger.WarnContext(context.Background(), "JWT secret is short. Use at least 32 characters for production", "length", len(c.JWTSecret))
+	}
+
+	// Validate dev mode in production
+	if c.DevMode && isProductionEnvironment() {
+		return fmt.Errorf("CRITICAL SECURITY ERROR: Development mode cannot be enabled in production environment")
+	}
+
+	return nil
+}
+
+// isProductionEnvironment detects if we're running in a production environment
+func isProductionEnvironment() bool {
+	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
+	goEnv := strings.ToLower(os.Getenv("GO_ENV"))
+	nodeEnv := strings.ToLower(os.Getenv("NODE_ENV"))
+	
+	// Check common production environment indicators
+	return env == "production" || env == "prod" ||
+		   goEnv == "production" || goEnv == "prod" ||
+		   nodeEnv == "production" || nodeEnv == "prod" ||
+		   os.Getenv("RAILWAY_ENVIRONMENT") == "production" ||
+		   os.Getenv("VERCEL_ENV") == "production" ||
+		   os.Getenv("HEROKU_APP_NAME") != "" ||
+		   os.Getenv("PORT") != "" // Common production indicator
+}
+
 // LoadConfig loads configuration from environment variables
 // and sets defaults for missing values.
 func LoadConfig() (*Config, error) {
@@ -52,7 +107,7 @@ func LoadConfig() (*Config, error) {
 		LogLevel:             "info", // Default log level
 		LogFormat:            "json", // Default log format
 
-		JWTExpirationHours: 24, // Default 24 hours
+		JWTExpirationHours: 336, // Default 2 weeks (336 hours) - configurable via JWT_EXPIRATION_HOURS env var
 		OTPValidityMinutes: 5,  // Default 5 minutes
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
 		OutboxBatchSize:  10, // Default 10 messages per batch

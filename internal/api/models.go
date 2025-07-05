@@ -60,6 +60,7 @@ type LeaderboardEntry struct {
 	Name             string `json:"name"`
 	TotalPoints      int64  `json:"total_points"`
 	ShiftCount       int64  `json:"shift_count"`
+	Rank             int64  `json:"rank"`
 	AchievementCount int64  `json:"achievement_count"`
 	ActivityStatus   string `json:"activity_status"` // 'active', 'moderate', 'inactive'
 }

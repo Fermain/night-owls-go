@@ -35,9 +35,11 @@
 	interface Props {
 		selectedShift: AdminShiftSlot;
 		onBookingSuccess: () => void;
+		hideHeader?: boolean;
+		noPadding?: boolean;
 	}
 
-	let { selectedShift, onBookingSuccess }: Props = $props();
+	let { selectedShift, onBookingSuccess, hideHeader = false, noPadding = false }: Props = $props();
 
 	const queryClient = useQueryClient();
 
@@ -203,32 +205,34 @@
 	const isAssigned = $derived(selectedShift.is_booked);
 </script>
 
-<div class="p-6">
+<div class={noPadding ? '' : 'p-6'}>
 	<div>
-		<!-- Header with shift title -->
-		<div class="mb-6">
-			<div class="flex items-center justify-between">
-				<AdminPageHeader
-					icon={ClockIcon}
-					heading={formatShiftTitle(selectedShift.start_time, selectedShift.end_time)}
-					subheading="Manage shift assignment and team details"
-				/>
-			</div>
-			<div class="flex items-center gap-4 mt-4">
-				<div class="flex items-center gap-2 text-sm text-muted-foreground">
-					<ClockIcon class="h-4 w-4" />
-					{formatTimeSlot(selectedShift.start_time, selectedShift.end_time)}
+		<!-- Header with shift title (conditionally displayed) -->
+		{#if !hideHeader}
+			<div class="mb-6">
+				<div class="flex items-center justify-between">
+					<AdminPageHeader
+						icon={ClockIcon}
+						heading={formatShiftTitle(selectedShift.start_time, selectedShift.end_time)}
+						subheading="Manage shift assignment and team details"
+					/>
 				</div>
-				<Badge
-					variant={isAssigned ? 'default' : 'secondary'}
-					class={isAssigned
-						? 'bg-green-100 text-green-700 border-green-200'
-						: 'bg-orange-100 text-orange-700 border-orange-200'}
-				>
-					{isAssigned ? 'Assigned' : 'Available'}
-				</Badge>
+				<div class="flex items-center gap-4 mt-4">
+					<div class="flex items-center gap-2 text-sm text-muted-foreground">
+						<ClockIcon class="h-4 w-4" />
+						{formatTimeSlot(selectedShift.start_time, selectedShift.end_time)}
+					</div>
+					<Badge
+						variant={isAssigned ? 'default' : 'secondary'}
+						class={isAssigned
+							? 'bg-green-100 text-green-700 border-green-200'
+							: 'bg-orange-100 text-orange-700 border-orange-200'}
+					>
+						{isAssigned ? 'Assigned' : 'Available'}
+					</Badge>
+				</div>
 			</div>
-		</div>
+		{/if}
 
 		<!-- Current Assignment Display -->
 		{#if isAssigned && selectedShift.user_name}
@@ -491,20 +495,22 @@
 			</Card>
 		{/if}
 
-		<!-- Shift Details (Compact) -->
-		<Card class="mt-6">
-			<CardContent class="pt-6">
-				<div class="grid grid-cols-2 gap-4 text-sm">
-					<div>
-						<p class="text-muted-foreground">Schedule</p>
-						<p class="font-medium">{selectedShift.schedule_name}</p>
+		<!-- Shift Details (Compact) - only show when not hiding header -->
+		{#if !hideHeader}
+			<Card class="mt-6">
+				<CardContent class="pt-6">
+					<div class="grid grid-cols-2 gap-4 text-sm">
+						<div>
+							<p class="text-muted-foreground">Schedule</p>
+							<p class="font-medium">{selectedShift.schedule_name}</p>
+						</div>
+						<div>
+							<p class="text-muted-foreground">When</p>
+							<p class="font-medium">{formatRelativeTime(selectedShift.start_time)}</p>
+						</div>
 					</div>
-					<div>
-						<p class="text-muted-foreground">When</p>
-						<p class="font-medium">{formatRelativeTime(selectedShift.start_time)}</p>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</CardContent>
+			</Card>
+		{/if}
 	</div>
 </div>
