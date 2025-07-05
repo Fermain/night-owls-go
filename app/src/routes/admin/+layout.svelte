@@ -1,7 +1,6 @@
 <!-- Main admin layout with error boundaries for robust error handling -->
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { currentUser } from '$lib/services/userService';
 	import MobileAdminHeader from '$lib/components/admin/MobileAdminHeader.svelte';
 	import UnifiedSidebar from '$lib/components/layout/UnifiedSidebar.svelte';
@@ -10,8 +9,10 @@
 
 	// Track navigation for monitoring
 	afterNavigate(({ to, from, type }) => {
-		// Log navigation for audit trail
-		console.log('Admin navigation:', { from: from?.url, to: to?.url, type });
+		// Log navigation for audit trail in development only
+		if (import.meta.env.DEV) {
+			console.log('Admin navigation:', { from: from?.url, to: to?.url, type });
+		}
 	});
 </script>
 
@@ -39,7 +40,7 @@
 						...error,
 						details: {
 							...error.details,
-							adminPage: $page.route.id,
+							adminPage: 'admin-layout',
 							userRole: $currentUser?.role,
 							userId: $currentUser?.id
 						}

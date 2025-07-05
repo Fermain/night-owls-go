@@ -1,7 +1,7 @@
 // Push notification handlers for Night Owls PWA
 
-// Debug flag - set to false for production
-const DEBUG = true;
+// Debug flag - environment-based, defaults to false for production
+const DEBUG = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
 // Push event handler
 self.addEventListener('push', (event) => {
