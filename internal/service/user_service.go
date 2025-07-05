@@ -101,7 +101,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 		s.logger.WarnContext(ctx, "Registration attempt blocked by rate limiting", "phone", phone, "error", err)
 		// Record failed attempt for audit
 		_ = s.otpRateLimitSvc.RecordRegistrationAttempt(ctx, phone, clientIP, userAgent, false)
-		return fmt.Errorf("registration rate limit exceeded: %w", err)
+		return errors.New("registration rate limit exceeded")
 	}
 
 	// Debug logging to understand the name parameter

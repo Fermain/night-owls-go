@@ -272,10 +272,11 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 	windowStart := time.Now().UTC().Add(-RegistrationWindow)
 
 	// Check IP-based rate limiting (prevent spam from single source)
-	// NOTE: Storing IP in phone field for rate limiting - this reuses existing schema
+	// NOTE: Using "IP:" prefix to clearly distinguish IP records from phone records
 	if clientIP != "" {
+		ipKey := "IP:" + clientIP // Use clear prefix to distinguish IP records from phone records
 		ipAttempts, err := s.querier.GetOTPAttemptsInWindow(ctx, db.GetOTPAttemptsInWindowParams{
-			Phone:       clientIP, // INTENTIONAL: IP stored in phone field for IP-based rate limiting
+			Phone:       ipKey,
 			AttemptedAt: windowStart,
 		})
 		if err != nil {
@@ -333,8 +334,9 @@ func (s *OTPRateLimitingService) RecordRegistrationAttempt(ctx context.Context, 
 
 	// Record IP-based attempt (if IP is available)
 	if clientIP != "" {
+		ipKey := "IP:" + clientIP // Use clear prefix to distinguish IP records from phone records
 		_, err = s.querier.CreateOTPAttempt(ctx, db.CreateOTPAttemptParams{
-			Phone:       clientIP, // INTENTIONAL: IP stored in phone field for IP-based rate limiting
+			Phone:       ipKey,
 			AttemptedAt: now,
 			Success:     boolToInt(success),
 			ClientIp:    sql.NullString{String: clientIP, Valid: true},

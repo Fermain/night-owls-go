@@ -223,16 +223,27 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 	}
 
 	// Create lookup map: schedule_id + start_time -> booking details
-	bookingMap := make(map[string]db.GetBookingsInDateRangeRow)
+	type BookingKey struct {
+		ScheduleID     int64
+		ShiftStartUnix int64
+	}
+	
+	bookingMap := make(map[BookingKey]db.GetBookingsInDateRangeRow)
 	for _, booking := range allBookings {
-		key := fmt.Sprintf("%d_%s", booking.ScheduleID, booking.ShiftStart.UTC().Format(time.RFC3339))
+		key := BookingKey{
+			ScheduleID:     booking.ScheduleID,
+			ShiftStartUnix: booking.ShiftStart.UTC().Unix(),
+		}
 		bookingMap[key] = booking
 	}
 
 	// Process each slot using the booking lookup map
 	for _, slot := range allSlots {
 		populatedSlot := slot
-		slotKey := fmt.Sprintf("%d_%s", slot.ScheduleID, slot.StartTime.UTC().Format(time.RFC3339))
+		slotKey := BookingKey{
+			ScheduleID:     slot.ScheduleID,
+			ShiftStartUnix: slot.StartTime.UTC().Unix(),
+		}
 		
 		if booking, exists := bookingMap[slotKey]; exists {
 			// Booking exists - populate assignment details
@@ -393,16 +404,27 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 	}
 
 	// Create lookup map: schedule_id + start_time -> booking details
-	bookingMap := make(map[string]db.GetBookingsInDateRangeRow)
+	type BookingKey struct {
+		ScheduleID     int64
+		ShiftStartUnix int64
+	}
+	
+	bookingMap := make(map[BookingKey]db.GetBookingsInDateRangeRow)
 	for _, booking := range allBookings {
-		key := fmt.Sprintf("%d_%s", booking.ScheduleID, booking.ShiftStart.UTC().Format(time.RFC3339))
+		key := BookingKey{
+			ScheduleID:     booking.ScheduleID,
+			ShiftStartUnix: booking.ShiftStart.UTC().Unix(),
+		}
 		bookingMap[key] = booking
 	}
 
 	// Process each slot using the booking lookup map
 	for _, slot := range allSlots {
 		populatedSlot := AdminAvailableShiftSlot(slot)
-		slotKey := fmt.Sprintf("%d_%s", slot.ScheduleID, slot.StartTime.UTC().Format(time.RFC3339))
+		slotKey := BookingKey{
+			ScheduleID:     slot.ScheduleID,
+			ShiftStartUnix: slot.StartTime.UTC().Unix(),
+		}
 		
 		if booking, exists := bookingMap[slotKey]; exists {
 			// Booking exists - populate assignment details

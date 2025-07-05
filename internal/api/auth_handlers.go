@@ -144,7 +144,7 @@ func (h *AuthHandler) setUserSession(w http.ResponseWriter, r *http.Request, use
 		Path:     "/",
 		MaxAge:   h.config.JWTExpirationHours * 3600, // Convert hours to seconds, sync with JWT expiry
 		HttpOnly: true,
-		Secure:   !isDevelopmentMode(), // Secure in production, allow HTTP in dev
+		Secure:   !h.config.DevMode, // Secure in production, allow HTTP in dev
 		SameSite: http.SameSiteStrictMode,
 	}
 
@@ -166,7 +166,7 @@ func (h *AuthHandler) clearUserSession(w http.ResponseWriter, r *http.Request) e
 		Path:     "/",
 		MaxAge:   -1, // Expire immediately
 		HttpOnly: true,
-		Secure:   !isDevelopmentMode(),
+		Secure:   !h.config.DevMode,
 		SameSite: http.SameSiteStrictMode,
 	}
 
@@ -608,6 +608,15 @@ func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
 	host, _, err := net.SplitHostPort(clientIP)
 	if err == nil {
 		clientIP = host
+	} else {
+		// Fallback: sanitize clientIP by removing port manually if possible
+		if strings.Contains(clientIP, ":") {
+			clientIP = strings.Split(clientIP, ":")[0]
+		}
+		// If still problematic, use a safe default
+		if clientIP == "" || strings.Contains(clientIP, " ") {
+			clientIP = "unknown"
+		}
 	}
 	
 	// Extract user agent
