@@ -378,17 +378,33 @@ class PushNotificationService {
 		}
 
 		try {
+			console.log('[PushService] Attempting to show test notification');
+
+			// Check permission first
+			if (Notification.permission !== 'granted') {
+				console.warn('[PushService] Notification permission not granted:', Notification.permission);
+				toast.error('Notification permission not granted');
+				return;
+			}
+
+			// Show notification directly from service worker
 			await this.registration.showNotification('Night Owls Test', {
-				body: 'Push notifications are working correctly!',
+				body: 'Push notifications are working correctly! This is a test from the browser.',
 				icon: '/icons/icon-192x192.png',
-				badge: '/icons/icon-192x192.png',
-				tag: 'test',
-				requireInteraction: false
+				badge: '/icons/icon-96x96.png',
+				tag: 'test-notification',
+				requireInteraction: false,
+				data: {
+					type: 'test',
+					timestamp: Date.now()
+				}
 			});
-			console.log('[PushService] Test notification shown');
+
+			console.log('[PushService] Test notification shown successfully');
+			toast.success('Test notification sent! Check your notifications.');
 		} catch (error) {
 			console.error('[PushService] Test notification failed:', error);
-			toast.error('Failed to show test notification');
+			toast.error('Failed to show test notification: ' + (error as Error).message);
 		}
 	}
 }

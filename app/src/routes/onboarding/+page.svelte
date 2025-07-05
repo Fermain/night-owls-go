@@ -14,7 +14,6 @@
 	import { toast } from 'svelte-sonner';
 	import MapPinIcon from 'lucide-svelte/icons/map-pin';
 	import BellIcon from 'lucide-svelte/icons/bell';
-	import CameraIcon from 'lucide-svelte/icons/camera';
 	import SmartphoneIcon from 'lucide-svelte/icons/smartphone';
 	import CheckCircleIcon from 'lucide-svelte/icons/check-circle';
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
@@ -33,7 +32,6 @@
 	let isLoading = $state(false);
 	let locationPermissionStatus = $state<string>('unknown');
 	let notificationPermissionStatus = $state<string>('unknown');
-	let cameraPermissionStatus = $state<string>('unknown');
 	let canInstallPWA = $state(false);
 	let isPWAInstalled = $state(false);
 	let notificationsEnabled = $state(false);
@@ -45,7 +43,6 @@
 		// Check current permission status
 		locationPermissionStatus = await permissionUtils.checkLocationPermission();
 		notificationPermissionStatus = permissionUtils.checkNotificationPermission();
-		cameraPermissionStatus = await permissionUtils.checkCameraPermission();
 
 		// Update store with current status
 		onboardingActions.updateLocationPermission(
@@ -53,9 +50,6 @@
 		);
 		onboardingActions.updateNotificationPermission(
 			notificationPermissionStatus as 'granted' | 'denied' | 'default' | 'unknown'
-		);
-		onboardingActions.updateCameraPermission(
-			cameraPermissionStatus as 'granted' | 'denied' | 'prompt' | 'unknown'
 		);
 
 		// Check PWA capabilities
@@ -102,20 +96,6 @@
 			}
 		} catch (_error) {
 			toast.error('Failed to request notification permission');
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	// Handle camera permission (informational)
-	async function handleCameraPermission() {
-		isLoading = true;
-		try {
-			await permissionUtils.requestCameraPermission();
-			cameraPermissionStatus = 'prompt';
-			toast.success('Camera ready! You can now attach photos to reports.');
-		} catch (_error) {
-			toast.error('Failed to set up camera');
 		} finally {
 			isLoading = false;
 		}
@@ -353,49 +333,6 @@
 										class="px-4"
 									>
 										Enable
-									</Button>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Camera Permission -->
-						<div class="flex items-start justify-between p-4 lg:p-6 border rounded-xl bg-card/50">
-							<div class="flex items-start gap-4 flex-1 min-w-0">
-								<div class="p-2 bg-primary/10 rounded-lg">
-									<CameraIcon class="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
-								</div>
-								<div class="min-w-0 flex-1">
-									<h3 class="font-semibold text-base lg:text-lg">Camera Access</h3>
-									<p class="text-sm lg:text-base text-muted-foreground mt-1">
-										Attach photos to incident reports for visual evidence
-									</p>
-								</div>
-							</div>
-							<div class="flex items-center gap-3 flex-shrink-0 ml-4">
-								{#if cameraPermissionStatus === 'granted'}
-									<Badge variant="default" class="flex items-center gap-2 px-3 py-1">
-										<CheckCircleIcon class="h-4 w-4" />
-										Available
-									</Badge>
-								{:else if cameraPermissionStatus === 'denied'}
-									<Badge variant="destructive" class="flex items-center gap-2 px-3 py-1">
-										<XCircleIcon class="h-4 w-4" />
-										Denied
-									</Badge>
-								{:else}
-									<Badge variant="secondary" class="flex items-center gap-2 px-3 py-1">
-										<CameraIcon class="h-4 w-4" />
-										Ready
-									</Badge>
-								{/if}
-								{#if cameraPermissionStatus !== 'granted'}
-									<Button
-										onclick={handleCameraPermission}
-										disabled={isLoading}
-										size="sm"
-										class="px-4"
-									>
-										Setup
 									</Button>
 								{/if}
 							</div>
