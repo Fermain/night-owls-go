@@ -4,6 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import { Activity, Trophy, Star, Clock, Calendar } from 'lucide-svelte';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface ActivityEntry {
 		activity_id: number;
@@ -20,23 +21,7 @@
 
 	async function fetchActivity() {
 		try {
-			const token = localStorage.getItem('auth_token');
-			if (!token) {
-				error = 'Authentication required';
-				return;
-			}
-
-			const response = await fetch('/api/leaderboard/activity', {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to fetch activity feed');
-			}
-
+			const response = await authenticatedFetch('/api/leaderboard/activity');
 			activityFeed = await response.json();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';

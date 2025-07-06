@@ -68,7 +68,7 @@
 		if (existingFeed) {
 			try {
 				feedData = JSON.parse(existingFeed);
-			} catch (error) {
+			} catch (_error) {
 				console.error('Invalid stored calendar feed data');
 				localStorage.removeItem('calendarFeed');
 			}

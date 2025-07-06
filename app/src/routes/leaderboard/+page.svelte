@@ -1,8 +1,8 @@
 <script lang="ts">
 	import LeaderboardContainer from '$lib/components/user/leaderboard/LeaderboardContainer.svelte';
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { generateOpenGraphTags } from '$lib/utils/opengraph';
+	import { userSession } from '$lib/stores/authStore';
 
 	// OpenGraph tags for leaderboard
 	const ogTags = generateOpenGraphTags({
@@ -12,12 +12,10 @@
 		type: 'website'
 	});
 
-	onMount(() => {
-		// Check authentication
-		const token = localStorage.getItem('auth_token');
-		if (!token) {
-			goto('/login');
-			return;
+	// Redirect to login if not authenticated (using modern auth store)
+	$effect(() => {
+		if (!$userSession.isAuthenticated) {
+			goto('/login', { replaceState: true });
 		}
 	});
 </script>

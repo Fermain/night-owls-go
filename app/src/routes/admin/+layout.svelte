@@ -2,7 +2,6 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { currentUser } from '$lib/services/userService';
-	import MobileAdminHeader from '$lib/components/admin/MobileAdminHeader.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import { ErrorLogger } from '$lib/utils/errorHandling';
 
@@ -18,11 +17,6 @@
 <div class="min-h-screen bg-background">
 	<!-- Main content area -->
 	<div>
-		<!-- Header with error boundary -->
-		<ErrorBoundary fallbackMessage="Header temporarily unavailable" showDetails={false}>
-			<MobileAdminHeader />
-		</ErrorBoundary>
-
 		<!-- Page content with comprehensive error boundary -->
 		<main>
 			<ErrorBoundary

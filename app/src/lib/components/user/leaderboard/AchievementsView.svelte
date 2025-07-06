@@ -4,6 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Progress } from '$lib/components/ui/progress';
 	import { Award, Lock, Trophy, Star } from 'lucide-svelte';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface Achievement {
 		achievement_id: number;
@@ -36,26 +37,11 @@
 
 	async function fetchAchievements() {
 		try {
-			const token = localStorage.getItem('auth_token');
-			if (!token) {
-				error = 'Authentication required';
-				return;
-			}
-
-			const headers = {
-				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json'
-			};
-
 			const [earnedRes, availableRes, statsRes] = await Promise.all([
-				fetch('/api/user/achievements', { headers }),
-				fetch('/api/user/achievements/available', { headers }),
-				fetch('/api/user/stats', { headers })
+				authenticatedFetch('/api/user/achievements'),
+				authenticatedFetch('/api/user/achievements/available'),
+				authenticatedFetch('/api/user/stats')
 			]);
-
-			if (!earnedRes.ok || !availableRes.ok || !statsRes.ok) {
-				throw new Error('Failed to fetch achievements');
-			}
 
 			earnedAchievements = await earnedRes.json();
 			availableAchievements = await availableRes.json();
