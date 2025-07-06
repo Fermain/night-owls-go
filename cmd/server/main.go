@@ -38,8 +38,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Build-time variables set via ldflags
+var (
+	GitSHA    string
+	BuildTime string
+)
+
 // @title Night Owls Control Shift Scheduler API
-// @version 1.0
+// @version 2025.07.1
 // @description API for managing community watch shifts, bookings, and reports
 // @termsOfService http://swagger.io/terms/
 
@@ -96,6 +102,14 @@ func main() {
 
 	logger := logging.NewLogger(cfg) // Initialize logger with config
 	slog.SetDefault(logger)          // Set as global default
+
+	// Log version information at startup
+	buildInfo := config.GetBuildInfo(GitSHA, BuildTime)
+	slog.Info("Starting Night Owls Server", 
+		"version", buildInfo.Version,
+		"git_sha", buildInfo.GitSHA,
+		"build_time", buildInfo.BuildTime,
+		"go_version", buildInfo.GoVersion)
 
 	slog.Info("Configuration loaded successfully")
 	slog.Info("Development mode status", "dev_mode", cfg.DevMode)
@@ -262,9 +276,10 @@ func main() {
 	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
 	adminAuditAPIHandler := api.NewAdminAuditHandler(auditService, querier, logger)
 	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
+	calendarAPIHandler := api.NewCalendarHandler(bookingService, querier, logger)
 
 	// Debug: Check handler initialization
-	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
+	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil, "calendar_handler_nil", calendarAPIHandler == nil)
 
 	// Public API routes
 	publicAPI := fuego.Group(s, apiPrefix)
@@ -280,6 +295,7 @@ func main() {
 
 	fuego.GetStd(publicAPI, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(publicAPI, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(publicAPI, "/shifts/schedule", scheduleAPIHandler.GetPublicScheduleSlotsHandler)
 	fuego.GetStd(publicAPI, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(publicAPI, "/ping", api.PingHandler(logger))
 
@@ -298,6 +314,7 @@ func main() {
 				"status":   "unhealthy",
 				"database": dbStatus,
 				"error":    err.Error(),
+				"build":    config.GetBuildInfo(GitSHA, BuildTime),
 			}); err != nil {
 				slog.Error("Failed to encode health check error response", "error", err)
 			}
@@ -309,7 +326,7 @@ func main() {
 			"status":   "healthy",
 			"database": dbStatus,
 			"uptime":   time.Since(startTime).String(),
-			"version":  "1.0.0", // TODO: Use build version
+			"build":    config.GetBuildInfo(GitSHA, BuildTime),
 		}); err != nil {
 			slog.Error("Failed to encode health check response", "error", err)
 		}
@@ -317,10 +334,13 @@ func main() {
 
 	// API health check endpoint
 	fuego.GetStd(publicAPI, "/health", func(w http.ResponseWriter, r *http.Request) {
+		buildInfo := config.GetBuildInfo(GitSHA, BuildTime)
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":  "ok",
 			"service": "night-owls-api",
+			"version": buildInfo.Version,
+			"build":   buildInfo,
 		}); err != nil {
 			slog.Error("Failed to encode API health check response", "error", err)
 		}
@@ -351,6 +371,14 @@ func main() {
 	fuego.GetStd(protected, "/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)
 	fuego.GetStd(protected, "/user/achievements", leaderboardAPIHandler.GetUserAchievementsHandler)
 	fuego.GetStd(protected, "/user/achievements/available", leaderboardAPIHandler.GetAvailableAchievementsHandler)
+
+	// Calendar routes (require auth)
+	logger.Info("Registering calendar routes", "handler_nil", calendarAPIHandler == nil)
+	fuego.PostStd(protected, "/calendar/generate-token", calendarAPIHandler.GenerateCalendarFeedToken)
+	fuego.PostStd(protected, "/calendar/revoke-token", calendarAPIHandler.RevokeCalendarToken)
+	fuego.GetStd(protected, "/calendar/token-info", calendarAPIHandler.GetCalendarTokenInfo)
+	fuego.GetStd(publicAPI, "/calendar/user/{userId}/{token}", calendarAPIHandler.ServeCalendarFeed)
+	logger.Info("Calendar routes registered successfully")
 
 	// Admin routes
 	admin := fuego.Group(s, apiPrefix+"/admin")

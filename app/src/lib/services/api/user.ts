@@ -1,4 +1,4 @@
-import { authenticatedFetch } from '$lib/utils/api';
+import { authenticatedFetch, apiDelete } from '$lib/utils/api';
 
 export interface AvailableShiftSlot {
 	schedule_id: number;
@@ -30,7 +30,6 @@ export interface CreateBookingRequest {
 	schedule_id: number;
 	start_time: string;
 	buddy_name?: string;
-	buddy_phone?: string;
 }
 
 export interface CreateReportRequest {
@@ -103,7 +102,9 @@ export class UserApiService {
 			const errorText = await response.text();
 			throw new Error(`Failed to create booking: ${errorText}`);
 		}
-		return response.json();
+
+		const booking = (await response.json()) as UserBooking;
+		return booking;
 	}
 
 	/**
@@ -128,14 +129,7 @@ export class UserApiService {
 	 * Cancel a booking
 	 */
 	static async cancelBooking(bookingId: number): Promise<void> {
-		const response = await authenticatedFetch(`/api/bookings/${bookingId}`, {
-			method: 'DELETE'
-		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Failed to cancel booking: ${errorText}`);
-		}
+		await apiDelete(`/api/bookings/${bookingId}`);
 	}
 
 	/**

@@ -23,12 +23,15 @@ type Querier interface {
 	// Award points to a user for a specific reason
 	AwardPoints(ctx context.Context, arg AwardPointsParams) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
+	CleanupExpiredCalendarTokens(ctx context.Context) error
 	CleanupExpiredLocks(ctx context.Context) error
 	CleanupOldOTPAttempts(ctx context.Context, createdAt time.Time) error
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAuditEvent(ctx context.Context, arg CreateAuditEventParams) (AuditEvent, error)
 	CreateBooking(ctx context.Context, arg CreateBookingParams) (Booking, error)
 	CreateBroadcast(ctx context.Context, arg CreateBroadcastParams) (Broadcast, error)
+	// Calendar Token Queries
+	CreateCalendarToken(ctx context.Context, arg CreateCalendarTokenParams) (CalendarToken, error)
 	CreateEmergencyContact(ctx context.Context, arg CreateEmergencyContactParams) (EmergencyContact, error)
 	// OTP Attempts Queries
 	CreateOTPAttempt(ctx context.Context, arg CreateOTPAttemptParams) (OtpAttempt, error)
@@ -65,6 +68,9 @@ type Querier interface {
 	// Get all bookings in date range with check-in and report status
 	GetBookingsInDateRange(ctx context.Context, arg GetBookingsInDateRangeParams) ([]GetBookingsInDateRangeRow, error)
 	GetBroadcastByID(ctx context.Context, broadcastID int64) (Broadcast, error)
+	GetCalendarTokenByHash(ctx context.Context, tokenHash string) (CalendarToken, error)
+	// Keep expired tokens for 30 days for audit
+	GetCalendarTokenStats(ctx context.Context) (GetCalendarTokenStatsRow, error)
 	GetCurrentlyLockedAccounts(ctx context.Context) ([]GetCurrentlyLockedAccountsRow, error)
 	GetDefaultEmergencyContact(ctx context.Context) (EmergencyContact, error)
 	GetEmergencyContactByID(ctx context.Context, contactID int64) (EmergencyContact, error)
@@ -95,6 +101,7 @@ type Querier interface {
 	GetUserAchievements(ctx context.Context, userID int64) ([]GetUserAchievementsRow, error)
 	GetUserByID(ctx context.Context, userID int64) (GetUserByIDRow, error)
 	GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error)
+	GetUserCalendarTokens(ctx context.Context, userID int64) ([]GetUserCalendarTokensRow, error)
 	// Get a user's current points and shift information
 	GetUserPoints(ctx context.Context, userID int64) (GetUserPointsRow, error)
 	// Get recent points history for a user
@@ -119,6 +126,8 @@ type Querier interface {
 	ListReportsByUserID(ctx context.Context, userID sql.NullInt64) ([]Report, error)
 	ListUsers(ctx context.Context, searchTerm interface{}) ([]ListUsersRow, error)
 	ResetOTPRateLimit(ctx context.Context, phone string) error
+	RevokeAllUserCalendarTokens(ctx context.Context, userID int64) error
+	RevokeCalendarToken(ctx context.Context, arg RevokeCalendarTokenParams) error
 	SetDefaultEmergencyContact(ctx context.Context, contactID int64) error
 	UnarchiveReport(ctx context.Context, reportID int64) error
 	UpdateBookingCheckIn(ctx context.Context, arg UpdateBookingCheckInParams) (Booking, error)
@@ -128,12 +137,14 @@ type Querier interface {
 	UpdateOutboxItemStatus(ctx context.Context, arg UpdateOutboxItemStatusParams) (Outbox, error)
 	UpdateReportPhotoCount(ctx context.Context, reportID int64) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
+	UpdateTokenAccess(ctx context.Context, tokenHash string) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 	// Update user's shift count and last activity
 	UpdateUserShiftCount(ctx context.Context, userID int64) error
 	// Update user's total points (should be called after AwardPoints)
 	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
+	ValidateCalendarToken(ctx context.Context, arg ValidateCalendarTokenParams) (ValidateCalendarTokenRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

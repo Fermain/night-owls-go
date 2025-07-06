@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import { Trophy, Medal, Award, Target, TrendingUp, Users } from 'lucide-svelte';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface LeaderboardEntry {
 		user_id: number;
@@ -39,27 +40,12 @@
 
 	async function fetchLeaderboards() {
 		try {
-			const token = localStorage.getItem('auth_token');
-			if (!token) {
-				error = 'Authentication required';
-				return;
-			}
-
-			const headers = {
-				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json'
-			};
-
-			// Fetch both leaderboards in parallel
+			// Fetch both leaderboards in parallel using authenticatedFetch
 			const [pointsRes, shiftsRes, statsRes] = await Promise.all([
-				fetch('/api/leaderboard', { headers }),
-				fetch('/api/leaderboard/shifts', { headers }),
-				fetch('/api/user/stats', { headers })
+				authenticatedFetch('/api/leaderboard'),
+				authenticatedFetch('/api/leaderboard/shifts'),
+				authenticatedFetch('/api/user/stats')
 			]);
-
-			if (!pointsRes.ok || !shiftsRes.ok || !statsRes.ok) {
-				throw new Error('Failed to fetch leaderboard data');
-			}
 
 			pointsLeaderboard = await pointsRes.json();
 			shiftsLeaderboard = await shiftsRes.json();

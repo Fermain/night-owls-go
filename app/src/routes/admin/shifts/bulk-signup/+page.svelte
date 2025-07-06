@@ -655,13 +655,6 @@
 														>
 															<UsersIcon class="h-3 w-3" />
 															{shift.user_name || 'Assigned'}
-															{#if shift.is_recurring_reservation}
-																<Badge
-																	variant="secondary"
-																	class="text-xs bg-primary/20 text-primary border-primary/30"
-																	>Recurring</Badge
-																>
-															{/if}
 														</div>
 													{:else if !patternMode}
 														<div class="text-xs text-muted-foreground mt-1">

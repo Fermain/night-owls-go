@@ -160,7 +160,7 @@
 						disabled={isLoading}
 					>
 						<XIcon class="h-3 w-3 mr-1" />
-						Cancel
+						Drop out
 					</Button>
 				{/if}
 			</div>
@@ -170,9 +170,9 @@
 			<div class="flex items-center gap-2 text-sm">
 				<ClockIcon class="h-3 w-3 text-muted-foreground" />
 				<span
-					>{formatDayNight(shift.start_time)} • {formatTime(shift.start_time)} - {formatTime(
-						shift.end_time
-					)}</span
+					>{formatDate(shift.start_time)} • {formatDayNight(shift.start_time)} • {formatTime(
+						shift.start_time
+					)} - {formatTime(shift.end_time)}</span
 				>
 			</div>
 
@@ -212,7 +212,7 @@
 						disabled={isLoading}
 					>
 						<XIcon class="h-3 w-3 mr-1" />
-						Cancel
+						Drop out
 					</Button>
 				{/if}
 			</div>

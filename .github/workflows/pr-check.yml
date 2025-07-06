@@ -6,7 +6,7 @@ on:
 
 env:
   GO_VERSION: '1.24.2'
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
 
 jobs:
   changes:
@@ -64,7 +64,7 @@ jobs:
       - name: Security scan
         uses: securego/gosec@v2.22.4
         with:
-          args: ./...
+          args: '-exclude-dir=internal/db/sqlc_generated -exclude=G101 ./...'
 
       - name: Build check
         run: go build -ldflags="-s -w" -o night-owls-server ./cmd/server

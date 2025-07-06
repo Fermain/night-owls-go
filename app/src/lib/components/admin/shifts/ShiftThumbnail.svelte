@@ -96,10 +96,6 @@
 			</div>
 		{/if}
 
-		<div class="flex-shrink-0">
-			{#if shift.is_recurring_reservation}
-				<Badge variant="outline" class="text-xs">Recurring</Badge>
-			{/if}
-		</div>
+		<div class="flex-shrink-0"></div>
 	</div>
 </div>

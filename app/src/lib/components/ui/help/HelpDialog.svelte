@@ -8,9 +8,12 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
-	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
-	import StarIcon from '@lucide/svelte/icons/star';
-	import RocketIcon from '@lucide/svelte/icons/rocket';
+	import BookOpenIcon from '@lucide/svelte/icons/book-open';
+	import InfoIcon from '@lucide/svelte/icons/info';
+	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+
+	// Import version from config
+	import { APP_INFO } from '$lib/config/version';
 
 	interface Props {
 		open: boolean;
@@ -20,135 +23,159 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-2xl max-h-[90vh] overflow-y-auto">
+	<Dialog.Content class="max-w-3xl max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
-				<SmartphoneIcon class="h-5 w-5 text-primary" />
-				Welcome to the Night Owls App!
+				<BookOpenIcon class="h-5 w-5 text-primary" />
+				Night Owls Application Manual
 			</Dialog.Title>
-			<Dialog.Description>
-				Your guide to transitioning from WhatsApp coordination to our digital platform
+			<Dialog.Description class="flex items-center justify-between">
+				<span>Mount Moreland Community Watch Platform</span>
+				<Badge variant="outline" class="ml-auto">v{APP_INFO.version}</Badge>
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="space-y-4 py-4">
-			<!-- How to use sections -->
-			<div class="space-y-6">
-				<!-- Booking shifts -->
-				<section class="space-y-3">
-					<h4 class="font-semibold flex items-center gap-2">
-						<CalendarIcon class="h-5 w-5 text-primary" />
-						Booking Your Shifts
-					</h4>
-					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
-						<li><strong>Browse available shifts</strong> on the main dashboard</li>
-						<li><strong>Book instantly</strong> - no waiting for WhatsApp confirmations</li>
-						<li><strong>View your schedule</strong> - all your upcoming shifts in one place</li>
-					</ul>
-				</section>
-
-				<!-- Check-in process -->
-				<section class="space-y-3">
-					<h4 class="font-semibold flex items-center gap-2">
-						<CheckCircleIcon class="h-5 w-5 text-primary" />
-						Starting Your Shift
-					</h4>
-					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
-						<li><strong>Check in</strong> when you arrive - just tap the check-in button</li>
-						<li><strong>Get GPS verification</strong> - confirms you're actually on location</li>
-						<li><strong>Early bird bonus</strong> - arrive 15+ minutes early for extra points!</li>
-						<li><strong>No more paper sign-ins</strong> - everything's digital and secure</li>
-					</ul>
-				</section>
-
-				<!-- Reporting -->
-				<section class="space-y-3">
-					<h4 class="font-semibold flex items-center gap-2">
-						<AlertTriangleIcon class="h-5 w-5 text-primary" />
-						Incident Reporting
-					</h4>
-					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
-						<li><strong>Quick reports</strong> - tap the Report button in the header</li>
-						<li>
-							<strong>Three severity levels</strong> - from routine observations to serious incidents
-						</li>
-						<li>
-							<strong>GPS location capture</strong> - automatically record where incidents occur
-						</li>
-						<li>
-							<strong>Detailed documentation</strong> - comprehensive incident logging for coordinators
-						</li>
-					</ul>
-				</section>
-
-				<!-- Points and achievements -->
-				<section class="space-y-3">
-					<h4 class="font-semibold flex items-center gap-2">
-						<TrophyIcon class="h-5 w-5 text-primary" />
-						Points & Recognition
-					</h4>
-					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
-						<li><strong>Earn points</strong> for every check-in and shift completion</li>
-						<li>
-							<strong>Bonus points</strong> for weekend shifts, early check-ins, and detailed reports
-						</li>
-						<li>
-							<strong>Achievement badges</strong> - unlock Owlet, Solid Owl, Wise Owl, and Super Owl!
-						</li>
-						<li><strong>Leaderboard</strong> - see how you rank among fellow community members</li>
-					</ul>
-					<div class="ml-7 mt-3">
-						<p class="text-sm font-bold text-foreground mb-2">Achievement Badges:</p>
-						<div class="flex gap-2 flex-wrap">
-							<Badge class="text-lg" variant="secondary">🐣 Owlet (25 pts)</Badge>
-							<Badge class="text-lg" variant="secondary">🦉 Solid Owl (500 pts)</Badge>
-							<Badge class="text-lg" variant="secondary">🦅 Wise Owl (1,250 pts)</Badge>
-							<Badge class="text-lg" variant="secondary">🐉 Super Owl (2,500 pts)</Badge>
-						</div>
-					</div>
-				</section>
-
-				<!-- Emergency features -->
-				<section class="space-y-3">
-					<h4 class="font-semibold flex items-center gap-2">
-						<PhoneIcon class="h-5 w-5 text-primary" />
-						Emergency Support
-					</h4>
-					<ul class="ml-7 space-y-2 text-sm text-muted-foreground list-disc list-inside">
-						<li><strong>Emergency button</strong> always visible in the header</li>
-						<li><strong>Direct contact</strong> to current emergency coordinators</li>
-						<li><strong>GPS location sharing</strong> - help arrives faster when needed</li>
-					</ul>
-				</section>
-			</div>
-
-			<Separator />
-
-			<!-- Why it's better -->
+		<div class="space-y-6 py-4">
+			<!-- Shift Management -->
 			<section class="space-y-3">
-				<h3 class="text-lg font-semibold text-primary flex items-center gap-2">
-					<StarIcon class="h-5 w-5" />
-					Why This Beats WhatsApp
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<CalendarIcon class="h-5 w-5" />
+					1. Shift Management
 				</h3>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-					<div class="space-y-2">
-						<p class="font-medium text-green-700 dark:text-green-400">✅ What you get:</p>
-						<ul class="space-y-1 text-muted-foreground ml-4 list-disc list-inside">
-							<li>No missed messages</li>
-							<li>Clear shift schedules</li>
-							<li>Automatic record keeping</li>
-							<li>Instant emergency alerts</li>
-							<li>Recognition for your service</li>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Viewing Available Shifts</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Access the main dashboard to view all available patrol shifts</li>
+							<li>Shifts display date, time, schedule name, and booking status</li>
+							<li>Open shifts show "Open shift" text, assigned shifts show volunteer names</li>
+							<li>Use calendar view to see shifts organized by date</li>
 						</ul>
 					</div>
-					<div class="space-y-2">
-						<p class="font-medium text-red-700 dark:text-red-400">❌ What you avoid:</p>
-						<ul class="space-y-1 text-muted-foreground ml-4 list-disc list-inside">
-							<li>WhatsApp message chaos</li>
-							<li>Lost paper rosters</li>
-							<li>Forgotten shift times</li>
-							<li>Unclear who's on duty</li>
-							<li>Manual coordination stress</li>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Booking Process</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Click "Commit" on any available shift slot</li>
+							<li>Optionally add a buddy name in the booking dialog</li>
+							<li>Confirm your booking to receive confirmation</li>
+							<li>Booked shifts appear in "My Shifts" section with check-in options</li>
+							<li>Bulk assignment available for multiple shifts</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Cancellation Policy</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Cancel bookings by clicking "X" button on your shift cards</li>
+							<li>Cancellations must be made at least 2 hours before shift start</li>
+							<li>Emergency cancellations: contact coordinators via Emergency Contacts</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- Check-in Procedure -->
+			<section class="space-y-3">
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<CheckCircleIcon class="h-5 w-5" />
+					2. Check-in Procedure
+				</h3>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Standard Check-in</h4>
+						<ol class="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+							<li>Navigate to your upcoming shift on the dashboard</li>
+							<li>Click "Check In" button when check-in window opens</li>
+							<li>Receive immediate check-in confirmation with timestamp</li>
+							<li>10 points automatically awarded for successful check-in</li>
+						</ol>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Check-in Requirements</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Check-in window opens 30 minutes before shift start</li>
+							<li>No GPS location verification required for check-in</li>
+							<li>Early check-in (15+ minutes before start): +3 bonus points</li>
+							<li>Weekend/holiday shifts: +5 bonus points automatically applied</li>
+							<li>Late night shifts (22:00-05:00): +3 bonus points</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- Incident Reporting -->
+			<section class="space-y-3">
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<AlertTriangleIcon class="h-5 w-5" />
+					3. Incident Reporting
+				</h3>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Creating Reports</h4>
+						<ol class="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+							<li>Access "Report" button from header navigation or shift card</li>
+							<li>Select severity level: Normal (0), Suspicion (1), or Incident (2)</li>
+							<li>Provide detailed description in the message field</li>
+							<li>GPS coordinates captured automatically if location services enabled</li>
+							<li>Submit report to receive 5 base points + completion points</li>
+						</ol>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Severity Guidelines</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>
+								<strong>Normal (0):</strong> Routine patrol notes, minor observations, general shift
+								completion
+							</li>
+							<li>
+								<strong>Suspicion (1):</strong> General incidents, noise complaints, suspicious activity
+							</li>
+							<li>
+								<strong>Incident (2):</strong> Security threats, property damage, immediate attention
+								needed (+10 bonus points)
+							</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Report Completion</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Submitting a report marks your shift as completed</li>
+							<li>15 completion points awarded in addition to report points</li>
+							<li>Shift count increases, contributing toward achievement progress</li>
+							<li>Off-shift reports can be submitted anytime without a booking</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- Emergency Procedures -->
+			<section class="space-y-3">
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<PhoneIcon class="h-5 w-5" />
+					4. Emergency Procedures
+				</h3>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Emergency Contacts</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Access Emergency Contacts dialog from application navigation</li>
+							<li>Default contact: RUSA (086 123 4333) - Private Security Response Unit</li>
+							<li>Secondary contacts include SAPS (10111) and ER24 (084 124)</li>
+							<li>Contacts cached offline for access without internet connection</li>
+							<li>Tap any contact to initiate direct phone call</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Critical Situations</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>
+								For life-threatening emergencies: Call RUSA, SAPS (10111), and alert emergency
+								WhatsApp groups
+							</li>
+							<li>Community ensures both SAPS and RUSA response on site</li>
+							<li>For security incidents: Contact RUSA via Emergency Contacts</li>
+							<li>
+								Use Incident (Level 2) reports for urgent situations requiring coordination response
+							</li>
 						</ul>
 					</div>
 				</div>
@@ -156,26 +183,86 @@
 
 			<Separator />
 
-			<!-- Getting started -->
+			<!-- Points System -->
 			<section class="space-y-3">
-				<h3 class="text-lg font-semibold text-primary flex items-center gap-2">
-					<RocketIcon class="h-5 w-5" />
-					Ready to Start?
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<TrophyIcon class="h-5 w-5" />
+					Points & Recognition System
 				</h3>
-				<ol class="ml-7 space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-					<li><strong>Browse available shifts</strong> on your dashboard</li>
-					<li><strong>Book a shift</strong> that works for you</li>
-					<li><strong>Show up and check in</strong> when your shift starts</li>
-					<li><strong>Submit a report</strong> when you finish</li>
-					<li>
-						<strong>Become a <strong>legendary owl</strong> protecting your community</strong>
-					</li>
-				</ol>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Point Values</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Shift check-in: 10 points</li>
+							<li>Shift completion (via report): 15 points</li>
+							<li>Incident report submission: 5 points</li>
+							<li>Level 2 (Incident) reports: +10 bonus points</li>
+							<li>Early check-in (15+ minutes): +3 bonus points</li>
+							<li>Weekend shifts: +5 bonus points</li>
+							<li>Late night shifts (22:00-05:00): +3 bonus points</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Achievement Levels</h4>
+						<div class="flex gap-2 flex-wrap mb-2">
+							<Badge variant="secondary">🐣 Owlet (1 shift)</Badge>
+							<Badge variant="secondary">🦉 Solid Owl (20 shifts)</Badge>
+							<Badge variant="secondary">🦅 Wise Owl (50 shifts)</Badge>
+							<Badge variant="secondary">🐉 Super Owl (100 shifts)</Badge>
+						</div>
+						<p class="text-sm text-muted-foreground">
+							Achievement badges based on completed shift count. View progress on Leaderboard page.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<Separator />
+
+			<!-- Technical Information -->
+			<section class="space-y-3">
+				<h3 class="font-semibold flex items-center gap-2 text-primary">
+					<InfoIcon class="h-5 w-5" />
+					Technical Requirements
+				</h3>
+				<div class="ml-7 space-y-3">
+					<div>
+						<h4 class="font-medium text-sm mb-2">Device Requirements</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Smartphone or tablet with modern web browser</li>
+							<li>Internet connection for real-time functionality</li>
+							<li>Location services optional (for incident report GPS data)</li>
+							<li>Browser compatibility: Chrome, Safari, Firefox, Edge</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Offline Functionality</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Emergency contacts cached for offline access</li>
+							<li>Incident reports queued when offline, sync automatically</li>
+							<li>Shift information cached for recent viewing</li>
+							<li>Check-ins require internet connection</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-sm mb-2">Data Privacy</h4>
+						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>GPS data only captured for incident reports when location services enabled</li>
+							<li>Personal information limited to community coordinators</li>
+							<li>All communications encrypted using secure protocols</li>
+							<li>Data retained according to community governance policies</li>
+						</ul>
+					</div>
+				</div>
 			</section>
 		</div>
 
-		<Dialog.Footer>
-			<Button onclick={() => (open = false)} class="w-full sm:w-auto">Got it, thanks!</Button>
+		<Dialog.Footer class="flex-col sm:flex-row gap-2">
+			<div class="text-xs text-muted-foreground flex items-center gap-2">
+				<MapPinIcon class="h-3 w-3" />
+				<span>Mount Moreland Community Watch</span>
+			</div>
+			<Button onclick={() => (open = false)} class="w-full sm:w-auto">Close Manual</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

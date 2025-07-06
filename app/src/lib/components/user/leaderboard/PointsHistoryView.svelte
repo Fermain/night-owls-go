@@ -14,6 +14,7 @@
 		Moon,
 		Sun
 	} from 'lucide-svelte';
+	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface PointsHistoryEntry {
 		history_id: number;
@@ -31,23 +32,7 @@
 
 	async function fetchPointsHistory() {
 		try {
-			const token = localStorage.getItem('auth_token');
-			if (!token) {
-				error = 'Authentication required';
-				return;
-			}
-
-			const response = await fetch(`/api/user/points/history?limit=${limit}`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to fetch points history');
-			}
-
+			const response = await authenticatedFetch(`/api/user/points/history?limit=${limit}`);
 			pointsHistory = await response.json();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';

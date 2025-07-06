@@ -61,6 +61,17 @@ type Broadcast struct {
 	Title          string        `json:"title"`
 }
 
+type CalendarToken struct {
+	TokenID        int64         `json:"token_id"`
+	UserID         int64         `json:"user_id"`
+	TokenHash      string        `json:"token_hash"`
+	CreatedAt      sql.NullTime  `json:"created_at"`
+	ExpiresAt      time.Time     `json:"expires_at"`
+	LastAccessedAt sql.NullTime  `json:"last_accessed_at"`
+	AccessCount    sql.NullInt64 `json:"access_count"`
+	IsRevoked      sql.NullBool  `json:"is_revoked"`
+}
+
 type EmergencyContact struct {
 	ContactID    int64          `json:"contact_id"`
 	Name         string         `json:"name"`

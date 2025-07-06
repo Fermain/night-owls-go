@@ -79,9 +79,6 @@
 										{statusBadge.text}
 									</Badge>
 								{/if}
-								{#if shift.is_recurring_reservation}
-									<Badge variant="outline" class="text-xs">Recurring</Badge>
-								{/if}
 							</div>
 						</div>
 					</CardContent>

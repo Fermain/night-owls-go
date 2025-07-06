@@ -42,10 +42,7 @@ export interface Shift {
 	bookingId?: number | null;
 	userName?: string | null;
 	userPhone?: string | null;
-	isRecurringReservation?: boolean;
-	recurringAssignmentId?: number | null;
 	buddyName?: string | null;
-	recurringDescription?: string | null;
 }
 
 export interface Booking {

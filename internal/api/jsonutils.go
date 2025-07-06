@@ -97,6 +97,33 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}, logge
 	}
 }
 
+// RespondWithNoContent sends a clean 204 No Content response
+// This function ensures proper headers are set to avoid proxy issues with trailers
+func RespondWithNoContent(w http.ResponseWriter, logger *slog.Logger, details ...any) {
+	// Set headers for clean 204 response (prevents TRAILERS issues in dev proxy)
+	w.Header().Set("Content-Length", "0")
+	w.Header().Del("Transfer-Encoding")
+	w.Header().Del("Trailer")
+	w.Header().Del("Connection")
+	
+	// Write the status code
+	w.WriteHeader(http.StatusNoContent)
+	
+	// Log the response if logger is provided
+	if logger != nil {
+		logFields := []interface{}{"status_code", http.StatusNoContent, "response_type", "no_content"}
+		
+		// Add details to log fields
+		for i := 0; i < len(details)-1; i += 2 {
+			if key, ok := details[i].(string); ok && i+1 < len(details) {
+				logFields = append(logFields, key, details[i+1])
+			}
+		}
+		
+		logger.Debug("Sent 204 No Content response", logFields...)
+	}
+}
+
 // getPayloadType returns a string representation of the payload type for logging
 func getPayloadType(payload interface{}) string {
 	if payload == nil {

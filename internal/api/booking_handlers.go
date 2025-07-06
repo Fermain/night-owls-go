@@ -127,7 +127,16 @@ func mapServiceErrorToHTTP(err error) (int, string) {
 // @Security BearerAuth
 // @Router /bookings [post]
 func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookingRequest]) (*BookingResponse, error) {
-	// Get request body
+	// Get the user ID from context (set by auth middleware)
+	userID, ok := c.Context().Value(UserIDKey).(int64)
+	if !ok {
+		h.logger.ErrorContext(c.Context(), "User ID not found in context")
+		return nil, fuego.UnauthorizedError{
+			Err:    nil,
+			Detail: "User authentication required",
+		}
+	}
+
 	req, err := c.Body()
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to parse request body", "error", err)
@@ -136,17 +145,6 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 			Detail: "Invalid request body",
 		}
 	}
-
-	// Get the user ID from context (set by auth middleware)
-	userID, ok := c.Context().Value(UserIDKey).(int64)
-	if !ok {
-		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
-		return nil, fuego.UnauthorizedError{
-			Err:    nil,
-			Detail: "User authentication required",
-		}
-	}
-
 	h.logger.InfoContext(c.Context(), "Creating booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "buddy_name", req.BuddyName)
 
 	// Convert buddy name to sql.NullString
@@ -157,16 +155,34 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 
 	booking, err := h.service.CreateBooking(c.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
-		h.logger.ErrorContext(c.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
-		status, detail := mapServiceErrorToHTTP(err)
-		return nil, fuego.HTTPError{
-			Err:    err,
-			Status: status,
-			Detail: detail,
+		statusCode, errorMessage := mapServiceErrorToHTTP(err)
+		h.logger.ErrorContext(c.Context(), "Failed to create booking", "error", err, "status_code", statusCode)
+
+		switch statusCode {
+		case http.StatusBadRequest:
+			return nil, fuego.BadRequestError{Err: err, Detail: errorMessage}
+		case http.StatusNotFound:
+			return nil, fuego.NotFoundError{Err: err, Detail: errorMessage}
+		case http.StatusConflict:
+			return nil, fuego.ConflictError{Err: err, Detail: errorMessage}
+		case http.StatusForbidden:
+			return nil, fuego.ForbiddenError{Err: err, Detail: errorMessage}
+		default:
+			return nil, fuego.InternalServerError{Err: err, Detail: errorMessage}
 		}
 	}
 
-	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
+	// Get schedule name for audit logging
+	schedule, scheduleErr := h.querier.GetScheduleByID(c.Context(), req.ScheduleID)
+	var scheduleName string
+	if scheduleErr != nil {
+		h.logger.WarnContext(c.Context(), "Failed to get schedule for audit logging", "schedule_id", req.ScheduleID, "error", scheduleErr)
+		scheduleName = fmt.Sprintf("Unknown Schedule (ID: %d)", req.ScheduleID)
+	} else {
+		scheduleName = schedule.Name
+	}
+
+	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "schedule_name", scheduleName, "start_time", req.StartTime, "user_id", userID)
 
 	// Log audit event for booking creation
 	ipAddress := c.Request().Header.Get("X-Forwarded-For")
@@ -178,10 +194,6 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 	}
 	userAgent := c.Request().Header.Get("User-Agent")
 
-	// Get schedule name for audit logging (we need to look it up)
-	// For now, we'll use the schedule ID as a string since we don't have the schedule name easily available
-	scheduleName := fmt.Sprintf("Schedule %d", req.ScheduleID)
-
 	var buddyNamePtr *string
 	if buddyName.Valid && buddyName.String != "" {
 		buddyNamePtr = &buddyName.String
@@ -192,7 +204,7 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 		userID,
 		booking.BookingID,
 		req.ScheduleID,
-		scheduleName,
+		schedule.Name,
 		booking.ShiftStart.Format(time.RFC3339),
 		booking.ShiftEnd.Format(time.RFC3339),
 		buddyNamePtr,
@@ -431,10 +443,15 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 		}
 	}
 
-	// For 204 No Content, we manually set the status and don't return any content
-	c.Response().WriteHeader(http.StatusNoContent)
+	// Set the 204 No Content status using Fuego's method
+	c.SetStatus(http.StatusNoContent)
+	
+	// Ensure clean headers for 204 response
+	c.Response().Header().Set("Content-Length", "0")
+	c.Response().Header().Del("Transfer-Encoding")
+	c.Response().Header().Del("Trailer")
 
-	// Return nil with no error to prevent Fuego from trying to serialize anything
+	// Return nil with no error - Fuego will handle the empty response properly
 	return nil, nil
 }
 
@@ -520,7 +537,9 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	h.logger.InfoContext(r.Context(), "Booking cancelled successfully", "booking_id", bookingID, "user_id", userID)
-	w.WriteHeader(http.StatusNoContent)
+	
+	// Send clean 204 response to prevent proxy issues
+	RespondWithNoContent(w, h.logger, "booking_id", bookingID, "user_id", userID)
 }
 
 // MarkCheckInHandler handles POST /bookings/{id}/checkin

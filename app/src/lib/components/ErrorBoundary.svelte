@@ -17,7 +17,7 @@ Provides graceful error handling and recovery for child components
 		showDetails?: boolean;
 		onError?: (error: AppError) => void;
 		allowRetry?: boolean;
-		children: Snippet;
+		children?: Snippet;
 	}
 
 	let {
@@ -167,5 +167,7 @@ Provides graceful error handling and recovery for child components
 	</div>
 {:else}
 	<!-- Render children when no error -->
-	{@render children()}
+	{#if children}
+		{@render children()}
+	{/if}
 {/if}
