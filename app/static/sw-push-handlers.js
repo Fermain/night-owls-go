@@ -116,7 +116,7 @@ self.addEventListener('notificationclick', (event) => {
 				targetUrl = '/broadcasts';
 				break;
 			case 'booking_confirmation':
-				targetUrl = '/bookings/my';
+				targetUrl = '/';
 				break;
 			default:
 				targetUrl = '/';

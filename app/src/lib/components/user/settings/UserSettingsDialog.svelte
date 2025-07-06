@@ -3,6 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { CalendarSubscription } from '$lib/components/ui/calendar-subscription';
 	import { themeState, themeActions, type ThemeMode } from '$lib/stores/themeStore';
 	import { permissionUtils } from '$lib/stores/onboardingStore';
 	import { toast } from 'svelte-sonner';
@@ -130,7 +131,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-sm">
+	<Dialog.Content class="max-w-md">
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<SettingsIcon class="h-5 w-5" />
@@ -254,6 +255,12 @@
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<!-- Calendar Subscription -->
+			<div>
+				<h3 class="text-sm font-medium mb-2">Calendar Sync</h3>
+				<CalendarSubscription />
 			</div>
 		</div>
 

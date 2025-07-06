@@ -20,6 +20,44 @@ type BookingResponse struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
+// CalendarData represents calendar file information for downloads
+type CalendarData struct {
+	Filename string `json:"filename"`
+	Content  string `json:"content"`
+	MimeType string `json:"mime_type"`
+}
+
+// CalendarFeedToken represents a secure WebCal feed access token
+type CalendarFeedToken struct {
+	UserID    int64     `json:"user_id"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// CalendarFeedResponse contains WebCal subscription information
+type CalendarFeedResponse struct {
+	FeedURL     string    `json:"feed_url"`
+	WebCalURL   string    `json:"webcal_url"`
+	Token       string    `json:"token"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Description string    `json:"description"`
+}
+
+// PublicShiftSlot represents a shift slot for public schedule viewing
+// Provides community visibility while protecting user privacy
+type PublicShiftSlot struct {
+	ScheduleID   int64   `json:"schedule_id"`
+	ScheduleName string  `json:"schedule_name"`
+	StartTime    string  `json:"start_time"`
+	EndTime      string  `json:"end_time"`
+	Timezone     *string `json:"timezone,omitempty"`
+	IsBooked     bool    `json:"is_booked"`
+	BookedBy     *string `json:"booked_by,omitempty"`     // Privacy-masked: "John D." or "Booked"
+	HasBuddy     bool    `json:"has_buddy"`               // Boolean instead of buddy name
+	BookingID    *int64  `json:"booking_id,omitempty"`    // For frontend compatibility
+}
+
 // BookingWithScheduleResponse includes schedule name for admin views
 type BookingWithScheduleResponse struct {
 	BookingID    int64      `json:"booking_id"`

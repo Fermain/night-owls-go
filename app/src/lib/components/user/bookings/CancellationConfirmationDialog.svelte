@@ -32,10 +32,10 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<AlertTriangleIcon class="h-5 w-5" />
-				Cancel Shift
+				Drop out of Shift
 			</Dialog.Title>
 			<Dialog.Description>
-				Are you sure you want to cancel your commitment to this shift?
+				Are you sure you want to drop out of your commitment to this shift?
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -50,7 +50,7 @@
 		<Dialog.Footer>
 			<Button variant="outline" onclick={handleCancel} disabled={isLoading}>Keep Shift</Button>
 			<Button variant="destructive" onclick={handleConfirm} disabled={isLoading}>
-				{isLoading ? 'Cancelling...' : 'Cancel Shift'}
+				{isLoading ? 'Dropping out...' : 'Drop out of Shift'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

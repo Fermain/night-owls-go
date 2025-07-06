@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"night-owls-go/internal/config"
@@ -566,4 +567,57 @@ func parseScheduleInTimezone(cronExpr string, timezone string, fromTime, toTime 
 	}
 
 	return occurrences, nil
+}
+
+// GetPublicScheduleSlots returns all shift slots with privacy-protected information
+// for public viewing. Shows complete schedule while masking sensitive user data.
+func (s *ScheduleService) GetPublicScheduleSlots(ctx context.Context, queryFrom *time.Time, queryTo *time.Time, limit *int) ([]AdminAvailableShiftSlot, error) {
+	// Get admin slots and apply privacy masking
+	adminSlots, err := s.AdminGetAllShiftSlots(ctx, queryFrom, queryTo, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply privacy masking to each slot
+	var publicSlots []AdminAvailableShiftSlot
+	for _, slot := range adminSlots {
+		publicSlot := slot
+		
+		if slot.IsBooked && slot.UserName != nil {
+			// Privacy protection: mask user name
+			maskedName := s.maskUserName(*slot.UserName)
+			publicSlot.UserName = &maskedName
+			
+			// Don't include phone number in public view
+			publicSlot.UserPhone = nil
+			
+			// Privacy protection: just indicate if there's a buddy, don't show name
+			if slot.BuddyName != nil && *slot.BuddyName != "" {
+				buddyIndicator := "with buddy"
+				publicSlot.BuddyName = &buddyIndicator
+			}
+		}
+		
+		publicSlots = append(publicSlots, publicSlot)
+	}
+
+	return publicSlots, nil
+}
+
+// maskUserName masks a user's name for privacy protection
+// "John Smith" -> "John S."
+// "Jane" -> "Jane"
+func (s *ScheduleService) maskUserName(fullName string) string {
+	parts := strings.Fields(strings.TrimSpace(fullName))
+	if len(parts) == 0 {
+		return "Booked"
+	}
+	if len(parts) == 1 {
+		return parts[0]
+	}
+	
+	// Take first name and first letter of last name
+	firstName := parts[0]
+	lastInitial := string([]rune(parts[len(parts)-1])[0]) // Handle unicode properly
+	return firstName + " " + lastInitial + "."
 }

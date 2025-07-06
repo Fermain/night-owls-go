@@ -127,7 +127,16 @@ func mapServiceErrorToHTTP(err error) (int, string) {
 // @Security BearerAuth
 // @Router /bookings [post]
 func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookingRequest]) (*BookingResponse, error) {
-	// Get request body
+	// Get the user ID from context (set by auth middleware)
+	userID, ok := c.Context().Value(UserIDKey).(int64)
+	if !ok {
+		h.logger.ErrorContext(c.Context(), "User ID not found in context")
+		return nil, fuego.UnauthorizedError{
+			Err:    nil,
+			Detail: "User authentication required",
+		}
+	}
+
 	req, err := c.Body()
 	if err != nil {
 		h.logger.ErrorContext(c.Context(), "Failed to parse request body", "error", err)
@@ -136,17 +145,6 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 			Detail: "Invalid request body",
 		}
 	}
-
-	// Get the user ID from context (set by auth middleware)
-	userID, ok := c.Context().Value(UserIDKey).(int64)
-	if !ok {
-		h.logger.ErrorContext(c.Context(), "User ID not found in context", "handler", "BookingHandler")
-		return nil, fuego.UnauthorizedError{
-			Err:    nil,
-			Detail: "User authentication required",
-		}
-	}
-
 	h.logger.InfoContext(c.Context(), "Creating booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "buddy_name", req.BuddyName)
 
 	// Convert buddy name to sql.NullString
@@ -157,13 +155,27 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 
 	booking, err := h.service.CreateBooking(c.Context(), userID, req.ScheduleID, req.StartTime, sql.NullString{}, buddyName)
 	if err != nil {
-		h.logger.ErrorContext(c.Context(), "Failed to create booking", "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID, "error", err)
-		status, detail := mapServiceErrorToHTTP(err)
-		return nil, fuego.HTTPError{
-			Err:    err,
-			Status: status,
-			Detail: detail,
+		statusCode, errorMessage := mapServiceErrorToHTTP(err)
+		h.logger.ErrorContext(c.Context(), "Failed to create booking", "error", err, "status_code", statusCode)
+
+		switch statusCode {
+		case http.StatusBadRequest:
+			return nil, fuego.BadRequestError{Err: err, Detail: errorMessage}
+		case http.StatusNotFound:
+			return nil, fuego.NotFoundError{Err: err, Detail: errorMessage}
+		case http.StatusConflict:
+			return nil, fuego.ConflictError{Err: err, Detail: errorMessage}
+		case http.StatusForbidden:
+			return nil, fuego.ForbiddenError{Err: err, Detail: errorMessage}
+		default:
+			return nil, fuego.InternalServerError{Err: err, Detail: errorMessage}
 		}
+	}
+
+	// Get schedule name for audit logging
+	schedule, scheduleErr := h.querier.GetScheduleByID(c.Context(), req.ScheduleID)
+	if scheduleErr != nil {
+		h.logger.WarnContext(c.Context(), "Failed to get schedule for audit logging", "schedule_id", req.ScheduleID, "error", scheduleErr)
 	}
 
 	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
@@ -178,10 +190,6 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 	}
 	userAgent := c.Request().Header.Get("User-Agent")
 
-	// Get schedule name for audit logging (we need to look it up)
-	// For now, we'll use the schedule ID as a string since we don't have the schedule name easily available
-	scheduleName := fmt.Sprintf("Schedule %d", req.ScheduleID)
-
 	var buddyNamePtr *string
 	if buddyName.Valid && buddyName.String != "" {
 		buddyNamePtr = &buddyName.String
@@ -192,7 +200,7 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 		userID,
 		booking.BookingID,
 		req.ScheduleID,
-		scheduleName,
+		schedule.Name,
 		booking.ShiftStart.Format(time.RFC3339),
 		booking.ShiftEnd.Format(time.RFC3339),
 		buddyNamePtr,

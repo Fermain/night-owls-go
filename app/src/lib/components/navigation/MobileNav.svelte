@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { isAuthenticated } from '$lib/services/userService';
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -58,14 +57,6 @@
 					>
 						<ShieldIcon class="h-5 w-5" />
 						<span>Join Community</span>
-					</a>
-					<a
-						href="/bookings"
-						class="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-						onclick={closeMenu}
-					>
-						<CalendarIcon class="h-5 w-5" />
-						<span>View Shifts</span>
 					</a>
 				</div>
 

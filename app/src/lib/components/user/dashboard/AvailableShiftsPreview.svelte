@@ -64,9 +64,9 @@
 			{/each}
 			{#if shifts.length > 3}
 				<div class="mt-4 text-center">
-					<a href="/bookings" class="text-sm text-primary hover:underline">
-						View all {shifts.length} available shifts →
-					</a>
+					<p class="text-sm text-muted-foreground">
+						{shifts.length - 3} more shifts available
+					</p>
 				</div>
 			{/if}
 		</Card.Content>

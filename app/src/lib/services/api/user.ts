@@ -30,7 +30,6 @@ export interface CreateBookingRequest {
 	schedule_id: number;
 	start_time: string;
 	buddy_name?: string;
-	buddy_phone?: string;
 }
 
 export interface CreateReportRequest {
@@ -103,7 +102,9 @@ export class UserApiService {
 			const errorText = await response.text();
 			throw new Error(`Failed to create booking: ${errorText}`);
 		}
-		return response.json();
+
+		const booking = (await response.json()) as UserBooking;
+		return booking;
 	}
 
 	/**

@@ -262,9 +262,10 @@ func main() {
 	emergencyContactAPIHandler := api.NewEmergencyContactHandler(emergencyContactService, logger)
 	adminAuditAPIHandler := api.NewAdminAuditHandler(auditService, querier, logger)
 	leaderboardAPIHandler := api.NewLeaderboardHandler(pointsService, logger)
+	calendarAPIHandler := api.NewCalendarHandler(bookingService, querier, logger)
 
 	// Debug: Check handler initialization
-	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil)
+	logger.Info("Handler initialization", "booking_handler_nil", bookingAPIHandler == nil, "report_handler_nil", reportAPIHandler == nil, "calendar_handler_nil", calendarAPIHandler == nil)
 
 	// Public API routes
 	publicAPI := fuego.Group(s, apiPrefix)
@@ -280,6 +281,7 @@ func main() {
 
 	fuego.GetStd(publicAPI, "/schedules", scheduleAPIHandler.ListSchedulesHandler)
 	fuego.GetStd(publicAPI, "/shifts/available", scheduleAPIHandler.ListAvailableShiftsHandler)
+	fuego.GetStd(publicAPI, "/shifts/schedule", scheduleAPIHandler.GetPublicScheduleSlotsHandler)
 	fuego.GetStd(publicAPI, "/push/vapid-public", pushAPIHandler.VAPIDPublicKey)
 	fuego.PostStd(publicAPI, "/ping", api.PingHandler(logger))
 
@@ -351,6 +353,12 @@ func main() {
 	fuego.GetStd(protected, "/user/points/history", leaderboardAPIHandler.GetUserPointsHistoryHandler)
 	fuego.GetStd(protected, "/user/achievements", leaderboardAPIHandler.GetUserAchievementsHandler)
 	fuego.GetStd(protected, "/user/achievements/available", leaderboardAPIHandler.GetAvailableAchievementsHandler)
+
+	// Calendar routes (require auth)
+	logger.Info("Registering calendar routes", "handler_nil", calendarAPIHandler == nil)
+	fuego.PostStd(protected, "/calendar/generate-token", calendarAPIHandler.GenerateCalendarFeedToken)
+	fuego.GetStd(publicAPI, "/calendar/user/{userId}/{token}", calendarAPIHandler.ServeCalendarFeed)
+	logger.Info("Calendar routes registered successfully")
 
 	// Admin routes
 	admin := fuego.Group(s, apiPrefix+"/admin")

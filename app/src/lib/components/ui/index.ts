@@ -93,6 +93,8 @@ export { PhoneInput } from './phone-input';
 export { PhotoUploadArea } from './photo-upload';
 export { UserMultiSelect } from './user-multiselect';
 export { HelpDialog } from './help';
+export { CalendarButton } from './calendar-button';
+export { BulkCalendarExport } from './bulk-calendar-export';
 
 // === UTILITY COMPONENTS ===
 export { Skeleton } from './skeleton';

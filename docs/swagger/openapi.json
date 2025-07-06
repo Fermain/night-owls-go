@@ -444,11 +444,11 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Booking created successfully",
+                        "description": "Booking created successfully with calendar data",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.BookingResponse"
+                                    "$ref": "#/components/schemas/api.BookingWithCalendarResponse"
                                 }
                             }
                         }
@@ -843,6 +843,36 @@
                     },
                     "user_id": {
                         "type": "integer"
+                    }
+                }
+            },
+            "api.BookingWithCalendarResponse": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/api.BookingResponse"
+                    }
+                ],
+                "properties": {
+                    "calendar": {
+                        "$ref": "#/components/schemas/api.CalendarData"
+                    }
+                }
+            },
+            "api.CalendarData": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Name of the calendar file"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "ICS calendar file content"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "description": "MIME type (text/calendar)"
                     }
                 }
             },

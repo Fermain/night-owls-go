@@ -101,3 +101,61 @@ func (h *ScheduleHandler) ListAvailableShiftsHandler(w http.ResponseWriter, r *h
 
 	RespondWithJSON(w, http.StatusOK, shifts, h.logger)
 }
+
+// GetPublicScheduleSlotsHandler handles GET /shifts/schedule
+// @Summary Get public schedule view
+// @Description Returns complete schedule information with privacy-protected user data for public viewing
+// @Tags shifts
+// @Produce json
+// @Param from query string false "Start date for shift window (RFC3339 format)"
+// @Param to query string false "End date for shift window (RFC3339 format)"
+// @Param limit query int false "Maximum number of shifts to return"
+// @Success 200 {array} service.AdminAvailableShiftSlot "List of shift slots with privacy-protected data"
+// @Failure 400 {object} ErrorResponse "Invalid query parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /shifts/schedule [get]
+func (h *ScheduleHandler) GetPublicScheduleSlotsHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse optional query parameters for date range and limit
+	var fromTime *time.Time
+	var toTime *time.Time
+	var limit *int
+
+	fromStr := r.URL.Query().Get("from")
+	if fromStr != "" {
+		parsedFromTime, err := time.Parse(time.RFC3339, fromStr)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'from' date format, use RFC3339", h.logger)
+			return
+		}
+		fromTime = &parsedFromTime
+	}
+
+	toStr := r.URL.Query().Get("to")
+	if toStr != "" {
+		parsedToTime, err := time.Parse(time.RFC3339, toStr)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'to' date format, use RFC3339", h.logger)
+			return
+		}
+		toTime = &parsedToTime
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil || parsedLimit <= 0 {
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'limit' parameter, must be a positive integer", h.logger)
+			return
+		}
+		limit = &parsedLimit
+	}
+
+	// Get public schedule slots from the service
+	slots, err := h.scheduleService.GetPublicScheduleSlots(r.Context(), fromTime, toTime, limit)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve schedule information", h.logger)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, slots, h.logger)
+}

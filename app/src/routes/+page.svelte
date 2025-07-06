@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import {
 		createQuery,
 		createMutation,
@@ -28,9 +29,10 @@
 	import BulkAssignDialog from '$lib/components/user/bookings/BulkAssignDialog.svelte';
 	import ShiftCalendar from '$lib/components/user/shifts/ShiftCalendar.svelte';
 	import { onMount } from 'svelte';
-	import MyReportsWidget from '$lib/components/user/dashboard/MyReportsWidget.svelte';
 	import { getPageOpenGraph } from '$lib/utils/opengraph';
 	import { formatDayNight } from '$lib/utils/shiftFormatting';
+	import { CalendarButton } from '$lib/components/ui/calendar-button';
+	import { getTimeUntil } from '$lib/utils/datetime';
 
 	// OpenGraph tags for this page
 	const ogTags = getPageOpenGraph('home');
@@ -78,7 +80,7 @@
 			queryKey: ['all-shifts', dayRange],
 			queryFn: async () => {
 				const { from, to } = getShiftDateRange(dayRange);
-				const result = await SchedulesApiService.getAllSlots({ from, to });
+				const result = await SchedulesApiService.getPublicSchedule({ from, to });
 				return result;
 			}
 		});
@@ -116,14 +118,14 @@
 		cancelBookingMutation = createMutation({
 			mutationFn: (bookingId: number) => UserApiService.cancelBooking(bookingId),
 			onSuccess: () => {
-				toast.success('Shift cancelled successfully!');
+				toast.success('Dropped out of shift successfully!');
 				$userBookingsQuery?.refetch();
 				$availableShiftsQuery?.refetch();
 				showCancelDialog = false;
 				shiftToCancel = null;
 			},
 			onError: (error: Error) => {
-				toast.error(`Failed to cancel shift: ${error.message}`);
+				toast.error(`Failed to drop out of shift: ${error.message}`);
 				showCancelDialog = false;
 				shiftToCancel = null;
 			}
@@ -304,22 +306,16 @@
 	function formatShiftTimeCompact(booking: { shift_start: string; shift_end: string }) {
 		const start = new Date(booking.shift_start);
 		const end = new Date(booking.shift_end);
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(today.getDate() + 1);
-		const dayAfterTomorrow = new Date(today);
-		dayAfterTomorrow.setDate(today.getDate() + 2);
 
-		let dateLabel = '';
-		if (start.toDateString() === today.toDateString()) {
-			dateLabel = 'Today';
-		} else if (start.toDateString() === tomorrow.toDateString()) {
-			dateLabel = 'Tomorrow';
-		} else if (start.toDateString() === dayAfterTomorrow.toDateString()) {
-			dateLabel = formatDayNight(booking.shift_start);
-		} else {
-			dateLabel = formatDayNight(booking.shift_start);
-		}
+		// Format the full date
+		const fullDate = start.toLocaleDateString('en-GB', {
+			day: '2-digit',
+			month: '2-digit',
+			year: '2-digit'
+		});
+
+		// Format the day/night label
+		const dayNightLabel = formatDayNight(booking.shift_start);
 
 		const timeRange = `${start.toLocaleTimeString('en-GB', {
 			hour: '2-digit',
@@ -329,7 +325,7 @@
 			minute: '2-digit'
 		})}`;
 
-		return `${dateLabel} • ${timeRange}`;
+		return `${fullDate} • ${dayNightLabel} • ${timeRange}`;
 	}
 
 	// Check if we're loading more shifts (when shiftLimit increases)
@@ -396,47 +392,50 @@
 
 			<!-- Additional Upcoming Shifts -->
 			{#if additionalShifts.length > 0}
-				<div class="space-y-1">
+				<div class="space-y-2">
 					<h3 class="text-sm font-medium text-muted-foreground px-1 mb-2">Upcoming shifts</h3>
 					{#each additionalShifts as shift (shift.booking_id)}
 						{@const canCancel = canCancelBooking(shift.shift_start)}
-						<div class="flex items-center justify-between p-2 bg-muted/30 rounded-lg border">
-							<div class="flex-1 min-w-0">
-								<div class="text-xs text-muted-foreground mt-0.5">
-									{formatShiftTimeCompact(shift)}
+						<div
+							class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/30 rounded-lg border"
+						>
+							<div class="flex-1 min-w-0 space-y-1">
+								<div class="flex flex-wrap items-center gap-2">
+									<div class="text-xs text-muted-foreground">
+										{formatShiftTimeCompact(shift)}
+									</div>
+									<Badge variant="secondary" class="text-xs shrink-0">
+										{getTimeUntil(shift.shift_start)}
+									</Badge>
 								</div>
 								{#if shift.buddy_name}
-									<div class="text-xs text-muted-foreground mt-0.5">
+									<div class="text-xs text-muted-foreground">
 										with {shift.buddy_name}
 									</div>
 								{/if}
 							</div>
-							{#if canCancel}
-								<Button
-									onclick={() => handleCancelShift(shift.booking_id)}
-									variant="outline"
-									size="sm"
-									class="ml-3 text-muted-foreground hover:text-destructive hover:border-destructive"
-									disabled={$cancelBookingMutation?.isPending}
-								>
-									<XIcon class="h-3 w-3 mr-1" />
-									Cancel
-								</Button>
-							{/if}
+							<div class="flex items-center gap-2 shrink-0">
+								<!-- Calendar Download Button -->
+								<CalendarButton booking={shift} size="sm" variant="outline" showDropdown={false} />
+								{#if canCancel}
+									<Button
+										onclick={() => handleCancelShift(shift.booking_id)}
+										variant="outline"
+										size="sm"
+										class="text-muted-foreground hover:text-destructive hover:border-destructive"
+										disabled={$cancelBookingMutation?.isPending}
+									>
+										<XIcon class="h-3 w-3 mr-1" />
+										Drop out
+									</Button>
+								{/if}
+							</div>
 						</div>
 					{/each}
 				</div>
 			{/if}
 
-			<!-- Shift Calendar (moved above shift list and outside of card) -->
-			<ShiftCalendar
-				shifts={availableShifts}
-				{userBookings}
-				selectedDayRange={dayRange}
-				onShiftSelect={handleBookShift}
-			/>
-
-			<!-- Available Shifts (broken out of card layout) -->
+			<!-- Available Shifts (moved above calendar) -->
 			{#if !availableShiftsQuery}
 				<!-- Loading state while queries are being initialized -->
 				<div class="px-4">
@@ -562,10 +561,13 @@
 				</div>
 			{/if}
 
-			<!-- My Reports Widget -->
-			{#if $userSession.isAuthenticated}
-				<MyReportsWidget className="mb-4" />
-			{/if}
+			<!-- Shift Calendar (moved below roster) -->
+			<ShiftCalendar
+				shifts={availableShifts}
+				{userBookings}
+				selectedDayRange={dayRange}
+				onShiftSelect={handleBookShift}
+			/>
 		</div>
 	{:else}
 		<!-- Unauthenticated Welcome Page -->

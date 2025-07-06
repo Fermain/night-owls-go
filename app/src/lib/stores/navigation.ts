@@ -8,7 +8,6 @@ import Home from '@lucide/svelte/icons/home';
 import Calendar from '@lucide/svelte/icons/calendar';
 import MessageCircle from '@lucide/svelte/icons/message-circle';
 import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-import ClipboardList from '@lucide/svelte/icons/clipboard-list';
 import Phone from '@lucide/svelte/icons/phone';
 
 export interface NavItem {
@@ -87,13 +86,6 @@ const publicNavItems: NavItem[] = [
 		icon: AlertTriangle,
 		description: 'Report an incident',
 		roles: ['admin', 'owl', 'guest']
-	},
-	{
-		title: 'My Bookings',
-		url: '/bookings',
-		icon: ClipboardList,
-		description: 'Your shift bookings',
-		roles: ['admin', 'owl']
 	}
 ];
 
