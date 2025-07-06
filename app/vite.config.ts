@@ -2,6 +2,12 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Read version from package.json at build time
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const appVersion = packageJson.version;
 
 export default defineConfig(({ mode: _mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
@@ -134,7 +140,13 @@ export default defineConfig(({ mode: _mode }) => {
 		},
 
 		define: {
-			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+			// Inject app version from package.json at build time
+			__APP_VERSION__: JSON.stringify(appVersion),
+			__APP_NAME__: JSON.stringify(packageJson.name),
+			__APP_DESCRIPTION__: JSON.stringify(
+				packageJson.description || 'Night Owls Community Watch Platform'
+			)
 		}
 	};
 });

@@ -20,9 +20,16 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # Copy source and build with optimizations
 COPY . .
+
+# Build arguments for version information
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o night-owls-server ./cmd/server
+    CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags="-w -s -X main.GitSHA=${GIT_SHA} -X main.BuildTime=${BUILD_TIME}" \
+    -o night-owls-server ./cmd/server
 
 # Production image - use minimal distroless
 FROM alpine:latest

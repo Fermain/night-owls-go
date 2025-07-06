@@ -8,6 +8,11 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	// Vite build-time constants injected from package.json
+	const __APP_VERSION__: string;
+	const __APP_NAME__: string;
+	const __APP_DESCRIPTION__: string;
 }
 
 export {};
