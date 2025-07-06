@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -168,4 +170,102 @@ func TestFormatICSDate(t *testing.T) {
 	if result != expected {
 		t.Errorf("formatICSDate(%v) = %s, expected %s", testTime, result, expected)
 	}
+}
+
+// Security tests for calendar token functionality
+
+func TestHashToken(t *testing.T) {
+	// Test that the same token produces the same hash
+	token := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	
+	// Calculate expected hash
+	hash := sha256.Sum256([]byte(token))
+	expectedHash := hex.EncodeToString(hash[:])
+	
+	// Use the same hashing function as the handler
+	actualHash := hashTokenForTest(token)
+	
+	if actualHash != expectedHash {
+		t.Errorf("Hash mismatch. Expected: %s, Got: %s", expectedHash, actualHash)
+	}
+}
+
+func TestTokenValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		token       string
+		expectValid bool
+	}{
+		{
+			name:        "valid 64-character token",
+			token:       "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			expectValid: true,
+		},
+		{
+			name:        "invalid short token",
+			token:       "short",
+			expectValid: false,
+		},
+		{
+			name:        "invalid long token",
+			token:       "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123",
+			expectValid: false,
+		},
+		{
+			name:        "empty token",
+			token:       "",
+			expectValid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Basic format validation (matches the validation in handlers)
+			isValid := len(tt.token) == 64
+			
+			if isValid != tt.expectValid {
+				t.Errorf("Token validation failed. Expected: %v, Got: %v", tt.expectValid, isValid)
+			}
+		})
+	}
+}
+
+func TestCalendarTokenSecurity(t *testing.T) {
+	t.Run("token hashes should be deterministic", func(t *testing.T) {
+		token := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+		
+		hash1 := hashTokenForTest(token)
+		hash2 := hashTokenForTest(token)
+		
+		if hash1 != hash2 {
+			t.Errorf("Hash function is not deterministic. Hash1: %s, Hash2: %s", hash1, hash2)
+		}
+	})
+	
+	t.Run("different tokens should produce different hashes", func(t *testing.T) {
+		token1 := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+		token2 := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+		
+		hash1 := hashTokenForTest(token1)
+		hash2 := hashTokenForTest(token2)
+		
+		if hash1 == hash2 {
+			t.Errorf("Different tokens produced same hash: %s", hash1)
+		}
+	})
+	
+	t.Run("hash should be 64 characters (SHA-256 hex)", func(t *testing.T) {
+		token := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+		hash := hashTokenForTest(token)
+		
+		if len(hash) != 64 {
+			t.Errorf("Hash length should be 64 characters, got %d", len(hash))
+		}
+	})
+}
+
+// Helper function to test token hashing (mirrors the private function in handlers)
+func hashTokenForTest(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
 } 

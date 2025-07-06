@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -59,11 +61,23 @@ func (h *CalendarHandler) GenerateCalendarFeedToken(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Store token in database (we'll need to create this table)
+	// Store token in database with proper hashing
 	expiresAt := time.Now().Add(365 * 24 * time.Hour) // 1 year expiry
 	
-	// For now, we'll store it as a simple key-value store
-	// In production, you'd want a proper calendar_tokens table
+	// Hash the token before storing (never store plain tokens)
+	tokenHash := hashToken(token)
+	
+	// Store token in database
+	_, err = h.querier.CreateCalendarToken(r.Context(), db.CreateCalendarTokenParams{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: expiresAt,
+	})
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to store calendar token", "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to create calendar feed token", h.logger)
+		return
+	}
 	
 	// Build URLs
 	baseURL := getBaseURL(r)
@@ -113,11 +127,22 @@ func (h *CalendarHandler) ServeCalendarFeed(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Validate token (in production, check against database)
-	if !isValidCalendarToken(userID, token) {
-		h.logger.WarnContext(r.Context(), "Invalid calendar feed token", "user_id", userID, "token", token[:8]+"...")
+	// Validate token against database
+	validToken, err := h.validateCalendarToken(r.Context(), userID, token)
+	if err != nil || !validToken {
+		h.logger.WarnContext(r.Context(), "Invalid calendar feed token", 
+			"user_id", userID, 
+			"token_prefix", token[:min(8, len(token))]+"...",
+			"error", err)
 		RespondWithError(w, http.StatusNotFound, "Invalid calendar feed", h.logger)
 		return
+	}
+	
+	// Update access tracking
+	tokenHash := hashToken(token)
+	if updateErr := h.querier.UpdateTokenAccess(r.Context(), tokenHash); updateErr != nil {
+		h.logger.WarnContext(r.Context(), "Failed to update token access", "error", updateErr)
+		// Don't fail the request for tracking errors
 	}
 
 	// Get user's bookings
@@ -145,6 +170,88 @@ func (h *CalendarHandler) ServeCalendarFeed(w http.ResponseWriter, r *http.Reque
 	if writeErr != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to write calendar feed response", "error", writeErr)
 	}
+}
+
+// RevokeCalendarToken revokes a user's calendar feed token
+// @Summary Revoke calendar feed token
+// @Description Revokes the current user's calendar feed token, requiring regeneration for future access
+// @Tags calendar
+// @Produce json
+// @Success 200 {object} map[string]string "Token revoked successfully"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/calendar/revoke-token [post]
+func (h *CalendarHandler) RevokeCalendarToken(w http.ResponseWriter, r *http.Request) {
+	// Get the user ID from context (set by auth middleware)
+	userID, ok := r.Context().Value(UserIDKey).(int64)
+	if !ok {
+		h.logger.ErrorContext(r.Context(), "User ID not found in context")
+		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
+		return
+	}
+
+	// Revoke all tokens for the user
+	err := h.querier.RevokeAllUserCalendarTokens(r.Context(), userID)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to revoke calendar tokens", "user_id", userID, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to revoke calendar tokens", h.logger)
+		return
+	}
+
+	h.logger.InfoContext(r.Context(), "Revoked all calendar tokens", "user_id", userID)
+	
+	response := map[string]string{
+		"message": "All calendar feed tokens have been revoked successfully",
+		"status":  "revoked",
+	}
+	
+	RespondWithJSON(w, http.StatusOK, response, h.logger)
+}
+
+// GetCalendarTokenInfo returns information about the user's calendar tokens
+// @Summary Get calendar token information
+// @Description Returns information about the user's current calendar tokens
+// @Tags calendar
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Token information"
+// @Failure 401 {object} ErrorResponse "Unauthorized - authentication required"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/calendar/token-info [get]
+func (h *CalendarHandler) GetCalendarTokenInfo(w http.ResponseWriter, r *http.Request) {
+	// Get the user ID from context (set by auth middleware)
+	userID, ok := r.Context().Value(UserIDKey).(int64)
+	if !ok {
+		h.logger.ErrorContext(r.Context(), "User ID not found in context")
+		RespondWithError(w, http.StatusUnauthorized, "User authentication required", h.logger)
+		return
+	}
+
+	// Get user's calendar tokens
+	tokens, err := h.querier.GetUserCalendarTokens(r.Context(), userID)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "Failed to fetch calendar tokens", "user_id", userID, "error", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to fetch token information", h.logger)
+		return
+	}
+
+	// Count active tokens
+	activeCount := 0
+	for _, token := range tokens {
+		if !token.IsRevoked.Bool && token.ExpiresAt.After(time.Now()) {
+			activeCount++
+		}
+	}
+
+	response := map[string]interface{}{
+		"total_tokens":  len(tokens),
+		"active_tokens": activeCount,
+		"has_active":    activeCount > 0,
+		"tokens": tokens, // Include full token info for admin purposes
+	}
+
+	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
 
 // Helper functions
@@ -178,10 +285,43 @@ func getBaseURL(r *http.Request) string {
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
-// isValidCalendarToken validates a calendar feed token
-// TODO: Implement proper token validation against database
-func isValidCalendarToken(userID int64, token string) bool {
-	// Placeholder implementation
-	// In production, validate against calendar_tokens table
-	return len(token) == 64 // Hex-encoded 32 bytes
+// validateCalendarToken validates a calendar feed token against the database
+func (h *CalendarHandler) validateCalendarToken(ctx context.Context, userID int64, token string) (bool, error) {
+	// Basic validation: ensure token is properly formatted
+	if len(token) != 64 {
+		return false, fmt.Errorf("invalid token format")
+	}
+	
+	// Hash the token to match against stored hash
+	tokenHash := hashToken(token)
+	
+	// Validate against database
+	validationResult, err := h.querier.ValidateCalendarToken(ctx, db.ValidateCalendarTokenParams{
+		UserID:    userID,
+		TokenHash: tokenHash,
+	})
+	if err != nil {
+		return false, err
+	}
+	
+	// Additional security check: ensure token belongs to the correct user
+	if validationResult.UserID != userID {
+		return false, fmt.Errorf("token user mismatch")
+	}
+	
+	return true, nil
+}
+
+// hashToken creates a SHA-256 hash of the token for secure storage
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 } 

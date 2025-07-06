@@ -87,7 +87,16 @@ export default defineConfig(({ mode: _mode }) => {
 							'/api': {
 								target: process.env.PUBLIC_API_BASE_URL || 'http://localhost:5888',
 								changeOrigin: true,
-								secure: false
+								secure: false,
+								configure: (proxy, options) => {
+									proxy.on('proxyRes', (proxyRes, req, res) => {
+										// Fix trailer handling for 204 responses
+										if (proxyRes.statusCode === 204) {
+											proxyRes.headers['content-length'] = '0';
+											delete proxyRes.headers['transfer-encoding'];
+										}
+									});
+								}
 							}
 						}
 		},

@@ -357,6 +357,8 @@ func main() {
 	// Calendar routes (require auth)
 	logger.Info("Registering calendar routes", "handler_nil", calendarAPIHandler == nil)
 	fuego.PostStd(protected, "/calendar/generate-token", calendarAPIHandler.GenerateCalendarFeedToken)
+	fuego.PostStd(protected, "/calendar/revoke-token", calendarAPIHandler.RevokeCalendarToken)
+	fuego.GetStd(protected, "/calendar/token-info", calendarAPIHandler.GetCalendarTokenInfo)
 	fuego.GetStd(publicAPI, "/calendar/user/{userId}/{token}", calendarAPIHandler.ServeCalendarFeed)
 	logger.Info("Calendar routes registered successfully")
 
