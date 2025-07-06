@@ -1,6 +1,6 @@
 services:
   night-owls-demo:
-    image: ghcr.io/fermain/night-owls-go:latest
+    image: ghcr.io/fermain/night-owls-go:${IMAGE_TAG:-latest}
     container_name: night-owls-demo
     restart: unless-stopped
     ports:
@@ -33,7 +33,7 @@ services:
 
   # Seed service - runs once to populate demo data
   night-owls-demo-seed:
-    image: ghcr.io/fermain/night-owls-go:latest
+    image: ghcr.io/fermain/night-owls-go:${IMAGE_TAG:-latest}
     container_name: night-owls-demo-seed
     depends_on:
       night-owls-demo:

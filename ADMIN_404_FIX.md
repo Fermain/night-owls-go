@@ -1,4 +1,4 @@
-# Admin 404 Fix - Production Deployment Guide
+# Production Deployment & Admin 404 Fix Guide
 
 ## Issue
 Admin pages returning 404 errors in production while regular owl-facing pages work fine.
@@ -61,8 +61,49 @@ Moved admin authentication from server-side to client-side in `app/src/routes/ad
 - Monitor for 404s on admin routes
 - Watch for authentication failures
 
+## Docker Tag Issue Fix
+
+### Problem with `:latest` Tag
+The `:latest` tag can become stale due to:
+- Registry caching delays
+- Tag propagation timing
+- Multiple builds overwriting the same tag
+
+### Solution: Specific Version Tags
+- Docker Compose now uses `${IMAGE_TAG:-latest}` environment variable
+- Deployment workflow uses specific version tags (e.g., `2025.07.1`)
+- Added retry logic for image pulls
+- Fallback to `:latest` if `IMAGE_TAG` not set
+
+### Manual Deployment
+```bash
+# Deploy specific version
+./scripts/deploy.sh 2025.07.1
+
+# Deploy to demo
+./scripts/deploy.sh 2025.07.1 --demo
+
+# Check current status
+./scripts/deploy.sh --status
+
+# See available versions
+./scripts/deploy.sh --rollback
+```
+
+### Production Commands
+```bash
+# Deploy with specific tag
+IMAGE_TAG=2025.07.1 docker compose up -d --force-recreate
+
+# Check running version
+docker inspect night-owls-go --format='{{index .Config.Image}}'
+
+# View logs
+docker compose logs night-owls --tail=50
+```
+
 ## Rollback Plan
 If issues persist:
-1. Revert commit: `git revert dd677ff`
-2. Rebuild and redeploy
+1. Revert to previous working version: `./scripts/deploy.sh 2025.07.0`
+2. Or revert commits: `git revert dd677ff`
 3. Consider enabling SSR temporarily
