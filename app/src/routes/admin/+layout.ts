@@ -1,6 +1,14 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, isRedirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 import { browser } from '$app/environment';
+
+/**
+ * Helper function to redirect to login with full URL preservation
+ */
+function redirectToLogin(url: URL): never {
+	const redirectUrl = url.pathname + url.search + url.hash;
+	throw redirect(302, '/login?redirect=' + encodeURIComponent(redirectUrl));
+}
 
 // With SSR disabled, we need client-side authentication
 export const load: LayoutLoad = async ({ fetch, url }) => {
@@ -20,7 +28,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 		if (!response.ok) {
 			// Invalid token - redirect to login
-			throw redirect(302, '/login?redirect=' + encodeURIComponent(url.pathname));
+			redirectToLogin(url);
 		}
 
 		const user = await response.json();
@@ -41,12 +49,12 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 			}
 		};
 	} catch (error) {
-		// If it's already a redirect, throw it
-		if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
+		// If it's already a redirect, re-throw it
+		if (isRedirect(error)) {
 			throw error;
 		}
 
 		// Network error or invalid response - redirect to login
-		throw redirect(302, '/login?redirect=' + encodeURIComponent(url.pathname));
+		redirectToLogin(url);
 	}
 };
