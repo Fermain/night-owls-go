@@ -147,7 +147,7 @@ func GenerateBookingICS(booking db.Booking, scheduleName string) ICSData {
 	return ICSData{
 		Filename: filename,
 		Content:  content,
-		MIME:     "text/calendar",
+		MIME:     "text/calendar; charset=utf-8",
 	}
 }
 
@@ -159,7 +159,7 @@ func GenerateUserCalendarFeed(bookings []db.ListBookingsByUserIDWithScheduleRow,
 		return ICSData{
 			Filename: fmt.Sprintf("night-owls-calendar-%d.ics", userID),
 			Content:  content,
-			MIME:     "text/calendar",
+			MIME:     "text/calendar; charset=utf-8",
 		}
 	}
 	

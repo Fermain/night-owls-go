@@ -110,15 +110,15 @@ func (h *CalendarHandler) GenerateCalendarFeedToken(w http.ResponseWriter, r *ht
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Router /api/calendar/user/{userId}/{token} [get]
 func (h *CalendarHandler) ServeCalendarFeed(w http.ResponseWriter, r *http.Request) {
-	// Parse URL path to extract userID and token
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 5 {
+	// Extract userID and token using Go 1.22's PathValue
+	userIDStr := r.PathValue("userId")
+	token := r.PathValue("token")
+
+	if userIDStr == "" || token == "" {
+		h.logger.WarnContext(r.Context(), "Missing path parameters in calendar feed request", "user_id", userIDStr, "token_present", token != "")
 		RespondWithError(w, http.StatusBadRequest, "Invalid calendar feed URL", h.logger)
 		return
 	}
-
-	userIDStr := pathParts[3] // api/calendar/user/{userId}/{token}
-	token := pathParts[4]    // No .ics extension to trim
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil || userID <= 0 {
