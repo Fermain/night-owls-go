@@ -38,8 +38,8 @@ func TestGenerateBookingICS(t *testing.T) {
 	}
 	
 	// Verify MIME type
-	if icsData.MIME != "text/calendar" {
-		t.Errorf("Expected MIME type text/calendar, got %s", icsData.MIME)
+	if icsData.MIME != "text/calendar; charset=utf-8" {
+		t.Errorf("Expected MIME type text/calendar; charset=utf-8, got %s", icsData.MIME)
 	}
 	
 	// Verify ICS content structure
