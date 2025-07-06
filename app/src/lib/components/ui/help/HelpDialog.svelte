@@ -47,25 +47,27 @@
 						<h4 class="font-medium text-sm mb-2">Viewing Available Shifts</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
 							<li>Access the main dashboard to view all available patrol shifts</li>
-							<li>Shifts display date, time, duration, and required number of volunteers</li>
-							<li>Green indicators show available slots, yellow shows partial booking</li>
+							<li>Shifts display date, time, schedule name, and booking status</li>
+							<li>Open shifts show "Open shift" text, assigned shifts show volunteer names</li>
+							<li>Use calendar view to see shifts organized by date</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Booking Process</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Click "Book" on any available shift slot</li>
-							<li>Confirm your booking in the dialog that appears</li>
-							<li>Booked shifts appear in "My Shifts" section on dashboard</li>
-							<li>You will be automatically paired with other volunteers when applicable</li>
+							<li>Click "Commit" on any available shift slot</li>
+							<li>Optionally add a buddy name in the booking dialog</li>
+							<li>Confirm your booking to receive confirmation</li>
+							<li>Booked shifts appear in "My Shifts" section with check-in options</li>
+							<li>Bulk assignment available for multiple shifts</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Cancellation Policy</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Cancel bookings from "My Shifts" section</li>
+							<li>Cancel bookings by clicking "X" button on your shift cards</li>
 							<li>Cancellations must be made at least 2 hours before shift start</li>
-							<li>Emergency cancellations: use Emergency button to contact coordinators</li>
+							<li>Emergency cancellations: contact coordinators via Emergency Contacts</li>
 						</ul>
 					</div>
 				</div>
@@ -81,20 +83,20 @@
 					<div>
 						<h4 class="font-medium text-sm mb-2">Standard Check-in</h4>
 						<ol class="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-							<li>Arrive at your designated patrol area</li>
-							<li>Tap "Check In" button on your shift card</li>
-							<li>Allow GPS location access when prompted</li>
-							<li>System validates you are within the patrol zone</li>
-							<li>Check-in confirmation appears with timestamp</li>
+							<li>Navigate to your upcoming shift on the dashboard</li>
+							<li>Click "Check In" button when check-in window opens</li>
+							<li>Receive immediate check-in confirmation with timestamp</li>
+							<li>10 points automatically awarded for successful check-in</li>
 						</ol>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Check-in Requirements</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Must be within 100 meters of designated patrol area</li>
-							<li>GPS location services must be enabled</li>
 							<li>Check-in window opens 30 minutes before shift start</li>
-							<li>Late check-ins (>15 minutes) are flagged for coordinator review</li>
+							<li>No GPS location verification required for check-in</li>
+							<li>Early check-in (15+ minutes before start): +3 bonus points</li>
+							<li>Weekend/holiday shifts: +5 bonus points automatically applied</li>
+							<li>Late night shifts (22:00-05:00): +3 bonus points</li>
 						</ul>
 					</div>
 				</div>
@@ -110,31 +112,36 @@
 					<div>
 						<h4 class="font-medium text-sm mb-2">Creating Reports</h4>
 						<ol class="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-							<li>Tap "Report" button in header or on shift card</li>
-							<li>Select severity level: Low, Medium, or High</li>
-							<li>Provide detailed description of incident or observation</li>
-							<li>GPS coordinates are automatically captured</li>
-							<li>Submit report for coordinator review</li>
+							<li>Access "Report" button from header navigation or shift card</li>
+							<li>Select severity level: Normal (0), Suspicion (1), or Incident (2)</li>
+							<li>Provide detailed description in the message field</li>
+							<li>GPS coordinates captured automatically if location services enabled</li>
+							<li>Submit report to receive 5 base points + completion points</li>
 						</ol>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Severity Guidelines</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li><strong>Low:</strong> Routine observations, minor issues, general notes</li>
 							<li>
-								<strong>Medium:</strong> Suspicious activity, property damage, noise complaints
+								<strong>Normal (0):</strong> Routine patrol notes, minor observations, general shift
+								completion
 							</li>
 							<li>
-								<strong>High:</strong> Safety threats, criminal activity, emergency situations
+								<strong>Suspicion (1):</strong> General incidents, noise complaints, suspicious activity
+							</li>
+							<li>
+								<strong>Incident (2):</strong> Security threats, property damage, immediate attention
+								needed (+10 bonus points)
 							</li>
 						</ul>
 					</div>
 					<div>
-						<h4 class="font-medium text-sm mb-2">Off-Shift Reporting</h4>
+						<h4 class="font-medium text-sm mb-2">Report Completion</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Reports can be submitted anytime, not just during shifts</li>
-							<li>Use "Off-Shift Report" option for incidents outside patrol hours</li>
-							<li>Include approximate time and date of incident</li>
+							<li>Submitting a report marks your shift as completed</li>
+							<li>15 completion points awarded in addition to report points</li>
+							<li>Shift count increases, contributing toward achievement progress</li>
+							<li>Off-shift reports can be submitted anytime without a booking</li>
 						</ul>
 					</div>
 				</div>
@@ -148,20 +155,27 @@
 				</h3>
 				<div class="ml-7 space-y-3">
 					<div>
-						<h4 class="font-medium text-sm mb-2">Emergency Button</h4>
+						<h4 class="font-medium text-sm mb-2">Emergency Contacts</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Red Emergency button is always visible in application header</li>
-							<li>Displays current emergency coordinator contact information</li>
-							<li>Shows backup contacts if primary coordinator unavailable</li>
-							<li>GPS coordinates shared automatically when emergency button is accessed</li>
+							<li>Access Emergency Contacts dialog from application navigation</li>
+							<li>Default contact: RUSA (086 123 4333) - Private Security Response Unit</li>
+							<li>Secondary contacts include SAPS (10111) and ER24 (084 124)</li>
+							<li>Contacts cached offline for access without internet connection</li>
+							<li>Tap any contact to initiate direct phone call</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Critical Situations</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>For life-threatening emergencies: Call 10111 (SAPS) immediately</li>
-							<li>Use Emergency button for community-specific coordination needs</li>
-							<li>Emergency contacts have direct line to security response teams</li>
+							<li>
+								For life-threatening emergencies: Call RUSA, SAPS (10111), and alert emergency
+								WhatsApp groups
+							</li>
+							<li>Community ensures both SAPS and RUSA response on site</li>
+							<li>For security incidents: Contact RUSA via Emergency Contacts</li>
+							<li>
+								Use Incident (Level 2) reports for urgent situations requiring coordination response
+							</li>
 						</ul>
 					</div>
 				</div>
@@ -180,24 +194,24 @@
 						<h4 class="font-medium text-sm mb-2">Point Values</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
 							<li>Shift check-in: 10 points</li>
-							<li>Shift completion: 15 points</li>
+							<li>Shift completion (via report): 15 points</li>
 							<li>Incident report submission: 5 points</li>
-							<li>Detailed incident reports: +5 bonus points</li>
+							<li>Level 2 (Incident) reports: +10 bonus points</li>
 							<li>Early check-in (15+ minutes): +3 bonus points</li>
-							<li>Weekend/holiday shifts: +5 bonus points</li>
+							<li>Weekend shifts: +5 bonus points</li>
+							<li>Late night shifts (22:00-05:00): +3 bonus points</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Achievement Levels</h4>
 						<div class="flex gap-2 flex-wrap mb-2">
-							<Badge variant="secondary">🐣 Owlet (25 pts)</Badge>
-							<Badge variant="secondary">🦉 Solid Owl (500 pts)</Badge>
-							<Badge variant="secondary">🦅 Wise Owl (1,250 pts)</Badge>
-							<Badge variant="secondary">🐉 Super Owl (2,500 pts)</Badge>
+							<Badge variant="secondary">🐣 Owlet (1 shift)</Badge>
+							<Badge variant="secondary">🦉 Solid Owl (20 shifts)</Badge>
+							<Badge variant="secondary">🦅 Wise Owl (50 shifts)</Badge>
+							<Badge variant="secondary">🐉 Super Owl (100 shifts)</Badge>
 						</div>
 						<p class="text-sm text-muted-foreground">
-							Achievement badges are displayed on your profile and visible in community
-							leaderboards.
+							Achievement badges based on completed shift count. View progress on Leaderboard page.
 						</p>
 					</div>
 				</div>
@@ -215,27 +229,27 @@
 					<div>
 						<h4 class="font-medium text-sm mb-2">Device Requirements</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>GPS-enabled smartphone or tablet</li>
-							<li>Internet connection (cellular or Wi-Fi)</li>
-							<li>Modern web browser (Chrome, Safari, Firefox, Edge)</li>
-							<li>Location services enabled for this application</li>
+							<li>Smartphone or tablet with modern web browser</li>
+							<li>Internet connection for real-time functionality</li>
+							<li>Location services optional (for incident report GPS data)</li>
+							<li>Browser compatibility: Chrome, Safari, Firefox, Edge</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Offline Functionality</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>Application data cached for offline viewing</li>
-							<li>Check-ins and reports queued when offline</li>
-							<li>Automatic synchronization when connection restored</li>
-							<li>Emergency contacts accessible offline</li>
+							<li>Emergency contacts cached for offline access</li>
+							<li>Incident reports queued when offline, sync automatically</li>
+							<li>Shift information cached for recent viewing</li>
+							<li>Check-ins require internet connection</li>
 						</ul>
 					</div>
 					<div>
 						<h4 class="font-medium text-sm mb-2">Data Privacy</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-							<li>GPS data used only for shift verification and incident reporting</li>
+							<li>GPS data only captured for incident reports when location services enabled</li>
 							<li>Personal information limited to community coordinators</li>
-							<li>All communications encrypted in transit</li>
+							<li>All communications encrypted using secure protocols</li>
 							<li>Data retained according to community governance policies</li>
 						</ul>
 					</div>
