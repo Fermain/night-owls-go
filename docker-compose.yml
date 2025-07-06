@@ -1,6 +1,6 @@
 services:
   night-owls:
-    image: ghcr.io/fermain/night-owls-go:latest
+    image: ghcr.io/fermain/night-owls-go:${IMAGE_TAG:-latest}
     container_name: night-owls-go
     restart: unless-stopped
     ports:

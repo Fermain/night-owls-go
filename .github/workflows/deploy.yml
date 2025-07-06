@@ -39,6 +39,7 @@ jobs:
     outputs:
       image: ${{ steps.meta.outputs.tags }}
       digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.version.outputs.VERSION }}
       
     steps:
     - name: Checkout repository
@@ -178,11 +179,23 @@ jobs:
           echo "🔐 Logging in to registry..."
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          echo "📦 Pulling latest image..."
-          docker pull ${{ needs.build-and-push.outputs.image }}
+          echo "📦 Pulling specific version image..."
+          export IMAGE_TAG="${{ needs.build-and-push.outputs.version }}"
+          echo "Using image tag: $IMAGE_TAG"
           
-          echo "🚀 Starting application..."
-          docker compose up -d --force-recreate
+          # Verify image exists with retry logic
+          for i in {1..5}; do
+            if docker pull ghcr.io/fermain/night-owls-go:$IMAGE_TAG; then
+              echo "✅ Image pulled successfully"
+              break
+            else
+              echo "⚠️ Image pull failed, retrying... ($i/5)"
+              sleep 10
+            fi
+          done
+          
+          echo "🚀 Starting application with specific tag..."
+          IMAGE_TAG=$IMAGE_TAG docker compose up -d --force-recreate
           
           echo "⏳ Waiting for application..."
           sleep 15
@@ -277,10 +290,22 @@ jobs:
           echo ${{ secrets.CONTAINER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           echo "📦 Pulling demo image..."
-          docker pull ${{ needs.build-and-push.outputs.image }}
+          export IMAGE_TAG="${{ needs.build-and-push.outputs.version }}"
+          echo "Using demo image tag: $IMAGE_TAG"
           
-          echo "🚀 Starting demo instance..."
-          docker compose -f docker-compose.demo.yml up -d
+          # Verify demo image exists with retry logic
+          for i in {1..5}; do
+            if docker pull ghcr.io/fermain/night-owls-go:$IMAGE_TAG; then
+              echo "✅ Demo image pulled successfully"
+              break
+            else
+              echo "⚠️ Demo image pull failed, retrying... ($i/5)"
+              sleep 10
+            fi
+          done
+          
+          echo "🚀 Starting demo instance with specific tag..."
+          IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.demo.yml up -d
           
           echo "⏳ Waiting for demo startup..."
           sleep 10
@@ -296,7 +321,8 @@ jobs:
           cd ~/night-owls-go
           
           echo "🌱 Seeding demo database with fresh data..."
-          docker compose -f docker-compose.demo.yml run --rm night-owls-demo-seed
+          export IMAGE_TAG="${{ needs.build-and-push.outputs.version }}"
+          IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.demo.yml run --rm night-owls-demo-seed
           
           echo "✅ Demo data seeded successfully"
 
