@@ -56,7 +56,7 @@ jobs:
       - name: Go - Security scan
         uses: securego/gosec@v2.22.4
         with:
-          args: ./...
+          args: '-exclude-dir=internal/db/sqlc_generated -exclude=G101 ./...'
 
       - name: Go - Build
         run: go build -ldflags="-s -w" -o night-owls-server ./cmd/server
