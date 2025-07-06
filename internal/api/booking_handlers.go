@@ -439,10 +439,10 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 		}
 	}
 
-	// For 204 No Content, we manually set the status and don't return any content
-	c.Response().WriteHeader(http.StatusNoContent)
+	// Set the 204 No Content status using Fuego's method
+	c.SetStatus(http.StatusNoContent)
 
-	// Return nil with no error to prevent Fuego from trying to serialize anything
+	// Return nil with no error - Fuego will handle the empty response properly
 	return nil, nil
 }
 
