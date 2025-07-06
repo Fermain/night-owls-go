@@ -174,11 +174,15 @@ func (h *BookingHandler) CreateBookingFuego(c fuego.ContextWithBody[CreateBookin
 
 	// Get schedule name for audit logging
 	schedule, scheduleErr := h.querier.GetScheduleByID(c.Context(), req.ScheduleID)
+	var scheduleName string
 	if scheduleErr != nil {
 		h.logger.WarnContext(c.Context(), "Failed to get schedule for audit logging", "schedule_id", req.ScheduleID, "error", scheduleErr)
+		scheduleName = fmt.Sprintf("Unknown Schedule (ID: %d)", req.ScheduleID)
+	} else {
+		scheduleName = schedule.Name
 	}
 
-	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "start_time", req.StartTime, "user_id", userID)
+	h.logger.InfoContext(c.Context(), "Booking created successfully", "booking_id", booking.BookingID, "schedule_id", req.ScheduleID, "schedule_name", scheduleName, "start_time", req.StartTime, "user_id", userID)
 
 	// Log audit event for booking creation
 	ipAddress := c.Request().Header.Get("X-Forwarded-For")

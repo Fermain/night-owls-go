@@ -1,6 +1,9 @@
 /**
  * Calendar Integration Utilities for Night Owls Shift Bookings
  * Supports .ics generation, calendar URLs, and popular calendar app integration
+ *
+ * TODO: Extract shared calendar generation logic to avoid duplication with backend
+ * This frontend implementation should eventually use a shared library for consistency
  */
 
 import type { UserBooking } from '$lib/services/api/user';

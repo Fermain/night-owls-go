@@ -79,7 +79,11 @@ if command -v curl &> /dev/null; then
     # Try to check local development server
     if curl -s http://localhost:5888/api/health &>/dev/null; then
         echo "🔍 Local development server (http://localhost:5888):"
-        curl -s http://localhost:5888/api/health | jq -r '.build.version // "Version not available"' 2>/dev/null || echo "  Could not parse version"
+        if command -v jq &> /dev/null; then
+            curl -s http://localhost:5888/api/health | jq -r '.build.version // "Version not available"' 2>/dev/null || echo "  Could not parse version"
+        else
+            echo "  jq not available, skipping version parsing"
+        fi
     else
         echo "  Local development server not running"
     fi
@@ -87,7 +91,11 @@ if command -v curl &> /dev/null; then
     # Try to check production server
     if curl -s https://mm.nightowls.app/api/health &>/dev/null; then
         echo "🌐 Production server (https://mm.nightowls.app):"
-        curl -s https://mm.nightowls.app/api/health | jq -r '.build.version // "Version not available"' 2>/dev/null || echo "  Could not parse version"
+        if command -v jq &> /dev/null; then
+            curl -s https://mm.nightowls.app/api/health | jq -r '.build.version // "Version not available"' 2>/dev/null || echo "  Could not parse version"
+        else
+            echo "  jq not available, skipping version parsing"
+        fi
     else
         echo "  Production server not reachable"
     fi
