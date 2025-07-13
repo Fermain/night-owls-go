@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-	import { Trophy, Medal, Award, Target, TrendingUp, Users } from 'lucide-svelte';
+	import { Trophy, Medal, Award } from 'lucide-svelte';
 	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface LeaderboardEntry {
@@ -40,7 +37,6 @@
 
 	async function fetchLeaderboards() {
 		try {
-			// Fetch both leaderboards in parallel using authenticatedFetch
 			const [pointsRes, shiftsRes, statsRes] = await Promise.all([
 				authenticatedFetch('/api/leaderboard'),
 				authenticatedFetch('/api/leaderboard/shifts'),
@@ -60,13 +56,13 @@
 	function getRankIcon(rank: number) {
 		switch (rank) {
 			case 1:
-				return { icon: Trophy, class: 'text-yellow-600' };
+				return { icon: Trophy, class: 'text-yellow-500' };
 			case 2:
 				return { icon: Medal, class: 'text-gray-400' };
 			case 3:
 				return { icon: Award, class: 'text-amber-600' };
 			default:
-				return { icon: Target, class: 'text-muted-foreground' };
+				return null;
 		}
 	}
 
@@ -79,160 +75,121 @@
 			.slice(0, 2);
 	}
 
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString();
-	}
-
 	onMount(() => {
 		fetchLeaderboards();
 	});
 </script>
 
-<div class="space-y-6">
-	<!-- Header with User Stats -->
+<div class="space-y-4">
+	<!-- Your Stats - Compact -->
 	{#if userStats}
-		<Card>
-			<CardHeader>
-				<CardTitle class="flex items-center gap-2">
-					<TrendingUp class="h-5 w-5" />
-					Your Performance
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div class="grid grid-cols-3 gap-4 text-center">
-					<div>
-						<div class="text-2xl font-bold text-primary">{userStats.total_points}</div>
-						<div class="text-sm text-muted-foreground">Total Points</div>
-					</div>
-					<div>
-						<div class="text-2xl font-bold text-primary">{userStats.shift_count}</div>
-						<div class="text-sm text-muted-foreground">Shifts Completed</div>
-					</div>
-					<div>
-						<div class="text-2xl font-bold text-primary">#{userStats.rank}</div>
-						<div class="text-sm text-muted-foreground">Current Rank</div>
-					</div>
+		<div class="bg-muted/50 rounded-lg p-3">
+			<div class="grid grid-cols-3 gap-4 text-center">
+				<div>
+					<div class="text-lg font-bold">{userStats.total_points}</div>
+					<div class="text-xs text-muted-foreground">Points</div>
 				</div>
-			</CardContent>
-		</Card>
+				<div>
+					<div class="text-lg font-bold">{userStats.shift_count}</div>
+					<div class="text-xs text-muted-foreground">Shifts</div>
+				</div>
+				<div>
+					<div class="text-lg font-bold">#{userStats.rank}</div>
+					<div class="text-xs text-muted-foreground">Rank</div>
+				</div>
+			</div>
+		</div>
 	{/if}
 
-	<!-- Tab Navigation -->
-	<div class="flex space-x-1 rounded-lg bg-muted p-1">
+	<!-- Tab Toggle - Minimal -->
+	<div class="flex rounded-lg bg-muted p-1">
 		<Button
 			variant={activeTab === 'points' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1"
+			class="flex-1 h-8"
 			onclick={() => (activeTab = 'points')}
 		>
-			<Trophy class="h-4 w-4 mr-2" />
-			Points Leaderboard
+			Points
 		</Button>
 		<Button
 			variant={activeTab === 'shifts' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1"
+			class="flex-1 h-8"
 			onclick={() => (activeTab = 'shifts')}
 		>
-			<Users class="h-4 w-4 mr-2" />
-			Shifts Leaderboard
+			Shifts
 		</Button>
 	</div>
 
-	<!-- Leaderboard Content -->
-	<Card>
-		<CardHeader>
-			<CardTitle class="flex items-center gap-2">
-				{#if activeTab === 'points'}
-					<Trophy class="h-5 w-5" />
-					Points Leaderboard
-				{:else}
-					<Users class="h-5 w-5" />
-					Shifts Leaderboard
-				{/if}
-			</CardTitle>
-		</CardHeader>
-		<CardContent>
-			{#if loading}
-				<div class="flex items-center justify-center py-8">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-				</div>
-			{:else if error}
-				<div class="text-center py-8 text-destructive">
-					{error}
-				</div>
-			{:else}
-				<div class="space-y-2">
-					{#each activeTab === 'points' ? pointsLeaderboard : shiftsLeaderboard as entry (entry.user_id)}
-						{@const rankInfo = getRankIcon(entry.rank)}
-						<div
-							class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-						>
-							<div class="flex items-center gap-3">
-								<div class="flex items-center justify-center w-8 h-8">
-									{#if entry.rank <= 3}
-										<svelte:component this={rankInfo.icon} class="h-5 w-5 {rankInfo.class}" />
-									{:else}
-										<span class="text-sm font-medium text-muted-foreground">#{entry.rank}</span>
-									{/if}
-								</div>
+	<!-- Leaderboard List - Compact -->
+	{#if loading}
+		<div class="flex justify-center py-8">
+			<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+		</div>
+	{:else if error}
+		<div class="text-center py-4 text-sm text-destructive">
+			{error}
+		</div>
+	{:else}
+		<div class="space-y-1">
+			{#each activeTab === 'points' ? pointsLeaderboard : shiftsLeaderboard as entry (entry.user_id)}
+				{@const rankInfo = getRankIcon(entry.rank)}
+				<div class="flex items-center gap-3 p-2 rounded-lg bg-background border">
+					<!-- Rank -->
+					<div class="w-8 flex justify-center">
+						{#if rankInfo}
+							<svelte:component this={rankInfo.icon} class="h-4 w-4 {rankInfo.class}" />
+						{:else}
+							<span class="text-sm font-medium text-muted-foreground">#{entry.rank}</span>
+						{/if}
+					</div>
 
-								<Avatar class="h-10 w-10">
-									<AvatarFallback>
-										{getInitials(entry.name)}
-									</AvatarFallback>
-								</Avatar>
+					<!-- Avatar -->
+					<div
+						class="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-medium"
+					>
+						{getInitials(entry.name)}
+					</div>
 
-								<div>
-									<div class="font-medium">{entry.name}</div>
-									<div class="text-sm text-muted-foreground">
-										{activeTab === 'points'
-											? `${entry.shift_count} shifts`
-											: `${entry.total_points} points`}
-									</div>
-								</div>
-							</div>
-
-							<div class="text-right">
-								<div class="font-bold text-lg">
-									{activeTab === 'points' ? entry.total_points : entry.shift_count}
-								</div>
-								<div class="text-xs text-muted-foreground">
-									{activeTab === 'points' ? 'points' : 'shifts'}
-								</div>
-							</div>
+					<!-- Name & Stats -->
+					<div class="flex-1 min-w-0">
+						<div class="font-medium text-sm truncate">{entry.name}</div>
+						<div class="text-xs text-muted-foreground">
+							{activeTab === 'points'
+								? `${entry.shift_count} shifts`
+								: `${entry.total_points} points`}
 						</div>
-					{/each}
-				</div>
-			{/if}
-		</CardContent>
-	</Card>
+					</div>
 
-	<!-- Recent Achievements -->
+					<!-- Main Stat -->
+					<div class="text-right">
+						<div class="font-bold text-sm">
+							{activeTab === 'points' ? entry.total_points : entry.shift_count}
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Empty State -->
+		{#if (activeTab === 'points' ? pointsLeaderboard : shiftsLeaderboard).length === 0}
+			<div class="text-center py-8 text-sm text-muted-foreground">No data available</div>
+		{/if}
+	{/if}
+
+	<!-- Recent Achievements - Only if present -->
 	{#if userStats && userStats.recent_achievements && userStats.recent_achievements.length > 0}
-		<Card>
-			<CardHeader>
-				<CardTitle class="flex items-center gap-2">
-					<Award class="h-5 w-5" />
-					Recent Achievements
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div class="space-y-2">
-					{#each userStats.recent_achievements as achievement (achievement.achievement_id)}
-						<div class="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-							<div class="text-2xl">{achievement.icon}</div>
-							<div class="flex-1">
-								<div class="font-medium">{achievement.name}</div>
-								<div class="text-sm text-muted-foreground">{achievement.description}</div>
-							</div>
-							<Badge variant="secondary" class="text-xs">
-								{formatDate(achievement.earned_at)}
-							</Badge>
-						</div>
-					{/each}
+		<div class="space-y-2">
+			<h3 class="text-sm font-medium">Recent Achievements</h3>
+			{#each userStats.recent_achievements.slice(0, 3) as achievement (achievement.achievement_id)}
+				<div class="flex items-center gap-2 p-2 bg-muted/50 rounded">
+					<span class="text-lg">{achievement.icon}</span>
+					<div class="flex-1 min-w-0">
+						<div class="text-sm font-medium truncate">{achievement.name}</div>
+						<div class="text-xs text-muted-foreground truncate">{achievement.description}</div>
+					</div>
 				</div>
-			</CardContent>
-		</Card>
+			{/each}
+		</div>
 	{/if}
 </div>

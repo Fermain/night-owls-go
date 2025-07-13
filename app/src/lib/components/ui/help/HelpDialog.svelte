@@ -193,6 +193,7 @@
 					<div>
 						<h4 class="font-medium text-sm mb-2">Point Values</h4>
 						<ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+							<li>Shift commitment (signup): 5 points</li>
 							<li>Shift check-in: 10 points</li>
 							<li>Shift completion (via report): 15 points</li>
 							<li>Incident report submission: 5 points</li>
@@ -200,6 +201,7 @@
 							<li>Early check-in (15+ minutes): +3 bonus points</li>
 							<li>Weekend shifts: +5 bonus points</li>
 							<li>Late night shifts (22:00-05:00): +3 bonus points</li>
+							<li>Shift dropout (cancellation): -10 points</li>
 						</ul>
 					</div>
 					<div>

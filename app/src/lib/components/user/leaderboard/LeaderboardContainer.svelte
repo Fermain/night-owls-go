@@ -15,55 +15,55 @@
 	}
 </script>
 
-<div class="container mx-auto px-4 py-6 max-w-4xl">
-	<!-- Header -->
-	<div class="mb-8 text-center">
-		<h1 class="text-3xl font-bold text-foreground mb-2">Community Leaderboard</h1>
-		<p class="text-muted-foreground">Track your progress and compete with fellow Night Owls</p>
+<div class="container mx-auto px-4 py-4">
+	<!-- Header - Compact -->
+	<div class="mb-4">
+		<h1 class="text-xl font-bold mb-1">Leaderboard</h1>
+		<p class="text-sm text-muted-foreground">Community rankings and activity</p>
 	</div>
 
-	<!-- Tab Navigation -->
-	<div class="flex space-x-1 rounded-lg bg-muted p-1 mb-6">
+	<!-- Tab Navigation - Mobile Optimized -->
+	<div class="grid grid-cols-4 rounded-lg bg-muted p-1 mb-4">
 		<Button
 			variant={activeTab === 'leaderboard' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1 transition-all"
+			class="h-8 text-xs"
 			onclick={() => setActiveTab('leaderboard')}
 		>
-			<Trophy class="h-4 w-4 mr-2" />
-			Rankings
+			<Trophy class="h-3 w-3 mr-1" />
+			Ranks
 		</Button>
 		<Button
 			variant={activeTab === 'achievements' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1 transition-all"
+			class="h-8 text-xs"
 			onclick={() => setActiveTab('achievements')}
 		>
-			<Award class="h-4 w-4 mr-2" />
-			Achievements
+			<Award class="h-3 w-3 mr-1" />
+			Badges
 		</Button>
 		<Button
 			variant={activeTab === 'history' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1 transition-all"
+			class="h-8 text-xs"
 			onclick={() => setActiveTab('history')}
 		>
-			<History class="h-4 w-4 mr-2" />
+			<History class="h-3 w-3 mr-1" />
 			History
 		</Button>
 		<Button
 			variant={activeTab === 'activity' ? 'default' : 'ghost'}
 			size="sm"
-			class="flex-1 transition-all"
+			class="h-8 text-xs"
 			onclick={() => setActiveTab('activity')}
 		>
-			<Activity class="h-4 w-4 mr-2" />
-			Activity
+			<Activity class="h-3 w-3 mr-1" />
+			Feed
 		</Button>
 	</div>
 
 	<!-- Tab Content -->
-	<div class="transition-all duration-200">
+	<div>
 		{#if activeTab === 'leaderboard'}
 			<LeaderboardView />
 		{:else if activeTab === 'achievements'}
