@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     -o migrate-points ./cmd/migrate-points
 
 # Production image - use minimal distroless
-FROM alpine:latest
+FROM alpine:3.18
 
 # Install only essential runtime dependencies
 RUN apk --no-cache add ca-certificates sqlite tzdata wget

@@ -42,7 +42,7 @@ func (s *DispatcherService) ProcessPendingOutboxItems(ctx context.Context) (int,
 	pendingItems, err := s.querier.GetPendingOutboxItems(ctx, int64(s.cfg.OutboxBatchSize))
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get pending outbox items", "error", err)
-		return 0, 0
+		return 0, 1 // Increment errCount for fetch failure
 	}
 
 	if len(pendingItems) == 0 {

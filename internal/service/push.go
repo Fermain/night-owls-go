@@ -63,7 +63,8 @@ func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl
 			_ = resp.Body.Close()
 		}
 
-		if err != nil {
+		if err != nil || (resp != nil && (resp.StatusCode < 200 || resp.StatusCode >= 300)) {
+			if err == nil && resp != nil { err = fmt.Errorf("non-success status: %d", resp.StatusCode) }
 			s.logger.ErrorContext(ctx, "failed to send web push notification", "user_id", userID, "endpoint", sub.Endpoint, "error", err)
 			lastErr = err // Capture last error
 			// Clean up expired subscriptions
