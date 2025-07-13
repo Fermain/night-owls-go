@@ -177,7 +177,7 @@ func main() {
 
 	// Process outbox every 1 minute
 	_, err = cronScheduler.AddFunc("@every 1m", func() {
-		processed, errors := outboxDispatcherService.ProcessPendingOutboxMessages(context.Background())
+		processed, errors := outboxDispatcherService.ProcessPendingOutboxItems(context.Background())
 		if errors > 0 {
 			slog.Warn("Outbox dispatcher finished with errors", "processed_count", processed, "error_count", errors)
 		} else if processed > 0 {
@@ -216,6 +216,20 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to add report archiving job to cron", "error", err)
 		os.Exit(1)
+	}
+
+	// Add the ProcessPendingOutboxItems job
+	_, err = cronScheduler.AddFunc("@every 1m", func() {
+		ctx := context.Background()
+		processed, errCount := outboxDispatcherService.ProcessPendingOutboxItems(ctx)
+		if errCount > 0 {
+			slog.ErrorContext(ctx, "Failed to process some outbox items", "processed", processed, "errors", errCount)
+		} else {
+			slog.InfoContext(ctx, "Processed outbox items successfully", "count", processed)
+		}
+	})
+	if err != nil {
+		slog.ErrorContext(context.Background(), "Failed to schedule outbox processing job", "error", err)
 	}
 
 	cronScheduler.Start()
