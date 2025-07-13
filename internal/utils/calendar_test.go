@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -71,7 +72,8 @@ func TestGenerateBookingICS(t *testing.T) {
 		t.Error("ICS content missing expected location")
 	}
 
-	if !strings.Contains(content, "UID:nightowls-shift-12345@mm.nightowls.app") {
+	expectedUID := fmt.Sprintf("UID:nightowls-shift-12345@%s", CalendarDomain)
+	if !strings.Contains(content, expectedUID) {
 		t.Error("ICS content missing expected UID")
 	}
 
@@ -126,7 +128,7 @@ func TestBookingToCalendarEvent(t *testing.T) {
 		t.Errorf("Expected location 'Mount Moreland Community Watch Area', got %s", event.Location)
 	}
 
-	expectedUID := "nightowls-shift-12345@mm.nightowls.app"
+	expectedUID := fmt.Sprintf("nightowls-shift-12345@%s", CalendarDomain)
 	if event.UID != expectedUID {
 		t.Errorf("Expected UID %s, got %s", expectedUID, event.UID)
 	}

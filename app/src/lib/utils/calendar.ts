@@ -39,6 +39,11 @@ export interface CalendarProvider {
 
 // === CONSTANTS ===
 
+// Calendar domain constants
+const CALENDAR_DOMAIN = 'mm.nightowls.app';
+const CALENDAR_APP_URL = `https://${CALENDAR_DOMAIN}`;
+const CALENDAR_ORGANIZER_EMAIL = `noreply@${CALENDAR_DOMAIN}`;
+
 const CALENDAR_PROVIDERS = {
 	google: {
 		name: 'Google Calendar',
@@ -81,7 +86,7 @@ export function bookingToCalendarEvent(booking: UserBooking): CalendarEvent {
 
 	description += `\n📱 Check in on the Night Owls app when your shift starts`;
 	description += `\n🚨 Report any incidents through the app`;
-	description += `\n\n🔗 Night Owls App: ${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}`;
+	description += `\n\n🔗 Night Owls App: ${CALENDAR_APP_URL}`;
 
 	// Create attendees list
 	const attendees: CalendarEvent['attendees'] = [];
@@ -97,13 +102,13 @@ export function bookingToCalendarEvent(booking: UserBooking): CalendarEvent {
 		location: 'Mount Moreland Community Watch Area',
 		organizer: {
 			name: 'Night Owls Scheduler',
-			email: 'noreply@mm.nightowls.app'
+			email: CALENDAR_ORGANIZER_EMAIL
 		},
 		attendees,
 		reminder: {
 			minutes: 60 // 1 hour before shift
 		},
-		uid: `nightowls-shift-${booking.booking_id}@mm.nightowls.app`
+		uid: `nightowls-shift-${booking.booking_id}@${CALENDAR_DOMAIN}`
 	};
 }
 
