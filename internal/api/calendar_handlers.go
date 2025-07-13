@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"night-owls-go/internal/service"
@@ -82,8 +81,7 @@ func (h *CalendarHandler) GenerateCalendarFeedToken(w http.ResponseWriter, r *ht
 	// Build URLs
 	baseURL := getBaseURL(r)
 	feedURL := fmt.Sprintf("%s/api/calendar/user/%d/%s", baseURL, userID, token)
-	webCalURL := strings.Replace(feedURL, "https://", "webcal://", 1)
-	webCalURL = strings.Replace(webCalURL, "http://", "webcal://", 1)
+	webCalURL := feedURL // Use https:// directly instead of webcal:// for better compatibility
 
 	response := CalendarFeedResponse{
 		FeedURL:     feedURL,
