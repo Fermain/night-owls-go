@@ -108,7 +108,7 @@
 	// Format event description
 	function getEventDescription(event: AuditEvent): string {
 		const actor = event.userName || 'System';
-		const target = event.targetUserName;
+		const target = event.targetUserName || 'unknown user';
 
 		switch (event.eventType) {
 			case 'user.login':
@@ -249,13 +249,13 @@
 
 				<!-- Metadata -->
 				<div class="flex items-center gap-4 text-xs text-muted-foreground">
-					{#if event.ipAddress}
+					{#if event.ipAddress && event.ipAddress !== 'Unknown'}
 						<div class="flex items-center gap-1">
 							<MapPin class="h-3 w-3" />
 							<span>{event.ipAddress}</span>
 						</div>
 					{/if}
-					{#if event.userAgent}
+					{#if event.userAgent && event.userAgent !== 'Unknown'}
 						<div class="flex items-center gap-1">
 							<Monitor class="h-3 w-3" />
 							<span>{parseUserAgent(event.userAgent)}</span>
@@ -308,19 +308,19 @@
 									<div>
 										<h4 class="text-sm font-medium mb-2">User Information</h4>
 										<dl class="space-y-1 text-sm">
-											{#if event.userName}
+											{#if event.userName && event.userName !== 'Unknown'}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">Actor:</dt>
 													<dd>{event.userName}</dd>
 												</div>
 											{/if}
-											{#if event.targetUserName}
+											{#if event.targetUserName && event.targetUserName !== 'unknown user'}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">Target:</dt>
 													<dd>{event.targetUserName}</dd>
 												</div>
 											{/if}
-											{#if event.ipAddress}
+											{#if event.ipAddress && event.ipAddress !== 'Unknown'}
 												<div class="flex justify-between">
 													<dt class="text-muted-foreground">IP Address:</dt>
 													<dd class="font-mono">{event.ipAddress}</dd>

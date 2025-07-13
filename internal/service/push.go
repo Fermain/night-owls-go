@@ -56,26 +56,25 @@ func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl
 			TTL:             ttl,
 			Subscriber:      s.config.VAPIDSubject, // Typically an email address or URL
 		})
+		// Close response body to prevent resource leaks
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+
 		if err != nil {
 			s.logger.ErrorContext(ctx, "failed to send web push notification", "user_id", userID, "endpoint", sub.Endpoint, "error", err)
-			// Close response body to prevent resource leaks
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
-			}
-			if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
-				params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
-				if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
-					s.logger.ErrorContext(ctx, "failed to remove expired subscription", "user_id", userID, "endpoint", sub.Endpoint, "error", delErr)
-				} else {
-					s.logger.InfoContext(ctx, "removed expired push subscription", "user_id", userID, "endpoint", sub.Endpoint)
-				}
-			}
 		} else {
-			// Closing the response body is important to avoid resource leaks
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
-			}
 			s.logger.InfoContext(ctx, "web push notification sent successfully", "user_id", userID, "endpoint", sub.Endpoint, "status_code", resp.StatusCode)
+		}
+
+		// Clean up expired subscriptions (410 Gone, 404 Not Found)
+		if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
+			params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
+			if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
+				s.logger.ErrorContext(ctx, "failed to remove expired subscription", "user_id", userID, "endpoint", sub.Endpoint, "error", delErr)
+			} else {
+				s.logger.InfoContext(ctx, "removed expired push subscription", "user_id", userID, "endpoint", sub.Endpoint)
+			}
 		}
 	}
 }

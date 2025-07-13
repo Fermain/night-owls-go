@@ -1,19 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		History,
-		TrendingUp,
-		Calendar,
-		Plus,
-		Clock,
-		Star,
-		MapPin,
-		Moon,
-		Sun
-	} from 'lucide-svelte';
 	import { authenticatedFetch } from '$lib/utils/api';
 
 	interface PointsHistoryEntry {
@@ -23,6 +11,12 @@
 		reason: string;
 		multiplier: number;
 		awarded_at: string;
+	}
+
+	interface ReasonInfo {
+		label: string;
+		color: string;
+		description: string;
 	}
 
 	let pointsHistory: PointsHistoryEntry[] = [];
@@ -41,84 +35,61 @@
 		}
 	}
 
-	function getReasonInfo(reason: string) {
-		const reasonMap = {
+	function getReasonInfo(reason: string): ReasonInfo {
+		const reasonMap: Record<string, ReasonInfo> = {
 			shift_checkin: {
-				icon: Clock,
-				label: 'Shift Check-in',
-				description: 'Checked in to shift on time',
-				color: 'text-blue-600'
+				label: 'Check-in',
+				color: 'text-blue-600',
+				description: 'Shift check-in'
 			},
 			shift_completion: {
-				icon: Star,
-				label: 'Shift Completion',
-				description: 'Completed full shift with report',
-				color: 'text-green-600'
-			},
-			report_filed: {
-				icon: MapPin,
-				label: 'Report Filed',
-				description: 'Filed incident report',
-				color: 'text-orange-600'
+				label: 'Completion',
+				color: 'text-green-600',
+				description: 'Shift completed'
 			},
 			early_checkin: {
-				icon: Sun,
 				label: 'Early Check-in',
-				description: 'Checked in 15+ minutes early',
-				color: 'text-yellow-600'
-			},
-			level2_report: {
-				icon: TrendingUp,
-				label: 'Level 2 Report',
-				description: 'Reported serious incident',
-				color: 'text-red-600'
+				color: 'text-purple-600',
+				description: 'Early arrival bonus'
 			},
 			weekend_bonus: {
-				icon: Calendar,
 				label: 'Weekend Bonus',
-				description: 'Weekend shift completed',
-				color: 'text-purple-600'
+				color: 'text-orange-600',
+				description: 'Weekend shift'
 			},
 			late_night_bonus: {
-				icon: Moon,
-				label: 'Late Night Bonus',
-				description: 'Night shift (10 PM - 5 AM)',
-				color: 'text-indigo-600'
+				label: 'Night Bonus',
+				color: 'text-indigo-600',
+				description: 'Late night shift'
 			},
 			frequency_bonus: {
-				icon: TrendingUp,
 				label: 'Frequency Bonus',
-				description: 'Multiple shifts this month',
-				color: 'text-pink-600'
+				color: 'text-pink-600',
+				description: 'Multiple shifts'
+			},
+			level2_report: {
+				label: 'Incident Report',
+				color: 'text-red-600',
+				description: 'Serious incident reported'
+			},
+			report_filed: {
+				label: 'Report',
+				color: 'text-green-500',
+				description: 'Report filed'
 			}
 		};
-
 		return (
-			reasonMap[reason as keyof typeof reasonMap] || {
-				icon: Plus,
-				label: reason.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-				description: 'Points awarded',
-				color: 'text-gray-600'
+			reasonMap[reason] || {
+				label: 'Points',
+				color: 'text-gray-600',
+				description: 'Points awarded'
 			}
 		);
 	}
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		const diffDays = Math.floor(diffHours / 24);
-
-		if (diffHours < 1) {
-			return 'Just now';
-		} else if (diffHours < 24) {
-			return `${diffHours}h ago`;
-		} else if (diffDays < 7) {
-			return `${diffDays}d ago`;
-		} else {
-			return date.toLocaleDateString();
-		}
+		return date.toLocaleDateString();
 	}
 
 	function loadMore() {
@@ -135,172 +106,65 @@
 	});
 </script>
 
-<div class="space-y-6">
-	<!-- Summary Card -->
-	<Card>
-		<CardHeader>
-			<CardTitle class="flex items-center gap-2">
-				<History class="h-5 w-5" />
-				Points History Summary
-			</CardTitle>
-		</CardHeader>
-		<CardContent>
-			<div class="grid grid-cols-2 gap-4 text-center">
-				<div>
-					<div class="text-3xl font-bold text-primary">{getTotalPoints()}</div>
-					<div class="text-sm text-muted-foreground">Total Points Shown</div>
-				</div>
-				<div>
-					<div class="text-3xl font-bold text-primary">{pointsHistory.length}</div>
-					<div class="text-sm text-muted-foreground">Recent Activities</div>
-				</div>
-			</div>
-		</CardContent>
-	</Card>
+<div class="space-y-4">
+	<!-- Summary -->
+	<div class="grid grid-cols-2 gap-3">
+		<div class="bg-muted/50 rounded-lg p-3 text-center">
+			<div class="text-lg font-bold">{getTotalPoints()}</div>
+			<div class="text-xs text-muted-foreground">Total Points</div>
+		</div>
+		<div class="bg-muted/50 rounded-lg p-3 text-center">
+			<div class="text-lg font-bold">{pointsHistory.length}</div>
+			<div class="text-xs text-muted-foreground">Activities</div>
+		</div>
+	</div>
 
-	<!-- Points History List -->
-	<Card>
-		<CardHeader>
-			<CardTitle class="flex items-center gap-2">
-				<TrendingUp class="h-5 w-5" />
-				Recent Point Awards
-			</CardTitle>
-		</CardHeader>
-		<CardContent>
-			{#if loading}
-				<div class="flex items-center justify-center py-8">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-				</div>
-			{:else if error}
-				<div class="text-center py-8 text-destructive">
-					{error}
-				</div>
-			{:else if pointsHistory.length === 0}
-				<div class="text-center py-8 text-muted-foreground">
-					<History class="h-12 w-12 mx-auto mb-4 opacity-50" />
-					<p>No points history yet.</p>
-					<p class="text-sm">Check in to your first shift to start earning points!</p>
-				</div>
-			{:else}
-				<div class="space-y-3">
-					{#each pointsHistory as entry (entry.history_id)}
-						{@const reasonInfo = getReasonInfo(entry.reason)}
-						<div
-							class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-						>
-							<div class="flex items-center gap-3">
-								<div class="flex items-center justify-center w-10 h-10 rounded-full bg-background">
-									<svelte:component this={reasonInfo.icon} class="h-5 w-5 {reasonInfo.color}" />
-								</div>
+	<!-- Points History -->
+	{#if loading}
+		<div class="flex justify-center py-8">
+			<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+		</div>
+	{:else if error}
+		<div class="text-center py-4 text-sm text-destructive">
+			{error}
+		</div>
+	{:else if pointsHistory.length === 0}
+		<div class="text-center py-8 text-sm text-muted-foreground">No points history yet</div>
+	{:else}
+		<div class="space-y-2">
+			{#each pointsHistory as entry (entry.history_id)}
+				{@const reasonInfo = getReasonInfo(entry.reason)}
+				<div class="flex items-center gap-3 p-2 rounded-lg bg-background border">
+					<!-- Color indicator -->
+					<div class="w-3 h-3 rounded-full {reasonInfo.color.replace('text-', 'bg-')}"></div>
 
-								<div>
-									<div class="font-medium">{reasonInfo.label}</div>
-									<div class="text-sm text-muted-foreground">{reasonInfo.description}</div>
-									{#if entry.booking_id}
-										<div class="text-xs text-muted-foreground">Shift #{entry.booking_id}</div>
-									{/if}
-								</div>
-							</div>
+					<!-- Content -->
+					<div class="flex-1 min-w-0">
+						<div class="font-medium text-sm">{reasonInfo.label}</div>
+						<div class="text-xs text-muted-foreground">{formatDate(entry.awarded_at)}</div>
+						{#if entry.booking_id}
+							<div class="text-xs text-muted-foreground">Shift #{entry.booking_id}</div>
+						{/if}
+					</div>
 
-							<div class="text-right">
-								<div class="font-bold text-lg text-green-600">
-									+{entry.points_awarded}
-								</div>
-								<div class="text-xs text-muted-foreground">
-									{formatDate(entry.awarded_at)}
-								</div>
-								{#if entry.multiplier !== 1}
-									<Badge variant="secondary" class="text-xs mt-1">
-										{entry.multiplier}x multiplier
-									</Badge>
-								{/if}
-							</div>
+					<!-- Points -->
+					<div class="text-right">
+						<div class="font-bold text-sm {entry.points_awarded >= 0 ? 'text-green-600' : 'text-red-600'}">
+							{entry.points_awarded >= 0 ? '+' : ''}{entry.points_awarded}
 						</div>
-					{/each}
-				</div>
-
-				{#if pointsHistory.length >= limit}
-					<div class="text-center mt-6">
-						<Button variant="outline" onclick={loadMore} disabled={loading}>
-							Load More History
-						</Button>
-					</div>
-				{/if}
-			{/if}
-		</CardContent>
-	</Card>
-
-	<!-- Points Guide -->
-	<Card>
-		<CardHeader>
-			<CardTitle class="flex items-center gap-2">
-				<Star class="h-5 w-5" />
-				How You Earn Points
-			</CardTitle>
-		</CardHeader>
-		<CardContent>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-				<div class="space-y-3">
-					<div class="flex items-center gap-3">
-						<Clock class="h-4 w-4 text-blue-600" />
-						<div>
-							<div class="font-medium">Check-in (10 pts)</div>
-							<div class="text-muted-foreground">For checking in to your shift</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<Star class="h-4 w-4 text-green-600" />
-						<div>
-							<div class="font-medium">Completion (15 pts)</div>
-							<div class="text-muted-foreground">For completing shift with report</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<MapPin class="h-4 w-4 text-orange-600" />
-						<div>
-							<div class="font-medium">Report Filed (5 pts)</div>
-							<div class="text-muted-foreground">For filing any incident report</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<TrendingUp class="h-4 w-4 text-red-600" />
-						<div>
-							<div class="font-medium">Level 2 Report (+10 pts)</div>
-							<div class="text-muted-foreground">Extra for serious incidents</div>
-						</div>
+						{#if entry.multiplier !== 1}
+							<Badge variant="outline" class="text-xs py-0 px-1">
+								{entry.multiplier}x
+							</Badge>
+						{/if}
 					</div>
 				</div>
-				<div class="space-y-3">
-					<div class="flex items-center gap-3">
-						<Sun class="h-4 w-4 text-yellow-600" />
-						<div>
-							<div class="font-medium">Early Check-in (+3 pts)</div>
-							<div class="text-muted-foreground">15+ minutes before shift</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<Calendar class="h-4 w-4 text-purple-600" />
-						<div>
-							<div class="font-medium">Weekend Bonus (+5 pts)</div>
-							<div class="text-muted-foreground">Saturday/Sunday shifts</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<Moon class="h-4 w-4 text-indigo-600" />
-						<div>
-							<div class="font-medium">Late Night (+3 pts)</div>
-							<div class="text-muted-foreground">Shifts between 10 PM - 5 AM</div>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<TrendingUp class="h-4 w-4 text-pink-600" />
-						<div>
-							<div class="font-medium">Frequency Bonus (+10 pts)</div>
-							<div class="text-muted-foreground">Multiple shifts per month</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</CardContent>
-	</Card>
+			{/each}
+		</div>
+
+		<!-- Load More -->
+		<div class="text-center pt-2">
+			<Button variant="outline" size="sm" onclick={loadMore} class="w-full">Load More</Button>
+		</div>
+	{/if}
 </div>

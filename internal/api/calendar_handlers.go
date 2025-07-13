@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"night-owls-go/internal/service"
@@ -63,10 +62,10 @@ func (h *CalendarHandler) GenerateCalendarFeedToken(w http.ResponseWriter, r *ht
 
 	// Store token in database with proper hashing
 	expiresAt := time.Now().Add(365 * 24 * time.Hour) // 1 year expiry
-	
+
 	// Hash the token before storing (never store plain tokens)
 	tokenHash := hashToken(token)
-	
+
 	// Store token in database
 	_, err = h.querier.CreateCalendarToken(r.Context(), db.CreateCalendarTokenParams{
 		UserID:    userID,
@@ -78,12 +77,11 @@ func (h *CalendarHandler) GenerateCalendarFeedToken(w http.ResponseWriter, r *ht
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create calendar feed token", h.logger)
 		return
 	}
-	
+
 	// Build URLs
 	baseURL := getBaseURL(r)
 	feedURL := fmt.Sprintf("%s/api/calendar/user/%d/%s", baseURL, userID, token)
-	webCalURL := strings.Replace(feedURL, "https://", "webcal://", 1)
-	webCalURL = strings.Replace(webCalURL, "http://", "webcal://", 1)
+	webCalURL := feedURL // Use https:// directly instead of webcal:// for better compatibility
 
 	response := CalendarFeedResponse{
 		FeedURL:     feedURL,
@@ -130,14 +128,14 @@ func (h *CalendarHandler) ServeCalendarFeed(w http.ResponseWriter, r *http.Reque
 	// Validate token against database
 	validToken, err := h.validateCalendarToken(r.Context(), userID, token)
 	if err != nil || !validToken {
-		h.logger.WarnContext(r.Context(), "Invalid calendar feed token", 
-			"user_id", userID, 
+		h.logger.WarnContext(r.Context(), "Invalid calendar feed token",
+			"user_id", userID,
 			"token_prefix", token[:min(8, len(token))]+"...",
 			"error", err)
 		RespondWithError(w, http.StatusNotFound, "Invalid calendar feed", h.logger)
 		return
 	}
-	
+
 	// Update access tracking
 	tokenHash := hashToken(token)
 	if updateErr := h.querier.UpdateTokenAccess(r.Context(), tokenHash); updateErr != nil {
@@ -163,7 +161,7 @@ func (h *CalendarHandler) ServeCalendarFeed(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Expires", "0")
 
 	h.logger.InfoContext(r.Context(), "Served calendar feed", "user_id", userID, "booking_count", len(bookings))
-	
+
 	// Write calendar content
 	w.WriteHeader(http.StatusOK)
 	_, writeErr := w.Write([]byte(calendarData.Content))
@@ -200,12 +198,12 @@ func (h *CalendarHandler) RevokeCalendarToken(w http.ResponseWriter, r *http.Req
 	}
 
 	h.logger.InfoContext(r.Context(), "Revoked all calendar tokens", "user_id", userID)
-	
+
 	response := map[string]string{
 		"message": "All calendar feed tokens have been revoked successfully",
 		"status":  "revoked",
 	}
-	
+
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
 }
 
@@ -248,7 +246,7 @@ func (h *CalendarHandler) GetCalendarTokenInfo(w http.ResponseWriter, r *http.Re
 		"total_tokens":  len(tokens),
 		"active_tokens": activeCount,
 		"has_active":    activeCount > 0,
-		"tokens": tokens, // Include full token info for admin purposes
+		"tokens":        tokens, // Include full token info for admin purposes
 	}
 
 	RespondWithJSON(w, http.StatusOK, response, h.logger)
@@ -271,17 +269,17 @@ func getBaseURL(r *http.Request) string {
 	if r.TLS == nil {
 		scheme = "http"
 	}
-	
+
 	// Check for forwarded headers in case of reverse proxy
 	if forwardedProto := r.Header.Get("X-Forwarded-Proto"); forwardedProto != "" {
 		scheme = forwardedProto
 	}
-	
+
 	host := r.Host
 	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
 		host = forwardedHost
 	}
-	
+
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
@@ -291,10 +289,10 @@ func (h *CalendarHandler) validateCalendarToken(ctx context.Context, userID int6
 	if len(token) != 64 {
 		return false, fmt.Errorf("invalid token format")
 	}
-	
+
 	// Hash the token to match against stored hash
 	tokenHash := hashToken(token)
-	
+
 	// Validate against database
 	validationResult, err := h.querier.ValidateCalendarToken(ctx, db.ValidateCalendarTokenParams{
 		UserID:    userID,
@@ -303,12 +301,12 @@ func (h *CalendarHandler) validateCalendarToken(ctx context.Context, userID int6
 	if err != nil {
 		return false, err
 	}
-	
+
 	// Additional security check: ensure token belongs to the correct user
 	if validationResult.UserID != userID {
 		return false, fmt.Errorf("token user mismatch")
 	}
-	
+
 	return true, nil
 }
 
@@ -324,4 +322,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-} 
+}

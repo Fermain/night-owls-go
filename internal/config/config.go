@@ -52,7 +52,7 @@ const (
 func (c *Config) ValidateSecurityConfig() error {
 	// Create a simple logger for security warnings during startup
 	logger := slog.Default()
-	
+
 	// Check for default JWT secret - use constant-time comparison to prevent timing attacks
 	if subtle.ConstantTimeCompare([]byte(c.JWTSecret), []byte(DefaultJWTSecret)) == 1 {
 		if isProductionEnvironment() {
@@ -83,15 +83,15 @@ func isProductionEnvironment() bool {
 	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
 	goEnv := strings.ToLower(os.Getenv("GO_ENV"))
 	nodeEnv := strings.ToLower(os.Getenv("NODE_ENV"))
-	
+
 	// Check common production environment indicators
 	return env == "production" || env == "prod" ||
-		   goEnv == "production" || goEnv == "prod" ||
-		   nodeEnv == "production" || nodeEnv == "prod" ||
-		   os.Getenv("RAILWAY_ENVIRONMENT") == "production" ||
-		   os.Getenv("VERCEL_ENV") == "production" ||
-		   os.Getenv("HEROKU_APP_NAME") != "" ||
-		   os.Getenv("PORT") != "" // Common production indicator
+		goEnv == "production" || goEnv == "prod" ||
+		nodeEnv == "production" || nodeEnv == "prod" ||
+		os.Getenv("RAILWAY_ENVIRONMENT") == "production" ||
+		os.Getenv("VERCEL_ENV") == "production" ||
+		os.Getenv("HEROKU_APP_NAME") != "" ||
+		os.Getenv("PORT") != "" // Common production indicator
 }
 
 // LoadConfig loads configuration from environment variables
@@ -108,7 +108,7 @@ func LoadConfig() (*Config, error) {
 		LogFormat:            "json", // Default log format
 
 		JWTExpirationHours: 336, // Default 2 weeks (336 hours) - configurable via JWT_EXPIRATION_HOURS env var
-		OTPValidityMinutes: 5,  // Default 5 minutes
+		OTPValidityMinutes: 5,   // Default 5 minutes
 		// OTPLength:          6,     // Default 6 digits (if we make it configurable)
 		OutboxBatchSize:  10, // Default 10 messages per batch
 		OutboxMaxRetries: 3,  // Default 3 retries

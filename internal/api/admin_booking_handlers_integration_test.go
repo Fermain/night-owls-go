@@ -175,7 +175,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 	// Admin routes
 	router.Route("/api/admin", func(r chi.Router) {
 		r.Use(api.AuthMiddleware(cfg, logger, createTestSessionStore())) // Apply AuthMiddleware to all admin routes
-		r.Use(api.AdminMiddleware(logger))     // Apply AdminMiddleware to require admin role
+		r.Use(api.AdminMiddleware(logger))                               // Apply AdminMiddleware to require admin role
 
 		// Admin Schedules
 		r.Route("/schedules", func(sr chi.Router) {

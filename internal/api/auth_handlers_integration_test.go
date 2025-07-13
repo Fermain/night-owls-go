@@ -327,7 +327,7 @@ func TestAuthEndpoints_ValidateToken_Success(t *testing.T) {
 	var validateResp map[string]interface{}
 	err = json.Unmarshal(rr.Body.Bytes(), &validateResp)
 	require.NoError(t, err)
-	
+
 	assert.NotEmpty(t, validateResp["id"])
 	assert.Equal(t, phone, validateResp["phone"])
 	assert.Equal(t, userName, validateResp["name"])

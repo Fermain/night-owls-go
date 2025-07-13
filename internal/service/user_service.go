@@ -32,15 +32,15 @@ type JWTGenerator func(userID int64, phone string, name string, role string, sec
 
 // UserService handles user registration, login, and OTP verification.
 type UserService struct {
-	querier           db.Querier // From sqlc
-	otpStore          auth.OTPStore
-	twilioOTP         *otp.Client // Twilio OTP client for real SMS
-	jwtSecret         string
-	otpLogPath        string
-	logger            *slog.Logger
-	cfg               *config.Config
-	jwtGenerator      JWTGenerator // Function for JWT generation, allows mocking in tests
-	otpRateLimitSvc   *OTPRateLimitingService // Rate limiting service
+	querier         db.Querier // From sqlc
+	otpStore        auth.OTPStore
+	twilioOTP       *otp.Client // Twilio OTP client for real SMS
+	jwtSecret       string
+	otpLogPath      string
+	logger          *slog.Logger
+	cfg             *config.Config
+	jwtGenerator    JWTGenerator            // Function for JWT generation, allows mocking in tests
+	otpRateLimitSvc *OTPRateLimitingService // Rate limiting service
 }
 
 // NewUserService creates a new UserService.
@@ -59,15 +59,15 @@ func NewUserService(querier db.Querier, otpStore auth.OTPStore, cfg *config.Conf
 	otpRateLimitSvc := NewOTPRateLimitingService(querier, logger)
 
 	return &UserService{
-		querier:           querier,
-		otpStore:          otpStore,
-		twilioOTP:         twilioOTP,
-		jwtSecret:         cfg.JWTSecret,
-		otpLogPath:        cfg.OTPLogPath,
-		logger:            logger.With("service", "UserService"),
-		cfg:               cfg,
-		jwtGenerator:      auth.GenerateJWT, // Use the real implementation by default
-		otpRateLimitSvc:   otpRateLimitSvc,
+		querier:         querier,
+		otpStore:        otpStore,
+		twilioOTP:       twilioOTP,
+		jwtSecret:       cfg.JWTSecret,
+		otpLogPath:      cfg.OTPLogPath,
+		logger:          logger.With("service", "UserService"),
+		cfg:             cfg,
+		jwtGenerator:    auth.GenerateJWT, // Use the real implementation by default
+		otpRateLimitSvc: otpRateLimitSvc,
 	}
 }
 
@@ -95,7 +95,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 	if userAgent == "" {
 		userAgent = "unknown"
 	}
-	
+
 	// Check registration rate limits first
 	if err := s.otpRateLimitSvc.CheckRegistrationRateLimit(ctx, phone, clientIP); err != nil {
 		s.logger.WarnContext(ctx, "Registration attempt blocked by rate limiting", "phone", phone, "error", err)
@@ -109,7 +109,7 @@ func (s *UserService) RegisterOrLoginUser(ctx context.Context, phone string, nam
 
 	user, err := s.querier.GetUserByPhone(ctx, phone)
 	registrationSuccess := false // Track if registration/login was successful
-	
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// User does not exist
@@ -239,7 +239,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 	if userAgent == "" {
 		userAgent = "unknown"
 	}
-	
+
 	var otpValid bool
 
 	// Verify OTP - use Twilio if configured, otherwise use local store with rate limiting
@@ -258,11 +258,11 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 			_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, false, clientIP, userAgent)
 			return "", ErrOTPValidationFailed
 		}
-		
+
 		otpValid = valid
 		// Record the attempt (success or failure)
 		_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, otpValid, clientIP, userAgent)
-		
+
 		if otpValid {
 			s.logger.InfoContext(ctx, "Twilio OTP verified successfully", "phone", phone)
 		} else {
@@ -270,7 +270,7 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 		}
 	} else {
 		// Fall back to local OTP store for development/testing with rate limiting
-		
+
 		// Check rate limit first
 		if err := s.otpRateLimitSvc.CheckRateLimit(ctx, phone); err != nil {
 			s.logger.WarnContext(ctx, "Mock OTP verification blocked by rate limiting", "phone", phone, "error", err)
@@ -279,10 +279,10 @@ func (s *UserService) VerifyOTP(ctx context.Context, phone string, otpToValidate
 
 		// Use existing ValidateOTP method (which already does constant-time comparison internally)
 		otpValid = s.otpStore.ValidateOTP(phone, otpToValidate)
-		
+
 		// Record the attempt (success or failure)
 		_ = s.otpRateLimitSvc.RecordOTPAttempt(ctx, phone, otpValid, clientIP, userAgent)
-		
+
 		if otpValid {
 			s.logger.InfoContext(ctx, "Mock OTP verified successfully", "phone", phone)
 			// Note: ValidateOTP already clears the OTP on success

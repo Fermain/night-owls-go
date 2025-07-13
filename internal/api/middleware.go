@@ -33,7 +33,7 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessio
 			var token string
 			var userID int64
 			var phone, role, userName string
-			
+
 			// First try to get user info from session (preferred)
 			if session, err := sessionStore.Get(r, "night-owls-session"); err == nil {
 				if sessionUserID, ok := session.Values["user_id"].(int64); ok {
@@ -52,7 +52,7 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessio
 					token = sessionToken
 				}
 			}
-			
+
 			// If no session info, fall back to JWT header (backward compatibility)
 			if userID == 0 || phone == "" || role == "" {
 				authHeader := r.Header.Get("Authorization")
@@ -68,7 +68,7 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessio
 				}
 
 				token = strings.TrimPrefix(authHeader, "Bearer ")
-				
+
 				// Parse and validate JWT token
 				claims, err := auth.ValidateJWT(token, cfg.JWTSecret)
 				if err != nil {
@@ -91,9 +91,9 @@ func AuthMiddleware(cfg *config.Config, logger *slog.Logger, sessionStore sessio
 			ctx = context.WithValue(ctx, UserNameKey, userName)
 
 			// For debugging
-			logger.DebugContext(r.Context(), "User authenticated", 
-				"user_id", userID, 
-				"phone", phone, 
+			logger.DebugContext(r.Context(), "User authenticated",
+				"user_id", userID,
+				"phone", phone,
 				"role", role,
 				"auth_method", map[bool]string{true: "session", false: "jwt_header"}[userID != 0])
 
@@ -142,33 +142,33 @@ func SecurityHeadersMiddleware() func(next http.Handler) http.Handler {
 				"upgrade-insecure-requests",         // Upgrade HTTP to HTTPS
 			}, "; ")
 			w.Header().Set("Content-Security-Policy", csp)
-			
+
 			// Prevent clickjacking attacks
 			w.Header().Set("X-Frame-Options", "DENY")
-			
+
 			// Prevent MIME type sniffing
 			w.Header().Set("X-Content-Type-Options", "nosniff")
-			
+
 			// Enable XSS protection in browsers
 			w.Header().Set("X-XSS-Protection", "1; mode=block")
-			
+
 			// Strict Transport Security (HSTS) - 1 year with subdomains
 			// Only set in production or when HTTPS is detected
 			if isHTTPS(r) {
 				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 			}
-			
+
 			// Referrer Policy - only send referrer to same origin
 			w.Header().Set("Referrer-Policy", "same-origin")
-			
+
 			// Prevent Adobe Flash and PDF from loading
 			w.Header().Set("X-Permitted-Cross-Domain-Policies", "none")
-			
+
 			// Additional security headers
-			w.Header().Set("X-Download-Options", "noopen")           // IE download protection
-			w.Header().Set("X-DNS-Prefetch-Control", "off")         // Disable DNS prefetching
+			w.Header().Set("X-Download-Options", "noopen")                                   // IE download protection
+			w.Header().Set("X-DNS-Prefetch-Control", "off")                                  // Disable DNS prefetching
 			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()") // Disable sensitive permissions
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -180,16 +180,16 @@ func isHTTPS(r *http.Request) bool {
 	if r.TLS != nil {
 		return true
 	}
-	
+
 	// Check X-Forwarded-Proto header (for proxies/load balancers)
 	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "https" {
 		return true
 	}
-	
+
 	// Check X-Forwarded-SSL header
 	if ssl := r.Header.Get("X-Forwarded-SSL"); ssl == "on" {
 		return true
 	}
-	
+
 	return false
 }

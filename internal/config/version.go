@@ -35,4 +35,4 @@ func GetBuildInfo(gitSHA, buildTime string) BuildInfo {
 // GetVersionString returns a formatted version string
 func GetVersionString() string {
 	return fmt.Sprintf("%s v%s", ServiceName, Version)
-} 
+}

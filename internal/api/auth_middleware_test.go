@@ -351,10 +351,10 @@ func TestAuthMiddleware_ValidTokenFromHeader(t *testing.T) {
 	cfg := &config.Config{
 		JWTSecret: "test-secret-key-for-testing-only",
 	}
-	
+
 	// Create a logger
 	logger := logging.NewLogger(cfg)
-	
+
 	// Create session store
 	sessionStore := createTestSessionStore()
 
@@ -367,11 +367,11 @@ func TestAuthMiddleware_ValidTokenFromHeader(t *testing.T) {
 		userID := r.Context().Value(api.UserIDKey).(int64)
 		phone := r.Context().Value(api.UserPhoneKey).(string)
 		role := r.Context().Value(api.UserRoleKey).(string)
-		
+
 		assert.Equal(t, int64(1), userID)
 		assert.Equal(t, "+1234567890", phone)
 		assert.Equal(t, "user", role)
-		
+
 		w.WriteHeader(http.StatusOK)
 	})
 

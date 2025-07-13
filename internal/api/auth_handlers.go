@@ -33,10 +33,10 @@ const (
 const (
 	// Generic authentication error - used for all auth failures
 	AuthenticationFailedMessage = "Authentication failed"
-	
-	// Generic validation error - used for all validation failures  
+
+	// Generic validation error - used for all validation failures
 	ValidationFailedMessage = "Invalid request"
-	
+
 	// Generic internal error - used for all server errors
 	InternalErrorMessage = "Service temporarily unavailable"
 )
@@ -117,7 +117,7 @@ func (h *AuthHandler) setUserSession(w http.ResponseWriter, r *http.Request, use
 	session.Values["phone"] = user.Phone
 	session.Values["role"] = user.Role
 	session.Values["token"] = token // Keep token for backward compatibility
-	
+
 	userName := ""
 	if user.Name.Valid {
 		userName = user.Name.String
@@ -216,7 +216,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err = h.userService.RegisterOrLoginUser(r.Context(), phoneE164, sqlName, clientIP, userAgent)
 	if err != nil {
 		h.logger.InfoContext(r.Context(), "RegisterOrLoginUser error", "error_message", err.Error())
-		
+
 		// Add timing randomization to prevent enumeration via timing attacks
 		utils.AddTimingRandomization()
 
@@ -312,7 +312,7 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Add timing randomization to prevent enumeration via timing attacks
 		utils.AddTimingRandomization()
-		
+
 		// Differentiate between client-side and server-side errors
 		if strings.Contains(err.Error(), "rate limit") {
 			// Rate limiting errors should be more specific to help legitimate users
@@ -351,7 +351,7 @@ func (h *AuthHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to set session", h.logger, "error", err.Error())
 		return
 	}
-	
+
 	// For now, also return token in response for backward compatibility
 	// TODO: Remove token from JSON response in future version once all clients use cookies
 	RespondWithJSON(w, http.StatusOK, VerifyResponse{Token: token}, h.logger)
@@ -440,7 +440,7 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Add timing randomization to prevent enumeration via timing attacks
 		utils.AddTimingRandomization()
-		
+
 		// Always return the same generic error regardless of the specific issue
 		// This prevents attackers from determining if a phone number is registered
 		if err == sql.ErrNoRows {
@@ -506,14 +506,14 @@ func (h *AuthHandler) DevLoginHandler(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract token from Authorization header or session
 	var token string
-	
+
 	// First try session (from cookie)
 	if session, err := h.sessionStore.Get(r, SessionName); err == nil {
 		if sessionToken, ok := session.Values["token"].(string); ok {
 			token = sessionToken
 		}
 	}
-	
+
 	// Fall back to Authorization header
 	if token == "" {
 		authHeader := r.Header.Get("Authorization")
@@ -521,12 +521,12 @@ func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
 			token = strings.TrimPrefix(authHeader, "Bearer ")
 		}
 	}
-	
+
 	if token == "" {
 		RespondWithError(w, http.StatusUnauthorized, "No token provided", h.logger)
 		return
 	}
-	
+
 	// Validate JWT token
 	claims, err := auth.ValidateJWT(token, h.config.JWTSecret)
 	if err != nil {
@@ -534,7 +534,7 @@ func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusUnauthorized, "Invalid token", h.logger)
 		return
 	}
-	
+
 	// Return user information
 	userInfo := map[string]interface{}{
 		"id":    claims.UserID,
@@ -542,7 +542,7 @@ func (h *AuthHandler) ValidateHandler(w http.ResponseWriter, r *http.Request) {
 		"name":  claims.Name,
 		"role":  claims.Role,
 	}
-	
+
 	RespondWithJSON(w, http.StatusOK, userInfo, h.logger)
 }
 
@@ -561,7 +561,7 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to clear session", h.logger, "error", err.Error())
 		return
 	}
-	
+
 	// Log logout event if user context is available
 	if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
 		if userID, ok := userIDVal.(int64); ok {
@@ -571,7 +571,7 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	h.logger.InfoContext(r.Context(), "User logged out successfully")
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully logged out"}, h.logger)
 }
@@ -603,12 +603,12 @@ func extractClientInfo(r *http.Request) (clientIP, userAgent string) {
 			clientIP = "unknown"
 		}
 	}
-	
+
 	// Extract user agent
 	userAgent = r.UserAgent()
 	if userAgent == "" {
 		userAgent = "unknown"
 	}
-	
+
 	return clientIP, userAgent
 }

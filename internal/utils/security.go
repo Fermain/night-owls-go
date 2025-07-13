@@ -36,7 +36,7 @@ func AddTimingRandomizationWithConfig(config SecurityConfig) {
 		time.Sleep(time.Duration(config.MinDelayMs) * time.Millisecond)
 		return
 	}
-	
+
 	// Generate random number in range [0, delayRange)
 	randomOffset, err := rand.Int(rand.Reader, big.NewInt(int64(delayRange)))
 	if err != nil {
@@ -45,7 +45,7 @@ func AddTimingRandomizationWithConfig(config SecurityConfig) {
 		time.Sleep(time.Duration(midDelay) * time.Millisecond)
 		return
 	}
-	
+
 	delay := time.Duration(config.MinDelayMs+int(randomOffset.Int64())) * time.Millisecond
 	time.Sleep(delay)
-} 
+}
