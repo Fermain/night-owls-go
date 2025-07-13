@@ -11,6 +11,8 @@
 /cmd/server/server
 /cmd/server/main
 # /cmd/seed/seed
+/migrate-points
+/cmd/migrate-points/migrate-points
 
 # Test coverage
 *.out
