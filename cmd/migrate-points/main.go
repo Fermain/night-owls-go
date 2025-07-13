@@ -67,7 +67,12 @@ func main() {
 		if !*force {
 			fmt.Print("\n❓ Do you want to proceed with awarding these points? (y/N): ")
 			var response string
-			fmt.Scanln(&response)
+			_, err := fmt.Scanln(&response)
+			if err != nil {
+				logger.Error("Failed to read user input", "error", err)
+				logger.Info("❌ Migration cancelled due to input error")
+				return
+			}
 			if response != "y" && response != "Y" {
 				logger.Info("❌ Migration cancelled by user")
 				return
