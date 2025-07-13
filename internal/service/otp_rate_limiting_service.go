@@ -19,15 +19,15 @@ var (
 
 // OTP Rate Limiting Configuration
 const (
-	MaxOTPAttemptsPerWindow = 5        // Max attempts before lockout (increased from 3)
+	MaxOTPAttemptsPerWindow = 5                // Max attempts before lockout (increased from 3)
 	OTPAttemptWindow        = 15 * time.Minute // Time window for counting attempts
 	InitialLockoutDuration  = 15 * time.Minute // First lockout duration (reduced from 30min)
 	MaxLockoutDuration      = 24 * time.Hour   // Maximum lockout duration
 	LockoutMultiplier       = 2                // Exponential backoff multiplier
-	
+
 	// Registration rate limiting
-	MaxRegistrationAttemptsPerIP    = 20       // Max registration attempts per IP per hour (increased from 10)
-	MaxRegistrationAttemptsPerPhone = 10       // Max registration attempts per phone per hour (increased from 3) 
+	MaxRegistrationAttemptsPerIP    = 20            // Max registration attempts per IP per hour (increased from 10)
+	MaxRegistrationAttemptsPerPhone = 10            // Max registration attempts per phone per hour (increased from 3)
 	RegistrationWindow              = 1 * time.Hour // Time window for registration attempts
 )
 
@@ -67,8 +67,8 @@ func (s *OTPRateLimitingService) CheckRateLimit(ctx context.Context, phone strin
 
 	// Check if currently locked
 	if rateLimit.LockedUntil.Valid && rateLimit.LockedUntil.Time.After(time.Now().UTC()) {
-		s.logger.WarnContext(ctx, "OTP attempt blocked - account locked", 
-			"phone", phone, 
+		s.logger.WarnContext(ctx, "OTP attempt blocked - account locked",
+			"phone", phone,
 			"locked_until", rateLimit.LockedUntil.Time,
 			"failed_attempts", rateLimit.FailedAttempts,
 		)
@@ -78,7 +78,7 @@ func (s *OTPRateLimitingService) CheckRateLimit(ctx context.Context, phone strin
 	// Check attempts in current window
 	windowStart := time.Now().UTC().Add(-OTPAttemptWindow)
 	failedCount, err := s.querier.GetFailedOTPAttemptsInWindow(ctx, db.GetFailedOTPAttemptsInWindowParams{
-		Phone:        phone,
+		Phone:       phone,
 		AttemptedAt: windowStart,
 	})
 	if err != nil {
@@ -88,8 +88,8 @@ func (s *OTPRateLimitingService) CheckRateLimit(ctx context.Context, phone strin
 	}
 
 	if failedCount >= MaxOTPAttemptsPerWindow {
-		s.logger.WarnContext(ctx, "OTP attempt blocked - rate limit exceeded", 
-			"phone", phone, 
+		s.logger.WarnContext(ctx, "OTP attempt blocked - rate limit exceeded",
+			"phone", phone,
 			"failed_count", failedCount,
 			"max_attempts", MaxOTPAttemptsPerWindow,
 		)
@@ -140,10 +140,10 @@ func (s *OTPRateLimitingService) RecordOTPAttempt(ctx context.Context, phone str
 		// Create new rate limit record
 		newFailedAttempts = 1
 		_, err = s.querier.CreateOTPRateLimit(ctx, db.CreateOTPRateLimitParams{
-			Phone:           phone,
-			FailedAttempts:  newFailedAttempts,
-			FirstAttemptAt:  now,
-			LastAttemptAt:   now,
+			Phone:          phone,
+			FailedAttempts: newFailedAttempts,
+			FirstAttemptAt: now,
+			LastAttemptAt:  now,
 		})
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create OTP rate limit", "phone", phone, "error", err)
@@ -151,7 +151,7 @@ func (s *OTPRateLimitingService) RecordOTPAttempt(ctx context.Context, phone str
 	} else {
 		// Update existing record
 		newFailedAttempts = rateLimit.FailedAttempts + 1
-		
+
 		// Calculate lockout duration with exponential backoff
 		if newFailedAttempts >= MaxOTPAttemptsPerWindow {
 			// Calculate progressive lockout duration
@@ -186,14 +186,14 @@ func (s *OTPRateLimitingService) RecordOTPAttempt(ctx context.Context, phone str
 	}
 
 	if lockoutDuration > 0 {
-		s.logger.WarnContext(ctx, "Phone locked due to failed OTP attempts", 
+		s.logger.WarnContext(ctx, "Phone locked due to failed OTP attempts",
 			"phone", phone,
 			"failed_attempts", newFailedAttempts,
 			"lockout_duration", lockoutDuration,
 			"locked_until", now.Add(lockoutDuration),
 		)
 	} else {
-		s.logger.InfoContext(ctx, "Failed OTP attempt recorded", 
+		s.logger.InfoContext(ctx, "Failed OTP attempt recorded",
 			"phone", phone,
 			"failed_attempts", newFailedAttempts,
 		)
@@ -230,7 +230,7 @@ func (s *OTPRateLimitingService) CleanupOldAttempts(ctx context.Context, olderTh
 		s.logger.ErrorContext(ctx, "Failed to cleanup old OTP attempts", "cutoff", cutoff, "error", err)
 		return err
 	}
-	
+
 	s.logger.InfoContext(ctx, "Cleaned up old OTP attempts", "cutoff", cutoff)
 	return nil
 }
@@ -263,10 +263,10 @@ func boolToInt(b bool) int64 {
 }
 
 // CheckRegistrationRateLimit verifies if registration attempts are allowed from IP and for phone
-// 
+//
 // DESIGN NOTE: This function reuses the existing otp_attempts table for both phone and IP rate limiting
 // by storing IP addresses in the phone column for IP-based records. This avoids creating separate tables
-// while maintaining the same rate limiting logic. IP records are distinguishable by context and the 
+// while maintaining the same rate limiting logic. IP records are distinguishable by context and the
 // client_ip field always contains the actual IP address for audit purposes.
 func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context, phone, clientIP string) error {
 	windowStart := time.Now().UTC().Add(-RegistrationWindow)
@@ -283,8 +283,8 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 			s.logger.ErrorContext(ctx, "Failed to get IP registration attempts", "ip", clientIP, "error", err)
 			// Allow on database error to avoid false lockouts
 		} else if len(ipAttempts) >= MaxRegistrationAttemptsPerIP {
-			s.logger.WarnContext(ctx, "Registration rate limit exceeded for IP", 
-				"ip", clientIP, 
+			s.logger.WarnContext(ctx, "Registration rate limit exceeded for IP",
+				"ip", clientIP,
 				"attempts", len(ipAttempts),
 				"max_attempts", MaxRegistrationAttemptsPerIP,
 			)
@@ -292,7 +292,7 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 		}
 	}
 
-	// Check phone-based rate limiting (prevent targeting specific numbers)  
+	// Check phone-based rate limiting (prevent targeting specific numbers)
 	phoneAttempts, err := s.querier.GetOTPAttemptsInWindow(ctx, db.GetOTPAttemptsInWindowParams{
 		Phone:       phone,
 		AttemptedAt: windowStart,
@@ -301,8 +301,8 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 		s.logger.ErrorContext(ctx, "Failed to get phone registration attempts", "phone", phone, "error", err)
 		// Allow on database error
 	} else if len(phoneAttempts) >= MaxRegistrationAttemptsPerPhone {
-		s.logger.WarnContext(ctx, "Registration rate limit exceeded for phone", 
-			"phone", phone, 
+		s.logger.WarnContext(ctx, "Registration rate limit exceeded for phone",
+			"phone", phone,
 			"attempts", len(phoneAttempts),
 			"max_attempts", MaxRegistrationAttemptsPerPhone,
 		)
@@ -313,7 +313,7 @@ func (s *OTPRateLimitingService) CheckRegistrationRateLimit(ctx context.Context,
 }
 
 // RecordRegistrationAttempt records a registration attempt for both IP and phone rate limiting
-// 
+//
 // DESIGN NOTE: This creates two records - one for the phone number and one for the IP address.
 // The IP record stores the IP address in the phone field to reuse the existing schema.
 // Both records maintain the actual IP address in the client_ip field for proper audit trails.
@@ -347,11 +347,11 @@ func (s *OTPRateLimitingService) RecordRegistrationAttempt(ctx context.Context, 
 		}
 	}
 
-	s.logger.InfoContext(ctx, "Registration attempt recorded", 
-		"phone", phone, 
-		"ip", clientIP, 
+	s.logger.InfoContext(ctx, "Registration attempt recorded",
+		"phone", phone,
+		"ip", clientIP,
 		"success", success,
 	)
 
 	return nil
-} 
+}

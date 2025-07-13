@@ -26,6 +26,8 @@ func NewPointsService(querier db.Querier, logger *slog.Logger) *PointsService {
 
 // Points awarded for different actions
 const (
+	PointsShiftCommitment = 5  // Committing to a shift (booking creation)
+	PointsShiftDropout    = -10 // Dropping out of a shift (booking cancellation)
 	PointsShiftCheckin    = 10 // Checking in to a shift on time
 	PointsShiftCompletion = 15 // Completing a shift with check-in
 	PointsReportFiled     = 5  // Filing a report during shift
@@ -40,6 +42,8 @@ const (
 type PointReason string
 
 const (
+	ReasonShiftCommitment PointReason = "shift_commitment"
+	ReasonShiftDropout    PointReason = "shift_dropout"
 	ReasonShiftCheckin    PointReason = "shift_checkin"
 	ReasonShiftCompletion PointReason = "shift_completion"
 	ReasonReportFiled     PointReason = "report_filed"
@@ -92,6 +96,48 @@ func (ps *PointsService) AwardShiftCheckinPoints(ctx context.Context, userID int
 
 	ps.logger.InfoContext(ctx, "Awarded shift check-in points",
 		"user_id", userID, "booking_id", booking.BookingID, "base_points", basePoints)
+
+	return nil
+}
+
+// AwardShiftCommitmentPoints awards points when a user commits to a shift (booking creation)
+func (ps *PointsService) AwardShiftCommitmentPoints(ctx context.Context, userID int64, bookingID int64) error {
+	basePoints := PointsShiftCommitment
+	multiplier := 1.0
+
+	// Award commitment points
+	if err := ps.awardPointsWithHistory(ctx, userID, &bookingID, basePoints, ReasonShiftCommitment, multiplier); err != nil {
+		return fmt.Errorf("failed to award commitment points: %w", err)
+	}
+
+	// Update user's total points
+	if err := ps.updateUserTotalPoints(ctx, userID); err != nil {
+		return fmt.Errorf("failed to update total points: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Awarded shift commitment points",
+		"user_id", userID, "booking_id", bookingID, "points", basePoints)
+
+	return nil
+}
+
+// AwardShiftDropoutPoints deducts points when a user drops out of a shift (booking cancellation)
+func (ps *PointsService) AwardShiftDropoutPoints(ctx context.Context, userID int64, bookingID int64) error {
+	points := PointsShiftDropout // This is negative (-10)
+	multiplier := 1.0
+
+	// Award dropout points (negative)
+	if err := ps.awardPointsWithHistory(ctx, userID, &bookingID, points, ReasonShiftDropout, multiplier); err != nil {
+		return fmt.Errorf("failed to award dropout points: %w", err)
+	}
+
+	// Update user's total points
+	if err := ps.updateUserTotalPoints(ctx, userID); err != nil {
+		return fmt.Errorf("failed to update total points: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Awarded shift dropout points",
+		"user_id", userID, "booking_id", bookingID, "points", points)
 
 	return nil
 }

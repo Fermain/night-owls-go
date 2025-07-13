@@ -153,7 +153,17 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID int64, schedu
 	}
 	s.logger.InfoContext(ctx, "Booking created successfully", "booking_id", createdBooking.BookingID, "user_id", userID)
 
-	// 5. Queue confirmation message to outbox
+	// 5. Award commitment points to the user
+	if s.pointsService != nil {
+		if err := s.pointsService.AwardShiftCommitmentPoints(ctx, userID, createdBooking.BookingID); err != nil {
+			s.logger.WarnContext(ctx, "Failed to award commitment points", "booking_id", createdBooking.BookingID, "user_id", userID, "error", err)
+			// Non-fatal - don't fail the booking creation if points can't be awarded
+		} else {
+			s.logger.InfoContext(ctx, "Commitment points awarded", "booking_id", createdBooking.BookingID, "user_id", userID)
+		}
+	}
+
+	// 6. Queue confirmation message to outbox
 	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s"}`,
 		createdBooking.BookingID, createdBooking.UserID, createdBooking.ShiftStart.Format(time.RFC3339))
 	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{
@@ -266,6 +276,16 @@ func (s *BookingService) CancelBooking(ctx context.Context, bookingID int64, use
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete booking from DB", "booking_id", bookingID, "error", err)
 		return ErrInternalServer
+	}
+
+	// Award dropout points (negative) to the user
+	if s.pointsService != nil {
+		if err := s.pointsService.AwardShiftDropoutPoints(ctx, userIDFromAuth, bookingID); err != nil {
+			s.logger.WarnContext(ctx, "Failed to award dropout points", "booking_id", bookingID, "user_id", userIDFromAuth, "error", err)
+			// Non-fatal - don't fail the cancellation if points can't be awarded
+		} else {
+			s.logger.InfoContext(ctx, "Dropout points awarded", "booking_id", bookingID, "user_id", userIDFromAuth)
+		}
 	}
 
 	s.logger.InfoContext(ctx, "Booking cancelled successfully", "booking_id", bookingID, "user_id", userIDFromAuth)
@@ -395,7 +415,17 @@ func (s *BookingService) AdminAssignUserToShift(ctx context.Context, targetUserI
 	}
 	s.logger.InfoContext(ctx, "Booking created successfully by admin", "booking_id", createdBooking.BookingID, "assigned_user_id", targetUserID, "schedule_id", scheduleID)
 
-	// 6. (Optional) Queue confirmation message to outbox for the assigned user
+	// 6. Award commitment points to the assigned user
+	if s.pointsService != nil {
+		if err := s.pointsService.AwardShiftCommitmentPoints(ctx, targetUserID, createdBooking.BookingID); err != nil {
+			s.logger.WarnContext(ctx, "Failed to award commitment points for admin assignment", "booking_id", createdBooking.BookingID, "user_id", targetUserID, "error", err)
+			// Non-fatal - don't fail the booking creation if points can't be awarded
+		} else {
+			s.logger.InfoContext(ctx, "Commitment points awarded for admin assignment", "booking_id", createdBooking.BookingID, "user_id", targetUserID)
+		}
+	}
+
+	// 7. (Optional) Queue confirmation message to outbox for the assigned user
 	outboxPayload := fmt.Sprintf(`{"booking_id": %d, "user_id": %d, "shift_start": "%s", "assigned_by": "admin"}`,
 		createdBooking.BookingID, createdBooking.UserID, createdBooking.ShiftStart.Format(time.RFC3339))
 	_, err = s.querier.CreateOutboxItem(ctx, db.CreateOutboxItemParams{

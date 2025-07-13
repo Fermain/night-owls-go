@@ -38,22 +38,21 @@ type ICSData struct {
 // BookingToCalendarEvent converts a booking to a calendar event
 func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEvent {
 	title := fmt.Sprintf("Night Owls Shift - %s", scheduleName)
-	
+
 	// Build detailed description
 	var descBuilder strings.Builder
 	descBuilder.WriteString(fmt.Sprintf("Night Owls Community Watch - %s\\n\\n", scheduleName))
-	descBuilder.WriteString(fmt.Sprintf("⏰ Time: %s - %s\\n", 
-		booking.ShiftStart.Format("15:04"), 
+	descBuilder.WriteString(fmt.Sprintf("⏰ Time: %s - %s\\n",
+		booking.ShiftStart.Format("15:04"),
 		booking.ShiftEnd.Format("15:04")))
-	
+
 	if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 		descBuilder.WriteString(fmt.Sprintf("👥 Buddy: %s\\n", booking.BuddyName.String))
 	}
-	
+
 	descBuilder.WriteString("\\n📱 Check in on the Night Owls app when your shift starts")
 	descBuilder.WriteString("\\n🚨 Report any incidents through the app")
 	descBuilder.WriteString("\\n\\n🔗 Night Owls App: https://mm.nightowls.app")
-	
 	// Create attendees list
 	var attendees []CalendarContact
 	if booking.BuddyName.Valid && booking.BuddyName.String != "" {
@@ -62,7 +61,7 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 			Email: "",
 		})
 	}
-	
+
 	return CalendarEvent{
 		Title:       title,
 		Description: descBuilder.String(),
@@ -82,16 +81,16 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 // GenerateICS creates an .ics file content from a calendar event
 func GenerateICS(event CalendarEvent) string {
 	now := time.Now().UTC()
-	
+
 	var icsBuilder strings.Builder
-	
+
 	// ICS Header
 	icsBuilder.WriteString("BEGIN:VCALENDAR\r\n")
 	icsBuilder.WriteString("VERSION:2.0\r\n")
 	icsBuilder.WriteString("PRODID:-//Night Owls//Shift Calendar//EN\r\n")
 	icsBuilder.WriteString("CALSCALE:GREGORIAN\r\n")
 	icsBuilder.WriteString("METHOD:PUBLISH\r\n")
-	
+
 	// Event
 	icsBuilder.WriteString("BEGIN:VEVENT\r\n")
 	icsBuilder.WriteString(fmt.Sprintf("UID:%s\r\n", event.UID))
@@ -100,41 +99,41 @@ func GenerateICS(event CalendarEvent) string {
 	icsBuilder.WriteString(fmt.Sprintf("DTEND:%s\r\n", formatICSDate(event.EndTime)))
 	icsBuilder.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICSText(event.Title)))
 	icsBuilder.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICSText(event.Description)))
-	
+
 	if event.Location != "" {
 		icsBuilder.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICSText(event.Location)))
 	}
-	
+
 	// Organizer
 	if event.Organizer.Email != "" {
-		icsBuilder.WriteString(fmt.Sprintf("ORGANIZER;CN=%s:mailto:%s\r\n", 
+		icsBuilder.WriteString(fmt.Sprintf("ORGANIZER;CN=%s:mailto:%s\r\n",
 			escapeICSText(event.Organizer.Name), event.Organizer.Email))
 	}
-	
+
 	// Attendees
 	for _, attendee := range event.Attendees {
 		if attendee.Email != "" {
-			icsBuilder.WriteString(fmt.Sprintf("ATTENDEE;CN=%s:mailto:%s\r\n", 
+			icsBuilder.WriteString(fmt.Sprintf("ATTENDEE;CN=%s:mailto:%s\r\n",
 				escapeICSText(attendee.Name), attendee.Email))
 		} else {
-			icsBuilder.WriteString(fmt.Sprintf("ATTENDEE;CN=%s\r\n", 
+			icsBuilder.WriteString(fmt.Sprintf("ATTENDEE;CN=%s\r\n",
 				escapeICSText(attendee.Name)))
 		}
 	}
-	
+
 	// Reminder
 	if event.ReminderMin > 0 {
 		icsBuilder.WriteString("BEGIN:VALARM\r\n")
 		icsBuilder.WriteString(fmt.Sprintf("TRIGGER:-PT%dM\r\n", event.ReminderMin))
 		icsBuilder.WriteString("ACTION:DISPLAY\r\n")
-		icsBuilder.WriteString(fmt.Sprintf("DESCRIPTION:%s starts in %d minutes\r\n", 
+		icsBuilder.WriteString(fmt.Sprintf("DESCRIPTION:%s starts in %d minutes\r\n",
 			escapeICSText(event.Title), event.ReminderMin))
 		icsBuilder.WriteString("END:VALARM\r\n")
 	}
-	
+
 	icsBuilder.WriteString("END:VEVENT\r\n")
 	icsBuilder.WriteString("END:VCALENDAR\r\n")
-	
+
 	return icsBuilder.String()
 }
 
@@ -143,7 +142,7 @@ func GenerateBookingICS(booking db.Booking, scheduleName string) ICSData {
 	event := BookingToCalendarEvent(booking, scheduleName)
 	content := GenerateICS(event)
 	filename := fmt.Sprintf("night-owls-shift-%d.ics", booking.BookingID)
-	
+
 	return ICSData{
 		Filename: filename,
 		Content:  content,
@@ -162,7 +161,7 @@ func GenerateUserCalendarFeed(bookings []db.ListBookingsByUserIDWithScheduleRow,
 			MIME:     "text/calendar; charset=utf-8",
 		}
 	}
-	
+
 	// Generate header
 	var sb strings.Builder
 	sb.WriteString("BEGIN:VCALENDAR\r\n")
@@ -173,7 +172,7 @@ func GenerateUserCalendarFeed(bookings []db.ListBookingsByUserIDWithScheduleRow,
 	sb.WriteString("X-WR-CALNAME:Night Owls Shifts\r\n")
 	sb.WriteString("X-WR-CALDESC:Your upcoming Night Owls Community Watch shifts\r\n")
 	sb.WriteString("X-WR-TIMEZONE:Africa/Johannesburg\r\n")
-	
+
 	// Add each booking as an event
 	for _, booking := range bookings {
 		// Only include future shifts in WebCal feed
@@ -183,9 +182,9 @@ func GenerateUserCalendarFeed(bookings []db.ListBookingsByUserIDWithScheduleRow,
 			sb.WriteString(eventContent)
 		}
 	}
-	
+
 	sb.WriteString("END:VCALENDAR\r\n")
-	
+
 	return ICSData{
 		Filename: fmt.Sprintf("night-owls-calendar-%d.ics", userID),
 		Content:  sb.String(),
@@ -200,25 +199,23 @@ func bookingRowToCalendarEvent(booking db.ListBookingsByUserIDWithScheduleRow) C
 	if shiftEnd.IsZero() {
 		shiftEnd = booking.ShiftStart.Add(2 * time.Hour)
 	}
-	
+
 	// Build description
 	var description strings.Builder
 	description.WriteString(fmt.Sprintf("Night Owls Community Watch shift for %s\\n\\n", booking.ScheduleName))
 	description.WriteString(fmt.Sprintf("📅 Date: %s\\n", booking.ShiftStart.Format("Monday, 2 January 2006")))
-	description.WriteString(fmt.Sprintf("🕒 Time: %s - %s\\n", 
-		booking.ShiftStart.Format("15:04"), 
+	description.WriteString(fmt.Sprintf("🕒 Time: %s - %s\\n",
+		booking.ShiftStart.Format("15:04"),
 		shiftEnd.Format("15:04")))
-	
+
 	if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 		description.WriteString(fmt.Sprintf("👥 Buddy: %s\\n", escapeICSText(booking.BuddyName.String)))
 	}
-	
+
 	description.WriteString("\\n📱 Check in through the Night Owls app when your shift starts.")
 	description.WriteString("\\n🔗 App: https://mm.nightowls.app")
-	
 	// Generate unique UID for this booking
 	uid := fmt.Sprintf("night-owls-booking-%d@mm.nightowls.app", booking.BookingID)
-	
 	return CalendarEvent{
 		Title:       fmt.Sprintf("Night Owls Shift - %s", booking.ScheduleName),
 		Description: description.String(),
@@ -247,14 +244,14 @@ func generateEmptyCalendar(userID int64) string {
 	sb.WriteString("X-WR-CALDESC:Your upcoming Night Owls Community Watch shifts\r\n")
 	sb.WriteString("X-WR-TIMEZONE:Africa/Johannesburg\r\n")
 	sb.WriteString("END:VCALENDAR\r\n")
-	
+
 	return sb.String()
 }
 
 // generateVEvent creates a VEVENT block for a calendar event
 func generateVEvent(event CalendarEvent) string {
 	var sb strings.Builder
-	
+
 	sb.WriteString("BEGIN:VEVENT\r\n")
 	sb.WriteString(fmt.Sprintf("UID:%s\r\n", event.UID))
 	sb.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", time.Now().UTC().Format("20060102T150405Z")))
@@ -263,12 +260,12 @@ func generateVEvent(event CalendarEvent) string {
 	sb.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICSText(event.Title)))
 	sb.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", event.Description))
 	sb.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICSText(event.Location)))
-	
+
 	if event.Organizer.Email != "" {
-		sb.WriteString(fmt.Sprintf("ORGANIZER;CN=%s:MAILTO:%s\r\n", 
+		sb.WriteString(fmt.Sprintf("ORGANIZER;CN=%s:MAILTO:%s\r\n",
 			escapeICSText(event.Organizer.Name), event.Organizer.Email))
 	}
-	
+
 	// Add reminder alarm
 	if event.ReminderMin > 0 {
 		sb.WriteString("BEGIN:VALARM\r\n")
@@ -277,9 +274,9 @@ func generateVEvent(event CalendarEvent) string {
 		sb.WriteString(fmt.Sprintf("DESCRIPTION:Night Owls shift starts in %d minutes\r\n", event.ReminderMin))
 		sb.WriteString("END:VALARM\r\n")
 	}
-	
+
 	sb.WriteString("END:VEVENT\r\n")
-	
+
 	return sb.String()
 }
 
@@ -297,4 +294,4 @@ func escapeICSText(text string) string {
 	text = strings.ReplaceAll(text, ",", "\\,")
 	text = strings.ReplaceAll(text, "\n", "\\n")
 	return text
-} 
+}

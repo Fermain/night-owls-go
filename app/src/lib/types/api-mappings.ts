@@ -230,8 +230,8 @@ export function mapAPIAuditEventToDomain(apiEvent: Record<string, unknown>): Aud
 		userAgent: (apiEvent.user_agent as string | null) ?? null,
 		details: (apiEvent.details as Record<string, unknown>) ?? {},
 		createdAt: (apiEvent.created_at as string) ?? new Date().toISOString(),
-		userName: (apiEvent.user_name as string) || undefined,
-		targetUserName: (apiEvent.target_user_name as string) || undefined
+		userName: (apiEvent.user_name as string) ?? 'Unknown',
+		targetUserName: (apiEvent.target_user_name as string) ?? undefined
 	};
 }
 

@@ -53,9 +53,9 @@ type PublicShiftSlot struct {
 	EndTime      string  `json:"end_time"`
 	Timezone     *string `json:"timezone,omitempty"`
 	IsBooked     bool    `json:"is_booked"`
-	BookedBy     *string `json:"booked_by,omitempty"`     // Privacy-masked: "John D." or "Booked"
-	HasBuddy     bool    `json:"has_buddy"`               // Boolean instead of buddy name
-	BookingID    *int64  `json:"booking_id,omitempty"`    // For frontend compatibility
+	BookedBy     *string `json:"booked_by,omitempty"`  // Privacy-masked: "John D." or "Booked"
+	HasBuddy     bool    `json:"has_buddy"`            // Boolean instead of buddy name
+	BookingID    *int64  `json:"booking_id,omitempty"` // For frontend compatibility
 }
 
 // BookingWithScheduleResponse includes schedule name for admin views
