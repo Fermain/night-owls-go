@@ -28,14 +28,14 @@ ARG BUILD_TIME=""
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-w -s -X main.GitSHA=${GIT_SHA} -X main.BuildTime=${BUILD_TIME}" \
+    -ldflags="-w -s -linkmode external -extldflags '-static' -X main.GitSHA=${GIT_SHA} -X main.BuildTime=${BUILD_TIME}" \
     -o night-owls-server ./cmd/server
 
 # Build migration tool
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-w -s" \
+    -ldflags="-w -s -linkmode external -extldflags '-static'" \
     -o migrate-points ./cmd/migrate-points
 
 # Production image - use minimal distroless

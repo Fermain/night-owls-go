@@ -149,8 +149,10 @@ list_backups() {
     log_info "Recent backups in $BACKUP_DIR:"
     
     if [[ -d "$BACKUP_DIR" ]]; then
-        find "$BACKUP_DIR" -name "night_owls_backup_*.db" -type f -exec ls -lh {} \; | \
-        sort -k 6,8 -r | head -10
+        find "$BACKUP_DIR" -name "night_owls_backup_*.db" -type f -printf '%T@ %p\n' 2>/dev/null | \
+        sort -nr | head -10 | while read -r timestamp filepath; do
+            ls -lh "$filepath" 2>/dev/null || echo "Error listing $filepath"
+        done
     else
         log_warn "Backup directory $BACKUP_DIR does not exist"
     fi
@@ -177,7 +179,7 @@ create_backup() {
     # Use a temporary container to access the volume and copy the database
     docker run --rm \
         -v "${VOLUME_NAME}:/source:ro" \
-        -v "$(realpath "$BACKUP_DIR"):/backup" \
+        -v "$(cd "$BACKUP_DIR" && pwd):/backup" \
         alpine:latest \
         cp "/source/${DB_PATH_IN_VOLUME}" "/backup/${BACKUP_FILE}"
     
