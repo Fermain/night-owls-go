@@ -95,10 +95,10 @@ check_prerequisites() {
     fi
     
     # Check if container exists
-    if ! docker ps -a --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if ! docker ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         log_error "Container '${CONTAINER_NAME}' not found"
         log_info "Available containers:"
-        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        docker ps -a --format "{{.Names}}\t{{.Status}}"
         exit 1
     fi
     
@@ -149,9 +149,10 @@ list_backups() {
     log_info "Recent backups in $BACKUP_DIR:"
     
     if [[ -d "$BACKUP_DIR" ]]; then
-        find "$BACKUP_DIR" -name "night_owls_backup_*.db" -type f -printf '%T@ %p\n' 2>/dev/null | \
-        sort -nr | head -10 | while read -r timestamp filepath; do
-            ls -lh "$filepath" 2>/dev/null || echo "Error listing $filepath"
+        # Use a more portable approach that works on both Linux and macOS
+        find "$BACKUP_DIR" -name "night_owls_backup_*.db" -type f -exec ls -lt {} + 2>/dev/null | \
+        head -10 | while read -r perms links owner group size month day time_or_year filepath; do
+            echo "$(ls -lh "$filepath" 2>/dev/null || echo "Error listing $filepath")"
         done
     else
         log_warn "Backup directory $BACKUP_DIR does not exist"
