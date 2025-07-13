@@ -10,27 +10,27 @@ describe('getTimeUntil', () => {
 		vi.useRealTimers();
 	});
 
-	it('should return "in Xm" for future times', () => {
+	it('should return "in X minutes" for future times', () => {
 		const now = new Date('2024-01-01T10:00:00Z');
 		vi.setSystemTime(now);
 
 		const futureTime = '2024-01-01T10:30:00Z';
-		expect(getTimeUntil(futureTime)).toBe('in 30m');
+		expect(getTimeUntil(futureTime)).toBe('in 30 minutes');
 	});
 
-	it('should return "in Xh Ym" for times over 60 minutes away', () => {
+	it('should return "in about X hours" for times over 60 minutes away', () => {
 		const now = new Date('2024-01-01T10:00:00Z');
 		vi.setSystemTime(now);
 
 		const futureTime = '2024-01-01T12:00:00Z';
-		expect(getTimeUntil(futureTime)).toBe('in 2h 0m');
+		expect(getTimeUntil(futureTime)).toBe('in about 2 hours');
 	});
 
-	it('should return "in 0m" for current time', () => {
+	it('should return "less than a minute ago" for current time', () => {
 		const now = new Date('2024-01-01T10:00:00Z');
 		vi.setSystemTime(now);
 
-		expect(getTimeUntil(now.toISOString())).toBe('in 0m');
+		expect(getTimeUntil(now.toISOString())).toBe('less than a minute ago');
 	});
 
 	it('should return "Started" for past times', () => {
@@ -46,12 +46,12 @@ describe('getTimeUntil', () => {
 		vi.setSystemTime(now);
 
 		// Just under 1 hour
-		expect(getTimeUntil('2024-01-01T10:59:00Z')).toBe('in 59m');
+		expect(getTimeUntil('2024-01-01T10:59:00Z')).toBe('in about 1 hour');
 
 		// Exactly 1 hour
-		expect(getTimeUntil('2024-01-01T11:00:00Z')).toBe('in 1h 0m');
+		expect(getTimeUntil('2024-01-01T11:00:00Z')).toBe('in about 1 hour');
 
 		// Just over 1 hour
-		expect(getTimeUntil('2024-01-01T11:01:00Z')).toBe('in 1h 1m');
+		expect(getTimeUntil('2024-01-01T11:01:00Z')).toBe('in about 1 hour');
 	});
 });

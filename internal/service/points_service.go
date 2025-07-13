@@ -243,6 +243,11 @@ func (ps *PointsService) getMonthlyShiftCount(ctx context.Context, userID int64,
 	return 1, nil // Placeholder - would need a proper query to count completed shifts this month
 }
 
+// CheckAndAwardAchievements is a public wrapper for checking and awarding achievements
+func (ps *PointsService) CheckAndAwardAchievements(ctx context.Context, userID int64) error {
+	return ps.checkAndAwardAchievements(ctx, userID)
+}
+
 func (ps *PointsService) checkAndAwardAchievements(ctx context.Context, userID int64) error {
 	// Get user's current stats
 	userStats, err := ps.querier.GetUserPoints(ctx, userID)

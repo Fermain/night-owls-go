@@ -149,7 +149,11 @@
 
 					<!-- Points -->
 					<div class="text-right">
-						<div class="font-bold text-sm {entry.points_awarded >= 0 ? 'text-green-600' : 'text-red-600'}">
+						<div
+							class="font-bold text-sm {entry.points_awarded >= 0
+								? 'text-green-600'
+								: 'text-red-600'}"
+						>
 							{entry.points_awarded >= 0 ? '+' : ''}{entry.points_awarded}
 						</div>
 						{#if entry.multiplier !== 1}

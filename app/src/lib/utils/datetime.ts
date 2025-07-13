@@ -333,11 +333,17 @@ export function getTimeUntil(timeString: string): string {
 
 	if (diffMs < 0) return 'Started';
 
-	const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-	const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+	// Use the same relative time formatting as the rest of the app
+	try {
+		return formatDistanceToNow(date, { addSuffix: true });
+	} catch {
+		// Fallback to simple format if formatDistanceToNow fails
+		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+		const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-	if (diffHours > 0) return `in ${diffHours}h ${diffMins}m`;
-	return `in ${diffMins}m`;
+		if (diffHours > 0) return `in ${diffHours}h ${diffMins}m`;
+		return `in ${diffMins}m`;
+	}
 }
 
 /**

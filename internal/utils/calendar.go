@@ -9,6 +9,13 @@ import (
 	db "night-owls-go/internal/db/sqlc_generated"
 )
 
+// Calendar domain constants
+const (
+	CalendarDomain      = "mm.nightowls.app"
+	CalendarAppURL      = "https://" + CalendarDomain
+	CalendarOrganizerEmail = "noreply@" + CalendarDomain
+)
+
 // CalendarEvent represents a calendar event
 type CalendarEvent struct {
 	Title       string
@@ -52,8 +59,7 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 
 	descBuilder.WriteString("\\n📱 Check in on the Night Owls app when your shift starts")
 	descBuilder.WriteString("\\n🚨 Report any incidents through the app")
-	descBuilder.WriteString("\\n\\n🔗 Night Owls App: https://nightowls.app")
-
+	descBuilder.WriteString(fmt.Sprintf("\\n\\n🔗 Night Owls App: %s", CalendarAppURL))
 	// Create attendees list
 	var attendees []CalendarContact
 	if booking.BuddyName.Valid && booking.BuddyName.String != "" {
@@ -69,10 +75,10 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 		StartTime:   booking.ShiftStart,
 		EndTime:     booking.ShiftEnd,
 		Location:    "Mount Moreland Community Watch Area",
-		UID:         fmt.Sprintf("nightowls-shift-%d@nightowls.app", booking.BookingID),
+		UID:         fmt.Sprintf("nightowls-shift-%d@%s", booking.BookingID, CalendarDomain),
 		Organizer: CalendarContact{
 			Name:  "Night Owls Scheduler",
-			Email: "noreply@nightowls.app",
+			Email: CalendarOrganizerEmail,
 		},
 		Attendees:   attendees,
 		ReminderMin: 60, // 1 hour before shift
@@ -214,11 +220,9 @@ func bookingRowToCalendarEvent(booking db.ListBookingsByUserIDWithScheduleRow) C
 	}
 
 	description.WriteString("\\n📱 Check in through the Night Owls app when your shift starts.")
-	description.WriteString("\\n🔗 App: https://app.nightowls.community")
-
+	description.WriteString(fmt.Sprintf("\\n🔗 App: %s", CalendarAppURL))
 	// Generate unique UID for this booking
-	uid := fmt.Sprintf("night-owls-booking-%d@nightowls.community", booking.BookingID)
-
+	uid := fmt.Sprintf("night-owls-booking-%d@%s", booking.BookingID, CalendarDomain)
 	return CalendarEvent{
 		Title:       fmt.Sprintf("Night Owls Shift - %s", booking.ScheduleName),
 		Description: description.String(),
@@ -228,7 +232,7 @@ func bookingRowToCalendarEvent(booking db.ListBookingsByUserIDWithScheduleRow) C
 		UID:         uid,
 		Organizer: CalendarContact{
 			Name:  "Night Owls Scheduler",
-			Email: "noreply@nightowls.community",
+			Email: CalendarOrganizerEmail,
 		},
 		Attendees:   []CalendarContact{},
 		ReminderMin: 60, // 1 hour before
