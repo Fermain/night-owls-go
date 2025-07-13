@@ -52,7 +52,7 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 	
 	descBuilder.WriteString("\\n📱 Check in on the Night Owls app when your shift starts")
 	descBuilder.WriteString("\\n🚨 Report any incidents through the app")
-	descBuilder.WriteString("\\n\\n🔗 Night Owls App: https://nightowls.app")
+	descBuilder.WriteString("\\n\\n🔗 Night Owls App: https://mm.nightowls.app")
 	
 	// Create attendees list
 	var attendees []CalendarContact
@@ -69,10 +69,10 @@ func BookingToCalendarEvent(booking db.Booking, scheduleName string) CalendarEve
 		StartTime:   booking.ShiftStart,
 		EndTime:     booking.ShiftEnd,
 		Location:    "Mount Moreland Community Watch Area",
-		UID:         fmt.Sprintf("nightowls-shift-%d@nightowls.app", booking.BookingID),
+		UID:         fmt.Sprintf("nightowls-shift-%d@mm.nightowls.app", booking.BookingID),
 		Organizer: CalendarContact{
 			Name:  "Night Owls Scheduler",
-			Email: "noreply@nightowls.app",
+			Email: "noreply@mm.nightowls.app",
 		},
 		Attendees:   attendees,
 		ReminderMin: 60, // 1 hour before shift
@@ -214,10 +214,10 @@ func bookingRowToCalendarEvent(booking db.ListBookingsByUserIDWithScheduleRow) C
 	}
 	
 	description.WriteString("\\n📱 Check in through the Night Owls app when your shift starts.")
-	description.WriteString("\\n🔗 App: https://app.nightowls.community")
+	description.WriteString("\\n🔗 App: https://mm.nightowls.app")
 	
 	// Generate unique UID for this booking
-	uid := fmt.Sprintf("night-owls-booking-%d@nightowls.community", booking.BookingID)
+	uid := fmt.Sprintf("night-owls-booking-%d@mm.nightowls.app", booking.BookingID)
 	
 	return CalendarEvent{
 		Title:       fmt.Sprintf("Night Owls Shift - %s", booking.ScheduleName),
@@ -228,7 +228,7 @@ func bookingRowToCalendarEvent(booking db.ListBookingsByUserIDWithScheduleRow) C
 		UID:         uid,
 		Organizer: CalendarContact{
 			Name:  "Night Owls Scheduler",
-			Email: "noreply@nightowls.community",
+			Email: "noreply@mm.nightowls.app",
 		},
 		Attendees:   []CalendarContact{},
 		ReminderMin: 60, // 1 hour before

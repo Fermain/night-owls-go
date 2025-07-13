@@ -97,13 +97,13 @@ export function bookingToCalendarEvent(booking: UserBooking): CalendarEvent {
 		location: 'Mount Moreland Community Watch Area',
 		organizer: {
 			name: 'Night Owls Scheduler',
-			email: 'noreply@nightowls.app'
+			email: 'noreply@mm.nightowls.app'
 		},
 		attendees,
 		reminder: {
 			minutes: 60 // 1 hour before shift
 		},
-		uid: `nightowls-shift-${booking.booking_id}@nightowls.app`
+		uid: `nightowls-shift-${booking.booking_id}@mm.nightowls.app`
 	};
 }
 

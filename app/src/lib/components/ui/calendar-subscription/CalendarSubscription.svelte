@@ -130,11 +130,11 @@
 				</div>
 
 				<div class="text-center space-y-3">
-					<div class="flex gap-2">
+					<div class="flex flex-col sm:flex-row gap-2">
 						<Button
 							variant="outline"
 							onclick={() => feedData && openCalendarApp(feedData.webcal_url)}
-							class="flex-1"
+							class="w-full sm:flex-1"
 							disabled={isLocalhost}
 						>
 							<ExternalLink class="h-4 w-4 mr-2" />
@@ -143,7 +143,7 @@
 						<Button
 							variant="outline"
 							onclick={() => feedData && copyToClipboard(feedData.webcal_url)}
-							class="flex-1"
+							class="w-full sm:flex-1"
 						>
 							{#if copied}
 								<CheckCircle class="h-4 w-4 mr-2" />

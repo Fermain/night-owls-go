@@ -71,7 +71,7 @@ func TestGenerateBookingICS(t *testing.T) {
 		t.Error("ICS content missing expected location")
 	}
 	
-	if !strings.Contains(content, "UID:nightowls-shift-12345@nightowls.app") {
+	if !strings.Contains(content, "UID:nightowls-shift-12345@mm.nightowls.app") {
 		t.Error("ICS content missing expected UID")
 	}
 	
@@ -126,7 +126,7 @@ func TestBookingToCalendarEvent(t *testing.T) {
 		t.Errorf("Expected location 'Mount Moreland Community Watch Area', got %s", event.Location)
 	}
 	
-	expectedUID := "nightowls-shift-12345@nightowls.app"
+	expectedUID := "nightowls-shift-12345@mm.nightowls.app"
 	if event.UID != expectedUID {
 		t.Errorf("Expected UID %s, got %s", expectedUID, event.UID)
 	}
