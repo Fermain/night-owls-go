@@ -134,9 +134,8 @@
 				hasLoadedInitialData = true;
 			} else {
 				// Load more - append events if not already present
-				const newEvents = events.filter(
-					(event) => !allEvents.some((existing) => existing.id === event.id)
-				);
+				const existingEventIds = new Set(allEvents.map((event) => event.id));
+				const newEvents = events.filter((event) => !existingEventIds.has(event.id));
 				allEvents = [...allEvents, ...newEvents];
 			}
 		} else if (events && events.length === 0 && currentFilters.offset === 0) {
