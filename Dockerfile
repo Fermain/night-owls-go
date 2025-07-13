@@ -31,6 +31,13 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     -ldflags="-w -s -X main.GitSHA=${GIT_SHA} -X main.BuildTime=${BUILD_TIME}" \
     -o night-owls-server ./cmd/server
 
+# Build migration tool
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags="-w -s" \
+    -o migrate-points ./cmd/migrate-points
+
 # Production image - use minimal distroless
 FROM alpine:latest
 
@@ -49,6 +56,7 @@ COPY internal/db/migrations/ ./internal/db/migrations/
 
 # Copy binaries
 COPY --from=backend-builder /app/night-owls-server .
+COPY --from=backend-builder /app/migrate-points .
 
 # Set permissions
 RUN chown -R appuser:appgroup /app
