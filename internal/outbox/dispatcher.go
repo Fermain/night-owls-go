@@ -37,54 +37,50 @@ func NewDispatcherService(querier db.Querier, smsSender MessageSender, pushSende
 	}
 }
 
-// ProcessPendingOutboxMessages fetches and processes pending outbox messages.
-func (s *DispatcherService) ProcessPendingOutboxMessages(ctx context.Context) (processedCount int, errCount int) {
-	s.logger.InfoContext(ctx, "Starting to process pending outbox messages...")
-
+// ProcessPendingOutboxItems processes pending outbox items and dispatches them via the appropriate sender.
+func (s *DispatcherService) ProcessPendingOutboxItems(ctx context.Context) (int, int) {
 	pendingItems, err := s.querier.GetPendingOutboxItems(ctx, int64(s.cfg.OutboxBatchSize))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			s.logger.InfoContext(ctx, "No pending outbox messages to process.")
-			return 0, 0
-		}
 		s.logger.ErrorContext(ctx, "Failed to get pending outbox items", "error", err)
-		return 0, 1
-	}
-
-	if len(pendingItems) == 0 {
-		s.logger.InfoContext(ctx, "No pending outbox messages found in this batch.")
 		return 0, 0
 	}
 
-	s.logger.InfoContext(ctx, "Fetched pending outbox messages", "count", len(pendingItems))
+	if len(pendingItems) == 0 {
+		s.logger.InfoContext(ctx, "No pending outbox items to process")
+		return 0, 0
+	}
+
+	s.logger.InfoContext(ctx, "Processing pending outbox items", "count", len(pendingItems))
+
+	processedCount := 0
+	errCount := 0
 
 	for _, item := range pendingItems {
 		sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		var dispatchErr error
 
-		switch item.MessageType { // Assuming MessageType acts as the channel ("sms", "push")
-		case "sms", "OTP_VERIFICATION":
+		switch item.MessageType {
+		case "sms":
 			if s.smsSender != nil {
 				dispatchErr = s.smsSender.Send(item.Recipient, item.MessageType, item.Payload.String)
 			} else {
-				dispatchErr = errors.New("smsSender is not configured")
-				s.logger.ErrorContext(sendCtx, "smsSender not configured, cannot send SMS", "outbox_id", item.OutboxID)
+				dispatchErr = errors.New("smsSender not configured")
+				s.logger.ErrorContext(sendCtx, dispatchErr.Error(), "outbox_id", item.OutboxID)
 			}
 		case "push":
 			if s.pushSender != nil {
 				if !item.UserID.Valid {
 					dispatchErr = errors.New("user_id is null for push notification")
-					s.logger.ErrorContext(sendCtx, "user_id is null for push notification", "outbox_id", item.OutboxID)
+					s.logger.ErrorContext(sendCtx, dispatchErr.Error(), "outbox_id", item.OutboxID)
 				} else {
-					// Payload for push is documented as JSON: `{"type":"shift_reminder","booking_id":123}`
-					// TTL for push is 60 seconds as per PWA.md example
-					s.pushSender.Send(sendCtx, item.UserID.Int64, []byte(item.Payload.String), 60)
-					// Note: pushSender.Send itself logs errors, so we might not need to wrap with dispatchErr unless it returns one.
-					// For now, assuming Send handles its logging and doesn't return an error that needs generic handling here.
+					dispatchErr = s.pushSender.Send(sendCtx, item.UserID.Int64, []byte(item.Payload.String), 604800) // Use 1 week TTL
+					if dispatchErr != nil {
+						s.logger.ErrorContext(sendCtx, "PushSender failed", "outbox_id", item.OutboxID, "error", dispatchErr)
+					}
 				}
 			} else {
-				dispatchErr = errors.New("pushSender is not configured")
-				s.logger.ErrorContext(sendCtx, "pushSender not configured, cannot send push notification", "outbox_id", item.OutboxID)
+				dispatchErr = errors.New("pushSender not configured")
+				s.logger.ErrorContext(sendCtx, dispatchErr.Error(), "outbox_id", item.OutboxID)
 			}
 		default:
 			dispatchErr = errors.New("unknown message type: " + item.MessageType)
@@ -109,12 +105,12 @@ func (s *DispatcherService) ProcessPendingOutboxMessages(ctx context.Context) (p
 			}
 		} else {
 			s.logger.InfoContext(ctx, "Successfully dispatched message from outbox", "outbox_id", item.OutboxID, "message_type", item.MessageType)
+			processedCount++
 			updateParams.Status = "sent"
 			updateParams.SentAt = sql.NullTime{Time: time.Now(), Valid: true}
-			processedCount++
 		}
 
-		_, updateErr := s.querier.UpdateOutboxItemStatus(ctx, updateParams) // Changed sendCtx to ctx for the update
+		_, updateErr := s.querier.UpdateOutboxItemStatus(ctx, updateParams)
 		if updateErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to update outbox item status", "outbox_id", item.OutboxID, "error", updateErr)
 			errCount++

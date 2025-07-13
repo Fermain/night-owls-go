@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"night-owls-go/internal/config"
@@ -27,54 +28,60 @@ func NewPushSender(db db.Querier, cfg *config.Config, logger *slog.Logger) *Push
 }
 
 // Send sends a push notification to all registered subscriptions for a user.
-// payload should be a byte slice representing the JSON payload for the push notification.
-// ttl is the time-to-live in seconds for the push message.
-func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl int) {
+// Now returns an error if any send fails, for better upstream handling.
+func (s *PushSender) Send(ctx context.Context, userID int64, payload []byte, ttl int) error {
+	if ttl == 0 {
+		ttl = 604800 // Default to 1 week if not specified
+	}
+
 	subs, err := s.db.GetSubscriptionsByUser(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to get subscriptions by user", "user_id", userID, "error", err)
-		return
+		return err
 	}
 
 	if len(subs) == 0 {
 		s.logger.InfoContext(ctx, "no subscriptions found for user, skipping push send", "user_id", userID)
-		return
+		return nil
 	}
 
+	var lastErr error
 	for _, sub := range subs {
-		// Construct the webpush.Subscription object
 		subscription := &webpush.Subscription{
 			Endpoint: sub.Endpoint,
 			Keys:     webpush.Keys{P256dh: sub.P256dhKey, Auth: sub.AuthKey},
 		}
 
-		// Send the notification
-		// The webpush library handles sending to different push services based on the endpoint.
 		resp, err := webpush.SendNotification(payload, subscription, &webpush.Options{
 			VAPIDPublicKey:  s.config.VAPIDPublic,
 			VAPIDPrivateKey: s.config.VAPIDPrivate,
 			TTL:             ttl,
-			Subscriber:      s.config.VAPIDSubject, // Typically an email address or URL
+			Subscriber:      s.config.VAPIDSubject,
+			Urgency:         "high", // Add for FCM priority
 		})
-		// Close response body to prevent resource leaks
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close()
 		}
 
 		if err != nil {
 			s.logger.ErrorContext(ctx, "failed to send web push notification", "user_id", userID, "endpoint", sub.Endpoint, "error", err)
-		} else {
-			s.logger.InfoContext(ctx, "web push notification sent successfully", "user_id", userID, "endpoint", sub.Endpoint, "status_code", resp.StatusCode)
-		}
-
-		// Clean up expired subscriptions (410 Gone, 404 Not Found)
-		if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
-			params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
-			if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
-				s.logger.ErrorContext(ctx, "failed to remove expired subscription", "user_id", userID, "endpoint", sub.Endpoint, "error", delErr)
-			} else {
-				s.logger.InfoContext(ctx, "removed expired push subscription", "user_id", userID, "endpoint", sub.Endpoint)
+			lastErr = err // Capture last error
+			// Clean up expired subscriptions
+			if resp != nil && (resp.StatusCode == 404 || resp.StatusCode == 410) {
+				params := db.DeleteSubscriptionParams{Endpoint: sub.Endpoint, UserID: userID}
+				if delErr := s.db.DeleteSubscription(ctx, params); delErr != nil {
+					s.logger.ErrorContext(ctx, "failed to remove expired subscription", "user_id", userID, "endpoint", sub.Endpoint, "error", delErr)
+				} else {
+					s.logger.InfoContext(ctx, "removed expired push subscription", "user_id", userID, "endpoint", sub.Endpoint)
+				}
 			}
+			continue // Continue to next sub, don't fail all
 		}
+		s.logger.InfoContext(ctx, "web push notification sent successfully", "user_id", userID, "endpoint", sub.Endpoint, "status_code", resp.StatusCode)
 	}
+
+	if lastErr != nil {
+		return fmt.Errorf("failed to send to at least one subscription: %w", lastErr)
+	}
+	return nil
 }
