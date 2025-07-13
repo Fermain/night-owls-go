@@ -47,6 +47,10 @@
 		offset: 0
 	});
 
+	// Accumulated events for load-more functionality
+	let allEvents = $state<AuditEvent[]>([]);
+	let hasLoadedInitialData = $state(false);
+
 	// Query for audit events using our new API utilities
 	const auditEventsQuery = $derived(
 		createQuery<AuditEvent[], Error>({
@@ -108,6 +112,8 @@
 	// Handle filter changes
 	function handleFiltersChange(newFilters: typeof currentFilters) {
 		currentFilters = { ...newFilters, offset: 0 }; // Reset pagination
+		allEvents = []; // Clear accumulated events
+		hasLoadedInitialData = false;
 	}
 
 	// Handle pagination - load more events
@@ -118,30 +124,33 @@
 		};
 	}
 
-	// Derived state for events array (for pagination support)
-	let allEvents = $state<AuditEvent[]>([]);
-
-	// Effect to handle pagination accumulation
+	// Effect to handle event accumulation when query data changes
 	$effect(() => {
 		const events = $auditEventsQuery.data;
-		if (events) {
+		if (events && events.length > 0) {
 			if (currentFilters.offset === 0) {
 				// New search - replace events
 				allEvents = events;
+				hasLoadedInitialData = true;
 			} else {
-				// Load more - append events
-				allEvents = [...allEvents, ...events];
+				// Load more - append events if not already present
+				const newEvents = events.filter(
+					(event) => !allEvents.some((existing) => existing.id === event.id)
+				);
+				allEvents = [...allEvents, ...newEvents];
 			}
+		} else if (events && events.length === 0 && currentFilters.offset === 0) {
+			// Empty result for new search
+			allEvents = [];
+			hasLoadedInitialData = true;
 		}
 	});
 
-	// Reset events when filters change (except offset)
-	$effect(() => {
-		// Track changes to filters except offset
-		const { offset: _, ...filterWithoutOffset } = currentFilters;
-		// When any filter except offset changes, reset the events
-		allEvents = [];
-	});
+	// Derived state for UI
+	const isInitialLoading = $derived($auditEventsQuery.isLoading && !hasLoadedInitialData);
+	const isLoadingMore = $derived($auditEventsQuery.isLoading && hasLoadedInitialData);
+	const hasMoreData = $derived(($auditEventsQuery.data?.length ?? 0) >= currentFilters.limit);
+	const displayEvents = $derived(allEvents);
 </script>
 
 <svelte:head>
@@ -206,7 +215,7 @@
 			<CardDescription>Chronological view of all administrative and user actions</CardDescription>
 		</CardHeader>
 		<CardContent>
-			{#if $auditEventsQuery.isLoading && allEvents.length === 0}
+			{#if isInitialLoading}
 				<div class="flex items-center justify-center py-12">
 					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 				</div>
@@ -222,7 +231,7 @@
 						>
 					</div>
 				</div>
-			{:else if allEvents.length === 0}
+			{:else if displayEvents.length === 0}
 				<div class="flex items-center justify-center py-12">
 					<div class="text-center">
 						<Shield class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -231,13 +240,13 @@
 					</div>
 				</div>
 			{:else}
-				<AuditTimeline events={allEvents} />
+				<AuditTimeline events={displayEvents} />
 
 				<!-- Load More Button -->
-				{#if ($auditEventsQuery.data?.length ?? 0) >= currentFilters.limit}
+				{#if hasMoreData}
 					<div class="flex justify-center mt-6">
-						<Button onclick={loadMore} variant="outline" disabled={$auditEventsQuery.isLoading}>
-							{#if $auditEventsQuery.isLoading}
+						<Button onclick={loadMore} variant="outline" disabled={isLoadingMore}>
+							{#if isLoadingMore}
 								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
 							{/if}
 							Load More Events
