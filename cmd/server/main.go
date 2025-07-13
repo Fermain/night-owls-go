@@ -520,7 +520,12 @@ func main() {
 		}
 
 		// Send test push notification
-		pushSenderService.Send(r.Context(), userID, payloadBytes, 300) // 5 minutes TTL
+		err = pushSenderService.Send(r.Context(), userID, payloadBytes, 300) // 5 minutes TTL
+		if err != nil {
+			logger.Error("Failed to send test push notification", "user_id", userID, "error", err)
+			http.Error(w, "Failed to send test: " + err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		response := map[string]interface{}{
 			"message": "Test push notification sent",
