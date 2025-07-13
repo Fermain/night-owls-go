@@ -445,7 +445,7 @@ func (h *BookingHandler) CancelBookingFuego(c fuego.ContextNoBody) (any, error) 
 
 	// Set the 204 No Content status using Fuego's method
 	c.SetStatus(http.StatusNoContent)
-	
+
 	// Ensure clean headers for 204 response
 	c.Response().Header().Set("Content-Length", "0")
 	c.Response().Header().Del("Transfer-Encoding")
@@ -537,7 +537,7 @@ func (h *BookingHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	h.logger.InfoContext(r.Context(), "Booking cancelled successfully", "booking_id", bookingID, "user_id", userID)
-	
+
 	// Send clean 204 response to prevent proxy issues
 	RespondWithNoContent(w, h.logger, "booking_id", bookingID, "user_id", userID)
 }

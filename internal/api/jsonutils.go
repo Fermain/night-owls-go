@@ -105,21 +105,21 @@ func RespondWithNoContent(w http.ResponseWriter, logger *slog.Logger, details ..
 	w.Header().Del("Transfer-Encoding")
 	w.Header().Del("Trailer")
 	w.Header().Del("Connection")
-	
+
 	// Write the status code
 	w.WriteHeader(http.StatusNoContent)
-	
+
 	// Log the response if logger is provided
 	if logger != nil {
 		logFields := []interface{}{"status_code", http.StatusNoContent, "response_type", "no_content"}
-		
+
 		// Add details to log fields
 		for i := 0; i < len(details)-1; i += 2 {
 			if key, ok := details[i].(string); ok && i+1 < len(details) {
 				logFields = append(logFields, key, details[i+1])
 			}
 		}
-		
+
 		logger.Debug("Sent 204 No Content response", logFields...)
 	}
 }

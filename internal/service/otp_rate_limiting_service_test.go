@@ -434,7 +434,7 @@ func TestOTPRateLimitingService_SecurityEdgeCases(t *testing.T) {
 	// Test constant-time verification with different length strings
 	shortOTP := "123"
 	longOTP := "123456789012345"
-	
+
 	valid, err := service.VerifyOTPWithRateLimit(ctx, "+1234567890", shortOTP, longOTP, "192.168.1.1", "test")
 	if err != nil {
 		t.Errorf("VerifyOTPWithRateLimit should handle different length OTPs: %v", err)
@@ -451,4 +451,4 @@ func TestOTPRateLimitingConstants(t *testing.T) {
 	assert.Equal(t, 10, MaxRegistrationAttemptsPerPhone, "MaxRegistrationAttemptsPerPhone should be 10")
 	assert.Equal(t, 20, MaxRegistrationAttemptsPerIP, "MaxRegistrationAttemptsPerIP should be 20")
 	assert.Equal(t, time.Hour, RegistrationWindow, "RegistrationWindow should be 1 hour")
-} 
+}

@@ -215,11 +215,11 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		sort.Slice(populatedSlots, func(i, j int) bool {
 			return populatedSlots[i].StartTime.Before(populatedSlots[j].StartTime)
 		})
-		
+
 		if limit != nil && len(populatedSlots) > *limit {
 			populatedSlots = populatedSlots[:*limit]
 		}
-		
+
 		return populatedSlots, nil
 	}
 
@@ -228,7 +228,7 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 		ScheduleID     int64
 		ShiftStartUnix int64
 	}
-	
+
 	bookingMap := make(map[BookingKey]db.GetBookingsInDateRangeRow)
 	for _, booking := range allBookings {
 		key := BookingKey{
@@ -245,12 +245,12 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 			ScheduleID:     slot.ScheduleID,
 			ShiftStartUnix: slot.StartTime.UTC().Unix(),
 		}
-		
+
 		if booking, exists := bookingMap[slotKey]; exists {
 			// Booking exists - populate assignment details
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-			
+
 			// User details are already included in the joined query
 			if booking.UserName != "" {
 				populatedSlot.UserName = &booking.UserName
@@ -258,7 +258,7 @@ func (s *ScheduleService) GetUpcomingAvailableSlots(ctx context.Context, queryFr
 			if booking.UserPhone != "" {
 				populatedSlot.UserPhone = &booking.UserPhone
 			}
-			
+
 			// Handle buddy information from the joined query
 			if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 				populatedSlot.BuddyName = &booking.BuddyName.String
@@ -396,11 +396,11 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		sort.Slice(populatedSlots, func(i, j int) bool {
 			return populatedSlots[i].StartTime.Before(populatedSlots[j].StartTime)
 		})
-		
+
 		if limit != nil && len(populatedSlots) > *limit {
 			populatedSlots = populatedSlots[:*limit]
 		}
-		
+
 		return populatedSlots, nil
 	}
 
@@ -409,7 +409,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 		ScheduleID     int64
 		ShiftStartUnix int64
 	}
-	
+
 	bookingMap := make(map[BookingKey]db.GetBookingsInDateRangeRow)
 	for _, booking := range allBookings {
 		key := BookingKey{
@@ -426,12 +426,12 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			ScheduleID:     slot.ScheduleID,
 			ShiftStartUnix: slot.StartTime.UTC().Unix(),
 		}
-		
+
 		if booking, exists := bookingMap[slotKey]; exists {
 			// Booking exists - populate assignment details
 			populatedSlot.IsBooked = true
 			populatedSlot.BookingID = &booking.BookingID
-			
+
 			// User details are already included in the joined query
 			if booking.UserName != "" {
 				populatedSlot.UserName = &booking.UserName
@@ -439,7 +439,7 @@ func (s *ScheduleService) AdminGetAllShiftSlots(ctx context.Context, queryFrom *
 			if booking.UserPhone != "" {
 				populatedSlot.UserPhone = &booking.UserPhone
 			}
-			
+
 			// Handle buddy information from the joined query
 			if booking.BuddyName.Valid && booking.BuddyName.String != "" {
 				populatedSlot.BuddyName = &booking.BuddyName.String
@@ -582,22 +582,22 @@ func (s *ScheduleService) GetPublicScheduleSlots(ctx context.Context, queryFrom 
 	var publicSlots []AdminAvailableShiftSlot
 	for _, slot := range adminSlots {
 		publicSlot := slot
-		
+
 		if slot.IsBooked && slot.UserName != nil {
 			// Privacy protection: mask user name
 			maskedName := s.maskUserName(*slot.UserName)
 			publicSlot.UserName = &maskedName
-			
+
 			// Don't include phone number in public view
 			publicSlot.UserPhone = nil
-			
+
 			// Privacy protection: just indicate if there's a buddy, don't show name
 			if slot.BuddyName != nil && *slot.BuddyName != "" {
 				buddyIndicator := "with buddy"
 				publicSlot.BuddyName = &buddyIndicator
 			}
 		}
-		
+
 		publicSlots = append(publicSlots, publicSlot)
 	}
 
@@ -615,7 +615,7 @@ func (s *ScheduleService) maskUserName(fullName string) string {
 	if len(parts) == 1 {
 		return parts[0]
 	}
-	
+
 	// Take first name and first letter of last name
 	firstName := parts[0]
 	lastInitial := string([]rune(parts[len(parts)-1])[0]) // Handle unicode properly

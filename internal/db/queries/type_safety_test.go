@@ -14,10 +14,10 @@ import (
 func TestDaysFromNowTypeSafety(t *testing.T) {
 	// DaysFromNow is interface{} due to complex SQL COALESCE/CAST expression
 	var booking db.GetBookingsInDateRangeRow
-	
+
 	// Simulate actual data that would come from the database
 	booking.DaysFromNow = int64(5)
-	
+
 	// Safe type assertion with check
 	if daysFromNow, ok := booking.DaysFromNow.(int64); ok {
 		_ = daysFromNow
@@ -31,18 +31,18 @@ func TestDaysFromNowTypeSafety(t *testing.T) {
 func TestDaysFromNowUsage(t *testing.T) {
 	var booking db.GetBookingsInDateRangeRow
 	booking.DaysFromNow = int64(5)
-	
+
 	// Safe type assertion before operations
 	if daysFromNow, ok := booking.DaysFromNow.(int64); ok {
 		// These operations work safely with type assertion
 		if daysFromNow > 0 {
 			t.Logf("Booking is %d days from now", daysFromNow)
 		}
-		
+
 		// Arithmetic operations work after type assertion
 		weekFromNow := daysFromNow + 7
 		_ = weekFromNow
-		
+
 		t.Log("DaysFromNow field supports proper int64 operations after type assertion")
 	} else {
 		t.Errorf("Failed to assert DaysFromNow as int64, got %T", booking.DaysFromNow)
@@ -70,7 +70,7 @@ func TestDaysFromNowHelper(t *testing.T) {
 			booking.DaysFromNow = tc.value
 
 			result, err := getDaysFromNowSafe(booking)
-			
+
 			if tc.hasError && err == nil {
 				t.Errorf("Expected error but got none")
 			}
@@ -101,4 +101,4 @@ func getDaysFromNowSafe(booking db.GetBookingsInDateRangeRow) (int64, error) {
 	default:
 		return 0, fmt.Errorf("DaysFromNow has unexpected type: %T", v)
 	}
-} 
+}
