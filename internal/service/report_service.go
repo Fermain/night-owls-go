@@ -101,9 +101,9 @@ func (s *ReportService) CreateReport(ctx context.Context, userIDFromAuth int64, 
 		return db.Report{}, ErrInternalServer
 	}
 
-	// Award shift completion points to the user
+	// Award shift completion points to the user (atomic operation)
 	if s.pointsService != nil {
-		if err := s.pointsService.AwardShiftCompletionPoints(ctx, userIDFromAuth, bookingID, int(createdReport.Severity)); err != nil {
+		if err := s.pointsService.AtomicAwardShiftCompletionPoints(ctx, userIDFromAuth, bookingID, int(createdReport.Severity)); err != nil {
 			s.logger.WarnContext(ctx, "Failed to award completion points", "report_id", createdReport.ReportID, "booking_id", bookingID, "user_id", userIDFromAuth, "error", err)
 			// Non-fatal - don't fail the report creation if points can't be awarded
 		} else {

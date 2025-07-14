@@ -159,4 +159,37 @@ SELECT
 FROM bookings b
 WHERE b.user_id = ?
     AND b.checked_in_at IS NOT NULL
-    AND strftime('%Y-%m', b.shift_start) = ?; 
+    AND strftime('%Y-%m', b.shift_start) = ?;
+
+-- name: UpdateUserTotalPointsIncremental :exec
+-- Update user's total points incrementally (more efficient than full recalculation)
+UPDATE users 
+SET total_points = total_points + ?,
+    last_activity_date = DATE('now')
+WHERE user_id = ?;
+
+-- name: AwardMultiplePoints :exec
+-- Award multiple point entries in a single operation (for batching)
+INSERT INTO points_history (user_id, booking_id, points_awarded, reason, multiplier)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: UpdateUserPointsAndShiftCount :exec
+-- Atomically update both points and shift count
+UPDATE users 
+SET total_points = total_points + ?,
+    shift_count = shift_count + ?,
+    last_activity_date = DATE('now')
+WHERE user_id = ?;
+
+-- name: GetUserCurrentPoints :one
+-- Get user's current total points (for verification)
+SELECT total_points, shift_count FROM users WHERE user_id = ?;
+
+-- name: CheckFrequencyBonusEligibility :one
+-- Check if user is eligible for frequency bonus (completed shifts this month)
+SELECT 
+    COUNT(*) as completed_shifts_this_month
+FROM bookings b
+WHERE b.user_id = ?
+    AND b.checked_in_at IS NOT NULL
+    AND strftime('%Y-%m', b.shift_start) = strftime('%Y-%m', 'now'); 

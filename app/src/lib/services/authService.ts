@@ -93,7 +93,7 @@ class AuthService {
 		return result;
 	}
 
-	async login(phoneNumber: string, name: string, code: string): Promise<void> {
+	async login(phoneNumber: string, _name: string, code: string): Promise<void> {
 		const verifyResponse = await this.verify({ phone: phoneNumber, code });
 
 		// Update the user session with the real token

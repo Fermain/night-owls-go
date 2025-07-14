@@ -27,6 +27,31 @@ func (q *Queries) AwardAchievement(ctx context.Context, arg AwardAchievementPara
 	return err
 }
 
+const awardMultiplePoints = `-- name: AwardMultiplePoints :exec
+INSERT INTO points_history (user_id, booking_id, points_awarded, reason, multiplier)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type AwardMultiplePointsParams struct {
+	UserID        int64           `json:"user_id"`
+	BookingID     sql.NullInt64   `json:"booking_id"`
+	PointsAwarded int64           `json:"points_awarded"`
+	Reason        string          `json:"reason"`
+	Multiplier    sql.NullFloat64 `json:"multiplier"`
+}
+
+// Award multiple point entries in a single operation (for batching)
+func (q *Queries) AwardMultiplePoints(ctx context.Context, arg AwardMultiplePointsParams) error {
+	_, err := q.db.ExecContext(ctx, awardMultiplePoints,
+		arg.UserID,
+		arg.BookingID,
+		arg.PointsAwarded,
+		arg.Reason,
+		arg.Multiplier,
+	)
+	return err
+}
+
 const awardPoints = `-- name: AwardPoints :exec
 
 INSERT INTO points_history (user_id, booking_id, points_awarded, reason, multiplier)
@@ -52,6 +77,23 @@ func (q *Queries) AwardPoints(ctx context.Context, arg AwardPointsParams) error 
 		arg.Multiplier,
 	)
 	return err
+}
+
+const checkFrequencyBonusEligibility = `-- name: CheckFrequencyBonusEligibility :one
+SELECT 
+    COUNT(*) as completed_shifts_this_month
+FROM bookings b
+WHERE b.user_id = ?
+    AND b.checked_in_at IS NOT NULL
+    AND strftime('%Y-%m', b.shift_start) = strftime('%Y-%m', 'now')
+`
+
+// Check if user is eligible for frequency bonus (completed shifts this month)
+func (q *Queries) CheckFrequencyBonusEligibility(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkFrequencyBonusEligibility, userID)
+	var completed_shifts_this_month int64
+	err := row.Scan(&completed_shifts_this_month)
+	return completed_shifts_this_month, err
 }
 
 const getAvailableAchievements = `-- name: GetAvailableAchievements :many
@@ -339,6 +381,23 @@ func (q *Queries) GetUserAchievements(ctx context.Context, userID int64) ([]GetU
 	return items, nil
 }
 
+const getUserCurrentPoints = `-- name: GetUserCurrentPoints :one
+SELECT total_points, shift_count FROM users WHERE user_id = ?
+`
+
+type GetUserCurrentPointsRow struct {
+	TotalPoints sql.NullInt64 `json:"total_points"`
+	ShiftCount  sql.NullInt64 `json:"shift_count"`
+}
+
+// Get user's current total points (for verification)
+func (q *Queries) GetUserCurrentPoints(ctx context.Context, userID int64) (GetUserCurrentPointsRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserCurrentPoints, userID)
+	var i GetUserCurrentPointsRow
+	err := row.Scan(&i.TotalPoints, &i.ShiftCount)
+	return i, err
+}
+
 const getUserPoints = `-- name: GetUserPoints :one
 SELECT 
     user_id,
@@ -468,6 +527,26 @@ func (q *Queries) GetUserShiftCountForMonth(ctx context.Context, arg GetUserShif
 	return shift_count, err
 }
 
+const updateUserPointsAndShiftCount = `-- name: UpdateUserPointsAndShiftCount :exec
+UPDATE users 
+SET total_points = total_points + ?,
+    shift_count = shift_count + ?,
+    last_activity_date = DATE('now')
+WHERE user_id = ?
+`
+
+type UpdateUserPointsAndShiftCountParams struct {
+	TotalPoints sql.NullInt64 `json:"total_points"`
+	ShiftCount  sql.NullInt64 `json:"shift_count"`
+	UserID      int64         `json:"user_id"`
+}
+
+// Atomically update both points and shift count
+func (q *Queries) UpdateUserPointsAndShiftCount(ctx context.Context, arg UpdateUserPointsAndShiftCountParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPointsAndShiftCount, arg.TotalPoints, arg.ShiftCount, arg.UserID)
+	return err
+}
+
 const updateUserShiftCount = `-- name: UpdateUserShiftCount :exec
 UPDATE users 
 SET shift_count = shift_count + 1,
@@ -499,5 +578,23 @@ type UpdateUserTotalPointsParams struct {
 // Update user's total points (should be called after AwardPoints)
 func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserTotalPoints, arg.UserID, arg.UserID_2)
+	return err
+}
+
+const updateUserTotalPointsIncremental = `-- name: UpdateUserTotalPointsIncremental :exec
+UPDATE users 
+SET total_points = total_points + ?,
+    last_activity_date = DATE('now')
+WHERE user_id = ?
+`
+
+type UpdateUserTotalPointsIncrementalParams struct {
+	TotalPoints sql.NullInt64 `json:"total_points"`
+	UserID      int64         `json:"user_id"`
+}
+
+// Update user's total points incrementally (more efficient than full recalculation)
+func (q *Queries) UpdateUserTotalPointsIncremental(ctx context.Context, arg UpdateUserTotalPointsIncrementalParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserTotalPointsIncremental, arg.TotalPoints, arg.UserID)
 	return err
 }

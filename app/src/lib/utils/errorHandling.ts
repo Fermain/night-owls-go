@@ -248,7 +248,7 @@ export class ErrorLogger {
 	/**
 	 * Send error to monitoring service (placeholder)
 	 */
-	private static sendToMonitoringService(error: AppError): void {
+	private static sendToMonitoringService(_error: AppError): void {
 		// Example implementation for production monitoring
 		// Replace with your preferred monitoring service
 
