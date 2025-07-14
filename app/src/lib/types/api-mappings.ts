@@ -222,16 +222,21 @@ export function mapAPITimeSlotPatternToDomain(apiPattern: APITimeSlotPattern): T
 
 export function mapAPIAuditEventToDomain(apiEvent: Record<string, unknown>): AuditEvent {
 	return {
-		id: (apiEvent.id as number) ?? 0,
+		id: (apiEvent.event_id as number) ?? 0,
 		eventType: (apiEvent.event_type as AuditEventType) ?? 'user.login',
-		userId: (apiEvent.user_id as number | null) ?? null,
+		userId: (apiEvent.actor_user_id as number | null) ?? null,
 		targetUserId: (apiEvent.target_user_id as number | null) ?? null,
+		entityType: (apiEvent.entity_type as string) ?? undefined,
+		entityId: (apiEvent.entity_id as number | null) ?? null,
+		action: (apiEvent.action as string) ?? undefined,
 		ipAddress: (apiEvent.ip_address as string | null) ?? null,
 		userAgent: (apiEvent.user_agent as string | null) ?? null,
 		details: (apiEvent.details as Record<string, unknown>) ?? {},
 		createdAt: (apiEvent.created_at as string) ?? new Date().toISOString(),
-		userName: (apiEvent.user_name as string) ?? 'Unknown',
-		targetUserName: (apiEvent.target_user_name as string) ?? undefined
+		userName: (apiEvent.actor_name as string) ?? 'Unknown',
+		userPhone: (apiEvent.actor_phone as string) ?? undefined,
+		targetUserName: (apiEvent.target_name as string) ?? undefined,
+		targetUserPhone: (apiEvent.target_phone as string) ?? undefined
 	};
 }
 

@@ -226,17 +226,23 @@ export interface AuditEvent {
 	eventType: AuditEventType;
 	userId?: number | null;
 	targetUserId?: number | null;
+	entityType?: string;
+	entityId?: number | null;
+	action?: string;
 	ipAddress?: string | null;
 	userAgent?: string | null;
 	details: Record<string, unknown>;
 	createdAt: string;
 	// Populated for display
 	userName?: string;
+	userPhone?: string;
 	targetUserName?: string;
+	targetUserPhone?: string;
 }
 
 export type AuditEventType =
 	| 'user.login'
+	| 'user.registered'
 	| 'user.created'
 	| 'user.updated'
 	| 'user.deleted'
@@ -245,13 +251,23 @@ export type AuditEventType =
 	| 'schedule.created'
 	| 'schedule.updated'
 	| 'schedule.deleted'
+	| 'schedule.bulk_deleted'
 	| 'booking.created'
 	| 'booking.cancelled'
+	| 'booking.checked_in'
+	| 'booking.admin_assigned'
 	| 'report.created'
-	| 'report.archived';
+	| 'report.archived'
+	| 'report.unarchived'
+	| 'report.viewed'
+	| 'report.deleted'
+	| 'auth.logout'
+	| 'auth.failed_login'
+	| 'auth.session_expired';
 
 export const AUDIT_EVENT_LABELS = {
 	'user.login': 'User Login',
+	'user.registered': 'User Registered',
 	'user.created': 'User Created',
 	'user.updated': 'User Updated',
 	'user.deleted': 'User Deleted',
@@ -260,14 +276,24 @@ export const AUDIT_EVENT_LABELS = {
 	'schedule.created': 'Schedule Created',
 	'schedule.updated': 'Schedule Updated',
 	'schedule.deleted': 'Schedule Deleted',
+	'schedule.bulk_deleted': 'Bulk Schedule Deletion',
 	'booking.created': 'Booking Created',
 	'booking.cancelled': 'Booking Cancelled',
+	'booking.checked_in': 'Booking Checked In',
+	'booking.admin_assigned': 'Admin Assigned Booking',
 	'report.created': 'Report Submitted',
-	'report.archived': 'Report Archived'
+	'report.archived': 'Report Archived',
+	'report.unarchived': 'Report Unarchived',
+	'report.viewed': 'Report Viewed',
+	'report.deleted': 'Report Deleted',
+	'auth.logout': 'User Logout',
+	'auth.failed_login': 'Failed Login',
+	'auth.session_expired': 'Session Expired'
 } as const;
 
 export const AUDIT_EVENT_COLORS = {
 	'user.login': 'green',
+	'user.registered': 'green',
 	'user.created': 'blue',
 	'user.updated': 'yellow',
 	'user.deleted': 'red',
@@ -276,10 +302,19 @@ export const AUDIT_EVENT_COLORS = {
 	'schedule.created': 'blue',
 	'schedule.updated': 'yellow',
 	'schedule.deleted': 'red',
+	'schedule.bulk_deleted': 'red',
 	'booking.created': 'green',
 	'booking.cancelled': 'orange',
+	'booking.checked_in': 'green',
+	'booking.admin_assigned': 'blue',
 	'report.created': 'blue',
-	'report.archived': 'gray'
+	'report.archived': 'gray',
+	'report.unarchived': 'yellow',
+	'report.viewed': 'gray',
+	'report.deleted': 'red',
+	'auth.logout': 'gray',
+	'auth.failed_login': 'red',
+	'auth.session_expired': 'orange'
 } as const;
 
 // === FORM DATA TYPES ===
