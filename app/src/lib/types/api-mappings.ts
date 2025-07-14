@@ -34,7 +34,6 @@ type APIBooking = components['schemas']['api.BookingResponse'];
 type APIBookingWithSchedule = components['schemas']['api.BookingWithScheduleResponse'];
 type APIReport = components['schemas']['api.AdminReportResponse'];
 type APIEmergencyContact = components['schemas']['api.EmergencyContactResponse'];
-type APIDashboard = components['schemas']['service.AdminDashboard'];
 type APIDashboardMetrics = components['schemas']['service.DashboardMetrics'];
 type APIQualityMetrics = components['schemas']['service.QualityMetrics'];
 type APIMemberContribution = components['schemas']['service.MemberContribution'];
@@ -50,16 +49,6 @@ export function mapAPIUserToDomain(apiUser: APIUser): User {
 		role: (apiUser.role as UserRole) ?? 'guest',
 		createdAt: apiUser.created_at ?? new Date().toISOString(),
 		isActive: true // API doesn't provide this field yet
-	};
-}
-
-export function mapDomainUserToAPI(user: Partial<User>): Partial<APIUser> {
-	return {
-		id: user.id,
-		name: user.name,
-		phone: user.phone,
-		role: user.role,
-		created_at: user.createdAt
 	};
 }
 
@@ -146,19 +135,6 @@ export function mapAPIEmergencyContactToDomain(apiContact: APIEmergencyContact):
 		description: apiContact.description ?? null,
 		isDefault: apiContact.is_default ?? false,
 		displayOrder: apiContact.display_order ?? 0
-	};
-}
-
-export function mapDomainEmergencyContactToAPI(
-	contact: Partial<EmergencyContact>
-): Partial<APIEmergencyContact> {
-	return {
-		id: contact.id,
-		name: contact.name,
-		number: contact.number,
-		description: contact.description ?? undefined,
-		is_default: contact.isDefault,
-		display_order: contact.displayOrder
 	};
 }
 
@@ -305,56 +281,6 @@ export function mapUpdateUserToAPIRequest(userData: {
 		name: userData.name,
 		phone: userData.phone,
 		role: userData.role
-	};
-}
-
-export function mapCreateBookingToAPIRequest(bookingData: {
-	scheduleId: number;
-	startTime: string;
-	buddyName?: string;
-	buddyPhone?: string;
-}): components['schemas']['api.CreateBookingRequest'] {
-	return {
-		schedule_id: bookingData.scheduleId,
-		start_time: bookingData.startTime,
-		buddy_name: bookingData.buddyName,
-		buddy_phone: bookingData.buddyPhone
-	};
-}
-
-export function mapCreateReportToAPIRequest(reportData: {
-	message: string;
-	severity: ReportSeverity;
-	latitude?: number;
-	longitude?: number;
-	accuracy?: number;
-	locationTimestamp?: string;
-}): components['schemas']['api.CreateReportRequest'] {
-	return {
-		message: reportData.message,
-		severity: reportData.severity,
-		latitude: reportData.latitude,
-		longitude: reportData.longitude,
-		accuracy: reportData.accuracy,
-		location_timestamp: reportData.locationTimestamp
-	};
-}
-
-export function mapCreateOffShiftReportToAPIRequest(reportData: {
-	message: string;
-	severity: ReportSeverity;
-	latitude?: number;
-	longitude?: number;
-	accuracy?: number;
-	locationTimestamp?: string;
-}): components['schemas']['api.CreateOffShiftReportRequest'] {
-	return {
-		message: reportData.message,
-		severity: reportData.severity,
-		latitude: reportData.latitude,
-		longitude: reportData.longitude,
-		accuracy: reportData.accuracy,
-		location_timestamp: reportData.locationTimestamp
 	};
 }
 

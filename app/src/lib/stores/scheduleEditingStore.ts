@@ -18,12 +18,3 @@ import { writable } from 'svelte/store';
 
 // Initialize the store with an undefined value, meaning no schedule is selected initially.
 export const selectedScheduleForForm = writable<Schedule | undefined>(undefined);
-
-// Optional: You could add helper functions here if needed, e.g.,
-// export function clearSelectedSchedule() {
-//   selectedScheduleForForm.set(undefined);
-// }
-
-// export function setSelectedSchedule(schedule: Schedule) {
-//   selectedScheduleForForm.set(schedule);
-// }

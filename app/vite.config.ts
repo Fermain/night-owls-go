@@ -11,7 +11,6 @@ const appVersion = packageJson.version;
 
 export default defineConfig(({ mode: _mode }) => {
 	// Disable proxy during e2e tests to let MSW handle requests
-	const _isE2ETesting = process.env.NODE_ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
 
 	return {
 		plugins: [

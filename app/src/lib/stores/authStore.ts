@@ -64,7 +64,7 @@ export const userSession = persisted<UserSessionData>('user-session', initialSes
 
 // Enhanced store that prioritizes cookie-based auth
 function createSecureUserStore() {
-	const { subscribe, set, update } = userSession;
+	const { subscribe, set } = userSession;
 
 	return {
 		subscribe,
