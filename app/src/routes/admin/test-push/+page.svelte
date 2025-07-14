@@ -108,11 +108,15 @@
 				const data = await response.json();
 				addDebugInfo(`Backend push test: SUCCESS - ${data.message}`);
 			} else {
-				const errorText = await response.text();
-				addDebugInfo(`Backend push test: FAILED - ${response.status} ${errorText}`);
+				const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+				addDebugInfo(
+					`Backend push test: FAILED - ${response.status} - ${errorData.message || (await response.text())}`
+				);
 			}
-		} catch (error) {
-			addDebugInfo(`Backend push test error: ${error}`);
+		} catch (error: unknown) {
+			addDebugInfo(
+				`Backend push test error: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}
 
