@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	db "night-owls-go/internal/db/sqlc_generated"
@@ -12,14 +13,16 @@ import (
 
 // PointsService handles all points-related operations for the leaderboard system
 type PointsService struct {
-	querier db.Querier
+	querier *db.Queries
+	db      *sql.DB
 	logger  *slog.Logger
 }
 
 // NewPointsService creates a new PointsService
-func NewPointsService(querier db.Querier, logger *slog.Logger) *PointsService {
+func NewPointsService(querier *db.Queries, database *sql.DB, logger *slog.Logger) *PointsService {
 	return &PointsService{
 		querier: querier,
+		db:      database,
 		logger:  logger.With("service", "PointsService"),
 	}
 }
@@ -346,4 +349,383 @@ func (ps *PointsService) GetUserPointsHistory(ctx context.Context, userID int64,
 
 func (ps *PointsService) GetAvailableAchievements(ctx context.Context, userID int64) ([]db.GetAvailableAchievementsRow, error) {
 	return ps.querier.GetAvailableAchievements(ctx, userID)
+}
+
+// ===== ATOMIC OPERATIONS =====
+// These methods use database transactions to ensure atomicity and consistency
+
+// AtomicAwardShiftCheckinPoints atomically awards points when a user checks in to a shift
+// This replaces AwardShiftCheckinPoints with proper transaction handling
+func (ps *PointsService) AtomicAwardShiftCheckinPoints(ctx context.Context, userID int64, booking db.Booking) error {
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	txQuerier := ps.querier.WithTx(tx)
+
+	// Calculate all points and bonuses
+	basePoints := PointsShiftCheckin
+	totalPoints := basePoints
+	pointEntries := []struct {
+		points int
+		reason PointReason
+	}{
+		{basePoints, ReasonShiftCheckin},
+	}
+
+	// Add bonuses
+	if ps.isEarlyCheckin(booking) {
+		pointEntries = append(pointEntries, struct {
+			points int
+			reason PointReason
+		}{PointsEarlyCheckin, ReasonEarlyCheckin})
+		totalPoints += PointsEarlyCheckin
+	}
+
+	if ps.isWeekendShift(booking) {
+		pointEntries = append(pointEntries, struct {
+			points int
+			reason PointReason
+		}{PointsWeekendShift, ReasonWeekendBonus})
+		totalPoints += PointsWeekendShift
+	}
+
+	if ps.isLateNightShift(booking) {
+		pointEntries = append(pointEntries, struct {
+			points int
+			reason PointReason
+		}{PointsLateNightShift, ReasonLateNightBonus})
+		totalPoints += PointsLateNightShift
+	}
+
+	// Insert all point history entries
+	for _, entry := range pointEntries {
+		if err := txQuerier.AwardPoints(ctx, db.AwardPointsParams{
+			UserID:        userID,
+			BookingID:     sql.NullInt64{Int64: booking.BookingID, Valid: true},
+			PointsAwarded: int64(entry.points),
+			Reason:        string(entry.reason),
+			Multiplier:    sql.NullFloat64{Float64: 1.0, Valid: true},
+		}); err != nil {
+			return fmt.Errorf("failed to award points for %s: %w", entry.reason, err)
+		}
+	}
+
+	// Update user's total points incrementally
+	if err := txQuerier.UpdateUserTotalPointsIncremental(ctx, db.UpdateUserTotalPointsIncrementalParams{
+		TotalPoints: sql.NullInt64{Int64: int64(totalPoints), Valid: true},
+		UserID:      userID,
+	}); err != nil {
+		return fmt.Errorf("failed to update total points: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Atomically awarded shift check-in points",
+		"user_id", userID, "booking_id", booking.BookingID, "total_points", totalPoints)
+
+	return nil
+}
+
+// AtomicAwardShiftCommitmentPoints atomically awards points when a user commits to a shift
+func (ps *PointsService) AtomicAwardShiftCommitmentPoints(ctx context.Context, userID int64, bookingID int64) error {
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	txQuerier := ps.querier.WithTx(tx)
+
+	// Award commitment points
+	if err := txQuerier.AwardPoints(ctx, db.AwardPointsParams{
+		UserID:        userID,
+		BookingID:     sql.NullInt64{Int64: bookingID, Valid: true},
+		PointsAwarded: int64(PointsShiftCommitment),
+		Reason:        string(ReasonShiftCommitment),
+		Multiplier:    sql.NullFloat64{Float64: 1.0, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("failed to award commitment points: %w", err)
+	}
+
+	// Update user's total points incrementally
+	if err := txQuerier.UpdateUserTotalPointsIncremental(ctx, db.UpdateUserTotalPointsIncrementalParams{
+		TotalPoints: sql.NullInt64{Int64: int64(PointsShiftCommitment), Valid: true},
+		UserID:      userID,
+	}); err != nil {
+		return fmt.Errorf("failed to update total points: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Atomically awarded shift commitment points",
+		"user_id", userID, "booking_id", bookingID, "points", PointsShiftCommitment)
+
+	return nil
+}
+
+// AtomicAwardShiftDropoutPoints atomically deducts points when a user drops out of a shift
+func (ps *PointsService) AtomicAwardShiftDropoutPoints(ctx context.Context, userID int64, bookingID int64) error {
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	txQuerier := ps.querier.WithTx(tx)
+
+	// Award dropout points (negative)
+	if err := txQuerier.AwardPoints(ctx, db.AwardPointsParams{
+		UserID:        userID,
+		BookingID:     sql.NullInt64{Int64: bookingID, Valid: true},
+		PointsAwarded: int64(PointsShiftDropout), // This is negative (-10)
+		Reason:        string(ReasonShiftDropout),
+		Multiplier:    sql.NullFloat64{Float64: 1.0, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("failed to award dropout points: %w", err)
+	}
+
+	// Update user's total points incrementally
+	if err := txQuerier.UpdateUserTotalPointsIncremental(ctx, db.UpdateUserTotalPointsIncrementalParams{
+		TotalPoints: sql.NullInt64{Int64: int64(PointsShiftDropout), Valid: true}, // Negative value
+		UserID:      userID,
+	}); err != nil {
+		return fmt.Errorf("failed to update total points: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Atomically awarded shift dropout points",
+		"user_id", userID, "booking_id", bookingID, "points", PointsShiftDropout)
+
+	return nil
+}
+
+// AtomicAwardShiftCompletionPoints atomically awards points when a user completes a shift
+func (ps *PointsService) AtomicAwardShiftCompletionPoints(ctx context.Context, userID int64, bookingID int64, reportSeverity int) error {
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	txQuerier := ps.querier.WithTx(tx)
+
+	totalPoints := PointsShiftCompletion
+	pointEntries := []struct {
+		points int
+		reason PointReason
+	}{
+		{PointsShiftCompletion, ReasonShiftCompletion},
+		{PointsReportFiled, ReasonReportFiled},
+	}
+
+	// Add level 2 report bonus
+	if reportSeverity >= 2 {
+		pointEntries = append(pointEntries, struct {
+			points int
+			reason PointReason
+		}{PointsLevel2Report, ReasonLevel2Report})
+		totalPoints += PointsReportFiled + PointsLevel2Report
+	} else {
+		totalPoints += PointsReportFiled
+	}
+
+	// Check for frequency bonus
+	frequencyEligible, err := txQuerier.CheckFrequencyBonusEligibility(ctx, userID)
+	if err != nil {
+		ps.logger.WarnContext(ctx, "Failed to check frequency bonus eligibility", "user_id", userID, "error", err)
+	} else if frequencyEligible > 0 { // Already has completed shifts this month
+		pointEntries = append(pointEntries, struct {
+			points int
+			reason PointReason
+		}{PointsFrequencyBonus, ReasonFrequencyBonus})
+		totalPoints += PointsFrequencyBonus
+	}
+
+	// Insert all point history entries
+	for _, entry := range pointEntries {
+		if err := txQuerier.AwardPoints(ctx, db.AwardPointsParams{
+			UserID:        userID,
+			BookingID:     sql.NullInt64{Int64: bookingID, Valid: true},
+			PointsAwarded: int64(entry.points),
+			Reason:        string(entry.reason),
+			Multiplier:    sql.NullFloat64{Float64: 1.0, Valid: true},
+		}); err != nil {
+			return fmt.Errorf("failed to award points for %s: %w", entry.reason, err)
+		}
+	}
+
+	// Atomically update both points and shift count
+	if err := txQuerier.UpdateUserPointsAndShiftCount(ctx, db.UpdateUserPointsAndShiftCountParams{
+		TotalPoints: sql.NullInt64{Int64: int64(totalPoints), Valid: true},
+		ShiftCount:  sql.NullInt64{Int64: 1, Valid: true}, // Increment by 1
+		UserID:      userID,
+	}); err != nil {
+		return fmt.Errorf("failed to update points and shift count: %w", err)
+	}
+
+	// Check for achievements
+	if err := ps.checkAndAwardAchievementsInTx(ctx, txQuerier, userID); err != nil {
+		ps.logger.WarnContext(ctx, "Failed to check achievements", "user_id", userID, "error", err)
+		// Non-fatal - don't fail the entire operation
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	ps.logger.InfoContext(ctx, "Atomically awarded shift completion points",
+		"user_id", userID, "booking_id", bookingID, "total_points", totalPoints)
+
+	return nil
+}
+
+// checkAndAwardAchievementsInTx checks and awards achievements within an existing transaction
+func (ps *PointsService) checkAndAwardAchievementsInTx(ctx context.Context, txQuerier db.Querier, userID int64) error {
+	// Get user's current stats
+	userStats, err := txQuerier.GetUserCurrentPoints(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user stats: %w", err)
+	}
+
+	// Get available achievements
+	availableAchievements, err := txQuerier.GetAvailableAchievements(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get available achievements: %w", err)
+	}
+
+	// Award achievements based on shift count
+	for _, achievement := range availableAchievements {
+		if achievement.ShiftsThreshold.Valid && userStats.ShiftCount.Valid &&
+		   userStats.ShiftCount.Int64 >= achievement.ShiftsThreshold.Int64 {
+			if err := txQuerier.AwardAchievement(ctx, db.AwardAchievementParams{
+				UserID:        userID,
+				AchievementID: achievement.AchievementID,
+			}); err != nil {
+				ps.logger.WarnContext(ctx, "Failed to award achievement",
+					"user_id", userID, "achievement_id", achievement.AchievementID, "error", err)
+				// Continue with other achievements
+			} else {
+				ps.logger.InfoContext(ctx, "Awarded achievement",
+					"user_id", userID, "achievement", achievement.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ===== ERROR RECOVERY AND RETRY MECHANISMS =====
+
+// PointsOperationWithRetry executes a points operation with retry logic for transient failures
+func (ps *PointsService) PointsOperationWithRetry(ctx context.Context, operation func() error, operationName string) error {
+	const maxRetries = 3
+	const baseDelay = 100 * time.Millisecond
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff with jitter
+			delay := baseDelay * time.Duration(1<<uint(attempt-1))
+			ps.logger.InfoContext(ctx, "Retrying points operation",
+				"operation", operationName, "attempt", attempt+1, "delay_ms", delay.Milliseconds())
+			
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		err := operation()
+		if err == nil {
+			if attempt > 0 {
+				ps.logger.InfoContext(ctx, "Points operation succeeded after retry",
+					"operation", operationName, "attempt", attempt+1)
+			}
+			return nil
+		}
+
+		lastErr = err
+		
+		// Check if error is retryable (database lock, temporary network issues, etc.)
+		if !ps.isRetryableError(err) {
+			ps.logger.WarnContext(ctx, "Points operation failed with non-retryable error",
+				"operation", operationName, "error", err)
+			return err
+		}
+
+		ps.logger.WarnContext(ctx, "Points operation failed, will retry",
+			"operation", operationName, "attempt", attempt+1, "error", err)
+	}
+
+	ps.logger.ErrorContext(ctx, "Points operation failed after all retries",
+		"operation", operationName, "max_retries", maxRetries, "final_error", lastErr)
+	return fmt.Errorf("points operation '%s' failed after %d retries: %w", operationName, maxRetries, lastErr)
+}
+
+// isRetryableError determines if an error is worth retrying
+func (ps *PointsService) isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	
+	errStr := err.Error()
+	
+	// SQLite specific retryable errors
+	retryablePatterns := []string{
+		"database is locked",
+		"database is busy",
+		"no such table", // Could be during migration
+		"constraint failed", // Could be temporary constraint violations during concurrent operations
+		"connection reset",
+		"connection refused",
+		"timeout",
+		"temporary",
+	}
+	
+	for _, pattern := range retryablePatterns {
+		if strings.Contains(strings.ToLower(errStr), pattern) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// AtomicAwardShiftCheckinPointsWithRetry wraps the atomic operation with retry logic
+func (ps *PointsService) AtomicAwardShiftCheckinPointsWithRetry(ctx context.Context, userID int64, booking db.Booking) error {
+	return ps.PointsOperationWithRetry(ctx, func() error {
+		return ps.AtomicAwardShiftCheckinPoints(ctx, userID, booking)
+	}, "shift_checkin_points")
+}
+
+// AtomicAwardShiftCommitmentPointsWithRetry wraps the atomic operation with retry logic
+func (ps *PointsService) AtomicAwardShiftCommitmentPointsWithRetry(ctx context.Context, userID int64, bookingID int64) error {
+	return ps.PointsOperationWithRetry(ctx, func() error {
+		return ps.AtomicAwardShiftCommitmentPoints(ctx, userID, bookingID)
+	}, "shift_commitment_points")
+}
+
+// AtomicAwardShiftDropoutPointsWithRetry wraps the atomic operation with retry logic
+func (ps *PointsService) AtomicAwardShiftDropoutPointsWithRetry(ctx context.Context, userID int64, bookingID int64) error {
+	return ps.PointsOperationWithRetry(ctx, func() error {
+		return ps.AtomicAwardShiftDropoutPoints(ctx, userID, bookingID)
+	}, "shift_dropout_points")
+}
+
+// AtomicAwardShiftCompletionPointsWithRetry wraps the atomic operation with retry logic
+func (ps *PointsService) AtomicAwardShiftCompletionPointsWithRetry(ctx context.Context, userID int64, bookingID int64, reportSeverity int) error {
+	return ps.PointsOperationWithRetry(ctx, func() error {
+		return ps.AtomicAwardShiftCompletionPoints(ctx, userID, bookingID, reportSeverity)
+	}, "shift_completion_points")
 }
