@@ -634,8 +634,13 @@ func (ps *PointsService) PointsOperationWithRetry(ctx context.Context, operation
 	var lastErr error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
-			// Exponential backoff with jitter
-			delay := baseDelay * time.Duration(1<<uint(attempt-1))
+			// Exponential backoff with jitter - use safe calculation to prevent overflow
+			// Cap the exponent to prevent integer overflow
+			exponent := attempt - 1
+			if exponent > 10 { // Cap at 2^10 = 1024x multiplier
+				exponent = 10
+			}
+			delay := baseDelay * time.Duration(1<<exponent)
 			ps.logger.InfoContext(ctx, "Retrying points operation",
 				"operation", operationName, "attempt", attempt+1, "delay_ms", delay.Milliseconds())
 			
