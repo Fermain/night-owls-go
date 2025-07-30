@@ -267,7 +267,7 @@ export async function apiUpload<TResponse = unknown>(
 		onProgress?: (progress: number) => void;
 	} = {}
 ): Promise<TResponse> {
-	const { additionalData, timeout = 60000, onProgress } = options;
+	const { additionalData, timeout = 60000 } = options;
 	const url = endpoint.startsWith('/') ? endpoint : `${API_BASE_URL}/${endpoint}`;
 
 	const formData = new FormData();

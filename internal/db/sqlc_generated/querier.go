@@ -19,10 +19,14 @@ type Querier interface {
 	ArchiveReport(ctx context.Context, reportID int64) error
 	// Award an achievement to a user
 	AwardAchievement(ctx context.Context, arg AwardAchievementParams) error
+	// Award multiple point entries in a single operation (for batching)
+	AwardMultiplePoints(ctx context.Context, arg AwardMultiplePointsParams) error
 	// Points System Queries
 	// Award points to a user for a specific reason
 	AwardPoints(ctx context.Context, arg AwardPointsParams) error
 	BulkArchiveReports(ctx context.Context, reportIds []int64) error
+	// Check if user is eligible for frequency bonus (completed shifts this month)
+	CheckFrequencyBonusEligibility(ctx context.Context, userID int64) (int64, error)
 	CleanupExpiredCalendarTokens(ctx context.Context) error
 	CleanupExpiredLocks(ctx context.Context) error
 	CleanupOldOTPAttempts(ctx context.Context, createdAt time.Time) error
@@ -102,6 +106,8 @@ type Querier interface {
 	GetUserByID(ctx context.Context, userID int64) (GetUserByIDRow, error)
 	GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error)
 	GetUserCalendarTokens(ctx context.Context, userID int64) ([]GetUserCalendarTokensRow, error)
+	// Get user's current total points (for verification)
+	GetUserCurrentPoints(ctx context.Context, userID int64) (GetUserCurrentPointsRow, error)
 	// Get a user's current points and shift information
 	GetUserPoints(ctx context.Context, userID int64) (GetUserPointsRow, error)
 	// Get recent points history for a user
@@ -139,10 +145,14 @@ type Querier interface {
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateTokenAccess(ctx context.Context, tokenHash string) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
+	// Atomically update both points and shift count
+	UpdateUserPointsAndShiftCount(ctx context.Context, arg UpdateUserPointsAndShiftCountParams) error
 	// Update user's shift count and last activity
 	UpdateUserShiftCount(ctx context.Context, userID int64) error
 	// Update user's total points (should be called after AwardPoints)
 	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
+	// Update user's total points incrementally (more efficient than full recalculation)
+	UpdateUserTotalPointsIncremental(ctx context.Context, arg UpdateUserTotalPointsIncrementalParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 	ValidateCalendarToken(ctx context.Context, arg ValidateCalendarTokenParams) (ValidateCalendarTokenRow, error)
 }

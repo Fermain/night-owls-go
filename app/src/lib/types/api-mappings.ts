@@ -34,7 +34,6 @@ type APIBooking = components['schemas']['api.BookingResponse'];
 type APIBookingWithSchedule = components['schemas']['api.BookingWithScheduleResponse'];
 type APIReport = components['schemas']['api.AdminReportResponse'];
 type APIEmergencyContact = components['schemas']['api.EmergencyContactResponse'];
-type APIDashboard = components['schemas']['service.AdminDashboard'];
 type APIDashboardMetrics = components['schemas']['service.DashboardMetrics'];
 type APIQualityMetrics = components['schemas']['service.QualityMetrics'];
 type APIMemberContribution = components['schemas']['service.MemberContribution'];
@@ -50,16 +49,6 @@ export function mapAPIUserToDomain(apiUser: APIUser): User {
 		role: (apiUser.role as UserRole) ?? 'guest',
 		createdAt: apiUser.created_at ?? new Date().toISOString(),
 		isActive: true // API doesn't provide this field yet
-	};
-}
-
-export function mapDomainUserToAPI(user: Partial<User>): Partial<APIUser> {
-	return {
-		id: user.id,
-		name: user.name,
-		phone: user.phone,
-		role: user.role,
-		created_at: user.createdAt
 	};
 }
 
@@ -149,19 +138,6 @@ export function mapAPIEmergencyContactToDomain(apiContact: APIEmergencyContact):
 	};
 }
 
-export function mapDomainEmergencyContactToAPI(
-	contact: Partial<EmergencyContact>
-): Partial<APIEmergencyContact> {
-	return {
-		id: contact.id,
-		name: contact.name,
-		number: contact.number,
-		description: contact.description ?? undefined,
-		is_default: contact.isDefault,
-		display_order: contact.displayOrder
-	};
-}
-
 // === DASHBOARD MAPPINGS ===
 
 export function mapAPIDashboardMetricsToDomain(apiMetrics: APIDashboardMetrics): DashboardMetrics {
@@ -222,16 +198,21 @@ export function mapAPITimeSlotPatternToDomain(apiPattern: APITimeSlotPattern): T
 
 export function mapAPIAuditEventToDomain(apiEvent: Record<string, unknown>): AuditEvent {
 	return {
-		id: (apiEvent.id as number) ?? 0,
+		id: (apiEvent.event_id as number) ?? 0,
 		eventType: (apiEvent.event_type as AuditEventType) ?? 'user.login',
-		userId: (apiEvent.user_id as number | null) ?? null,
+		userId: (apiEvent.actor_user_id as number | null) ?? null,
 		targetUserId: (apiEvent.target_user_id as number | null) ?? null,
+		entityType: (apiEvent.entity_type as string) ?? undefined,
+		entityId: (apiEvent.entity_id as number | null) ?? null,
+		action: (apiEvent.action as string) ?? undefined,
 		ipAddress: (apiEvent.ip_address as string | null) ?? null,
 		userAgent: (apiEvent.user_agent as string | null) ?? null,
 		details: (apiEvent.details as Record<string, unknown>) ?? {},
 		createdAt: (apiEvent.created_at as string) ?? new Date().toISOString(),
-		userName: (apiEvent.user_name as string) ?? 'Unknown',
-		targetUserName: (apiEvent.target_user_name as string) ?? undefined
+		userName: (apiEvent.actor_name as string) ?? 'Unknown',
+		userPhone: (apiEvent.actor_phone as string) ?? undefined,
+		targetUserName: (apiEvent.target_name as string) ?? undefined,
+		targetUserPhone: (apiEvent.target_phone as string) ?? undefined
 	};
 }
 
@@ -300,56 +281,6 @@ export function mapUpdateUserToAPIRequest(userData: {
 		name: userData.name,
 		phone: userData.phone,
 		role: userData.role
-	};
-}
-
-export function mapCreateBookingToAPIRequest(bookingData: {
-	scheduleId: number;
-	startTime: string;
-	buddyName?: string;
-	buddyPhone?: string;
-}): components['schemas']['api.CreateBookingRequest'] {
-	return {
-		schedule_id: bookingData.scheduleId,
-		start_time: bookingData.startTime,
-		buddy_name: bookingData.buddyName,
-		buddy_phone: bookingData.buddyPhone
-	};
-}
-
-export function mapCreateReportToAPIRequest(reportData: {
-	message: string;
-	severity: ReportSeverity;
-	latitude?: number;
-	longitude?: number;
-	accuracy?: number;
-	locationTimestamp?: string;
-}): components['schemas']['api.CreateReportRequest'] {
-	return {
-		message: reportData.message,
-		severity: reportData.severity,
-		latitude: reportData.latitude,
-		longitude: reportData.longitude,
-		accuracy: reportData.accuracy,
-		location_timestamp: reportData.locationTimestamp
-	};
-}
-
-export function mapCreateOffShiftReportToAPIRequest(reportData: {
-	message: string;
-	severity: ReportSeverity;
-	latitude?: number;
-	longitude?: number;
-	accuracy?: number;
-	locationTimestamp?: string;
-}): components['schemas']['api.CreateOffShiftReportRequest'] {
-	return {
-		message: reportData.message,
-		severity: reportData.severity,
-		latitude: reportData.latitude,
-		longitude: reportData.longitude,
-		accuracy: reportData.accuracy,
-		location_timestamp: reportData.locationTimestamp
 	};
 }
 

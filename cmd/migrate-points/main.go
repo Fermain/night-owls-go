@@ -47,7 +47,7 @@ func main() {
 	defer dbConn.Close()
 
 	queries := db.New(dbConn)
-	pointsService := service.NewPointsService(queries, logger)
+	pointsService := service.NewPointsService(queries, dbConn, logger)
 
 	migrator := migration.NewPointsMigrator(queries, pointsService, dbConn, logger, *dryRun)
 

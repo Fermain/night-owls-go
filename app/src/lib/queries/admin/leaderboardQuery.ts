@@ -67,9 +67,9 @@ export function createLeaderboardQuery() {
 	return createQuery({
 		queryKey: ['leaderboard'],
 		queryFn: fetchLeaderboardData,
-		refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-		staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
-		retry: 2, // Retry failed requests 2 times
-		retryDelay: 1000 // Wait 1 second between retries
+		refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes (more frequent for points consistency)
+		staleTime: 30 * 1000, // Consider data stale after 30 seconds (faster updates)
+		retry: 3, // Retry failed requests 3 times (improved reliability)
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000) // Exponential backoff with max 5s
 	});
 }

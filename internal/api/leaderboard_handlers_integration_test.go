@@ -117,7 +117,7 @@ func newLeaderboardTestApp(t *testing.T) *leaderboardTestApp {
 	mockSender := new(MockMessageSender)
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
-	pointsService := service.NewPointsService(querier, logger)
+	pointsService := service.NewPointsService(querier, dbConn, logger)
 	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
 	reportService := service.NewReportService(querier, logger, pointsService)
 	auditService := service.NewAuditService(querier, logger)

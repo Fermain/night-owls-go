@@ -302,43 +302,6 @@ class PushNotificationService {
 	}
 
 	/**
-	 * Get user-friendly error message for push notification errors
-	 */
-	private getErrorMessage(error: unknown): string {
-		if (error instanceof Error) {
-			const message = error.message.toLowerCase();
-
-			// FCM/GCM specific errors
-			if (message.includes('registration failed')) {
-				return 'Push service registration failed. Please check your internet connection.';
-			}
-			if (message.includes('vapid key')) {
-				return 'Server configuration error. Please contact support.';
-			}
-			if (message.includes('not supported')) {
-				return 'Push notifications are not supported on this device or browser.';
-			}
-			if (message.includes('permission')) {
-				return 'Permission denied. Please enable notifications in browser settings.';
-			}
-			if (message.includes('quota exceeded')) {
-				return 'Too many active subscriptions. Please try again later.';
-			}
-			if (message.includes('invalid vapid key') || message.includes('unauthorized')) {
-				return 'Server authentication failed. Please contact support.';
-			}
-			if (message.includes('network') || message.includes('fetch')) {
-				return 'Network error. Please check your connection and try again.';
-			}
-
-			// Generic error with specific message
-			return `Push notification error: ${error.message}`;
-		}
-
-		return 'An unknown error occurred while setting up push notifications.';
-	}
-
-	/**
 	 * Set up message listener for push notifications
 	 */
 	private setupMessageListener(): void {
