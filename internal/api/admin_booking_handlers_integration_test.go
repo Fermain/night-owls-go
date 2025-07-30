@@ -141,7 +141,7 @@ func newAdminTestApp(t *testing.T) *adminTestApp {
 
 	userService := service.NewUserService(querier, otpStore, cfg, logger)
 	scheduleService := service.NewScheduleService(querier, logger, cfg)
-	pointsService := service.NewPointsService(querier, logger)
+	pointsService := service.NewPointsService(querier, dbConn, logger)
 	bookingService := service.NewBookingService(querier, cfg, logger, pointsService)
 	reportService := service.NewReportService(querier, logger, pointsService)
 
