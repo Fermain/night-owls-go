@@ -37,7 +37,7 @@ test.describe('🔥 Critical User Journeys - Core Application Flows', () => {
 	test('🎯 Admin Access Journey', async ({ page }) => {
 		// Step 1: Try accessing admin without auth
 		await page.goto('/admin');
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('/login?redirect=%2Fadmin');
 
 		// Step 2: Authenticate as admin
 		const authPage = new AuthPage(page);

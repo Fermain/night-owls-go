@@ -46,8 +46,8 @@ test.describe('🚀 Simplified User Journeys - Working Approach', () => {
 		// Try to access admin without authentication
 		await page.goto('/admin');
 
-		// Should redirect to login
-		await expect(page).toHaveURL('/login');
+		// Should redirect to login with redirect parameter
+		await expect(page).toHaveURL('/login?redirect=%2Fadmin');
 		console.log('✅ Admin routes properly protected');
 	});
 

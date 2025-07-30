@@ -56,8 +56,8 @@ test.describe('✅ Success Demo - Working Test Patterns', () => {
 	test('✅ Admin protection redirects work', async ({ page }) => {
 		await page.goto('/admin');
 
-		// Should redirect to login page
-		await expect(page).toHaveURL('/login');
+		// Should redirect to login page with redirect parameter
+		await expect(page).toHaveURL('/login?redirect=%2Fadmin');
 
 		console.log('✅ Admin route protection working');
 	});
